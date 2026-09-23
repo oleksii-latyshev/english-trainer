@@ -1,35 +1,135 @@
-# English Trainer (B1 → B2 Desktop Coach)
+# English Trainer — B1 → B2 Desktop Speaking Coach
 
-A high-performance desktop application for macOS (Apple Silicon) built with **Tauri v2**, **Whisper CoreML**, **Antigravity CLI (Gemini 3.8 Flash)**, and **macOS Native SpeechSynthesis**.
+English Trainer is a macOS-first desktop application designed to help a learner move from hesitant B1 speaking toward more spontaneous, independent, and professional B2-level communication.
 
-Specifically engineered to help non-native engineers break through speaking paralysis and prepare for international technical & behavioral job interviews.
+It combines **local speech recognition**, **AI conversation and coaching**, **re-speaking**, **adaptive Learning Memory**, **short ambient micro-practice**, and an optional **Mini Eva companion**.
+
+Technical interview preparation is the first professional scenario, but the product is built as a broader speaking trainer rather than only a mock-interview application.
 
 ---
 
-## Key Highlights
+## Core Learning Loop
 
-- ⚡ **Zero Cloud Audio Latency:** 100% on-device speech-to-text (**Whisper CoreML** on Apple Neural Engine, ~150ms) and instant native macOS speech synthesis (**SpeechSynthesis**).
-- 🧠 **Smart Content Engine:** Powered by **Gemini 3.8 Flash** via **Antigravity CLI (`agy`)**, operating under strict JSON schemas with zero token costs on your existing subscription.
-- 🛞 **"Training Wheels" Scaffolding:** Real-time sentence starters, structural roadmaps, and B2 vocabulary hints for candidates who feel stuck or anxious during live conversation.
-- 🎯 **B1 → B2 Coaching:** Instant professional rephrasing, grammar fixes, and Slavicisms / Russian-isms alerts.
-- 🗄️ **The Mistake Vault:** Persistent SQLite tracking of recurring weaknesses; dynamically tailors future interview questions to your individual bottlenecks.
+```text
+Speak
+  → focused feedback
+  → stronger B2 phrasing
+  → speak again
+  → remember important mistakes / phrases
+  → retest later
+```
+
+The product separates **fluency practice** from **correction practice** so normal conversation does not feel like a grammar exam.
+
+---
+
+## Key Features
+
+### Daily Practice
+
+One-click 10–15 minute speaking session combining warm-up, conversation, re-speaking, recall, and a short summary.
+
+### Conversation Mode
+
+Natural voice conversation with delayed feedback to prioritize fluency and spontaneous interaction.
+
+### Rehearsal / Coach Mode
+
+Focused grammar corrections, B1 → B2 upgrades, useful collocations, and immediate **Try Again** re-speaking.
+
+### Interview Mode
+
+HR, technical, system-design, and behavioral / STAR speaking scenarios with realistic follow-up questions.
+
+### Learning Memory
+
+Local tracking of recurring mistakes, useful phrases, review history, and mastery state.
+
+### Evidence-Based Progress
+
+A CEFR-inspired speaking profile tracks:
+
+- Fluency;
+- Accuracy;
+- Range;
+- Coherence;
+- Interaction.
+
+The scores are internal progress indicators, not an official CEFR certification.
+
+### Ambient Practice
+
+Optional 20–90 second micro-quests available through the macOS menu bar, compact practice window, global shortcut, and local notifications.
+
+Example:
+
+> “What are you working on right now? Explain it in English for 30 seconds.”
+
+No screen monitoring is required; the prompt simply asks the user to describe their own context.
+
+### Mini Eva Companion
+
+An optional tamagotchi-like companion that reacts to real learning progress, delivers micro-quests, and unlocks cosmetic states without punishing missed days.
+
+---
+
+## Architecture Highlights
+
+- **Desktop:** Tauri v2
+- **Frontend:** React 19, TypeScript, Vite, Bun, Tailwind CSS v4, Shadcn/ui, TanStack Router
+- **Backend/Core:** Rust, Tokio, SQLite
+- **STT:** Local Whisper integration, Metal baseline; CoreML/ANE path validated through an implementation spike
+- **TTS:** macOS/system speech synthesis with runtime voice discovery
+- **AI:** provider interfaces with Antigravity CLI as the initial adapter
+- **Storage:** local SQLite
+- **Ambient:** Tauri tray, notifications, autostart, compact secondary window
+- **Future native extension:** WidgetKit desktop / Notification Center widget
+
+The architecture intentionally separates:
+
+```text
+ConversationEngine  → fast spoken dialogue
+FeedbackEngine      → deeper language analysis
+LearningEngine      → long-term adaptation
+Gamification        → downstream presentation of real learning events
+```
+
+---
+
+## Privacy Model
+
+- microphone audio is transcribed locally;
+- raw audio is discarded by default after transcription;
+- learning history is stored locally;
+- only required transcript/context text is sent to the configured LLM provider;
+- Ambient Mode does not require Screen Recording or Accessibility access;
+- notifications and launch-at-login are opt-in.
 
 ---
 
 ## Documentation
 
-Comprehensive architectural, product, and technical documentation is available in the [`docs/`](docs/) directory:
-
-- 📐 [**System Architecture (`docs/ARCHITECTURE.md`)**](docs/ARCHITECTURE.md): Component diagrams, audio pipelines, data flows, and Mermaid sequence diagrams.
-- 🎯 [**Product Specification (`docs/PRODUCT_SPEC.md`)**](docs/PRODUCT_SPEC.md): Pedagogical methodology, core features (The Hot Seat, Rehearsal Room, Skill Builders), and UX flows.
-- ⚙️ [**Technical Requirements (`docs/TECHNICAL_REQUIREMENTS.md`)**](docs/TECHNICAL_REQUIREMENTS.md): Tech stack (Tauri, React, Bun, Tailwind v4, Whisper-rs), IPC contracts, and JSON Schemas.
-- 🗺️ [**Development Roadmap (`docs/ROADMAP.md`)**](docs/ROADMAP.md): Phased implementation milestones from project bootstrap to adaptive quizzes.
+- [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — product vision, learning methodology, practice modes, Ambient Mode, and Mini Eva.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component boundaries, provider architecture, runtime flows, Learning Engine, and macOS integration.
+- [`docs/TECHNICAL_REQUIREMENTS.md`](docs/TECHNICAL_REQUIREMENTS.md) — stack, schemas, IPC, persistence, performance, privacy, and engineering requirements.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased plan from technical spikes to adaptive learning, ambient practice, benchmarks, pronunciation, and WidgetKit.
 
 ---
 
-## Tech Stack
+## MVP Philosophy
 
-- **Backend:** Rust, Tauri v2, `whisper-rs` (CoreML / Metal), `tokio`, `rusqlite`
-- **Frontend:** Bun, React 19, TypeScript, Vite, Tailwind CSS v4, Shadcn/ui, TanStack Router
-- **AI / LLM:** Antigravity CLI (`agy`) using `gemini-3.8-flash-medium` and `gemini-3.1-pro-high`
-- **Audio:** Web Audio API (16kHz mono WAV) + macOS SpeechSynthesis (_Ava_, _Samantha_, _Oliver_)
+The MVP is not “all planned features finished.”
+
+It is complete when the application is already useful for daily speaking practice:
+
+```text
+Question
+  → Speak
+  → Local transcript
+  → Natural AI follow-up
+  → Focused correction
+  → Try again
+  → Save learning evidence
+```
+
+Everything else should improve that loop rather than delay it.
