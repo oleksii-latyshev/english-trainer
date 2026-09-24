@@ -1,10 +1,33 @@
+import { Button, Card } from '@heroui/react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
-import { type PcmRecorder, startPcmRecording } from './audio/recordPcm';
+import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
+import { SpeechPanel } from '@/features/speech/SpeechPanel';
+import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import './App.css';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
 type Transcript = { text: string; language: string; duration_ms: number };
+
+function isTranscript(value: unknown): value is Transcript {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'text' in value &&
+    typeof value.text === 'string' &&
+    'language' in value &&
+    typeof value.language === 'string' &&
+    'duration_ms' in value &&
+    typeof value.duration_ms === 'number'
+  );
+}
+
+async function transcribeWav(wav: Blob): Promise<string> {
+  const audioBytes = new Uint8Array(await wav.arrayBuffer());
+  const result = await invoke<unknown>('transcribe_audio', audioBytes);
+  if (!isTranscript(result))
+    throw new Error('The transcription response had an unexpected format.');
+  return result.text;
+}
 
 function formatDuration(durationMs: number): string {
   const seconds = Math.floor(durationMs / 1000);
@@ -53,6 +76,7 @@ function transcribeButtonLabel(transcribing: boolean, transcript: string | undef
 }
 
 function App() {
+  const speech = useSystemSpeech();
   const [status, setStatus] = useState<RecordingStatus>('idle');
   const [error, setError] = useState('');
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -80,12 +104,16 @@ function App() {
     };
   }, []);
 
-  function clearPlayback() {
+  function discardRecording() {
     if (playbackUrlRef.current) URL.revokeObjectURL(playbackUrlRef.current);
     playbackUrlRef.current = null;
     setPlaybackUrl(undefined);
-    setDurationMs(0);
     recordedWavRef.current = null;
+  }
+
+  function clearPlayback() {
+    discardRecording();
+    setDurationMs(0);
     setTranscript(undefined);
     setTranscriptionError('');
     transcribingRef.current = false;
@@ -107,6 +135,7 @@ function App() {
     if (startingRef.current || recorderRef.current) return;
     startingRef.current = true;
     const requestId = ++requestIdRef.current;
+    speech.stop();
     clearPlayback();
     setElapsedMs(0);
     setError('');
@@ -157,6 +186,12 @@ function App() {
     }
   }
 
+  function finishTranscription(requestId: number) {
+    if (requestId !== requestIdRef.current) return;
+    transcribingRef.current = false;
+    setTranscribing(false);
+  }
+
   async function transcribeRecording() {
     const wav = recordedWavRef.current;
     if (!wav || transcribingRef.current) return;
@@ -169,94 +204,142 @@ function App() {
     setTranscribing(true);
     setTranscriptionError('');
     try {
-      const audioBytes = new Uint8Array(await wav.arrayBuffer());
-      const result = await invoke<Transcript>('transcribe_audio', audioBytes);
-      if (requestId === requestIdRef.current) setTranscript(result.text);
+      const text = await transcribeWav(wav);
+      if (requestId !== requestIdRef.current) return;
+      if (!text.trim()) {
+        setTranscriptionError('No speech was detected. Try speaking closer to the microphone.');
+        return;
+      }
+      setTranscript(text);
+      discardRecording();
+      speech.play(text);
     } catch (cause) {
       if (requestId === requestIdRef.current) {
         setTranscriptionError(transcriptionErrorMessage(cause));
       }
     } finally {
-      if (requestId === requestIdRef.current) {
-        transcribingRef.current = false;
-        setTranscribing(false);
-      }
+      finishTranscription(requestId);
     }
   }
 
   const busy = status === 'requesting' || status === 'stopping';
 
   return (
-    <main className="app-shell">
-      <section className="practice-card" aria-labelledby="practice-title">
-        <p className="eyebrow">English Trainer · Audio check</p>
-        <h1 id="practice-title">Speak a little English</h1>
-        <p className="intro">
-          Record a short answer and listen back. Your audio stays in this window and is discarded
-          when you record again or close the app.
-        </p>
-
-        <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
-          <span className="status-dot" aria-hidden="true" />
-          <span>{recordingLabel(status, elapsedMs, durationMs)}</span>
-        </div>
-
-        <div className="controls">
-          {status === 'recording' ? (
-            <button
-              className="record-button record-button--stop"
-              onClick={stopRecording}
-              type="button"
-            >
-              <span className="stop-icon" aria-hidden="true" />
-              Stop recording
-            </button>
-          ) : (
-            <button
-              className="record-button"
-              disabled={busy}
-              onClick={startRecording}
-              type="button"
-            >
-              <span className="record-icon" aria-hidden="true" />
-              {status === 'ready' ? 'Record again' : 'Start recording'}
-            </button>
-          )}
-        </div>
-
-        {error && (
-          <p className="error-message" role="alert">
-            {error}
-          </p>
-        )}
-        {playbackUrl && (
-          <div className="playback">
-            <label htmlFor="recording-playback">Your recording</label>
-            {/* biome-ignore lint/a11y/useMediaCaption: The transcript is shown below; timed captions are not available yet. */}
-            <audio controls id="recording-playback" src={playbackUrl} />
-            <button
-              className="transcribe-button"
-              disabled={transcribing}
-              onClick={transcribeRecording}
-              type="button"
-            >
-              {transcribeButtonLabel(transcribing, transcript)}
-            </button>
-            {transcriptionError && (
-              <p className="error-message" role="alert">
-                {transcriptionError}
-              </p>
-            )}
-            {transcript && (
-              <div className="transcript" aria-live="polite">
-                <h2>Transcript</h2>
-                <p>{transcript}</p>
-              </div>
-            )}
+    <main className="app-shell min-h-screen text-slate-100">
+      <div className="app-frame mx-auto w-full max-w-6xl">
+        <header className="app-header flex items-center justify-between gap-4">
+          <div className="brand flex items-center gap-3">
+            <span className="brand-mark" aria-hidden="true">
+              ✦
+            </span>
+            <span>English Trainer</span>
           </div>
-        )}
-        <p className="tip">Try answering: “What was the most interesting part of your day?”</p>
-      </section>
+          <span className="header-pill">LOCAL SPEECH LAB</span>
+        </header>
+
+        <div className="content-grid grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
+          <section aria-labelledby="practice-title" className="min-w-0">
+            <p className="eyebrow">PRACTICE / SPEAKING</p>
+            <h1 id="practice-title">Your voice, in English.</h1>
+            <p className="intro">
+              Take a moment to answer the prompt. We’ll transcribe your words locally, then read
+              them back so you can hear the phrasing.
+            </p>
+
+            <Card className="panel practice-panel" variant="secondary">
+              <Card.Header className="panel-header">
+                <div>
+                  <p className="section-kicker">TODAY’S PROMPT</p>
+                  <Card.Title className="prompt-title">
+                    What was the most interesting part of your day?
+                  </Card.Title>
+                </div>
+                <span className="prompt-index">01 / 01</span>
+              </Card.Header>
+              <Card.Content className="panel-content">
+                <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
+                  <div className="mic-orb" aria-hidden="true">
+                    <span className="mic-symbol">●</span>
+                  </div>
+                  <span className="recorder-copy">
+                    {recordingLabel(status, elapsedMs, durationMs)}
+                  </span>
+                </div>
+                <div className="controls flex flex-wrap gap-3">
+                  {status === 'recording' ? (
+                    <Button className="primary-action" onPress={stopRecording} variant="danger">
+                      Stop recording
+                    </Button>
+                  ) : (
+                    <Button
+                      className="primary-action"
+                      isDisabled={busy}
+                      onPress={startRecording}
+                      variant="primary"
+                    >
+                      {status === 'ready' || transcript ? 'Record again' : 'Start recording'}
+                    </Button>
+                  )}
+                  {playbackUrl && (
+                    <Button
+                      className="secondary-action"
+                      isDisabled={transcribing}
+                      onPress={transcribeRecording}
+                      variant="secondary"
+                    >
+                      {transcribeButtonLabel(transcribing, transcript)}
+                    </Button>
+                  )}
+                </div>
+                {error && (
+                  <p className="error-message" role="alert">
+                    {error}
+                  </p>
+                )}
+                {transcriptionError && (
+                  <p className="error-message" role="alert">
+                    {transcriptionError}
+                  </p>
+                )}
+                {playbackUrl && (
+                  <div className="recording-preview">
+                    <label htmlFor="recording-playback">
+                      Review your recording before transcription
+                    </label>
+                    {/* biome-ignore lint/a11y/useMediaCaption: A timed caption is unavailable before transcription. */}
+                    <audio controls id="recording-playback" src={playbackUrl} />
+                  </div>
+                )}
+              </Card.Content>
+            </Card>
+
+            <Card className="panel transcript-panel" variant="secondary">
+              <Card.Header className="panel-header">
+                <div>
+                  <p className="section-kicker">YOUR WORDS</p>
+                  <Card.Title className="section-title">Transcript</Card.Title>
+                </div>
+                <span className={`result-indicator ${transcript ? 'result-indicator--ready' : ''}`}>
+                  {transcript ? 'READY' : 'WAITING'}
+                </span>
+              </Card.Header>
+              <Card.Content className="panel-content">
+                {transcript ? (
+                  <p className="transcript-text" aria-live="polite">
+                    “{transcript}”
+                  </p>
+                ) : (
+                  <p className="empty-transcript">
+                    Your transcript will appear here after you record and transcribe a short answer.
+                  </p>
+                )}
+              </Card.Content>
+            </Card>
+          </section>
+
+          <SpeechPanel speech={speech} transcript={transcript} />
+        </div>
+      </div>
     </main>
   );
 }

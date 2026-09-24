@@ -6,7 +6,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/target", "!bun.lock", "!src-tauri/gen"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/target",
+      "!bun.lock",
+      "!src-tauri/gen",
+      "!docs/ui/*_prototype.html"
+    ]
   },
   "formatter": {
     "enabled": true,

@@ -1,191 +1,255 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "./features/speech/speech.css";
+
 :root {
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #e8edf7;
-  background: #111827;
+  color: #e7edf8;
+  background: #0c1424;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
-* {
-  box-sizing: border-box;
-}
 body {
   margin: 0;
   min-width: 320px;
 }
 button,
+select,
 audio {
   font: inherit;
 }
 
 .app-shell {
-  display: grid;
+  padding: 0 28px 72px;
+  background: radial-gradient(ellipse at 52% -18%, #1d3b57 0, #0c1424 53%);
+}
+.app-frame {
   min-height: 100vh;
-  padding: 32px;
+}
+.app-header {
+  min-height: 88px;
+  margin-bottom: 66px;
+  border-bottom: 1px solid #263348;
+}
+.brand {
+  font-size: 0.97rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.brand-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
   place-items: center;
-  background: radial-gradient(circle at 50% 0%, #243759 0, #111827 65%);
+  border: 1px solid #73b8c65c;
+  border-radius: 11px;
+  color: #b4e4e8;
+  background: #173c48;
+  font-size: 1.15rem;
 }
-
-.practice-card {
-  width: min(100%, 560px);
-  padding: clamp(28px, 6vw, 48px);
-  border: 1px solid #35445e;
-  border-radius: 24px;
-  background: #192338;
-  box-shadow: 0 20px 60px #0004;
+.header-pill,
+.eyebrow,
+.section-kicker,
+.result-indicator,
+.prompt-index {
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
 }
-
+.header-pill {
+  padding: 9px 12px;
+  border: 1px solid #31505a;
+  border-radius: 999px;
+  color: #9dd9d6;
+  background: #14344180;
+}
 .eyebrow {
   margin: 0 0 14px;
-  color: #9dbaf5;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  color: #80c9cb;
 }
-
 h1 {
   margin: 0;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  line-height: 1.16;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 1.08;
 }
 .intro {
-  margin: 18px 0 28px;
-  color: #b8c3d6;
-  line-height: 1.6;
+  max-width: 620px;
+  margin: 19px 0 31px;
+  color: #9eacc1;
+  font-size: 1rem;
+  line-height: 1.7;
 }
-
+.content-grid {
+  align-items: start;
+}
+.panel {
+  padding: 0;
+  border: 1px solid #2b3b4e;
+  border-radius: 20px;
+  background: #162338ed;
+  box-shadow: 0 22px 50px #0109173b;
+}
+.panel-header {
+  display: flex;
+  flex-direction: row;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 25px 28px 0;
+}
+.panel-content {
+  padding: 24px 28px 28px;
+}
+.section-kicker {
+  margin: 0 0 10px;
+  color: #8ba0b8;
+}
+.prompt-title {
+  margin: 0;
+  color: #f1f5fc;
+  font-size: 1.23rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+.section-title {
+  margin: 0;
+  color: #eff4fb;
+  font-size: 1.13rem;
+  font-weight: 650;
+}
+.prompt-index {
+  padding-top: 3px;
+  color: #7490a9;
+  white-space: nowrap;
+}
 .recorder-state {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding: 14px 16px;
-  border: 1px solid #35445e;
-  border-radius: 12px;
-  background: #121b2c;
-  font-size: 0.95rem;
+  gap: 20px;
+  min-height: 136px;
+  padding: 22px 24px;
+  border: 1px solid #314252;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #172e3c, #142232);
 }
-
-.status-dot {
-  width: 10px;
-  height: 10px;
+.mic-orb {
+  display: grid;
+  width: 72px;
+  height: 72px;
   flex: none;
+  place-items: center;
+  border: 1px solid #459396;
   border-radius: 50%;
-  background: #72839e;
+  color: #b9f2e7;
+  background: radial-gradient(circle, #2a6971 0, #1b4653 65%);
+  box-shadow: 0 0 0 9px #27778323;
 }
-.recorder-state--recording .status-dot {
-  background: #f56b76;
-  box-shadow: 0 0 0 5px #f56b7626;
+.mic-symbol {
+  font-size: 1.05rem;
 }
-.recorder-state--ready .status-dot {
-  background: #62d5aa;
+.recorder-state--recording .mic-orb {
+  border-color: #e79d9c;
+  background: #733e4a;
+  box-shadow: 0 0 0 9px #ba606344;
+}
+.recorder-state--ready .mic-orb {
+  border-color: #8cd6a8;
+}
+.recorder-copy {
+  color: #dce8f3;
+  font-size: 1.02rem;
+  font-weight: 560;
 }
 .controls {
   margin-top: 22px;
 }
-
-.record-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 11px;
-  min-height: 48px;
-  padding: 12px 20px;
-  border: 0;
-  border-radius: 12px;
-  color: #12203b;
-  background: #a9c7ff;
+.primary-action {
+  min-height: 45px;
+  padding-inline: 20px;
   font-weight: 700;
-  cursor: pointer;
 }
-
-.record-button:hover:not(:disabled) {
-  background: #c0d6ff;
+.secondary-action,
+.subtle-action {
+  min-height: 43px;
+  padding-inline: 16px;
 }
-.record-button:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 3px;
+.secondary-action {
+  border: 1px solid #476477;
+  color: #dce9f6;
+  background: #243b50;
 }
-.record-button:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-.record-button--stop {
-  color: #fff;
-  background: #a43e55;
-}
-.record-button--stop:hover {
-  background: #bd4e65;
-}
-.record-icon {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #c4455d;
-}
-.stop-icon {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: currentColor;
+.subtle-action {
+  color: #b9cee0;
 }
 .error-message {
-  margin: 18px 0 0;
-  color: #ffb4b8;
+  margin: 16px 0 0;
+  color: #ffc1c2;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
-.playback {
+.recording-preview {
   display: grid;
   gap: 10px;
-  margin-top: 26px;
-  font-weight: 600;
+  margin-top: 22px;
+  color: #a7bbcf;
+  font-size: 0.82rem;
 }
-.playback audio {
+.recording-preview audio {
   width: 100%;
 }
-.transcribe-button {
-  justify-self: start;
-  min-height: 42px;
-  padding: 9px 16px;
-  border: 1px solid #8eace4;
-  border-radius: 10px;
-  color: #e8edf7;
-  background: #273b60;
-  cursor: pointer;
+.transcript-panel {
+  margin-top: 18px;
 }
-.transcribe-button:hover:not(:disabled) {
-  background: #36527f;
+.result-indicator {
+  padding: 6px 9px;
+  border-radius: 6px;
+  color: #839ab0;
+  background: #263448;
 }
-.transcribe-button:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 3px;
+.result-indicator--ready {
+  color: #a9e4bf;
+  background: #21483d;
 }
-.transcribe-button:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-.transcript {
-  margin-top: 12px;
-  padding: 18px;
-  border: 1px solid #35445e;
-  border-radius: 12px;
-  background: #121b2c;
-}
-.transcript h2 {
-  margin: 0 0 10px;
-  font-size: 0.9rem;
-}
-.transcript p {
+.transcript-text {
   margin: 0;
-  font-weight: 400;
-  line-height: 1.6;
+  color: #e9f1fc;
+  font-size: 1.08rem;
+  line-height: 1.75;
   white-space: pre-wrap;
 }
-.tip {
-  margin: 28px 0 0;
-  color: #90a3c1;
-  font-size: 0.9rem;
-  line-height: 1.5;
+.empty-transcript {
+  margin: 0;
+  color: #8fa3b9;
+  line-height: 1.6;
+}
+@media (max-width: 620px) {
+  .app-shell {
+    padding-inline: 16px;
+  }
+  .app-header {
+    min-height: 74px;
+    margin-bottom: 44px;
+  }
+  .header-pill {
+    display: none;
+  }
+  .panel-header {
+    padding: 21px 20px 0;
+  }
+  .panel-content {
+    padding: 20px;
+  }
+  .recorder-state {
+    min-height: 112px;
+    padding: 18px;
+  }
+  .mic-orb {
+    width: 58px;
+    height: 58px;
+  }
 }
