@@ -9,14 +9,14 @@ import type { useSystemSpeech } from './useSystemSpeech';
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
 
-type Recording = { playbackUrl: string; durationMs: number };
+type Recording = { playbackUrl: string; durationMs: number; speechStoppedAtMs: number };
 
 type CaptureState =
   | { tag: 'idle' | 'requesting' }
   | { tag: 'recording' | 'stopping'; elapsedMs: number }
   | ({ tag: 'ready'; failure?: TranscriptionRecovery } & Recording)
   | ({ tag: 'transcribing' } & Recording)
-  | { tag: 'transcript'; text: string; durationMs: number }
+  | { tag: 'transcript'; text: string; durationMs: number; speechStoppedAtMs: number }
   | { tag: 'error'; message: string; failure?: TranscriptionRecovery };
 
 export type CaptureView = {
@@ -30,6 +30,7 @@ export type CaptureView = {
   transcribing: boolean;
   timing: SpeechTiming;
   currentRequestId: number;
+  speechStoppedAtMs?: number;
 };
 
 function recordingStatus(state: CaptureState): RecordingStatus {
@@ -54,6 +55,7 @@ function viewFor(state: CaptureState, timing: SpeechTiming, currentRequestId: nu
     transcribing: state.tag === 'transcribing',
     timing,
     currentRequestId,
+    speechStoppedAtMs: state.tag === 'transcript' ? state.speechStoppedAtMs : undefined,
   };
 }
 
@@ -156,6 +158,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
     const recorder = recorderRef.current;
     if (!recorder || state.tag !== 'recording') return;
     const requestId = requestIdRef.current;
+    const speechStoppedAtMs = performance.now();
     recorderRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
@@ -171,7 +174,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       const playbackUrl = URL.createObjectURL(result.wav);
       recordedWavRef.current = result.wav;
       playbackUrlRef.current = playbackUrl;
-      setState({ tag: 'ready', playbackUrl, durationMs: result.durationMs });
+      setState({ tag: 'ready', playbackUrl, durationMs: result.durationMs, speechStoppedAtMs });
     } catch (cause) {
       if (requestId === requestIdRef.current) {
         setState({ tag: 'error', message: microphoneError(cause) });
@@ -195,7 +198,12 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       return;
     }
     discardRecording();
-    setState({ tag: 'transcript', text, durationMs: recording.durationMs });
+    setState({
+      tag: 'transcript',
+      text,
+      durationMs: recording.durationMs,
+      speechStoppedAtMs: recording.speechStoppedAtMs,
+    });
     speech.play(text, (ttsStartMs) => {
       if (requestId === requestIdRef.current) {
         setTiming((current) => ({ ...current, ttsStartMs }));
@@ -234,6 +242,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       tag: 'transcribing',
       playbackUrl: recording.playbackUrl,
       durationMs: recording.durationMs,
+      speechStoppedAtMs: recording.speechStoppedAtMs,
     });
     try {
       const { text, sttMs } = await transcribeWav(wav);

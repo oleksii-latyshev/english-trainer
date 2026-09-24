@@ -1,4 +1,5 @@
 import { Card } from '@heroui/react';
+import { formatTiming } from '@/lib/formatTiming';
 
 export type SpeechTiming = {
   captureFinalizationMs?: number;
@@ -7,10 +8,6 @@ export type SpeechTiming = {
 };
 
 type Props = { timing: SpeechTiming };
-
-function formatTiming(value?: number): string {
-  return value === undefined ? '—' : `${Math.round(value)} ms`;
-}
 
 export function TimingPanel({ timing }: Props) {
   if (
@@ -39,13 +36,13 @@ export function TimingPanel({ timing }: Props) {
             <dd>{formatTiming(timing.sttMs)}</dd>
           </div>
           <div>
-            <dt>Voice start</dt>
+            <dt>Transcript voice</dt>
             <dd>{formatTiming(timing.ttsStartMs)}</dd>
           </div>
         </dl>
         <p className="timing-note">
-          Measured on this device for the current recording. Voice start is the delay until the
-          system reports that speech has begun.
+          Measured on this device for the current recording. Transcript voice is the delay before
+          the system starts reading your own words back.
         </p>
       </Card.Content>
     </Card>

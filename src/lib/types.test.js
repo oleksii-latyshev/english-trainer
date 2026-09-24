@@ -15,6 +15,8 @@ describe('conversation IPC payloads', () => {
       is_complete: false,
     };
     expect(isConversationTurn(turn)).toBe(true);
+    expect(isConversationTurn({ ...turn, provider_latency_ms: 1200 })).toBe(true);
+    expect(isConversationTurn({ ...turn, provider_latency_ms: -1 })).toBe(false);
     expect(isConversationTurn({ status: 'SUCCESS', structured_output: turn })).toBe(false);
     expect(isConversationTurn({ ...turn, question: 3 })).toBe(false);
   });

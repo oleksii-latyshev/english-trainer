@@ -9,6 +9,7 @@ fn turn(reply: &str, question: &str) -> ConversationTurn {
         question: Some(question.into()),
         session_phase: "active".into(),
         is_complete: false,
+        provider_latency_ms: None,
     }
 }
 

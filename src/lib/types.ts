@@ -24,6 +24,7 @@ export type ConversationTurn = {
   question: string | null;
   session_phase: string;
   is_complete: boolean;
+  provider_latency_ms?: number;
 };
 
 export type PracticeSession = {
@@ -129,7 +130,11 @@ export function isConversationTurn(value: unknown): value is ConversationTurn {
     'session_phase' in value &&
     typeof value.session_phase === 'string' &&
     'is_complete' in value &&
-    typeof value.is_complete === 'boolean'
+    typeof value.is_complete === 'boolean' &&
+    (!('provider_latency_ms' in value) ||
+      (typeof value.provider_latency_ms === 'number' &&
+        Number.isSafeInteger(value.provider_latency_ms) &&
+        value.provider_latency_ms >= 0))
   );
 }
 

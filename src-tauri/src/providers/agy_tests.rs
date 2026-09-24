@@ -59,6 +59,7 @@ fn parses_only_structured_output_and_validates_plain_text() {
     assert_eq!(turn.question.as_deref(), Some("What happened next?"));
     assert_eq!(turn.session_phase, "active");
     assert!(!turn.is_complete);
+    assert_eq!(turn.provider_latency_ms, None);
 
     let raw = parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":"```json {} ```","question":null,"session_phase":"active","is_complete":false}}"#).unwrap();
     assert!(validate_turn(raw).is_err());

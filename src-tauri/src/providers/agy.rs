@@ -85,16 +85,7 @@ impl ConversationEngine for AgyEngine {
     }
 }
 
-pub fn generate_follow_up(transcript: String) -> Result<ConversationTurn, ProviderError> {
-    let context = ConversationContext {
-        opening_question: String::new(),
-        recent_turns: Vec::new(),
-        latest_transcript: transcript,
-    };
-    generate_conversation_turn(&context)
-}
-
-pub fn generate_conversation_turn(
+pub(super) fn generate_turn(
     context: &ConversationContext,
 ) -> Result<ConversationTurn, ProviderError> {
     let binary = resolve_binary().ok_or_else(|| {
@@ -196,6 +187,7 @@ fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ()> {
         question,
         session_phase: "active".into(),
         is_complete: false,
+        provider_latency_ms: None,
     })
 }
 

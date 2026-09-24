@@ -1,17 +1,20 @@
 import { Button, Card } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
+import { formatTiming } from '@/lib/formatTiming';
 import {
   type ConversationTurn,
   isConversationTurn,
   isProviderError,
   type ProviderErrorCode,
 } from '@/lib/types';
+import { turnTiming } from './lib/turnTiming';
 
 type Props = {
   transcript: string;
-  speak: (text: string) => void;
+  speak: (text: string, onStart?: (latencyMs: number) => void) => void;
   isCurrent: () => boolean;
+  speechStoppedAtMs?: number;
   sessionId?: number;
   onTurn?: (turn: ConversationTurn) => void;
   onPendingChange?: (isPending: boolean) => void;
@@ -20,7 +23,14 @@ type Props = {
 type FollowUpState =
   | { tag: 'idle' }
   | { tag: 'thinking' }
-  | { tag: 'ready'; turn: ConversationTurn }
+  | {
+      tag: 'ready';
+      turn: ConversationTurn;
+      sentAtMs: number;
+      replyAtMs: number;
+      audioAtMs?: number;
+      voiceStartMs?: number;
+    }
   | { tag: 'error'; code: ProviderErrorCode | 'unknown'; message: string };
 
 function spokenTurn(turn: ConversationTurn): string {
@@ -61,6 +71,7 @@ export function FollowUpPanel({
   sessionId,
   onTurn,
   onPendingChange,
+  speechStoppedAtMs,
 }: Props) {
   const [state, setState] = useState<FollowUpState>({ tag: 'idle' });
   const generation = useRef(0);
@@ -78,13 +89,21 @@ export function FollowUpPanel({
     pending.current = true;
     onPendingChange?.(true);
     setState({ tag: 'thinking' });
+    const sentAtMs = performance.now();
     try {
       const result = await requestTurn(sessionId, transcript);
+      const replyAtMs = performance.now();
       if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
       if (requestId !== generation.current || !isCurrent()) return;
-      setState({ tag: 'ready', turn: result });
+      setState({ tag: 'ready', turn: result, sentAtMs, replyAtMs });
       onTurn?.(result);
-      speak(spokenTurn(result));
+      speak(spokenTurn(result), (voiceStartMs) => {
+        if (requestId !== generation.current || !isCurrent()) return;
+        const audioAtMs = performance.now();
+        setState((current) =>
+          current.tag === 'ready' ? { ...current, audioAtMs, voiceStartMs } : current,
+        );
+      });
     } catch (cause) {
       if (requestId === generation.current && isCurrent()) setState(followUpError(cause));
     } finally {
@@ -92,6 +111,18 @@ export function FollowUpPanel({
       onPendingChange?.(false);
     }
   }
+
+  const timing =
+    state.tag === 'ready'
+      ? turnTiming({
+          sentAtMs: state.sentAtMs,
+          replyAtMs: state.replyAtMs,
+          audioAtMs: state.audioAtMs,
+          voiceStartMs: state.voiceStartMs,
+          speechStoppedAtMs,
+          providerLatencyMs: state.turn.provider_latency_ms,
+        })
+      : undefined;
 
   return (
     <Card className="panel mt-[18px]" variant="secondary">
@@ -115,6 +146,37 @@ export function FollowUpPanel({
             {state.turn.question && (
               <p className="m-0 font-semibold text-teal-200">{state.turn.question}</p>
             )}
+          </div>
+        )}
+        {timing && (
+          <div className="mt-5 border-t border-white/10 pt-4">
+            <p className="section-kicker mb-3">RESPONSE TIMING</p>
+            <dl className="timing-grid" aria-label="Conversation response timing">
+              <div>
+                <dt>agy</dt>
+                <dd>{formatTiming(timing.agyMs)}</dd>
+              </div>
+              <div>
+                <dt>AI request</dt>
+                <dd>{formatTiming(timing.aiRequestMs)}</dd>
+              </div>
+              <div>
+                <dt>AI voice start</dt>
+                <dd>{formatTiming(timing.aiVoiceStartMs)}</dd>
+              </div>
+              <div>
+                <dt>Send → audio</dt>
+                <dd>{formatTiming(timing.sendToAudioMs)}</dd>
+              </div>
+              <div>
+                <dt>Stop → audio</dt>
+                <dd>{formatTiming(timing.stopToAudioMs)}</dd>
+              </div>
+            </dl>
+            <p className="timing-note">
+              AI request includes agy, IPC, and local saving. Stop → audio also includes the time
+              you spent reviewing and sending your answer.
+            </p>
           </div>
         )}
         {state.tag === 'error' && (

@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function PracticeView({ model, actions, speech }: Props) {
-  const { transcript, timing, practice, currentRequestId } = model;
+  const { transcript, timing, practice, currentRequestId, speechStoppedAtMs } = model;
   const { handlePracticeTurn, isCurrent, onTurnPendingChange } = actions;
   const session = sessionDetails(practice);
   return (
@@ -55,6 +55,7 @@ export function PracticeView({ model, actions, speech }: Props) {
                 onTurn={session ? (turn) => handlePracticeTurn(session.sessionId, turn) : undefined}
                 sessionId={session?.sessionId}
                 speak={speech.play}
+                speechStoppedAtMs={speechStoppedAtMs}
                 transcript={transcript}
               />
             )}
