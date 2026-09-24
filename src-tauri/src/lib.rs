@@ -6,18 +6,30 @@ use tauri::Manager;
 async fn transcribe_audio(
     app: tauri::AppHandle,
     request: tauri::ipc::Request<'_>,
-) -> Result<audio::Transcript, String> {
+) -> Result<audio::Transcript, audio::TranscriptionError> {
     let wav = match request.body() {
         tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
-        _ => return Err("Expected raw WAV audio bytes.".into()),
+        _ => {
+            return Err(audio::TranscriptionError::new(
+                audio::TranscriptionErrorCode::InvalidAudio,
+                "Expected raw WAV audio bytes. Please record again.",
+            ))
+        }
     };
-    let app_data = app
-        .path()
-        .app_data_dir()
-        .map_err(|_| "Cannot locate application data directory.".to_string())?;
+    let app_data = app.path().app_data_dir().map_err(|_| {
+        audio::TranscriptionError::new(
+            audio::TranscriptionErrorCode::IoFailure,
+            "Cannot locate application data directory. Please restart the app and retry.",
+        )
+    })?;
     tauri::async_runtime::spawn_blocking(move || audio::transcribe(wav, app_data))
         .await
-        .map_err(|_| "Local transcription task failed. Please retry.".to_string())?
+        .map_err(|_| {
+            audio::TranscriptionError::new(
+                audio::TranscriptionErrorCode::EngineFailed,
+                "Local transcription task failed. Please retry.",
+            )
+        })?
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

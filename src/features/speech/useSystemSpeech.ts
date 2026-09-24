@@ -65,9 +65,12 @@ export function useSystemSpeech() {
       getPreferredVoice(availableVoices);
     if (!voice) {
       setVoices([]);
+      setSelectedVoiceURI(null);
       setState({ tag: 'error', reason: 'voices-unavailable' });
       return;
     }
+    setVoices(availableVoices);
+    setSelectedVoiceURI(voice.voiceURI);
 
     const currentGeneration = generation.current + 1;
     generation.current = currentGeneration;

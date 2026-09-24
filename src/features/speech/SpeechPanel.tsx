@@ -6,6 +6,11 @@ type SpeechPanelProps = {
   transcript?: string;
 };
 
+function voiceButtonLabel(hasError: boolean, hasTranscript: boolean): string {
+  if (hasError) return 'Retry voice';
+  return hasTranscript ? 'Replay transcript' : 'Test voice';
+}
+
 export function SpeechPanel({ speech, transcript }: SpeechPanelProps) {
   const speechAvailable = speech.state.tag !== 'unavailable';
   const speechActive =
@@ -75,13 +80,13 @@ export function SpeechPanel({ speech, transcript }: SpeechPanelProps) {
           <div className="voice-actions flex flex-wrap gap-2">
             <Button
               className="secondary-action"
-              isDisabled={!speechAvailable || visibleVoices.length === 0}
+              isDisabled={!speechAvailable}
               onPress={() =>
                 speech.play(transcript ?? 'Hello! This is your English Trainer voice.')
               }
               variant="secondary"
             >
-              {transcript ? 'Replay transcript' : 'Test voice'}
+              {voiceButtonLabel(speech.state.tag === 'error', Boolean(transcript))}
             </Button>
             {speech.state.tag === 'speaking' && (
               <Button className="subtle-action" onPress={speech.pause} variant="tertiary">
@@ -118,7 +123,8 @@ export function SpeechPanel({ speech, transcript }: SpeechPanelProps) {
         <p>
           <strong>Private by default</strong>
           <br />
-          Audio is processed locally and discarded after transcription or when you record again.
+          Audio stays on this device and is discarded after successful transcription, a new
+          recording, or closing the app.
         </p>
       </div>
     </aside>

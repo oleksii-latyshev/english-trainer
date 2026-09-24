@@ -4,23 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
 import { type SpeechTiming, TimingPanel } from '@/features/speech/TimingPanel';
+import {
+  type TranscriptionRecovery,
+  transcriptionRecovery,
+} from '@/features/speech/transcriptionRecovery';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import { isTranscript } from '@/lib/types';
 import './App.css';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
-type Transcript = { text: string; language: string; duration_ms: number };
-
-function isTranscript(value: unknown): value is Transcript {
-  if (typeof value !== 'object' || value === null) return false;
-  return (
-    'text' in value &&
-    typeof value.text === 'string' &&
-    'language' in value &&
-    typeof value.language === 'string' &&
-    'duration_ms' in value &&
-    typeof value.duration_ms === 'number'
-  );
-}
 
 async function transcribeWav(wav: Blob): Promise<{ text: string; sttMs: number }> {
   const audioBytes = new Uint8Array(await wav.arrayBuffer());
@@ -51,12 +43,6 @@ function microphoneError(error: unknown): string {
   return error instanceof Error ? error.message : 'Recording failed. Please try again.';
 }
 
-function transcriptionErrorMessage(cause: unknown): string {
-  if (typeof cause === 'string') return cause;
-  if (cause instanceof Error) return cause.message;
-  return 'Transcription failed. Please try again.';
-}
-
 function recordingLabel(status: RecordingStatus, elapsedMs: number, durationMs: number): string {
   switch (status) {
     case 'requesting':
@@ -67,14 +53,26 @@ function recordingLabel(status: RecordingStatus, elapsedMs: number, durationMs: 
       return 'Finishing recording…';
     case 'ready':
       return `Ready to listen · ${formatDuration(durationMs)}`;
+    case 'error':
+      return 'Ready to try again';
     default:
       return 'Microphone ready when you are';
   }
 }
 
-function transcribeButtonLabel(transcribing: boolean, transcript: string | undefined): string {
+function transcribeButtonLabel(
+  transcribing: boolean,
+  failure: TranscriptionRecovery | undefined,
+): string {
   if (transcribing) return 'Transcribing locally…';
-  return transcript ? 'Transcribe again' : 'Transcribe';
+  if (failure?.kind === 'setup') return 'Retry after setup';
+  return failure ? 'Retry transcription' : 'Transcribe';
+}
+
+function recordButtonLabel(status: RecordingStatus, hasTranscript: boolean): string {
+  if (status === 'error') return 'Try recording again';
+  if (status === 'ready' || hasTranscript) return 'Record again';
+  return 'Start recording';
 }
 
 function App() {
@@ -85,7 +83,7 @@ function App() {
   const [durationMs, setDurationMs] = useState(0);
   const [playbackUrl, setPlaybackUrl] = useState<string>();
   const [transcript, setTranscript] = useState<string>();
-  const [transcriptionError, setTranscriptionError] = useState('');
+  const [transcriptionFailure, setTranscriptionFailure] = useState<TranscriptionRecovery>();
   const [transcribing, setTranscribing] = useState(false);
   const [timing, setTiming] = useState<SpeechTiming>({});
   const recorderRef = useRef<PcmRecorder | null>(null);
@@ -118,7 +116,7 @@ function App() {
     discardRecording();
     setDurationMs(0);
     setTranscript(undefined);
-    setTranscriptionError('');
+    setTranscriptionFailure(undefined);
     transcribingRef.current = false;
     setTranscribing(false);
   }
@@ -126,10 +124,13 @@ function App() {
   function deviceLost() {
     const recorder = recorderRef.current;
     if (!recorder) return;
+    const requestId = requestIdRef.current;
     recorderRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
-    void recorder.cancel();
+    void recorder.cancel().catch((cause) => {
+      if (requestId === requestIdRef.current) setError(microphoneError(cause));
+    });
     setError('The microphone disconnected during recording. Reconnect it and try again.');
     setStatus('error');
   }
@@ -201,35 +202,54 @@ function App() {
     setTranscribing(false);
   }
 
+  function handleTranscript(requestId: number, text: string, sttMs: number) {
+    if (requestId !== requestIdRef.current) return;
+    setTiming((current) => ({ ...current, sttMs }));
+    if (!text.trim()) {
+      setTranscriptionFailure({
+        kind: 'record_again',
+        message: 'No speech was detected. Try speaking closer to the microphone.',
+      });
+      discardRecording();
+      setStatus('error');
+      return;
+    }
+    setTranscript(text);
+    discardRecording();
+    speech.play(text, (ttsStartMs) => {
+      if (requestId === requestIdRef.current) setTiming((current) => ({ ...current, ttsStartMs }));
+    });
+  }
+
+  function handleTranscriptionFailure(requestId: number, cause: unknown) {
+    if (requestId !== requestIdRef.current) return;
+    const failure = transcriptionRecovery(cause);
+    setTranscriptionFailure(failure);
+    if (failure.kind === 'record_again') {
+      discardRecording();
+      setStatus('error');
+    }
+  }
+
   async function transcribeRecording() {
     const wav = recordedWavRef.current;
     if (!wav || transcribingRef.current) return;
     if (!isTauri()) {
-      setTranscriptionError('Open the desktop app with bun run dev to use local transcription.');
+      setTranscriptionFailure({
+        kind: 'setup',
+        message: 'Open the desktop app with bun run dev to use local transcription.',
+      });
       return;
     }
     const requestId = requestIdRef.current;
     transcribingRef.current = true;
     setTranscribing(true);
-    setTranscriptionError('');
+    setTranscriptionFailure(undefined);
     try {
       const { text, sttMs } = await transcribeWav(wav);
-      if (requestId !== requestIdRef.current) return;
-      setTiming((current) => ({ ...current, sttMs }));
-      if (!text.trim()) {
-        setTranscriptionError('No speech was detected. Try speaking closer to the microphone.');
-        return;
-      }
-      setTranscript(text);
-      discardRecording();
-      speech.play(text, (ttsStartMs) => {
-        if (requestId === requestIdRef.current)
-          setTiming((current) => ({ ...current, ttsStartMs }));
-      });
+      handleTranscript(requestId, text, sttMs);
     } catch (cause) {
-      if (requestId === requestIdRef.current) {
-        setTranscriptionError(transcriptionErrorMessage(cause));
-      }
+      handleTranscriptionFailure(requestId, cause);
     } finally {
       finishTranscription(requestId);
     }
@@ -290,7 +310,7 @@ function App() {
                       onPress={startRecording}
                       variant="primary"
                     >
-                      {status === 'ready' || transcript ? 'Record again' : 'Start recording'}
+                      {recordButtonLabel(status, Boolean(transcript))}
                     </Button>
                   )}
                   {playbackUrl && (
@@ -300,7 +320,7 @@ function App() {
                       onPress={transcribeRecording}
                       variant="secondary"
                     >
-                      {transcribeButtonLabel(transcribing, transcript)}
+                      {transcribeButtonLabel(transcribing, transcriptionFailure)}
                     </Button>
                   )}
                 </div>
@@ -309,9 +329,9 @@ function App() {
                     {error}
                   </p>
                 )}
-                {transcriptionError && (
+                {transcriptionFailure && (
                   <p className="error-message" role="alert">
-                    {transcriptionError}
+                    {transcriptionFailure.message}
                   </p>
                 )}
                 {playbackUrl && (
