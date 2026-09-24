@@ -1,0 +1,288 @@
+use serde::{Deserialize, Serialize};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+    sync::atomic::{AtomicU64, Ordering},
+    thread,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
+
+const MAX_WAV_BYTES: usize = 60 * 1024 * 1024;
+const TIMEOUT: Duration = Duration::from_secs(120);
+static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+struct TemporaryDirectory(PathBuf);
+
+impl TemporaryDirectory {
+    fn new() -> io::Result<Self> {
+        for _ in 0..10 {
+            let stamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos();
+            let sequence = TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!(
+                "english-trainer-whisper-{}-{stamp}-{sequence}",
+                std::process::id()
+            ));
+            #[cfg(unix)]
+            let result = {
+                use std::os::unix::fs::DirBuilderExt;
+                let mut builder = fs::DirBuilder::new();
+                builder.mode(0o700);
+                builder.create(&path)
+            };
+            #[cfg(not(unix))]
+            let result = fs::create_dir(&path);
+            match result {
+                Ok(()) => return Ok(Self(path)),
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(error) => return Err(error),
+            }
+        }
+        Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "temporary directory collision",
+        ))
+    }
+
+    fn path(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl Drop for TemporaryDirectory {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct Transcript {
+    pub text: String,
+    pub language: String,
+    pub duration_ms: u64,
+}
+
+#[derive(Deserialize)]
+struct WhisperOutput {
+    transcription: Vec<WhisperSegment>,
+}
+
+#[derive(Deserialize)]
+struct WhisperSegment {
+    text: String,
+}
+
+fn parse_output(json: &str, duration_ms: u64) -> Result<Transcript, String> {
+    let output: WhisperOutput = serde_json::from_str(json)
+        .map_err(|_| "Whisper returned invalid transcription data. Please retry.".to_string())?;
+    let text = output
+        .transcription
+        .iter()
+        .map(|segment| segment.text.trim())
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    if text.is_empty() {
+        return Err("No speech was recognized. Please record again.".into());
+    }
+    Ok(Transcript {
+        text,
+        language: "en".into(),
+        duration_ms,
+    })
+}
+
+fn validate_wav(wav: &[u8]) -> Result<u64, String> {
+    let invalid = || "Invalid WAV recording. Please record again.".to_string();
+    if wav.len() < 44 || wav.len() > MAX_WAV_BYTES {
+        return Err("Recording is empty, invalid, or too long (maximum 60 MB).".into());
+    }
+    if &wav[..4] != b"RIFF" || &wav[8..12] != b"WAVE" {
+        return Err(invalid());
+    }
+    let riff_size = u32::from_le_bytes(wav[4..8].try_into().map_err(|_| invalid())?) as usize;
+    if riff_size.checked_add(8) != Some(wav.len()) {
+        return Err(invalid());
+    }
+    let (mut position, mut format, mut data_len) = (12usize, None, None);
+    while position + 8 <= wav.len() {
+        let size = u32::from_le_bytes(
+            wav[position + 4..position + 8]
+                .try_into()
+                .map_err(|_| invalid())?,
+        ) as usize;
+        let start = position + 8;
+        let end = start.checked_add(size).ok_or_else(invalid)?;
+        if end > wav.len() {
+            return Err(invalid());
+        }
+        match &wav[position..position + 4] {
+            b"fmt " if size >= 16 => {
+                let fields = &wav[start..start + 16];
+                format = Some((
+                    u16::from_le_bytes([fields[0], fields[1]]),
+                    u16::from_le_bytes([fields[2], fields[3]]),
+                    u32::from_le_bytes(fields[4..8].try_into().map_err(|_| invalid())?),
+                    u16::from_le_bytes([fields[14], fields[15]]),
+                ));
+            }
+            b"data" => data_len = Some(size),
+            _ => {}
+        }
+        position = end.checked_add(size % 2).ok_or_else(invalid)?;
+    }
+    let Some((codec, channels, sample_rate, bits)) = format else {
+        return Err(invalid());
+    };
+    if codec != 1 || channels != 1 || bits != 16 || sample_rate != 16_000 {
+        return Err("Whisper needs mono 16-bit PCM WAV at 16 kHz. Please record again.".into());
+    }
+    let bytes = data_len
+        .filter(|size| *size > 0 && size % 2 == 0)
+        .ok_or_else(invalid)?;
+    Ok((bytes as u64 * 1000) / 32_000)
+}
+
+fn model_path(app_data: &Path) -> PathBuf {
+    std::env::var_os("ENG_TRAINER_WHISPER_MODEL")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| app_data.join("models/ggml-base.en.bin"))
+}
+
+pub fn transcribe(wav: Vec<u8>, app_data: PathBuf) -> Result<Transcript, String> {
+    let duration_ms = validate_wav(&wav)?;
+    let model = model_path(&app_data);
+    if !model.is_file() {
+        return Err(format!(
+            "Whisper model is missing at {}. Set ENG_TRAINER_WHISPER_MODEL to a local ggml model file.",
+            model.display()
+        ));
+    }
+    let model = fs::canonicalize(model)
+        .map_err(|_| "Cannot read the Whisper model. Check its permissions.".to_string())?;
+    let directory = TemporaryDirectory::new()
+        .map_err(|_| "Cannot create temporary audio workspace. Please retry.".to_string())?;
+    let input = directory.path().join("recording.wav");
+    let output_base = directory.path().join("transcript");
+    fs::write(&input, wav)
+        .map_err(|_| "Cannot write temporary audio for transcription. Please retry.".to_string())?;
+    let binaries = match std::env::var_os("ENG_TRAINER_WHISPER_BIN") {
+        Some(configured) => vec![PathBuf::from(configured)],
+        None => vec![
+            PathBuf::from("whisper-cli"),
+            PathBuf::from("/opt/homebrew/bin/whisper-cli"),
+            PathBuf::from("/usr/local/bin/whisper-cli"),
+        ],
+    };
+    let mut child = None;
+    for binary in binaries {
+        let result = Command::new(&binary)
+            .current_dir(directory.path())
+            .arg("-m")
+            .arg(&model)
+            .arg("-f")
+            .arg(&input)
+            .args(["-l", "en", "-oj", "-of"])
+            .arg(&output_base)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn();
+        match result {
+            Ok(process) => {
+                child = Some(process);
+                break;
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+            Err(_) => {
+                return Err(
+                    "Could not start local Whisper. Check ENG_TRAINER_WHISPER_BIN and permissions."
+                        .into(),
+                )
+            }
+        }
+    }
+    let mut child = child.ok_or_else(|| {
+        "whisper-cli was not found. Install whisper.cpp or set ENG_TRAINER_WHISPER_BIN to its executable."
+            .to_string()
+    })?;
+    let deadline = Instant::now() + TIMEOUT;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                if !status.success() {
+                    return Err(
+                        "Local Whisper failed to transcribe the recording. Please retry.".into(),
+                    );
+                }
+                break;
+            }
+            Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(50)),
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err("Local Whisper timed out. Try a shorter recording.".into());
+            }
+            Err(_) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err("Could not wait for local Whisper. Please retry.".into());
+            }
+        }
+    }
+    let json = fs::read_to_string(output_base.with_extension("json"))
+        .map_err(|_| "Whisper did not produce a transcript. Please retry.".to_string())?;
+    parse_output(&json, duration_ms)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn valid_wav() -> Vec<u8> {
+        let mut wav = Vec::new();
+        wav.extend_from_slice(b"RIFF");
+        wav.extend_from_slice(&36_u32.to_le_bytes());
+        wav.extend_from_slice(b"WAVEfmt ");
+        wav.extend_from_slice(&16_u32.to_le_bytes());
+        wav.extend_from_slice(&1_u16.to_le_bytes());
+        wav.extend_from_slice(&1_u16.to_le_bytes());
+        wav.extend_from_slice(&16_000_u32.to_le_bytes());
+        wav.extend_from_slice(&32_000_u32.to_le_bytes());
+        wav.extend_from_slice(&2_u16.to_le_bytes());
+        wav.extend_from_slice(&16_u16.to_le_bytes());
+        wav.extend_from_slice(b"data");
+        wav.extend_from_slice(&0_u32.to_le_bytes());
+        wav.extend_from_slice(&[0_u8; 32]);
+        wav[4..8].copy_from_slice(&68_u32.to_le_bytes());
+        wav[40..44].copy_from_slice(&32_u32.to_le_bytes());
+        wav
+    }
+
+    #[test]
+    fn validates_wav_and_duration() {
+        assert_eq!(validate_wav(&valid_wav()), Ok(1));
+        let mut wav = valid_wav();
+        wav[24..28].copy_from_slice(&48_000_u32.to_le_bytes());
+        assert!(validate_wav(&wav).is_err());
+        assert!(validate_wav(&[]).is_err());
+        assert!(validate_wav(b"not a wav").is_err());
+    }
+
+    #[test]
+    fn parses_segments_and_rejects_bad_output() {
+        let transcript = parse_output(
+            r#"{"transcription":[{"text":" Hello"},{"text":" world."}]}"#,
+            123,
+        )
+        .unwrap();
+        assert_eq!(transcript.text, "Hello world.");
+        assert_eq!(transcript.language, "en");
+        assert_eq!(transcript.duration_ms, 123);
+        assert!(parse_output("{}", 0).is_err());
+        assert!(parse_output(r#"{"transcription":[{"text":" "}]}"#, 0).is_err());
+        assert!(parse_output("{", 0).is_err());
+    }
+}

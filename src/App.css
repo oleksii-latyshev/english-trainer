@@ -145,6 +145,44 @@ h1 {
 .playback audio {
   width: 100%;
 }
+.transcribe-button {
+  justify-self: start;
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid #8eace4;
+  border-radius: 10px;
+  color: #e8edf7;
+  background: #273b60;
+  cursor: pointer;
+}
+.transcribe-button:hover:not(:disabled) {
+  background: #36527f;
+}
+.transcribe-button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.transcribe-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.transcript {
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid #35445e;
+  border-radius: 12px;
+  background: #121b2c;
+}
+.transcript h2 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+}
+.transcript p {
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
 .tip {
   margin: 28px 0 0;
   color: #90a3c1;

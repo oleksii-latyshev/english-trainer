@@ -58,6 +58,29 @@ function encodeWav(chunks: Float32Array[], sampleCount: number, sampleRateHz: nu
   return new Blob([data], { type: 'audio/wav' });
 }
 
+async function resampleForWhisper(
+  chunks: Float32Array[],
+  sampleCount: number,
+  sourceRateHz: number,
+): Promise<Float32Array> {
+  const targetRateHz = 16_000;
+  const outputLength = Math.ceil((sampleCount * targetRateHz) / sourceRateHz);
+  const offline = new OfflineAudioContext(1, outputLength, targetRateHz);
+  const sourceBuffer = offline.createBuffer(1, sampleCount, sourceRateHz);
+  const samples = sourceBuffer.getChannelData(0);
+  let offset = 0;
+  for (const chunk of chunks) {
+    samples.set(chunk, offset);
+    offset += chunk.length;
+  }
+  const source = offline.createBufferSource();
+  source.buffer = sourceBuffer;
+  source.connect(offline.destination);
+  source.start();
+  const rendered = await offline.startRendering();
+  return rendered.getChannelData(0);
+}
+
 export async function startPcmRecording(onDeviceLost: () => void): Promise<PcmRecorder> {
   if (!navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode) {
     throw new Error('Microphone recording is unavailable in this app environment.');
@@ -113,9 +136,10 @@ export async function startPcmRecording(onDeviceLost: () => void): Promise<PcmRe
         await cleanup();
         if (sampleCount === 0)
           throw new Error('No microphone audio was captured. Please try again.');
+        const resampled = await resampleForWhisper(chunks, sampleCount, sampleRateHz);
         return {
-          wav: encodeWav(chunks, sampleCount, sampleRateHz),
-          durationMs: Math.round((sampleCount / sampleRateHz) * 1000),
+          wav: encodeWav([resampled], resampled.length, 16_000),
+          durationMs: Math.round((resampled.length / 16_000) * 1000),
         };
       },
       cancel: cleanup,

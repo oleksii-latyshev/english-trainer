@@ -118,6 +118,23 @@ bun run dev
 only when you want to inspect the frontend in a browser; native Tauri commands are
 available in the desktop app.
 
+### Local transcription setup
+
+The current Whisper prototype uses a local `whisper-cli` executable and an English `base.en`
+model. On a new Mac, install the CLI and place the model in the app data directory:
+
+```bash
+brew install whisper.cpp
+mkdir -p "$HOME/Library/Application Support/com.user.english-trainer/models"
+curl -fL https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin \
+  -o "$HOME/Library/Application Support/com.user.english-trainer/models/ggml-base.en.bin"
+shasum -a 1 "$HOME/Library/Application Support/com.user.english-trainer/models/ggml-base.en.bin"
+```
+
+The expected SHA-1 is `137c40403d78fd54d454da0f9bd998f78703390c`. Set
+`ENG_TRAINER_WHISPER_BIN` or `ENG_TRAINER_WHISPER_MODEL` before `bun run dev` to use other
+local paths. Automatic model provisioning is planned for a later phase.
+
 ## Documentation
 
 - [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — product vision, learning methodology, practice modes, Ambient Mode, and Mini Eva.

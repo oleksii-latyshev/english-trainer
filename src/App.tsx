@@ -1,8 +1,10 @@
+import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { type PcmRecorder, startPcmRecording } from './audio/recordPcm';
 import './App.css';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
+type Transcript = { text: string; language: string; duration_ms: number };
 
 function formatDuration(durationMs: number): string {
   const seconds = Math.floor(durationMs / 1000);
@@ -24,13 +26,44 @@ function microphoneError(error: unknown): string {
   return error instanceof Error ? error.message : 'Recording failed. Please try again.';
 }
 
+function transcriptionErrorMessage(cause: unknown): string {
+  if (typeof cause === 'string') return cause;
+  if (cause instanceof Error) return cause.message;
+  return 'Transcription failed. Please try again.';
+}
+
+function recordingLabel(status: RecordingStatus, elapsedMs: number, durationMs: number): string {
+  switch (status) {
+    case 'requesting':
+      return 'Waiting for microphone permission…';
+    case 'recording':
+      return `Recording · ${formatDuration(elapsedMs)}`;
+    case 'stopping':
+      return 'Finishing recording…';
+    case 'ready':
+      return `Ready to listen · ${formatDuration(durationMs)}`;
+    default:
+      return 'Microphone ready when you are';
+  }
+}
+
+function transcribeButtonLabel(transcribing: boolean, transcript: string | undefined): string {
+  if (transcribing) return 'Transcribing locally…';
+  return transcript ? 'Transcribe again' : 'Transcribe';
+}
+
 function App() {
   const [status, setStatus] = useState<RecordingStatus>('idle');
   const [error, setError] = useState('');
   const [elapsedMs, setElapsedMs] = useState(0);
   const [durationMs, setDurationMs] = useState(0);
   const [playbackUrl, setPlaybackUrl] = useState<string>();
+  const [transcript, setTranscript] = useState<string>();
+  const [transcriptionError, setTranscriptionError] = useState('');
+  const [transcribing, setTranscribing] = useState(false);
   const recorderRef = useRef<PcmRecorder | null>(null);
+  const recordedWavRef = useRef<Blob | null>(null);
+  const transcribingRef = useRef(false);
   const playbackUrlRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const requestIdRef = useRef(0);
@@ -41,6 +74,7 @@ function App() {
       requestIdRef.current += 1;
       recorderRef.current?.cancel();
       recorderRef.current = null;
+      recordedWavRef.current = null;
       if (timerRef.current) clearInterval(timerRef.current);
       if (playbackUrlRef.current) URL.revokeObjectURL(playbackUrlRef.current);
     };
@@ -51,6 +85,11 @@ function App() {
     playbackUrlRef.current = null;
     setPlaybackUrl(undefined);
     setDurationMs(0);
+    recordedWavRef.current = null;
+    setTranscript(undefined);
+    setTranscriptionError('');
+    transcribingRef.current = false;
+    setTranscribing(false);
   }
 
   function deviceLost() {
@@ -105,6 +144,7 @@ function App() {
       const result = await recorder.stop();
       if (requestId !== requestIdRef.current) return;
       const url = URL.createObjectURL(result.wav);
+      recordedWavRef.current = result.wav;
       playbackUrlRef.current = url;
       setPlaybackUrl(url);
       setDurationMs(result.durationMs);
@@ -113,6 +153,33 @@ function App() {
       if (requestId === requestIdRef.current) {
         setError(microphoneError(cause));
         setStatus('error');
+      }
+    }
+  }
+
+  async function transcribeRecording() {
+    const wav = recordedWavRef.current;
+    if (!wav || transcribingRef.current) return;
+    if (!isTauri()) {
+      setTranscriptionError('Open the desktop app with bun run dev to use local transcription.');
+      return;
+    }
+    const requestId = requestIdRef.current;
+    transcribingRef.current = true;
+    setTranscribing(true);
+    setTranscriptionError('');
+    try {
+      const audioBytes = new Uint8Array(await wav.arrayBuffer());
+      const result = await invoke<Transcript>('transcribe_audio', audioBytes);
+      if (requestId === requestIdRef.current) setTranscript(result.text);
+    } catch (cause) {
+      if (requestId === requestIdRef.current) {
+        setTranscriptionError(transcriptionErrorMessage(cause));
+      }
+    } finally {
+      if (requestId === requestIdRef.current) {
+        transcribingRef.current = false;
+        setTranscribing(false);
       }
     }
   }
@@ -131,13 +198,7 @@ function App() {
 
         <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
           <span className="status-dot" aria-hidden="true" />
-          <span>
-            {status === 'requesting' && 'Waiting for microphone permission…'}
-            {status === 'recording' && `Recording · ${formatDuration(elapsedMs)}`}
-            {status === 'stopping' && 'Finishing recording…'}
-            {status === 'ready' && `Ready to listen · ${formatDuration(durationMs)}`}
-            {(status === 'idle' || status === 'error') && 'Microphone ready when you are'}
-          </span>
+          <span>{recordingLabel(status, elapsedMs, durationMs)}</span>
         </div>
 
         <div className="controls">
@@ -171,8 +232,27 @@ function App() {
         {playbackUrl && (
           <div className="playback">
             <label htmlFor="recording-playback">Your recording</label>
-            {/* biome-ignore lint/a11y/useMediaCaption: A transcript is unavailable until local STT is implemented. */}
+            {/* biome-ignore lint/a11y/useMediaCaption: The transcript is shown below; timed captions are not available yet. */}
             <audio controls id="recording-playback" src={playbackUrl} />
+            <button
+              className="transcribe-button"
+              disabled={transcribing}
+              onClick={transcribeRecording}
+              type="button"
+            >
+              {transcribeButtonLabel(transcribing, transcript)}
+            </button>
+            {transcriptionError && (
+              <p className="error-message" role="alert">
+                {transcriptionError}
+              </p>
+            )}
+            {transcript && (
+              <div className="transcript" aria-live="polite">
+                <h2>Transcript</h2>
+                <p>{transcript}</p>
+              </div>
+            )}
           </div>
         )}
         <p className="tip">Try answering: “What was the most interesting part of your day?”</p>
