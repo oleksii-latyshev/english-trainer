@@ -26,12 +26,54 @@ export type ConversationTurn = {
   is_complete: boolean;
 };
 
+export type PracticeSession = {
+  session_id: number;
+  opening_question: string;
+  turn_count: number;
+};
+
+export type FinishedPracticeSession = {
+  session_id: number;
+  finished: true;
+};
+
+export function isFinishedPracticeSession(value: unknown): value is FinishedPracticeSession {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'session_id' in value &&
+    typeof value.session_id === 'number' &&
+    Number.isSafeInteger(value.session_id) &&
+    value.session_id > 0 &&
+    'finished' in value &&
+    value.finished === true
+  );
+}
+
+export function isPracticeSession(value: unknown): value is PracticeSession {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'session_id' in value &&
+    typeof value.session_id === 'number' &&
+    Number.isSafeInteger(value.session_id) &&
+    value.session_id > 0 &&
+    'opening_question' in value &&
+    typeof value.opening_question === 'string' &&
+    value.opening_question.trim().length > 0 &&
+    'turn_count' in value &&
+    typeof value.turn_count === 'number' &&
+    Number.isSafeInteger(value.turn_count) &&
+    value.turn_count >= 0
+  );
+}
+
 export type ProviderErrorCode =
   | 'unavailable'
   | 'timeout'
   | 'invalid_output'
   | 'process_failed'
-  | 'invalid_request';
+  | 'invalid_request'
+  | 'invalid_session'
+  | 'busy';
 
 export type ProviderError = {
   code: ProviderErrorCode;
@@ -97,6 +139,8 @@ function isProviderErrorCode(value: unknown): value is ProviderErrorCode {
     case 'invalid_output':
     case 'process_failed':
     case 'invalid_request':
+    case 'invalid_session':
+    case 'busy':
       return true;
     default:
       return false;

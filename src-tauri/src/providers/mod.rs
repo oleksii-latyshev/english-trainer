@@ -2,10 +2,27 @@ mod agy;
 
 use serde::{Deserialize, Serialize};
 
-pub use agy::generate_follow_up;
+pub use agy::{generate_conversation_turn, generate_follow_up};
 
-pub trait ConversationEngine {
-    fn generate_turn(&self, transcript: &str) -> Result<ConversationTurn, ProviderError>;
+pub trait ConversationEngine: Send + Sync {
+    fn generate_turn(
+        &self,
+        context: &ConversationContext,
+    ) -> Result<ConversationTurn, ProviderError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ConversationContext {
+    pub opening_question: String,
+    pub recent_turns: Vec<ContextTurn>,
+    pub latest_transcript: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ContextTurn {
+    pub learner: String,
+    pub assistant_reply: String,
+    pub assistant_question: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,6 +41,8 @@ pub enum ProviderErrorCode {
     InvalidOutput,
     ProcessFailed,
     InvalidRequest,
+    Busy,
+    InvalidSession,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

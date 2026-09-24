@@ -1,4 +1,5 @@
 mod audio;
+mod conversation;
 mod providers;
 
 use tauri::Manager;
@@ -47,13 +48,55 @@ async fn generate_follow_up(
         })?
 }
 
+#[tauri::command]
+fn start_practice_session(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<conversation::PracticeSession, providers::ProviderError> {
+    sessions.start()
+}
+
+#[tauri::command]
+async fn send_practice_turn(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    transcript: String,
+) -> Result<providers::ConversationTurn, providers::ProviderError> {
+    let sessions = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sessions.send_turn(
+            session_id,
+            transcript,
+            providers::generate_conversation_turn,
+        )
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "The conversation task failed. Please retry.",
+        )
+    })?
+}
+
+#[tauri::command]
+fn finish_practice_session(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+) -> Result<conversation::FinishedPracticeSession, providers::ProviderError> {
+    sessions.finish(session_id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(conversation::SessionStore::default())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             transcribe_audio,
-            generate_follow_up
+            generate_follow_up,
+            start_practice_session,
+            send_practice_turn,
+            finish_practice_session
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

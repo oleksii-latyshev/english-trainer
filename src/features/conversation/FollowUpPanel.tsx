@@ -12,6 +12,9 @@ type Props = {
   transcript: string;
   speak: (text: string) => void;
   isCurrent: () => boolean;
+  sessionId?: number;
+  onTurn?: (turn: ConversationTurn) => void;
+  onPendingChange?: (isPending: boolean) => void;
 };
 
 type FollowUpState =
@@ -33,7 +36,7 @@ function followUpError(cause: unknown): Extract<FollowUpState, { tag: 'error' }>
   };
 }
 
-function actionLabel(state: FollowUpState): string {
+function actionLabel(state: FollowUpState, isSession: boolean): string {
   switch (state.tag) {
     case 'thinking':
       return 'Thinking…';
@@ -42,11 +45,23 @@ function actionLabel(state: FollowUpState): string {
     case 'error':
       return state.code === 'unavailable' ? 'Retry after setup' : 'Retry follow-up';
     default:
-      return 'Ask a follow-up';
+      return isSession ? 'Send answer to Eva' : 'Ask a follow-up';
   }
 }
 
-export function FollowUpPanel({ transcript, speak, isCurrent }: Props) {
+function requestTurn(sessionId: number | undefined, transcript: string): Promise<unknown> {
+  if (sessionId === undefined) return invoke<unknown>('generate_follow_up', { transcript });
+  return invoke<unknown>('send_practice_turn', { sessionId, transcript });
+}
+
+export function FollowUpPanel({
+  transcript,
+  speak,
+  isCurrent,
+  sessionId,
+  onTurn,
+  onPendingChange,
+}: Props) {
   const [state, setState] = useState<FollowUpState>({ tag: 'idle' });
   const generation = useRef(0);
   const pending = useRef(false);
@@ -61,17 +76,20 @@ export function FollowUpPanel({ transcript, speak, isCurrent }: Props) {
     if (pending.current) return;
     const requestId = ++generation.current;
     pending.current = true;
+    onPendingChange?.(true);
     setState({ tag: 'thinking' });
     try {
-      const result = await invoke<unknown>('generate_follow_up', { transcript });
+      const result = await requestTurn(sessionId, transcript);
       if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
       if (requestId !== generation.current || !isCurrent()) return;
       setState({ tag: 'ready', turn: result });
+      onTurn?.(result);
       speak(spokenTurn(result));
     } catch (cause) {
       if (requestId === generation.current && isCurrent()) setState(followUpError(cause));
     } finally {
       pending.current = false;
+      onPendingChange?.(false);
     }
   }
 
@@ -86,7 +104,9 @@ export function FollowUpPanel({ transcript, speak, isCurrent }: Props) {
       <Card.Content className="panel-content">
         {state.tag === 'idle' && (
           <p className="empty-transcript">
-            Ask Eva for one short reply and a question about what you said.
+            {sessionId === undefined
+              ? 'Ask Eva for one short reply and a question about what you said.'
+              : 'Send your answer to Eva to continue the conversation.'}
           </p>
         )}
         {state.tag === 'ready' && (
@@ -102,14 +122,20 @@ export function FollowUpPanel({ transcript, speak, isCurrent }: Props) {
             {state.message}
           </p>
         )}
-        <Button
-          className="secondary-action mt-5 self-start"
-          isDisabled={state.tag === 'thinking'}
-          onPress={askFollowUp}
-          variant="secondary"
-        >
-          {actionLabel(state)}
-        </Button>
+        {sessionId !== undefined && state.tag === 'ready' ? (
+          <p className="mt-4 mb-0 text-sm text-slate-300">
+            Record an answer to Eva’s new question to continue.
+          </p>
+        ) : (
+          <Button
+            className="secondary-action mt-5 self-start"
+            isDisabled={state.tag === 'thinking'}
+            onPress={askFollowUp}
+            variant="secondary"
+          >
+            {actionLabel(state, sessionId !== undefined)}
+          </Button>
+        )}
         <p className="mt-3 mb-0 text-xs leading-5 text-slate-400">
           Audio stays local. This transcript is sent to the configured AI provider only when you
           ask.
