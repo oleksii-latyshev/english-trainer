@@ -8,7 +8,10 @@ type SpeechPanelProps = {
 
 export function SpeechPanel({ speech, transcript }: SpeechPanelProps) {
   const speechAvailable = speech.state.tag !== 'unavailable';
-  const speechActive = speech.state.tag === 'speaking' || speech.state.tag === 'paused';
+  const speechActive =
+    speech.state.tag === 'starting' ||
+    speech.state.tag === 'speaking' ||
+    speech.state.tag === 'paused';
   const englishVoices = speech.voices.filter((option) => option.isEnglish);
   const visibleVoices = englishVoices.length > 0 ? englishVoices : speech.voices;
 

@@ -4,6 +4,7 @@ import { clampSpeechRate, getPreferredVoice, getVoiceOptions } from './voices';
 export type SpeechState =
   | { tag: 'unavailable'; reason: 'unsupported' }
   | { tag: 'idle' }
+  | { tag: 'starting' }
   | { tag: 'speaking' }
   | { tag: 'paused' }
   | { tag: 'error'; reason: 'empty-text' | 'voices-unavailable' | 'playback-failed' };
@@ -46,7 +47,7 @@ export function useSystemSpeech() {
     };
   }, []);
 
-  const play = (text: string) => {
+  const play = (text: string, onStart?: (latencyMs: number) => void) => {
     const cleanText = text.trim();
     if (!cleanText) {
       setState({ tag: 'error', reason: 'empty-text' });
@@ -74,9 +75,12 @@ export function useSystemSpeech() {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.voice = voice;
     utterance.rate = clampSpeechRate(rate);
+    const startedAt = performance.now();
     utterance.onstart = () => {
-      if (isMounted.current && generation.current === currentGeneration)
+      if (isMounted.current && generation.current === currentGeneration) {
         setState({ tag: 'speaking' });
+        onStart?.(performance.now() - startedAt);
+      }
     };
     utterance.onend = () => {
       if (isMounted.current && generation.current === currentGeneration) setState({ tag: 'idle' });
@@ -86,7 +90,7 @@ export function useSystemSpeech() {
         setState({ tag: 'error', reason: 'playback-failed' });
       }
     };
-    setState({ tag: 'speaking' });
+    setState({ tag: 'starting' });
     try {
       synthesis.speak(utterance);
     } catch {

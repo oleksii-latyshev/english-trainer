@@ -3,6 +3,7 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
+import { type SpeechTiming, TimingPanel } from '@/features/speech/TimingPanel';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import './App.css';
 
@@ -21,12 +22,13 @@ function isTranscript(value: unknown): value is Transcript {
   );
 }
 
-async function transcribeWav(wav: Blob): Promise<string> {
+async function transcribeWav(wav: Blob): Promise<{ text: string; sttMs: number }> {
   const audioBytes = new Uint8Array(await wav.arrayBuffer());
+  const startedAt = performance.now();
   const result = await invoke<unknown>('transcribe_audio', audioBytes);
   if (!isTranscript(result))
     throw new Error('The transcription response had an unexpected format.');
-  return result.text;
+  return { text: result.text, sttMs: performance.now() - startedAt };
 }
 
 function formatDuration(durationMs: number): string {
@@ -85,6 +87,7 @@ function App() {
   const [transcript, setTranscript] = useState<string>();
   const [transcriptionError, setTranscriptionError] = useState('');
   const [transcribing, setTranscribing] = useState(false);
+  const [timing, setTiming] = useState<SpeechTiming>({});
   const recorderRef = useRef<PcmRecorder | null>(null);
   const recordedWavRef = useRef<Blob | null>(null);
   const transcribingRef = useRef(false);
@@ -137,6 +140,7 @@ function App() {
     const requestId = ++requestIdRef.current;
     speech.stop();
     clearPlayback();
+    setTiming({});
     setElapsedMs(0);
     setError('');
     setStatus('requesting');
@@ -170,8 +174,13 @@ function App() {
     timerRef.current = null;
     setStatus('stopping');
     try {
+      const startedAt = performance.now();
       const result = await recorder.stop();
       if (requestId !== requestIdRef.current) return;
+      setTiming((current) => ({
+        ...current,
+        captureFinalizationMs: performance.now() - startedAt,
+      }));
       const url = URL.createObjectURL(result.wav);
       recordedWavRef.current = result.wav;
       playbackUrlRef.current = url;
@@ -204,15 +213,19 @@ function App() {
     setTranscribing(true);
     setTranscriptionError('');
     try {
-      const text = await transcribeWav(wav);
+      const { text, sttMs } = await transcribeWav(wav);
       if (requestId !== requestIdRef.current) return;
+      setTiming((current) => ({ ...current, sttMs }));
       if (!text.trim()) {
         setTranscriptionError('No speech was detected. Try speaking closer to the microphone.');
         return;
       }
       setTranscript(text);
       discardRecording();
-      speech.play(text);
+      speech.play(text, (ttsStartMs) => {
+        if (requestId === requestIdRef.current)
+          setTiming((current) => ({ ...current, ttsStartMs }));
+      });
     } catch (cause) {
       if (requestId === requestIdRef.current) {
         setTranscriptionError(transcriptionErrorMessage(cause));
@@ -335,6 +348,7 @@ function App() {
                 )}
               </Card.Content>
             </Card>
+            <TimingPanel timing={timing} />
           </section>
 
           <SpeechPanel speech={speech} transcript={transcript} />

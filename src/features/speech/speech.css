@@ -79,9 +79,46 @@
   color: #c0d8d8;
   font-weight: 650;
 }
+.timing-panel {
+  margin-top: 18px;
+}
+.timing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.timing-grid > div {
+  padding: 13px;
+  border: 1px solid #314252;
+  border-radius: 10px;
+  background: #132233;
+}
+.timing-grid dt {
+  color: #91a7bd;
+  font-size: 0.75rem;
+}
+.timing-grid dd {
+  margin: 6px 0 0;
+  color: #e5f2f6;
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.timing-note {
+  margin: 12px 0 0;
+  color: #849ab0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
 
 @media (max-width: 1023px) {
   .voice-column {
     padding-top: 0;
+  }
+}
+@media (max-width: 620px) {
+  .timing-grid {
+    grid-template-columns: 1fr;
   }
 }
