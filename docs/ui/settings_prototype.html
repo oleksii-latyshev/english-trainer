@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Trainer - Settings & Hardware Prototype</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: #181b24;
+      --card-border: #282d3d;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-light: rgba(99, 102, 241, 0.15);
+      --success: #10b981;
+      --success-light: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-light: rgba(245, 158, 11, 0.15);
+      --danger: #ef4444;
+      --danger-light: rgba(239, 68, 68, 0.15);
+      --sidebar-bg: #13161f;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #2d3348;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col p-4 md:p-6 antialiased">
+
+  <!-- Desktop App Container (macOS Window Frame) -->
+  <div class="max-w-6xl w-full mx-auto flex flex-col flex-1 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl shadow-2xl overflow-hidden min-h-[840px]">
+    
+    <!-- macOS Window Titlebar -->
+    <header class="h-11 bg-[var(--sidebar-bg)] border-b border-[var(--card-border)] flex items-center justify-between px-4 select-none">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f56] inline-block shadow-sm"></span>
+        <span class="w-3 h-3 rounded-full bg-[#ffbd2e] inline-block shadow-sm"></span>
+        <span class="w-3 h-3 rounded-full bg-[#27c93f] inline-block shadow-sm"></span>
+        <div class="ml-4 flex items-center gap-2 text-xs">
+          <span class="text-slate-400">English Trainer</span>
+          <span class="text-slate-600">›</span>
+          <span class="text-indigo-400 font-semibold">Settings & Hardware Configuration</span>
+        </div>
+      </div>
+
+      <!-- Top Right: Status & Notes -->
+      <div class="flex items-center gap-3">
+        <!-- SQLite Sync Pill -->
+        <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 px-2.5 py-1 rounded-lg text-xs font-mono text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>SQLite Synced</span>
+        </div>
+
+        <!-- Layout Notes Toggle -->
+        <button id="toggleNotesBtn" onclick="toggleNotes()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span id="notesLabel">Show Layout Notes</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- App Body (Sidebar + Content Viewport) -->
+    <div class="flex flex-1 overflow-hidden">
+      
+      <!-- 1. Left Sidebar Navigation -->
+      <aside class="w-60 bg-[var(--sidebar-bg)] border-r border-[var(--card-border)] flex flex-col justify-between p-3 select-none flex-shrink-0">
+        <div class="flex flex-col gap-5">
+          <div class="px-2 pt-1">
+            <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Training Modes</div>
+          </div>
+
+          <nav class="flex flex-col gap-1">
+            <button onclick="window.location.href='dashboard_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">🎙️</span>
+              <span>Daily Practice</span>
+            </button>
+
+            <button onclick="window.location.href='conversation_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">💬</span>
+              <span>Conversation</span>
+            </button>
+
+            <button onclick="window.location.href='coach_rehearsal_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">🎯</span>
+              <span>Coach & Re-Speak</span>
+            </button>
+
+            <button onclick="window.location.href='interview_hot_seat_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">💼</span>
+              <span>The Hot Seat</span>
+            </button>
+
+            <button onclick="window.location.href='drills_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">⚡</span>
+              <span>Skill Drills</span>
+            </button>
+          </nav>
+
+          <div class="flex flex-col gap-1">
+            <div class="px-2 text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Preferences & System</div>
+
+            <button onclick="showNotification('Opening Learning Memory Vault')" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <div class="flex items-center gap-3">
+                <span class="text-base">🧠</span>
+                <span>Learning Memory</span>
+              </div>
+              <span class="text-[11px] font-semibold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">4 due</span>
+            </button>
+
+            <button onclick="showNotification('Opening Progress Radar')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">📊</span>
+              <span>Progress Radar</span>
+            </button>
+
+            <!-- Active: Settings -->
+            <button class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-left transition-all">
+              <span class="text-base">⚙️</span>
+              <span>Settings</span>
+              <span class="ml-auto w-2 h-2 rounded-full bg-indigo-400"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar Hardware Status -->
+        <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 flex flex-col gap-1.5 text-xs text-slate-400">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-200 font-semibold">Tauri Native Core</span>
+            <span class="text-emerald-400">v2.1</span>
+          </div>
+          <span class="text-[11px] text-slate-500">macOS Sonoma · Apple Silicon</span>
+        </div>
+      </aside>
+
+      <!-- 2. Main Content Canvas -->
+      <main class="flex-1 flex flex-col overflow-y-auto custom-scroll p-6 md:p-8 gap-5">
+
+        <!-- Optional UI Annotation Banner -->
+        <div id="notesSection" class="p-4 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs text-amber-200 flex items-start justify-between gap-4 transition-all">
+          <div class="flex items-start gap-2.5">
+            <span class="text-base">💡</span>
+            <div>
+              <strong class="font-semibold block text-amber-300 mb-0.5">UI Architecture & Decisions for Screen 08 (Settings & Hardware)</strong>
+              <p class="text-amber-200/90 leading-relaxed">
+                • <strong>Hardware Transparency:</strong> Direct input device testing with live decibel/waveform meter.<br>
+                • <strong>Local Whisper Model Management:</strong> Explicit status of on-device Whisper models with Metal acceleration.<br>
+                • <strong>Replaceable LLM Adapter:</strong> Clear isolation and health check for the Antigravity CLI (<kbd class="font-mono bg-slate-900 px-1 py-0.5 rounded">agy</kbd>).<br>
+                • <strong>Privacy by Default:</strong> Raw audio is discarded immediately after transcription unless explicitly enabled.
+              </p>
+            </div>
+          </div>
+          <button onclick="toggleNotes()" class="text-amber-400 hover:text-amber-200 text-sm font-bold">✕</button>
+        </div>
+
+        <!-- 5 Settings Navigation Tabs -->
+        <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+          <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs flex-wrap">
+            <button onclick="switchTab('audio')" id="tabAudio" class="px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white shadow-sm transition-colors">
+              🎙️ 1. Audio & Voice
+            </button>
+            <button onclick="switchTab('whisper')" id="tabWhisper" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              ⚡ 2. Local Whisper STT
+            </button>
+            <button onclick="switchTab('provider')" id="tabProvider" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              🤖 3. AI Provider (agy)
+            </button>
+            <button onclick="switchTab('ambient')" id="tabAmbient" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              🧚 4. Ambient Companion
+            </button>
+            <button onclick="switchTab('privacy')" id="tabPrivacy" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              🔒 5. Privacy & Storage
+            </button>
+          </div>
+
+          <button onclick="saveAllSettings()" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
+            Save Changes
+          </button>
+        </div>
+
+        <!-- TAB 1: AUDIO & VOICE SETTINGS -->
+        <section id="paneAudio" class="flex flex-col gap-5">
+          
+          <!-- Section A: Microphone Input Device -->
+          <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Audio Input (Microphone)</h3>
+                <p class="text-xs text-slate-400">Capture 16-bit mono PCM normalized to 16 kHz for Whisper</p>
+              </div>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-semibold">Web Audio Active</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- Device Selector Dropdown -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Input Device:</label>
+                <select id="micSelect" onchange="changeMic()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+                  <option value="builtin">MacBook Pro Microphone (Built-in)</option>
+                  <option value="airpods">AirPods Max (Bluetooth)</option>
+                  <option value="usb">USB Studio Condenser Microphone</option>
+                </select>
+              </div>
+
+              <!-- Push-To-Talk Key Selector -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Push-To-Talk Key:</label>
+                <select class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+                  <option value="space">Spacebar (Default)</option>
+                  <option value="fn">fn (Globe) Key</option>
+                  <option value="option">Right Option Key</option>
+                  <option value="cmd">Right Command Key</option>
+                </select>
+              </div>
+
+            </div>
+
+            <!-- Live Microphone Meter Test -->
+            <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300">Microphone Input Level Check:</span>
+                <span id="micDbText" class="font-mono text-emerald-400 font-bold">-14 dB (Healthy voice level)</span>
+              </div>
+
+              <!-- Meter Bar -->
+              <div class="w-full bg-slate-900 rounded-full h-3 p-0.5 overflow-hidden flex items-center">
+                <div id="micMeterBar" class="bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 h-2 rounded-full transition-all duration-100" style="width: 58%"></div>
+              </div>
+
+              <div class="flex justify-between items-center pt-1 text-[11px] text-slate-500">
+                <span>Silent (-60dB)</span>
+                <div class="flex items-center gap-2">
+                  <button onclick="testMicStream()" id="testMicBtn" class="px-2.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium border border-slate-700">
+                    🎙️ Test Live Mic Stream
+                  </button>
+                  <button onclick="toggleMicLoopback()" id="loopbackBtn" class="px-2.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium border border-slate-700 flex items-center gap-1">
+                    <span>🎧 Hear Myself</span>
+                    <span id="loopbackStatus" class="text-[10px] text-slate-500 font-mono">(Off)</span>
+                  </button>
+                </div>
+                <span>Clipping (0dB)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Section B: Text-to-Speech (TTS) Configuration -->
+          <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">System Speech Synthesis (TTS)</h3>
+                <p class="text-xs text-slate-400">Uses native macOS English voices discovered at runtime</p>
+              </div>
+              <span class="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-semibold">AVSpeechSynthesizer</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- Voice Selector -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Active Interlocutor Voice:</label>
+                <div class="flex gap-2">
+                  <select id="voiceSelect" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+                    <option value="samantha">Samantha (English - US, Natural)</option>
+                    <option value="daniel" selected>Daniel (English - UK, Clear Accent)</option>
+                    <option value="karen">Karen (English - Australia)</option>
+                    <option value="oliver">Oliver (English - UK)</option>
+                  </select>
+                  <button onclick="testVoicePlayback()" class="px-3 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition-colors">
+                    ▶ Play
+                  </button>
+                </div>
+              </div>
+
+              <!-- Speed Rate Slider -->
+              <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-semibold text-slate-300">Speech Rate:</span>
+                  <span id="rateLabel" class="font-mono text-indigo-400 font-bold">1.00x (Normal)</span>
+                </div>
+                <input type="range" min="0.85" max="1.20" step="0.05" value="1.00" oninput="updateRate(this.value)" class="w-full accent-indigo-500 mt-2">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                  <span>0.85x (Deliberate)</span>
+                  <span>1.00x</span>
+                  <span>1.20x (Fast Native)</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Auto-play Toggle -->
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/50 border border-slate-800 text-xs">
+              <span class="text-slate-300 font-medium">Automatically speak AI turns in Conversation and Coach modes</span>
+              <input type="checkbox" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+
+            <!-- macOS Voice Library Tip -->
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-2.5 text-xs text-slate-400">
+              <span class="text-indigo-400 text-sm">💡</span>
+              <div class="leading-relaxed">
+                <span class="text-slate-200 font-semibold">Want more or higher quality voices?</span>
+                macOS comes with dozens of premium neural Siri voices (US, UK, Irish, Scottish, Australian, Indian, South African). 
+                Go to <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] border border-slate-700">System Settings → Accessibility → Spoken Content → System Voice → Manage Voices</kbd> to download any voice for free. The app discovers new voices automatically on startup!
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- TAB 2: LOCAL WHISPER STT (Hidden by Default) -->
+        <section id="paneWhisper" class="flex flex-col gap-5 hidden">
+          
+          <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Local Speech-to-Text (Whisper.cpp)</h3>
+                <p class="text-xs text-slate-400">100% on-device transcription with Apple Silicon Metal acceleration</p>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold flex items-center gap-1">
+                <span>⚡ Metal GPU Active</span>
+              </span>
+            </div>
+
+            <!-- Whisper Models Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              
+              <!-- Model 1: Base.en (Active) -->
+              <div class="p-4 rounded-xl bg-indigo-950/30 border-2 border-indigo-500/50 flex flex-col justify-between gap-3">
+                <div>
+                  <div class="flex justify-between items-center text-xs mb-1">
+                    <span class="font-bold text-white">ggml-base.en</span>
+                    <span class="px-2 py-0.2 rounded bg-indigo-500/30 text-indigo-200 text-[10px] font-semibold">ACTIVE</span>
+                  </div>
+                  <span class="text-[11px] text-slate-400 block mb-2">142 MB · English Only</span>
+                  <p class="text-xs text-slate-300 leading-snug">
+                    Ideal balance of ultra-low latency (~14ms per turn) and reliable accuracy for B1/B2 English.
+                  </p>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-mono">✓ Installed in Application Support</span>
+              </div>
+
+              <!-- Model 2: Small.en (Downloadable) -->
+              <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between gap-3">
+                <div>
+                  <div class="flex justify-between items-center text-xs mb-1">
+                    <span class="font-bold text-slate-200">ggml-small.en</span>
+                    <span class="text-slate-500 text-[10px]">Optional</span>
+                  </div>
+                  <span class="text-[11px] text-slate-400 block mb-2">466 MB · Higher Accuracy</span>
+                  <p class="text-xs text-slate-400 leading-snug">
+                    Slightly higher word accuracy on complex Slavic accents and fast technical jargon (~45ms latency).
+                  </p>
+                </div>
+                <button onclick="downloadModel('small.en')" id="downloadBtn" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors">
+                  Download Model (466 MB)
+                </button>
+              </div>
+
+              <!-- Model 3: Medium.en -->
+              <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 flex flex-col justify-between gap-3 opacity-60">
+                <div>
+                  <div class="flex justify-between items-center text-xs mb-1">
+                    <span class="font-bold text-slate-300">ggml-medium.en</span>
+                    <span class="text-slate-500 text-[10px]">Benchmark Only</span>
+                  </div>
+                  <span class="text-[11px] text-slate-400 block mb-2">1.5 GB · Studio Grade</span>
+                  <p class="text-xs text-slate-400 leading-snug">
+                    Reserved for deep offline benchmark evaluations where conversation latency is not critical.
+                  </p>
+                </div>
+                <button disabled class="w-full py-1.5 rounded-lg bg-slate-800/50 text-slate-600 text-xs font-semibold cursor-not-allowed">
+                  Available in Later Phase
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Model Benchmark Runner -->
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold text-slate-200 block">Whisper Inference Diagnostics</span>
+                <span class="text-[11px] text-slate-400">Run a simulated 5-second PCM audio transcription to verify real-time factor (RTF).</span>
+              </div>
+              <button onclick="runBenchmark()" id="benchmarkBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors">
+                Run 5s Benchmark
+              </button>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- TAB 3: LLM PROVIDER (AGY) -->
+        <section id="paneProvider" class="flex flex-col gap-5 hidden">
+          
+          <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">AI Provider (Antigravity CLI Adapter)</h3>
+                <p class="text-xs text-slate-400">Executes in isolated scratch directories with strict JSON schemas</p>
+              </div>
+              <span id="providerStatusChip" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold flex items-center gap-1">
+                <span>🟢 Operational (410ms)</span>
+              </span>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Antigravity CLI Binary Path:</label>
+                <div class="flex gap-2">
+                  <input type="text" id="binPath" value="/opt/homebrew/bin/agy" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500">
+                  <button onclick="testCliHealth()" id="testCliBtn" class="px-3.5 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition-colors">
+                    Check Health
+                  </button>
+                </div>
+                <span class="text-[10px] text-slate-500">Can also be overridden by environment variable <code class="font-mono text-slate-400">ENG_TRAINER_AGY_BIN</code></span>
+              </div>
+
+              <!-- Model Tiers Mapping -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs flex flex-col gap-1">
+                  <span class="font-bold text-slate-300">Conversation Model Tier (Fast Path)</span>
+                  <span class="text-[11px] text-indigo-400 font-mono">gemini-2.5-flash (Low Latency)</span>
+                  <span class="text-[10px] text-slate-500">Produces short spoken turns under 500ms</span>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs flex flex-col gap-1">
+                  <span class="font-bold text-slate-300">Evaluation Model Tier (Deep Path)</span>
+                  <span class="text-[11px] text-purple-400 font-mono">gemini-2.5-pro (Deep Reasoning)</span>
+                  <span class="text-[10px] text-slate-500">Analyzes grammar, collocations, and STAR completeness</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- TAB 4: AMBIENT COMPANION & NOTIFICATIONS -->
+        <section id="paneAmbient" class="flex flex-col gap-5 hidden">
+          
+          <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Ambient Practice & Companion Mode</h3>
+                <p class="text-xs text-slate-400">Lightweight 30–60s micro-quests from menu bar and native local notifications</p>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold">
+                Opt-in Only
+              </span>
+            </div>
+
+            <!-- Toggles List -->
+            <div class="flex flex-col gap-3">
+              
+              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                <div>
+                  <span class="font-semibold text-slate-200 block">Launch in Menu Bar on Login</span>
+                  <span class="text-[11px] text-slate-400">Start minimized in the macOS tray without popping up the full window</span>
+                </div>
+                <input type="checkbox" checked class="w-4 h-4 accent-indigo-600 rounded">
+              </div>
+
+              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                <div>
+                  <span class="font-semibold text-slate-200 block">Proactive Local Micro-Quest Notifications</span>
+                  <span class="text-[11px] text-slate-400">Mini Eva invites you to 45s speaking exercises throughout the workday</span>
+                </div>
+                <input type="checkbox" checked class="w-4 h-4 accent-indigo-600 rounded">
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1.5 text-xs">
+                  <span class="font-semibold text-slate-300">Daily Notification Maximum:</span>
+                  <select class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                    <option>1 prompt per day (Gentle)</option>
+                    <option selected>2 prompts per day (Recommended)</option>
+                    <option>3 prompts per day (Intensive)</option>
+                  </select>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1.5 text-xs">
+                  <span class="font-semibold text-slate-300">Quiet Hours (Do Not Disturb):</span>
+                  <div class="flex items-center gap-2 text-xs text-slate-300">
+                    <input type="time" value="21:00" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                    <span>to</span>
+                    <input type="time" value="09:00" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- TAB 5: PRIVACY & STORAGE -->
+        <section id="panePrivacy" class="flex flex-col gap-5 hidden">
+          
+          <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Privacy & Local Storage Guarantees</h3>
+                <p class="text-xs text-slate-400">All metrics and memory remain exclusively on your Mac</p>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold">
+                Local-First
+              </span>
+            </div>
+
+            <!-- Audio Retention Toggle (Key Product Requirement!) -->
+            <div class="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 flex items-start justify-between gap-4">
+              <div>
+                <span class="text-xs font-bold text-emerald-300 block mb-1">
+                  🛡️ Default Privacy: Ephemeral Audio Capture
+                </span>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Raw microphone audio is transcribed locally in memory and <strong>discarded immediately</strong>. Audio recordings are never uploaded to the cloud or saved to disk unless explicitly enabled below.
+                </p>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">DEFAULT SAFE</span>
+            </div>
+
+            <!-- Optional Retention Setting -->
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+              <div>
+                <span class="font-semibold text-slate-200 block">Retain raw audio files for pronunciation playback</span>
+                <span class="text-[11px] text-slate-400">Stores uncompressed WAV files in Application Support directory</span>
+              </div>
+              <input type="checkbox" id="retainAudioToggle" onchange="toggleAudioRetention(this.checked)" class="w-4 h-4 accent-red-600 rounded">
+            </div>
+
+            <!-- Data Export & Reset -->
+            <div class="flex items-center justify-between pt-3 border-t border-[var(--card-border)]">
+              <button onclick="exportData()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors">
+                Export Learning History (JSON)
+              </button>
+
+              <button onclick="confirmReset()" class="px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-300 text-xs font-semibold border border-red-500/40 transition-colors">
+                ⚠️ Wipe Local Database & Reset
+              </button>
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+    </div>
+
+    <!-- 3. Global macOS Bottom Audio Bar -->
+    <footer class="h-12 bg-[var(--sidebar-bg)] border-t border-[var(--card-border)] px-4 flex items-center justify-between text-xs select-none">
+      <div class="flex items-center gap-4 text-slate-400">
+        <span class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>MacBook Pro Mic (16kHz PCM)</span>
+        </span>
+        <span class="text-slate-600">|</span>
+        <span>Local Whisper Metal ⚡ (12ms)</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-slate-500">Changes auto-save to local SQLite</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Interactive Live Toast Message -->
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs shadow-xl opacity-0 translate-y-3 transition-all pointer-events-none z-50 flex items-center gap-2">
+    <span class="text-base">ℹ️</span>
+    <span id="toastMsg">Action triggered</span>
+  </div>
+
+  <!-- Interactive Simulation Script -->
+  <script>
+    let isNotesVisible = true;
+    let micTestInterval = null;
+
+    function showNotification(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+      }, 3400);
+    }
+
+    function toggleNotes() {
+      isNotesVisible = !isNotesVisible;
+      const section = document.getElementById('notesSection');
+      const label = document.getElementById('notesLabel');
+      if (isNotesVisible) {
+        section.classList.remove('hidden');
+        label.textContent = "Hide Layout Notes";
+      } else {
+        section.classList.add('hidden');
+        label.textContent = "Show Layout Notes";
+      }
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['audio', 'whisper', 'provider', 'ambient', 'privacy'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const pane = document.getElementById(`pane${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (t === tabId) {
+          btn.className = "px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white shadow-sm transition-colors";
+          pane.classList.remove('hidden');
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors";
+          pane.classList.add('hidden');
+        }
+      });
+      showNotification(`Switched to Settings: ${tabId.toUpperCase()}`);
+    }
+
+    function testMicStream() {
+      const bar = document.getElementById('micMeterBar');
+      const text = document.getElementById('micDbText');
+      const btn = document.getElementById('testMicBtn');
+
+      if (micTestInterval) {
+        clearInterval(micTestInterval);
+        micTestInterval = null;
+        bar.style.width = "40%";
+        text.textContent = "-18 dB (Idle)";
+        btn.textContent = "🎙️ Test Live Mic Stream";
+        showNotification("Microphone test stopped.");
+        return;
+      }
+
+      btn.textContent = "⏹️ Stop Test";
+      showNotification("Testing microphone input... Speak out loud!");
+      micTestInterval = setInterval(() => {
+        const rand = Math.floor(Math.random() * 50) + 35;
+        bar.style.width = `${rand}%`;
+        const db = Math.round(-30 + (rand * 0.4));
+        text.textContent = `${db} dB (Active Speech)`;
+      }, 120);
+    }
+
+    let isLoopbackActive = false;
+    function toggleMicLoopback() {
+      isLoopbackActive = !isLoopbackActive;
+      const btn = document.getElementById('loopbackBtn');
+      const status = document.getElementById('loopbackStatus');
+      if (isLoopbackActive) {
+        btn.className = "px-2.5 py-0.5 rounded bg-indigo-600 text-white font-medium border border-indigo-500 flex items-center gap-1";
+        status.textContent = "(Active)";
+        status.className = "text-[10px] text-indigo-200 font-mono font-bold";
+        showNotification("🎧 Mic Loopback ON: You can now hear your own voice in your headphones (low-latency WebAudio route).");
+      } else {
+        btn.className = "px-2.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium border border-slate-700 flex items-center gap-1";
+        status.textContent = "(Off)";
+        status.className = "text-[10px] text-slate-500 font-mono";
+        showNotification("🎧 Mic Loopback OFF: Voice monitoring stopped.");
+      }
+    }
+
+    function testVoicePlayback() {
+      const voice = document.getElementById('voiceSelect').value;
+      showNotification(`macOS Speech Synthesis playing sample in voice: "${voice}" (1.00x).`);
+    }
+
+    function updateRate(val) {
+      document.getElementById('rateLabel').textContent = `${val}x`;
+      showNotification(`TTS playback speed set to ${val}x`);
+    }
+
+    function testCliHealth() {
+      const btn = document.getElementById('testCliBtn');
+      btn.textContent = "Probing...";
+      showNotification("Executing 'agy --version' and testing schema validation in isolated scratch dir...");
+      setTimeout(() => {
+        btn.textContent = "Check Health";
+        document.getElementById('providerStatusChip').innerHTML = "<span>🟢 Operational (390ms)</span>";
+        showNotification("Antigravity CLI verified! Latency: 390ms. Provider healthy.");
+      }, 800);
+    }
+
+    function downloadModel(modelName) {
+      const btn = document.getElementById('downloadBtn');
+      btn.textContent = "Downloading 466 MB...";
+      btn.className = "w-full py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold animate-pulse";
+      setTimeout(() => {
+        btn.textContent = "✓ Installed & Verified";
+        btn.className = "w-full py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold";
+        showNotification(`Model ${modelName} downloaded with verified SHA-256 checksum!`);
+      }, 1400);
+    }
+
+    function runBenchmark() {
+      const btn = document.getElementById('benchmarkBtn');
+      btn.textContent = "Benchmarking Metal...";
+      showNotification("Running 5s mono PCM sample through local Whisper Base.en...");
+      setTimeout(() => {
+        btn.textContent = "Benchmark: 12ms (RTF: 0.002)";
+        showNotification("Metal Benchmark Complete: 12ms inference for 5s audio. Apple Silicon Metal is blisteringly fast!");
+      }, 700);
+    }
+
+    function toggleAudioRetention(checked) {
+      if (checked) {
+        showNotification("⚠️ Audio retention ENABLED. Uncompressed PCM/WAV recordings will be preserved in Application Support.");
+      } else {
+        showNotification("🛡️ Audio retention DISABLED. Ephemeral mode active: raw audio discarded immediately after STT.");
+      }
+    }
+
+    function exportData() {
+      showNotification("Exporting SQLite learning history: mistakes, phrase cards, benchmark dimensions -> english_trainer_export.json");
+    }
+
+    function confirmReset() {
+      if (confirm("Are you sure you want to delete all local SQLite sessions, mistake cards, and metrics? This cannot be undone.")) {
+        showNotification("Database reset to factory defaults.");
+      }
+    }
+
+    function saveAllSettings() {
+      showNotification("All settings saved to local SQLite repository.");
+    }
+
+    function changeMic() {
+      showNotification("Input device switched. AudioContext re-initialized with 16kHz mono normalization.");
+    }
+  </script>
+</body>
+</html>

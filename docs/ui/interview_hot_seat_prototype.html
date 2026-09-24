@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Trainer - The Hot Seat Interview Prototype</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: #181b24;
+      --card-border: #282d3d;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-light: rgba(99, 102, 241, 0.15);
+      --success: #10b981;
+      --success-light: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-light: rgba(245, 158, 11, 0.15);
+      --sidebar-bg: #13161f;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #2d3348;
+      border-radius: 4px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.96); opacity: 0.8; }
+      50% { transform: scale(1.06); opacity: 0.3; }
+      100% { transform: scale(0.96); opacity: 0.8; }
+    }
+    .recording-pulse {
+      animation: pulse-ring 1.8s infinite ease-in-out;
+    }
+    .bubble-enter {
+      animation: bubbleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes bubbleIn {
+      0% { transform: translateY(8px) scale(0.97); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col p-4 md:p-6 antialiased">
+
+  <!-- Desktop App Container (macOS Window Frame) -->
+  <div class="max-w-6xl w-full mx-auto flex flex-col flex-1 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl shadow-2xl overflow-hidden min-h-[840px]">
+    
+    <!-- macOS Window Titlebar -->
+    <header class="h-11 bg-[var(--sidebar-bg)] border-b border-[var(--card-border)] flex items-center justify-between px-4 select-none">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f56] inline-block shadow-sm"></span>
+        <span class="w-3 h-3 rounded-full bg-[#ffbd2e] inline-block shadow-sm"></span>
+        <span class="w-3 h-3 rounded-full bg-[#27c93f] inline-block shadow-sm"></span>
+        <div class="ml-4 flex items-center gap-2 text-xs">
+          <span class="text-slate-400">English Trainer</span>
+          <span class="text-slate-600">›</span>
+          <span class="text-indigo-400 font-semibold">The Hot Seat · Interview Practice</span>
+        </div>
+      </div>
+
+      <!-- Top Right: Timer & Mini Eva & Notes -->
+      <div class="flex items-center gap-3">
+        <!-- Target Timer Capsule -->
+        <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 px-2.5 py-1 rounded-lg text-xs font-mono text-slate-300">
+          <span class="text-slate-500">⏱️ Pace:</span>
+          <span id="timerDisplay" class="font-bold text-emerald-400">0:52</span>
+          <span class="text-slate-500 text-[10px]">/ 1:30</span>
+        </div>
+
+        <!-- Mini Eva Capsule -->
+        <div class="flex items-center gap-2 bg-purple-950/40 border border-purple-800/50 px-3 py-1 rounded-full cursor-pointer" onclick="showNotification('Mini Eva is in interviewer mode! She observes your confidence and structure.')">
+          <div class="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-bold text-white shadow-sm">💼</div>
+          <span class="text-xs font-semibold text-purple-200">Mini Eva</span>
+          <span class="text-[10px] text-purple-400 bg-purple-900/60 px-1.5 py-0.2 rounded-full font-mono">240 XP</span>
+        </div>
+
+        <!-- Layout Notes Toggle -->
+        <button id="toggleNotesBtn" onclick="toggleNotes()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span id="notesLabel">Show Layout Notes</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- App Body (Sidebar + Content Viewport) -->
+    <div class="flex flex-1 overflow-hidden">
+      
+      <!-- 1. Left Sidebar Navigation -->
+      <aside class="w-60 bg-[var(--sidebar-bg)] border-r border-[var(--card-border)] flex flex-col justify-between p-3 select-none flex-shrink-0">
+        <div class="flex flex-col gap-5">
+          <div class="px-2 pt-1">
+            <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Training Modes</div>
+          </div>
+
+          <nav class="flex flex-col gap-1">
+            <button onclick="window.location.href='dashboard_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">🎙️</span>
+              <span>Daily Practice</span>
+            </button>
+
+            <button onclick="window.location.href='conversation_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">💬</span>
+              <span>Conversation</span>
+            </button>
+
+            <button onclick="window.location.href='coach_rehearsal_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">🎯</span>
+              <span>Coach & Re-Speak</span>
+            </button>
+
+            <!-- Active Item: The Hot Seat -->
+            <button class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-left transition-all">
+              <span class="text-base">💼</span>
+              <span>The Hot Seat</span>
+              <span class="ml-auto w-2 h-2 rounded-full bg-indigo-400"></span>
+            </button>
+
+            <button onclick="showNotification('Switched to Skill Builders Drills')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">⚡</span>
+              <span>Skill Drills</span>
+            </button>
+          </nav>
+
+          <div class="flex flex-col gap-1">
+            <div class="px-2 text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Knowledge & Growth</div>
+
+            <button onclick="showNotification('Opening Learning Memory Vault')" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <div class="flex items-center gap-3">
+                <span class="text-base">🧠</span>
+                <span>Learning Memory</span>
+              </div>
+              <span class="text-[11px] font-semibold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">4 due</span>
+            </button>
+
+            <button onclick="showNotification('Opening Interview Readiness Radar')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">📊</span>
+              <span>Progress Radar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar Interview Readiness Meter -->
+        <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 flex flex-col gap-2 text-xs">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="font-semibold text-slate-200">Interview Readiness</span>
+            <span class="text-indigo-400 font-bold">78% (B2)</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-indigo-500 h-1.5 rounded-full" style="width: 78%"></div>
+          </div>
+          <span class="text-[11px] text-slate-500 truncate">STAR Structure: Strong</span>
+        </div>
+      </aside>
+
+      <!-- 2. Main Content Canvas -->
+      <main class="flex-1 flex flex-col overflow-y-auto custom-scroll p-6 md:p-8 gap-5">
+
+        <!-- Optional UI Annotation Banner -->
+        <div id="notesSection" class="p-4 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs text-amber-200 flex items-start justify-between gap-4 transition-all">
+          <div class="flex items-start gap-2.5">
+            <span class="text-base">💡</span>
+            <div>
+              <strong class="font-semibold block text-amber-300 mb-0.5">UI Architecture & Decisions for Screen 04 (The Hot Seat)</strong>
+              <p class="text-amber-200/90 leading-relaxed">
+                • <strong>4 Specialized Packs:</strong> HR/Screening, Technical Deep-Dive, System Design, and Behavioral (STAR).<br>
+                • <strong>Live STAR Structure Tracker:</strong> Visual breakdown (Situation, Task, Action, Result) encouraging measurable answers.<br>
+                • <strong>Realistic Dynamic Follow-Ups:</strong> The AI interviewer probes technical choices ("What happened to cache replication?") rather than following a static list.<br>
+                • <strong>Pacing & Pressure Timer:</strong> Encourages 60s–90s concise answers without punitive cutoffs.
+              </p>
+            </div>
+          </div>
+          <button onclick="toggleNotes()" class="text-amber-400 hover:text-amber-200 text-sm font-bold">✕</button>
+        </div>
+
+        <!-- 4 Specialized Interview Packs Tabs (HeroUI Tabs styling) -->
+        <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+          <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
+            <button onclick="switchPack('hr')" id="tabHr" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              1. HR & Screening
+            </button>
+            <button onclick="switchPack('tech')" id="tabTech" class="px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white shadow-sm transition-colors">
+              2. Technical Deep-Dive
+            </button>
+            <button onclick="switchPack('system')" id="tabSystem" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              3. System Design
+            </button>
+            <button onclick="switchPack('star')" id="tabStar" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors">
+              4. Behavioral (STAR)
+            </button>
+          </div>
+
+          <button onclick="openScorecardModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer">
+            Finish & View Scorecard
+          </button>
+        </div>
+
+        <!-- 1. Interviewer Context & Question Card -->
+        <section class="bg-gradient-to-br from-indigo-950/30 to-slate-900/70 border border-indigo-500/30 rounded-2xl p-5 shadow-sm">
+          <div class="flex items-start gap-4">
+            <div class="w-11 h-11 rounded-2xl bg-indigo-700 flex items-center justify-center text-xl shadow-md flex-shrink-0">
+              👨‍💼
+            </div>
+
+            <div class="flex-1 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-white">David · Staff Infrastructure Architect</span>
+                    <span class="px-2 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold">
+                      Fintech Core Banking
+                    </span>
+                  </div>
+                  <span class="text-[11px] text-slate-400">Target Role: Senior Backend / Platform Engineer</span>
+                </div>
+
+                <button onclick="simulateAudioPlay()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs transition-colors border border-indigo-500/20">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                  <span>Replay Voice</span>
+                </button>
+              </div>
+
+              <!-- Question Body -->
+              <p id="questionPrompt" class="text-sm md:text-base font-medium text-slate-100 mt-1 leading-relaxed">
+                “Tell me about a time when a production service you owned suffered a severe performance degradation. How did you diagnose the root cause, and what <strong class="text-indigo-300 underline underline-offset-4">architectural trade-offs</strong> did you make to resolve it?”
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Live STAR Structure Tracker Widget -->
+        <section class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-base">📐</span>
+              <strong class="text-slate-200">Live STAR Answer Structure</strong>
+              <span class="text-slate-500">(Automatic Story Mapping)</span>
+            </div>
+            <div class="flex items-center gap-2 font-mono">
+              <span class="text-slate-400">Completeness:</span>
+              <span id="starScore" class="font-bold text-emerald-400">75%</span>
+            </div>
+          </div>
+
+          <!-- STAR Steps 4-Columns -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            
+            <!-- S: Situation -->
+            <div class="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 flex flex-col gap-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-emerald-400">S · Situation</span>
+                <span class="text-emerald-400 text-xs">✓ Detected</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">Black Friday transaction latency spike on checkout API</p>
+            </div>
+
+            <!-- T: Task -->
+            <div class="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 flex flex-col gap-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-emerald-400">T · Task</span>
+                <span class="text-emerald-400 text-xs">✓ Detected</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">Diagnose latency jump from 50ms to 2.4s without crashing DB</p>
+            </div>
+
+            <!-- A: Action -->
+            <div class="p-3 rounded-xl bg-slate-900 border border-indigo-500/40 bg-indigo-950/10 flex flex-col gap-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-indigo-300">A · Action</span>
+                <span class="text-indigo-400 text-xs">▶ In Progress</span>
+              </div>
+              <p class="text-[11px] text-slate-300 leading-snug">Added Redis replica + tuned connection pool from 20 to 80</p>
+            </div>
+
+            <!-- R: Result -->
+            <div id="starResultCard" class="p-3 rounded-xl bg-slate-900/60 border border-amber-500/30 bg-amber-950/10 flex flex-col gap-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-amber-400">R · Result</span>
+                <span id="resultBadge" class="text-amber-400 text-[10px] font-semibold">○ State Metrics!</span>
+              </div>
+              <p id="resultText" class="text-[11px] text-slate-400 leading-snug">Tip: Mention the exact measurable impact (e.g. latency dropped by 80%)</p>
+            </div>
+
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="starProgressBar" class="bg-gradient-to-r from-emerald-500 to-indigo-500 h-1.5 rounded-full" style="width: 75%"></div>
+          </div>
+        </section>
+
+        <!-- 3. Current Answer Transcript & Follow-Up Stream -->
+        <section class="flex flex-col gap-3">
+          
+          <!-- User Spoken Answer -->
+          <div class="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 text-xs flex flex-col gap-2">
+            <div class="flex items-center justify-between text-slate-400 border-b border-indigo-500/10 pb-2">
+              <span class="font-semibold text-slate-300">Your Current Answer (Recorded 52s):</span>
+              <span class="text-[11px] font-mono text-emerald-400">Optimal Concise Duration · 132 words</span>
+            </div>
+            <p class="text-sm text-slate-200 leading-relaxed font-normal">
+              “Last year, during our Black Friday traffic surge, our checkout transaction latency jumped from 50 milliseconds to 2.4 seconds. My responsibility was to identify why connection timeouts were escalating. I analyzed pg_stat_activity and discovered severe connection pool contention. To resolve this immediately, we scaled the connection pool, implemented an external Redis cache replica for idempotency checks, and established circuit breakers.”
+            </p>
+          </div>
+
+          <!-- Dynamic Interviewer Follow-Up Box -->
+          <div id="followUpCard" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-3.5 bubble-enter">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+              ⚡
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-400">David's Technical Follow-Up (Real-Time Pressure):</span>
+                <span class="text-[10px] text-slate-500">Probe: Cache Consistency</span>
+              </div>
+              <p class="text-sm font-medium text-slate-100 mt-1 leading-relaxed">
+                “You introduced a Redis replica for idempotency. What was your <strong class="text-amber-300 underline">invalidation and TTL strategy</strong> to ensure a customer wasn't charged twice if the replica had a few milliseconds of replication lag?”
+              </p>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- 4. Push-To-Talk Canvas & Target Vocabulary -->
+        <section class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-[var(--card-bg)] to-slate-950 border border-[var(--card-border)] flex flex-col items-center justify-center gap-3 shadow-lg">
+          
+          <!-- Target Collocations for this Question -->
+          <div class="flex items-center gap-2 text-xs flex-wrap justify-center">
+            <span class="text-slate-400 font-semibold">Recommended Collocations:</span>
+            <button onclick="insertWord('p99 latency')" class="px-2.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700 transition-colors">p99 latency</button>
+            <button onclick="insertWord('idempotency key')" class="px-2.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700 transition-colors">idempotency key</button>
+            <button onclick="insertWord('trade-off')" class="px-2.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700 transition-colors">trade-off</button>
+            <button onclick="insertWord('stale read')" class="px-2.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700 transition-colors">stale read</button>
+          </div>
+
+          <!-- Push-To-Talk Button -->
+          <button id="pttButton" onmousedown="startPtt()" onmouseup="stopPtt()" class="flex items-center gap-3 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition-all cursor-pointer">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            <span id="pttButtonText">Hold Space to Defend Architecture</span>
+          </button>
+
+          <span class="text-xs text-slate-400">
+            Push-to-Talk active · Practice defending your trade-offs clearly under realistic follow-up questioning
+          </span>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- 3. Global macOS Bottom Audio Bar -->
+    <footer class="h-12 bg-[var(--sidebar-bg)] border-t border-[var(--card-border)] px-4 flex items-center justify-between text-xs select-none">
+      <div class="flex items-center gap-4 text-slate-400">
+        <span class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>MacBook Pro Mic (16kHz PCM)</span>
+        </span>
+        <span class="text-slate-600">|</span>
+        <span>Local Whisper Metal ⚡ (12ms)</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div id="footerPtt" class="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+          <span id="footerPttText">Hold <kbd class="font-mono bg-slate-700 px-1.5 py-0.5 rounded text-white text-[10px]">Space</kbd> to Speak</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Interview Readiness Scorecard Modal -->
+  <div id="scorecardModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-5 bubble-enter">
+      
+      <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <span>📊 Interview Readiness Scorecard</span>
+          </h2>
+          <p class="text-xs text-slate-400">Senior Infrastructure Architect Interview · Tech Deep-Dive</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30">
+          Rating: B2+ Strong
+        </span>
+      </div>
+
+      <!-- 4 Core Interview Signals -->
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+          <div class="flex justify-between">
+            <span class="text-slate-400">STAR Completeness</span>
+            <span class="font-bold text-emerald-400">100% (All 4 met)</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mt-1">
+            <div class="bg-emerald-400 h-1.5 rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Technical Depth</span>
+            <span class="font-bold text-indigo-400">High (5 Collocations)</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mt-1">
+            <div class="bg-indigo-400 h-1.5 rounded-full" style="width: 85%"></div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Conciseness & Pace</span>
+            <span class="font-bold text-emerald-400">Optimal (52s / 90s)</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mt-1">
+            <div class="bg-emerald-400 h-1.5 rounded-full" style="width: 90%"></div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col gap-1">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Follow-Up Defense</span>
+            <span class="font-bold text-amber-400">Solid Explanation</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mt-1">
+            <div class="bg-amber-400 h-1.5 rounded-full" style="width: 75%"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Strengths & Recommendations -->
+      <div class="flex flex-col gap-2.5">
+        <div class="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs">
+          <strong class="text-emerald-400 font-semibold block mb-0.5">💪 Key Strength Observed:</strong>
+          <p class="text-slate-300">You clearly separated the symptom (latency jump) from the root cause (connection pool exhaustion), which senior interviewers love.</p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-xs">
+          <strong class="text-indigo-300 font-semibold block mb-0.5">🎯 Interview Collocations Used:</strong>
+          <div class="flex flex-wrap gap-1.5 mt-1">
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-200 font-mono">connection pool</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-200 font-mono">circuit breaker</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-200 font-mono">idempotency check</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="flex items-center justify-between pt-3 border-t border-[var(--card-border)]">
+        <button onclick="saveInterviewPhrases()" id="saveInterviewBtn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors">
+          ⭐ Save 3 Collocations to Memory
+        </button>
+        <button onclick="closeScorecardModal()" class="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all">
+          Return to Dashboard
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Interactive Live Toast Message -->
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs shadow-xl opacity-0 translate-y-3 transition-all pointer-events-none z-50 flex items-center gap-2">
+    <span class="text-base">ℹ️</span>
+    <span id="toastMsg">Action triggered</span>
+  </div>
+
+  <!-- Interactive Simulation Script -->
+  <script>
+    let isSpaceDown = false;
+    let isNotesVisible = true;
+    let activePack = 'tech';
+
+    function showNotification(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+      }, 3400);
+    }
+
+    function toggleNotes() {
+      isNotesVisible = !isNotesVisible;
+      const section = document.getElementById('notesSection');
+      const label = document.getElementById('notesLabel');
+      if (isNotesVisible) {
+        section.classList.remove('hidden');
+        label.textContent = "Hide Layout Notes";
+      } else {
+        section.classList.add('hidden');
+        label.textContent = "Show Layout Notes";
+      }
+    }
+
+    function switchPack(pack) {
+      activePack = pack;
+      const tabs = {
+        hr: document.getElementById('tabHr'),
+        tech: document.getElementById('tabTech'),
+        system: document.getElementById('tabSystem'),
+        star: document.getElementById('tabStar'),
+      };
+      for (const [key, tab] of Object.entries(tabs)) {
+        if (key === pack) {
+          tab.className = "px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white shadow-sm transition-colors";
+        } else {
+          tab.className = "px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-colors";
+        }
+      }
+
+      const prompt = document.getElementById('questionPrompt');
+      if (pack === 'hr') {
+        prompt.innerHTML = `“Where do you see yourself technically in two to three years, and what type of engineering culture brings out your best work?”`;
+        showNotification("Switched to Pack 1: HR & Screening");
+      } else if (pack === 'tech') {
+        prompt.innerHTML = `“Tell me about a time when a production service you owned suffered a severe performance degradation. How did you diagnose the root cause, and what <strong class="text-indigo-300 underline">architectural trade-offs</strong> did you make to resolve it?”`;
+        showNotification("Switched to Pack 2: Technical Deep-Dive");
+      } else if (pack === 'system') {
+        prompt.innerHTML = `“Design a global distributed rate limiter that can handle 100,000 requests per second across three continents with sub-5ms latency.”`;
+        showNotification("Switched to Pack 3: System Design");
+      } else if (pack === 'star') {
+        prompt.innerHTML = `“Tell me about a disagreement you had with a product manager regarding technical debt versus shipping a feature quickly. How did you negotiate?”`;
+        showNotification("Switched to Pack 4: Behavioral (STAR)");
+      }
+    }
+
+    function insertWord(word) {
+      showNotification(`Collocation "${word}" ready for your answer. Hold Space to speak!`);
+    }
+
+    function startPtt() {
+      if (isSpaceDown) return;
+      isSpaceDown = true;
+      const btn = document.getElementById('pttButton');
+      const btnText = document.getElementById('pttButtonText');
+      btn.className = "flex items-center gap-3 px-8 py-3.5 rounded-xl bg-red-600 text-white font-semibold text-sm shadow-xl shadow-red-600/40 transition-all cursor-pointer";
+      btnText.textContent = "🔴 Recording Answer (Release to Defend)";
+      
+      const footer = document.getElementById('footerPtt');
+      const footerText = document.getElementById('footerPttText');
+      footer.classList.add('bg-red-950/80', 'border-red-600', 'text-red-200', 'recording-pulse');
+      footerText.innerHTML = "🔴 <strong>Recording Defense (Release Space to Submit)</strong>";
+    }
+
+    function stopPtt() {
+      if (!isSpaceDown) return;
+      isSpaceDown = false;
+      const btn = document.getElementById('pttButton');
+      const btnText = document.getElementById('pttButtonText');
+      btn.className = "flex items-center gap-3 px-8 py-3.5 rounded-xl bg-indigo-900 text-indigo-200 font-semibold text-sm transition-all";
+      btnText.textContent = "⚡ Whisper Transcribing & Evaluating STAR...";
+
+      const footer = document.getElementById('footerPtt');
+      const footerText = document.getElementById('footerPttText');
+      footer.classList.remove('bg-red-950/80', 'border-red-600', 'text-red-200', 'recording-pulse');
+      footerText.innerHTML = `Hold <kbd class="font-mono bg-slate-700 px-1.5 py-0.5 rounded text-white text-[10px]">Space</kbd> to Speak`;
+
+      setTimeout(() => {
+        // Complete the Result step in STAR tracker!
+        document.getElementById('starScore').textContent = "100%";
+        document.getElementById('starProgressBar').style.width = "100%";
+        const resCard = document.getElementById('starResultCard');
+        resCard.className = "p-3 rounded-xl bg-slate-900 border border-emerald-500/30 flex flex-col gap-1";
+        document.getElementById('resultBadge').className = "text-emerald-400 text-xs font-semibold";
+        document.getElementById('resultBadge').textContent = "✓ Detected";
+        document.getElementById('resultText').textContent = "Latency dropped from 2.4s to 45ms with 0 data loss";
+
+        btn.className = "flex items-center gap-3 px-8 py-3.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition-all cursor-pointer";
+        btnText.textContent = "Answer Defended! (STAR 100%)";
+        showNotification("David: 'Clear explanation on TTL and dual-writes. STAR structure fully satisfied!'");
+      }, 900);
+    }
+
+    function openScorecardModal() {
+      document.getElementById('scorecardModal').classList.remove('hidden');
+    }
+
+    function closeScorecardModal() {
+      document.getElementById('scorecardModal').classList.add('hidden');
+      window.location.href = 'dashboard_prototype.html';
+    }
+
+    function saveInterviewPhrases() {
+      const btn = document.getElementById('saveInterviewBtn');
+      btn.className = "px-3.5 py-2 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-semibold";
+      btn.textContent = "✓ 3 Collocations Added to Memory Vault";
+      showNotification("Saved interview phrases into Learning Memory SQLite repository.");
+    }
+
+    function simulateAudioPlay() {
+      showNotification("David's voice: playing question via macOS TTS (1.0x).");
+    }
+
+    // Spacebar Handlers
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !isSpaceDown && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        startPtt();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && isSpaceDown) {
+        e.preventDefault();
+        stopPtt();
+      }
+    });
+  </script>
+</body>
+</html>

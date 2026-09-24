@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screen 09: Ambient Companion & Quick Practice Window — English Trainer</title>
+  <!-- Tailwind CSS v4 allowlisted runtime -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --text-muted: #94a3b8;
+    }
+    body {
+      background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0b0f19 80%);
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      min-height: 100vh;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #1f293d;
+      border-radius: 4px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .recording-ring {
+      animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes wave-bounce {
+      0%, 100% { height: 6px; }
+      50% { height: 28px; }
+    }
+    .wave-bar {
+      animation: wave-bounce 1s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-start p-4 md:p-6 antialiased">
+
+  <!-- macOS Top Simulated Menu Bar (Tray Integration Demonstration) -->
+  <div class="w-full max-w-4xl bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl px-4 py-2 mb-6 flex items-center justify-between text-xs text-slate-300 shadow-xl">
+    <div class="flex items-center gap-3">
+      <span class="font-bold text-white tracking-wide"></span>
+      <span class="text-slate-400">Finder</span>
+      <span class="text-slate-400">File</span>
+      <span class="text-slate-400">Edit</span>
+      <span class="text-slate-400">Window</span>
+      <span class="text-slate-400">Help</span>
+    </div>
+
+    <!-- Right Side macOS Status Items & Mini Eva Tray Icon -->
+    <div class="flex items-center gap-4 text-[11px] font-mono">
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 cursor-pointer shadow-sm animate-pulse" onclick="showNotification('Global Hotkey triggered: ⌥+Space (Option+Space)')">
+        <span class="text-xs">🎙️</span>
+        <span class="font-semibold text-white">Mini Eva (⌥+Space)</span>
+      </div>
+      <span class="text-slate-500">Wi-Fi 100%</span>
+      <span class="text-slate-500">Battery 94%</span>
+      <span class="text-slate-300">Tue Mar 24  15:58</span>
+    </div>
+  </div>
+
+  <!-- UI Context / Rationale Note -->
+  <div class="w-full max-w-md mb-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 flex items-start gap-2.5 shadow-sm">
+    <span class="text-base text-indigo-400">💡</span>
+    <div class="leading-relaxed">
+      <strong class="text-white block font-semibold">Screen 09: Floating Menu Bar Utility Window</strong>
+      Spontaneous 30–60s micro-speaking practice. Designed to stay docked on top while you work. Press and hold <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono text-[10px] border border-slate-700">Space</kbd> anywhere to speak!
+    </div>
+  </div>
+
+  <!-- THE COMPACT FLOATING UTILITY WINDOW (400px x 560px) -->
+  <div id="companionWindow" class="w-full max-w-[410px] bg-slate-900/95 border-2 border-slate-700/80 rounded-3xl shadow-2xl shadow-indigo-950/60 overflow-hidden flex flex-col backdrop-blur-xl transition-all duration-300">
+    
+    <!-- 1. Window Header (Mini Eva & Controls) -->
+    <header class="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <!-- Mini Eva Avatar -->
+        <div class="relative">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-sm shadow-md shadow-indigo-500/30">
+            🤖
+          </div>
+          <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-xs text-white">Mini Eva</span>
+            <span class="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-semibold">QUICK WORKOUT</span>
+          </div>
+          <span class="text-[10px] text-slate-400">Day 24 Streak 🔥 · +15 XP</span>
+        </div>
+      </div>
+
+      <!-- Window Actions -->
+      <div class="flex items-center gap-2">
+        <button id="pinBtn" onclick="togglePin()" title="Keep Always On Top" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <span id="pinIcon" class="text-xs">📌</span>
+        </button>
+        <button onclick="closeWindowSimulation()" title="Minimize / Dismiss" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">
+          <span class="text-xs font-bold">✕</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. Window Main Content Surface -->
+    <div class="p-5 flex flex-col gap-4 flex-1 overflow-y-auto custom-scroll">
+      
+      <!-- Quest Selector Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+        <button onclick="selectQuest('standup')" id="pillStandup" class="px-2.5 py-1 rounded-full font-semibold bg-indigo-600 text-white shrink-0 shadow-sm transition-all">
+          Standup Pitch (30s)
+        </button>
+        <button onclick="selectQuest('tradeoff')" id="pillTradeoff" class="px-2.5 py-1 rounded-full text-slate-400 bg-slate-950 border border-slate-800 hover:text-white shrink-0 transition-all">
+          Defend Trade-off (45s)
+        </button>
+        <button onclick="selectQuest('incident')" id="pillIncident" class="px-2.5 py-1 rounded-full text-slate-400 bg-slate-950 border border-slate-800 hover:text-white shrink-0 transition-all">
+          Bug Postmortem (40s)
+        </button>
+      </div>
+
+      <!-- Active Micro-Quest Card -->
+      <div class="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col gap-2 relative">
+        <div class="flex items-center justify-between text-[11px]">
+          <span id="questTag" class="font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+            <span>🎯</span> Daily Work Context
+          </span>
+          <span class="text-slate-400 font-mono text-[10px]">Target: ~30s</span>
+        </div>
+
+        <p id="questPrompt" class="text-xs text-white font-medium leading-relaxed">
+          “What specific technical task or pull request are you working on right now? State the goal and your approach in 2–3 clear sentences.”
+        </p>
+
+        <!-- Scaffolding Sentence Starter (Expandable) -->
+        <div class="pt-1">
+          <button onclick="toggleHint()" id="hintBtn" class="text-[11px] text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1">
+            <span>💡 Need a starter sentence?</span>
+          </button>
+          <div id="hintContent" class="hidden mt-2 p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-200 leading-snug">
+            <span class="font-bold text-amber-300 block mb-0.5">Starter Structure:</span>
+            “Right now I’m focused on [task] in order to [benefit]. The main hurdle is [challenge], so I’m currently [approach]…”
+          </div>
+        </div>
+      </div>
+
+      <!-- State A: Recording / Push-to-Talk HUD -->
+      <div id="hudRecordingSection" class="flex flex-col items-center justify-center py-3 gap-3">
+        
+        <!-- Big Round Push-to-Talk Button -->
+        <div class="relative flex items-center justify-center">
+          <div id="recordingPingRing" class="hidden absolute w-24 h-24 rounded-full bg-red-500/30 recording-ring"></div>
+          
+          <button id="quickPttBtn" onmousedown="startQuickRecord()" onmouseup="stopQuickRecord()" class="relative z-10 w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-xl shadow-indigo-600/30 flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 cursor-pointer">
+            <span id="pttMicIcon" class="text-2xl">🎙️</span>
+            <span id="pttTimerLabel" class="text-[10px] font-mono font-bold tracking-tight">HOLD</span>
+          </button>
+        </div>
+
+        <div class="text-center">
+          <span id="recordingInstruction" class="text-xs text-slate-300 font-semibold block">Hold Space or click to speak</span>
+          <span class="text-[10px] text-slate-400">Transcribed on-device via Whisper Metal</span>
+        </div>
+
+        <!-- Animated Waveform Bars (Shown during speech) -->
+        <div id="waveformVisualizer" class="hidden flex items-center gap-1.5 h-8">
+          <div class="w-1 bg-red-400 rounded-full wave-bar" style="animation-delay: 0.1s"></div>
+          <div class="w-1 bg-red-500 rounded-full wave-bar" style="animation-delay: 0.3s"></div>
+          <div class="w-1 bg-red-400 rounded-full wave-bar" style="animation-delay: 0.15s"></div>
+          <div class="w-1 bg-red-500 rounded-full wave-bar" style="animation-delay: 0.4s"></div>
+          <div class="w-1 bg-red-400 rounded-full wave-bar" style="animation-delay: 0.2s"></div>
+          <div class="w-1 bg-red-500 rounded-full wave-bar" style="animation-delay: 0.35s"></div>
+          <div class="w-1 bg-red-400 rounded-full wave-bar" style="animation-delay: 0.05s"></div>
+        </div>
+
+      </div>
+
+      <!-- State B: Instant Micro-Feedback & Reward (Hidden Initially) -->
+      <div id="feedbackResultCard" class="hidden flex flex-col gap-3 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/40 shadow-inner">
+        
+        <!-- Reward & Timing Banner -->
+        <div class="flex items-center justify-between border-b border-indigo-500/30 pb-2">
+          <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
+            <span>🎉</span>
+            <span>+15 XP Earned!</span>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+            <span>Pace: 124 wpm</span>
+            <span>·</span>
+            <span>Latency: 1.1s</span>
+          </div>
+        </div>
+
+        <!-- Transcription & Phrasing Upgrade -->
+        <div class="flex flex-col gap-1.5 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300">
+            <span class="text-slate-400 text-[10px] block font-mono">Recognized:</span>
+            “Right now I work on cache bug. We have big problem with memory limit.”
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-200">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold text-emerald-300 text-[10px] uppercase tracking-wider">Natural B2 Upgrade:</span>
+              <button onclick="playUpgradeAudio()" class="text-[10px] text-indigo-300 hover:text-white font-mono flex items-center gap-1">
+                <span>▶ Listen</span>
+              </button>
+            </div>
+            “Right now I’m <span class="font-bold underline text-white">tackling a cache bottleneck</span>. We’re currently hitting an operational <span class="font-bold underline text-white">memory threshold</span>.”
+          </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="flex items-center justify-between pt-1">
+          <button onclick="repeatQuest()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors">
+            🔁 Try Again
+          </button>
+          <button onclick="nextRandomQuest()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-md">
+            Next Quest ➔
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 3. Window Bottom Actions -->
+    <footer class="px-5 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs">
+      <button onclick="openFullAppSimulation()" class="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+        <span>↗ Open Full Desktop App</span>
+      </button>
+      <span class="text-[10px] text-slate-500">Audio ephemeral · Local only</span>
+    </footer>
+
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toastNotification" class="hidden fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl text-xs text-white flex items-center gap-3 transition-all duration-300 transform translate-y-2">
+    <span class="text-indigo-400 text-base">✨</span>
+    <span id="toastMessage">Updating companion state...</span>
+  </div>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    let toastTimeout;
+    function showNotification(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMessage');
+      text.textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.remove('translate-y-2');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-2');
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+
+    let isPinned = false;
+    function togglePin() {
+      isPinned = !isPinned;
+      const pinBtn = document.getElementById('pinBtn');
+      const icon = document.getElementById('pinIcon');
+      if (isPinned) {
+        pinBtn.className = "p-1.5 rounded-lg text-indigo-400 bg-indigo-950/60 border border-indigo-500/40 transition-colors";
+        icon.textContent = "📌";
+        showNotification("Companion window pinned Always On Top.");
+      } else {
+        pinBtn.className = "p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors";
+        icon.textContent = "📌";
+        showNotification("Window floating normally.");
+      }
+    }
+
+    function toggleHint() {
+      const el = document.getElementById('hintContent');
+      el.classList.toggle('hidden');
+    }
+
+    const quests = {
+      standup: {
+        tag: "Daily Work Context",
+        time: "30s",
+        prompt: "“What specific technical task or pull request are you working on right now? State the goal and your approach in 2–3 clear sentences.”",
+        starter: "“Right now I’m focused on [task] in order to [benefit]. The main hurdle is [challenge], so I’m currently [approach]…”"
+      },
+      tradeoff: {
+        tag: "Engineering Judgment",
+        time: "45s",
+        prompt: "“Explain a quick technical trade-off: why did you choose your current library, database, or architecture over the obvious alternative?”",
+        starter: "“We weighed [Option A] against [Option B]. Even though [Option B] was faster to implement, we opted for [Option A] because of its scalability…”"
+      },
+      incident: {
+        tag: "Clarity Under Pressure",
+        time: "40s",
+        prompt: "“Describe a tricky bug or production incident you recently solved. What caused it and how did you verify the patch?”",
+        starter: "“We noticed an unexpected spike in [metric]. The root cause was an unhandled edge case in [component], so I rolled out a fix that…”"
+      }
+    };
+
+    function selectQuest(type) {
+      ['standup', 'tradeoff', 'incident'].forEach(q => {
+        const pill = document.getElementById(`pill${q.charAt(0).toUpperCase() + q.slice(1)}`);
+        pill.className = "px-2.5 py-1 rounded-full text-slate-400 bg-slate-950 border border-slate-800 hover:text-white shrink-0 transition-all";
+      });
+      const activePill = document.getElementById(`pill${type.charAt(0).toUpperCase() + type.slice(1)}`);
+      activePill.className = "px-2.5 py-1 rounded-full font-semibold bg-indigo-600 text-white shrink-0 shadow-sm transition-all";
+
+      const data = quests[type];
+      document.getElementById('questTag').innerHTML = `<span>🎯</span> ${data.tag}`;
+      document.getElementById('questPrompt').textContent = data.prompt;
+      document.getElementById('hintContent').innerHTML = `
+        <span class="font-bold text-amber-300 block mb-0.5">Starter Structure:</span>
+        ${data.starter}
+      `;
+      document.getElementById('feedbackResultCard').classList.add('hidden');
+      document.getElementById('hudRecordingSection').classList.remove('hidden');
+      showNotification(`Switched to micro-quest: ${data.tag}`);
+    }
+
+    let isRecording = false;
+    let timerInterval;
+    let secondsElapsed = 0;
+
+    function startQuickRecord() {
+      if (isRecording) return;
+      isRecording = true;
+      secondsElapsed = 0;
+
+      const pttBtn = document.getElementById('quickPttBtn');
+      const micIcon = document.getElementById('pttMicIcon');
+      const timerLabel = document.getElementById('pttTimerLabel');
+      const pingRing = document.getElementById('recordingPingRing');
+      const waveform = document.getElementById('waveformVisualizer');
+      const instruction = document.getElementById('recordingInstruction');
+
+      pttBtn.className = "relative z-10 w-20 h-20 rounded-full bg-red-600 text-white shadow-xl shadow-red-600/50 flex flex-col items-center justify-center gap-1 transition-transform cursor-pointer";
+      pingRing.classList.remove('hidden');
+      waveform.classList.remove('hidden');
+      instruction.textContent = "Listening... Release Space when done";
+      instruction.className = "text-xs text-red-400 font-bold block animate-pulse";
+
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+        const secs = String(secondsElapsed % 60).padStart(2, '0');
+        timerLabel.textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function stopQuickRecord() {
+      if (!isRecording) return;
+      isRecording = false;
+      clearInterval(timerInterval);
+
+      const pttBtn = document.getElementById('quickPttBtn');
+      const pingRing = document.getElementById('recordingPingRing');
+      const waveform = document.getElementById('waveformVisualizer');
+      const instruction = document.getElementById('recordingInstruction');
+      const timerLabel = document.getElementById('pttTimerLabel');
+
+      pingRing.classList.add('hidden');
+      waveform.classList.add('hidden');
+      pttBtn.className = "relative z-10 w-20 h-20 rounded-full bg-amber-600 text-white shadow-xl flex flex-col items-center justify-center gap-1";
+      timerLabel.textContent = "EVAL";
+      instruction.textContent = "Transcribing with Whisper Metal (14ms)...";
+      instruction.className = "text-xs text-amber-400 font-semibold block";
+
+      setTimeout(() => {
+        pttBtn.className = "relative z-10 w-20 h-20 rounded-full bg-indigo-600 text-white shadow-xl flex flex-col items-center justify-center gap-1";
+        timerLabel.textContent = "HOLD";
+        instruction.textContent = "Hold Space or click to speak";
+        instruction.className = "text-xs text-slate-300 font-semibold block";
+
+        // Show Feedback
+        document.getElementById('feedbackResultCard').classList.remove('hidden');
+        showNotification("Micro-quest scored! +15 XP added to your daily streak.");
+      }, 800);
+    }
+
+    function playUpgradeAudio() {
+      showNotification("macOS Speech Synthesis playing native pronunciation of upgraded sentence.");
+    }
+
+    function repeatQuest() {
+      document.getElementById('feedbackResultCard').classList.add('hidden');
+      showNotification("Ready for Attempt 2! Speak the upgraded sentence.");
+    }
+
+    function nextRandomQuest() {
+      const keys = ['standup', 'tradeoff', 'incident'];
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      selectQuest(randomKey);
+    }
+
+    function closeWindowSimulation() {
+      showNotification("Companion minimized to macOS Menu Bar. Press ⌥+Space anytime to reopen!");
+    }
+
+    function openFullAppSimulation() {
+      showNotification("Switching window focus to Full Desktop Coach Screen...");
+    }
+
+    // Spacebar Handlers
+    let isSpacePressed = false;
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !isSpacePressed) {
+        e.preventDefault();
+        isSpacePressed = true;
+        startQuickRecord();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && isSpacePressed) {
+        e.preventDefault();
+        isSpacePressed = false;
+        stopQuickRecord();
+      }
+    });
+  </script>
+</body>
+</html>

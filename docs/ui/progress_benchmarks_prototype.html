@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screen 07: Progress & Objective Benchmarks — English Trainer</title>
+  <!-- Tailwind CSS v4 allowlisted runtime -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --text-muted: #94a3b8;
+    }
+    body {
+      background-color: var(--bg-color);
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #1f293d;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+    .radar-polygon-current {
+      fill: rgba(99, 102, 241, 0.35);
+      stroke: #818cf8;
+      stroke-width: 2.5;
+      transition: all 0.5s ease;
+    }
+    .radar-polygon-baseline {
+      fill: rgba(148, 163, 184, 0.12);
+      stroke: #94a3b8;
+      stroke-width: 1.5;
+      stroke-dasharray: 4 4;
+      transition: all 0.5s ease;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-950 text-slate-100 antialiased">
+
+  <!-- macOS Window Title Bar (Simulated Tauri Desktop Window) -->
+  <header class="h-10 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 select-none shrink-0 z-40">
+    <div class="flex items-center gap-2">
+      <div class="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-600 transition-colors cursor-pointer"></div>
+      <div class="w-3 h-3 rounded-full bg-yellow-500/80 hover:bg-yellow-600 transition-colors cursor-pointer"></div>
+      <div class="w-3 h-3 rounded-full bg-green-500/80 hover:bg-green-600 transition-colors cursor-pointer"></div>
+      <span class="ml-3 text-xs font-medium text-slate-400">English Trainer — Screen 07: Progress & Objective Benchmarks</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[11px] font-mono border border-indigo-500/30">CEFR: B1+ ➔ B2 Target</span>
+      <button onclick="toggleNotes()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition-all flex items-center gap-1.5">
+        <span>💡 UI Decisions</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div id="toastNotification" class="hidden fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl text-xs text-white flex items-center gap-3 transition-all duration-300 transform translate-y-2">
+    <span class="text-indigo-400 text-base">📊</span>
+    <span id="toastMessage">Updating benchmark filters...</span>
+  </div>
+
+  <!-- App Layout: Sidebar + Main Content -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- 1. Left Navigation Sidebar -->
+    <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between p-4 shrink-0">
+      <div class="flex flex-col gap-6">
+        <!-- Logo / Brand -->
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <span class="text-lg">🎙️</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-bold text-sm tracking-tight text-white">English Trainer</span>
+            <span class="text-[11px] text-slate-400 font-mono">macOS · Tauri v2</span>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex flex-col gap-1">
+          <div class="px-2 text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Practice Spaces</div>
+          
+          <button onclick="showNotification('Navigating to Daily Practice Dashboard')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">🏠</span>
+            <span>Dashboard</span>
+          </button>
+
+          <button onclick="showNotification('Navigating to Coach & Re-Speaking')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">🎯</span>
+            <span>Coach Mode</span>
+          </button>
+
+          <button onclick="showNotification('Navigating to Spontaneous Conversation')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">💬</span>
+            <span>Conversation</span>
+          </button>
+
+          <button onclick="showNotification('Navigating to The Hot Seat Interview')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">🔥</span>
+            <span>The Hot Seat</span>
+          </button>
+
+          <button onclick="showNotification('Navigating to Skill Drills')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">⚡</span>
+            <span>Skill Drills</span>
+          </button>
+        </nav>
+
+        <div class="flex flex-col gap-1">
+          <div class="px-2 text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Insights & System</div>
+
+          <button onclick="showNotification('Opening Learning Memory Vault')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">🧠</span>
+            <span>Learning Memory</span>
+          </button>
+
+          <!-- Active Navigation: Progress Radar -->
+          <button class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-left transition-all">
+            <span class="text-base">📊</span>
+            <span>Progress Radar</span>
+            <span class="ml-auto w-2 h-2 rounded-full bg-indigo-400"></span>
+          </button>
+
+          <button onclick="showNotification('Opening Settings')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+            <span class="text-base">⚙️</span>
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mini Eva Momentum Widget -->
+      <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-base">
+          🤖
+        </div>
+        <div class="flex flex-col text-xs">
+          <span class="text-slate-200 font-semibold">24 Days Active</span>
+          <span class="text-[11px] text-emerald-400">Latency down 58%</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. Main Content Canvas -->
+    <main class="flex-1 flex flex-col overflow-y-auto custom-scroll p-6 md:p-8 gap-5">
+
+      <!-- UI Architecture Annotation Banner -->
+      <div id="notesSection" class="p-4 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs text-amber-200 flex items-start justify-between gap-4 transition-all">
+        <div class="flex items-start gap-2.5">
+          <span class="text-base">💡</span>
+          <div>
+            <strong class="font-semibold block text-amber-300 mb-0.5">UI Architecture & Decisions for Screen 07 (Progress & Objective Benchmarks)</strong>
+            <p class="text-amber-200/90 leading-relaxed">
+              • <strong>Evidence-Based, No Guesswork:</strong> Latency and hesitation pauses are calculated deterministically by the local Rust audio engine from Whisper timestamps without keeping raw audio.<br>
+              • <strong>Multi-Dimensional Radar:</strong> Shows progress across 5 CEFR dimensions, contrasting Day 1 Baseline against the current 14-day rolling average.<br>
+              • <strong>Anti-Plateau Psychological Proof:</strong> Clear error-elimination funnel proves recurring Slavicisms are permanently transitioning to `Mastered/Stable`.
+            </p>
+          </div>
+        </div>
+        <button onclick="toggleNotes()" class="text-amber-400 hover:text-amber-200 font-bold px-2 py-1 text-xs">✕ Close</button>
+      </div>
+
+      <!-- Top Header & Controls -->
+      <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2.5 mb-1">
+            <h1 class="text-2xl font-bold tracking-tight text-white">Progress & Objective Benchmarks</h1>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
+              B1+ ➔ B2 Track
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Acoustic fluency analysis, CEFR speaking radar, and recurring mistake elimination history.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Time Filter -->
+          <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs">
+            <button onclick="setFilter('7d')" id="btn7d" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-colors">Last 7 Days</button>
+            <button onclick="setFilter('30d')" id="btn30d" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition-colors">Last 30 Days</button>
+            <button onclick="setFilter('all')" id="btnAll" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-colors">All Time</button>
+          </div>
+
+          <!-- Benchmark CTA -->
+          <button onclick="openBenchmarkModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
+            <span>🎯</span>
+            <span>Start Bi-Weekly Benchmark (10 min)</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Section 1: Objective Acoustic & Timing Metrics Cards (4 Grid) -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Metric Card 1: Response Latency -->
+        <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-2">
+            <span class="font-medium">Speech Latency (Time-to-Speak)</span>
+            <span class="text-base">⏱️</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-white">1.3s</span>
+            <span class="text-xs font-semibold text-emerald-400 flex items-center">
+              ↓ 58% (was 3.1s)
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-tight">
+            Time from AI turn completion to speech onset. Below 1.5s indicates conversational confidence.
+          </p>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 82%"></div>
+          </div>
+        </div>
+
+        <!-- Metric Card 2: Hesitation Pauses -->
+        <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-2">
+            <span class="font-medium">Long Pauses (>2.0s)</span>
+            <span class="text-base">⏸️</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-white">1.6 <span class="text-xs text-slate-400 font-normal">/ min</span></span>
+            <span class="text-xs font-semibold text-emerald-400 flex items-center">
+              ↓ 65% (was 4.6)
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-tight">
+            Awkward mid-sentence freezes. Drastically reduced as lexical recall speed improved.
+          </p>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div class="bg-indigo-500 h-full rounded-full" style="width: 76%"></div>
+          </div>
+        </div>
+
+        <!-- Metric Card 3: Filler Density -->
+        <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-2">
+            <span class="font-medium">Filler Word Density</span>
+            <span class="text-base">🗣️</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-white">1.8%</span>
+            <span class="text-xs font-semibold text-emerald-400 flex items-center">
+              ↓ 72% (was 6.4%)
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-tight">
+            Frequency of "um", "uh", "like", "you know". Target: &lt; 2.5% for executive interviews.
+          </p>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div class="bg-teal-500 h-full rounded-full" style="width: 88%"></div>
+          </div>
+        </div>
+
+        <!-- Metric Card 4: Re-Speaking Fix Rate -->
+        <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-2">
+            <span class="font-medium">Attempt 2 Fix Rate</span>
+            <span class="text-base">🔁</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-white">84%</span>
+            <span class="text-xs font-semibold text-indigo-400 flex items-center">
+              ↑ 18% improvement
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-tight">
+            Percentage of flagged mistakes successfully rectified on the immediate Re-Speaking attempt.
+          </p>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div class="bg-purple-500 h-full rounded-full" style="width: 84%"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Section 2: Two-Column Deep Dive: 5-Dimension Radar + Dimension Insights -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Left: Radar Chart (7 cols) -->
+        <div class="lg:col-span-7 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3 mb-4">
+            <div>
+              <h2 class="text-sm font-bold text-white">5-Dimension CEFR Speaking Radar</h2>
+              <p class="text-xs text-slate-400">Comparing Day 1 Initial Assessment vs Current 14-day Rolling Avg</p>
+            </div>
+            
+            <!-- Radar Legend & Baseline Toggle -->
+            <div class="flex items-center gap-3 text-xs">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="toggleBaseline" checked onchange="toggleRadarBaseline(this.checked)" class="accent-slate-400 rounded w-3.5 h-3.5">
+                <span class="text-slate-400 flex items-center gap-1">
+                  <span class="w-2.5 h-0.5 border-b border-dashed border-slate-400"></span> Day 1 Baseline
+                </span>
+              </label>
+
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                <span class="text-indigo-300 font-semibold">Current (B1+)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Radar SVG Canvas -->
+          <div class="flex-1 flex items-center justify-center py-2 relative">
+            <svg viewBox="0 0 440 380" class="w-full max-w-[420px] h-auto drop-shadow-md">
+              
+              <!-- Concentric Background Grid Pentagons -->
+              <!-- 20% -->
+              <polygon points="220,154 277,173 255,233 185,233 163,173" fill="none" stroke="#1e293b" stroke-width="1"/>
+              <!-- 40% -->
+              <polygon points="220,118 334,155 290,277 150,277 106,155" fill="none" stroke="#1e293b" stroke-width="1"/>
+              <!-- 60% -->
+              <polygon points="220,82 391,138 326,320 114,320 49,138" fill="none" stroke="#1e293b" stroke-width="1"/>
+              <!-- 80% -->
+              <polygon points="220,46 448,120 361,363 79,363 -8,120" fill="none" stroke="#334155" stroke-width="1"/>
+              <!-- 100% Perimeter -->
+              <polygon points="220,20 410,158 337,380 103,380 30,158" fill="none" stroke="#475569" stroke-width="1.2"/>
+
+              <!-- Axis Rays from Center (220, 200) -->
+              <line x1="220" y1="200" x2="220" y2="35" stroke="#334155" stroke-width="1"/>
+              <line x1="220" y1="200" x2="376" y2="150" stroke="#334155" stroke-width="1"/>
+              <line x1="220" y1="200" x2="316" y2="330" stroke="#334155" stroke-width="1"/>
+              <line x1="220" y1="200" x2="124" y2="330" stroke="#334155" stroke-width="1"/>
+              <line x1="220" y1="200" x2="64" y2="150" stroke="#334155" stroke-width="1"/>
+
+              <!-- Baseline Polygon (Day 1: Fluency 52, Accuracy 48, Lexical 56, Coherence 58, Interaction 50) -->
+              <polygon id="radarBaselinePoly" points="220,114 307,172 274,275 164,275 142,175" class="radar-polygon-baseline" />
+
+              <!-- Current Rolling Polygon (Current: Fluency 78, Accuracy 72, Lexical 80, Coherence 84, Interaction 70) -->
+              <polygon id="radarCurrentPoly" points="220,71 345,160 297,304 139,309 110,165" class="radar-polygon-current" />
+
+              <!-- Vertex Dots (Current) -->
+              <circle cx="220" cy="71" r="4" fill="#a5b4fc" stroke="#4f46e5" stroke-width="2"/>
+              <circle cx="345" cy="160" r="4" fill="#a5b4fc" stroke="#4f46e5" stroke-width="2"/>
+              <circle cx="297" cy="304" r="4" fill="#a5b4fc" stroke="#4f46e5" stroke-width="2"/>
+              <circle cx="139" cy="309" r="4" fill="#a5b4fc" stroke="#4f46e5" stroke-width="2"/>
+              <circle cx="110" cy="165" r="4" fill="#a5b4fc" stroke="#4f46e5" stroke-width="2"/>
+
+              <!-- Axis Labels with Score Badges -->
+              <!-- Top: Fluency -->
+              <text x="220" y="18" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="bold">Fluency & Flow</text>
+              <text x="220" y="32" text-anchor="middle" fill="#818cf8" font-size="10" font-weight="bold">78 / 100 (+26)</text>
+
+              <!-- Top Right: Grammatical Accuracy -->
+              <text x="385" y="145" text-anchor="start" fill="#f8fafc" font-size="11" font-weight="bold">Accuracy</text>
+              <text x="385" y="160" text-anchor="start" fill="#818cf8" font-size="10" font-weight="bold">72 / 100 (+24)</text>
+
+              <!-- Bottom Right: Lexical Range -->
+              <text x="330" y="348" text-anchor="start" fill="#f8fafc" font-size="11" font-weight="bold">Lexical Range</text>
+              <text x="330" y="362" text-anchor="start" fill="#818cf8" font-size="10" font-weight="bold">80 / 100 (+24)</text>
+
+              <!-- Bottom Left: Coherence & Structure -->
+              <text x="110" y="348" text-anchor="end" fill="#f8fafc" font-size="11" font-weight="bold">Coherence (STAR)</text>
+              <text x="110" y="362" text-anchor="end" fill="#818cf8" font-size="10" font-weight="bold">84 / 100 (+26)</text>
+
+              <!-- Top Left: Spontaneous Interaction -->
+              <text x="55" y="145" text-anchor="end" fill="#f8fafc" font-size="11" font-weight="bold">Spontaneity</text>
+              <text x="55" y="160" text-anchor="end" fill="#818cf8" font-size="10" font-weight="bold">70 / 100 (+20)</text>
+            </svg>
+          </div>
+
+          <div class="pt-3 border-t border-[var(--card-border)] flex items-center justify-between text-xs text-slate-400">
+            <span>Calculated over 38 practice sessions & 126 completed speaking turns</span>
+            <button onclick="showNotification('Exporting radar dataset to JSON...')" class="text-indigo-400 hover:text-indigo-300 font-medium">Export Metrics</button>
+          </div>
+        </div>
+
+        <!-- Right: Dimension Deep Dive Breakdown (5 cols) -->
+        <div class="lg:col-span-5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-4">
+          <div class="border-b border-[var(--card-border)] pb-3">
+            <h2 class="text-sm font-bold text-white">CEFR B2 Competency Checklist</h2>
+            <p class="text-xs text-slate-400">Live requirements for working proficiency</p>
+          </div>
+
+          <!-- Dimension 1: Coherence (STAR) -->
+          <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-white flex items-center gap-1.5">
+                <span class="text-emerald-400">✓</span> Coherence & Structure
+              </span>
+              <span class="font-mono text-emerald-400 font-bold text-[11px]">84/100 (B2 Solid)</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-snug">
+              Consistently closes answers with explicit Result/Impact metrics. Rarely loses track of the narrative thread.
+            </p>
+          </div>
+
+          <!-- Dimension 2: Lexical Range -->
+          <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-white flex items-center gap-1.5">
+                <span class="text-emerald-400">✓</span> Lexical Range & Collocations
+              </span>
+              <span class="font-mono text-indigo-400 font-bold text-[11px]">80/100 (B2 Entry)</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-snug">
+              Actively deploys technical collocations (<em>"trade-off"</em>, <em>"bottleneck"</em>, <em>"streamline"</em>). Replaced vague words like "big problem".
+            </p>
+          </div>
+
+          <!-- Dimension 3: Fluency & Flow -->
+          <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-white flex items-center gap-1.5">
+                <span class="text-indigo-400">⚡</span> Fluency & Flow
+              </span>
+              <span class="font-mono text-indigo-400 font-bold text-[11px]">78/100 (Approaching B2)</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-snug">
+              Speech rate steady at 122 words/min. Mid-clause freezes reduced by 65%.
+            </p>
+          </div>
+
+          <!-- Dimension 4: Spontaneity & Interaction (Area for Focus) -->
+          <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-amber-950/20 border border-amber-500/30">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-amber-300 flex items-center gap-1.5">
+                <span>🎯</span> Spontaneous Follow-ups
+              </span>
+              <span class="font-mono text-amber-300 font-bold text-[11px]">70/100 (B1+ Focus)</span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-snug">
+              Initial pause on unexpected follow-up challenges is 2.2s. <strong>Recommendation:</strong> Use conversational stallers (<em>"That's a fair point, let me think..."</em>).
+            </p>
+          </div>
+
+          <!-- Action CTA -->
+          <button onclick="showNotification('Launching Spontaneity Drills in The Hot Seat...')" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors">
+            ⚡ Practice Spontaneous Curveballs
+          </button>
+        </div>
+
+      </section>
+
+      <!-- Section 3: Mistake Elimination Funnel & Slavicisms Breakdown -->
+      <section class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--card-border)] pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white">Mistake Elimination Funnel (48 Total Tracked)</h2>
+            <p class="text-xs text-slate-400">Shows how errors move through Spaced Retrieval until they are completely automatic</p>
+          </div>
+          <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+            54% Permanently Mastered
+          </span>
+        </div>
+
+        <!-- Stacked Progress Bar -->
+        <div class="flex flex-col gap-2">
+          <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
+            <!-- Mastered (Green) -->
+            <div class="bg-emerald-500 h-full rounded-l-full" style="width: 54%" title="Mastered / Stable: 26 (54%)"></div>
+            <!-- Improving (Blue) -->
+            <div class="bg-indigo-500 h-full" style="width: 29%" title="Improving: 14 (29%)"></div>
+            <!-- Learning (Yellow) -->
+            <div class="bg-amber-500 h-full" style="width: 12%" title="Learning: 6 (12%)"></div>
+            <!-- New (Red) -->
+            <div class="bg-red-500 h-full rounded-r-full" style="width: 5%" title="New: 2 (5%)"></div>
+          </div>
+
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 px-1">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <strong>Mastered / Stable:</strong> 26 items (54%)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> <strong>Improving:</strong> 14 items (29%)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> <strong>Learning:</strong> 6 items (12%)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> <strong>New:</strong> 2 items (5%)</span>
+          </div>
+        </div>
+
+        <!-- High-Impact Slavicism Elimination Badges -->
+        <div class="pt-2">
+          <span class="text-xs font-semibold text-slate-300 block mb-2">High-Value Fossilized Patterns Fixed:</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
+              <div class="flex justify-between items-center">
+                <span class="line-through text-red-400/80 font-medium">“it depends of”</span>
+                <span class="text-emerald-400 font-bold text-[10px]">100% FIXED</span>
+              </div>
+              <span class="text-white font-semibold">➔ “it depends on”</span>
+              <span class="text-[10px] text-slate-500">0 mistakes in last 14 sessions</span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
+              <div class="flex justify-between items-center">
+                <span class="line-through text-red-400/80 font-medium">“take a decision”</span>
+                <span class="text-emerald-400 font-bold text-[10px]">92% FIXED</span>
+              </div>
+              <span class="text-white font-semibold">➔ “make a decision”</span>
+              <span class="text-[10px] text-slate-500">Correctly used in 12 turns</span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
+              <div class="flex justify-between items-center">
+                <span class="line-through text-red-400/80 font-medium">“explain me this”</span>
+                <span class="text-indigo-400 font-bold text-[10px]">IN PROGRESS</span>
+              </div>
+              <span class="text-white font-semibold">➔ “explain this to me”</span>
+              <span class="text-[10px] text-slate-500">Fixed on Attempt 2 (3 times)</span>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Section 4: Standardized Benchmark Assessment History Table -->
+      <section class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white">Periodic Standardized Benchmark History</h2>
+            <p class="text-xs text-slate-400">Formal 8–10 minute speaking assessments conducted every 1–2 weeks</p>
+          </div>
+          <span class="text-xs text-slate-400 font-mono">SQLite: 3 Benchmarks Recorded</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="text-slate-400 uppercase text-[10px] bg-slate-900/80 border-b border-slate-800 font-semibold tracking-wider">
+              <tr>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4">Assessment Type</th>
+                <th class="py-3 px-4">Speaking Band</th>
+                <th class="py-3 px-4">Latency</th>
+                <th class="py-3 px-4">Hesitations</th>
+                <th class="py-3 px-4">Overall Score</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-medium">
+              
+              <!-- Benchmark 3 (Latest) -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="py-3.5 px-4 font-mono text-white">Mar 24, 2026</td>
+                <td class="py-3.5 px-4 text-white">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span>Bi-Weekly Benchmark #2</span>
+                  </div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+                    B2 Working Entry
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 font-mono text-emerald-400">1.3s</td>
+                <td class="py-3.5 px-4 font-mono text-emerald-400">1.6 / min</td>
+                <td class="py-3.5 px-4 font-bold text-white text-sm">76 <span class="text-xs text-slate-500">/ 100</span></td>
+                <td class="py-3.5 px-4 text-right">
+                  <button onclick="openReportModal('Mar 24', 'B2 Working Entry', 76)" class="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-all font-semibold">
+                    View Full Report
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Benchmark 2 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="py-3.5 px-4 font-mono text-slate-400">Mar 17, 2026</td>
+                <td class="py-3.5 px-4 text-slate-300">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                    <span>Weekly Check-in #1</span>
+                  </div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold">
+                    B1+ Strong Threshold
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 font-mono text-slate-300">1.9s</td>
+                <td class="py-3.5 px-4 font-mono text-slate-300">2.8 / min</td>
+                <td class="py-3.5 px-4 font-bold text-white text-sm">68 <span class="text-xs text-slate-500">/ 100</span></td>
+                <td class="py-3.5 px-4 text-right">
+                  <button onclick="openReportModal('Mar 17', 'B1+ Strong Threshold', 68)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all font-medium">
+                    View Full Report
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Benchmark 1 (Baseline) -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="py-3.5 px-4 font-mono text-slate-500">Mar 10, 2026</td>
+                <td class="py-3.5 px-4 text-slate-400">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span>Day 1 Initial Baseline Assessment</span>
+                  </div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/30 text-[11px] font-semibold">
+                    B1 Threshold
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 font-mono text-slate-400">3.1s</td>
+                <td class="py-3.5 px-4 font-mono text-slate-400">4.6 / min</td>
+                <td class="py-3.5 px-4 font-bold text-slate-400 text-sm">54 <span class="text-xs text-slate-500">/ 100</span></td>
+                <td class="py-3.5 px-4 text-right">
+                  <button onclick="openReportModal('Mar 10', 'B1 Threshold', 54)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all font-medium">
+                    View Full Report
+                  </button>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL 1: Standardized Benchmark Assessment Runner -->
+  <div id="benchmarkModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-lg">🎯</span>
+          <div>
+            <h3 class="text-sm font-bold text-white">Bi-Weekly Speaking Benchmark Assessment</h3>
+            <p class="text-xs text-slate-400">Standardized 3-task speaking assessment (8–10 minutes)</p>
+          </div>
+        </div>
+        <button onclick="closeBenchmarkModal()" class="text-slate-400 hover:text-white font-bold p-1">✕</button>
+      </div>
+
+      <!-- Task Progress Tabs -->
+      <div class="px-6 pt-4 pb-2 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-4">
+          <span id="stepTab1" class="font-bold text-indigo-400 border-b-2 border-indigo-500 pb-1">Task 1: Project Intro</span>
+          <span id="stepTab2" class="text-slate-500 pb-1">Task 2: Technical Trade-off</span>
+          <span id="stepTab3" class="text-slate-500 pb-1">Task 3: Curveball Pressure</span>
+        </div>
+        <span class="font-mono text-slate-400 text-[11px]" id="benchmarkTimer">02:00</span>
+      </div>
+
+      <!-- Active Task Surface -->
+      <div class="p-6 flex flex-col gap-4">
+        
+        <div id="taskPromptBox" class="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Prompt 1 of 3 (Warm-up & Context)</span>
+            <span class="text-[10px] text-slate-400">Target Time: 60–90 seconds</span>
+          </div>
+          <p class="text-sm text-white font-medium leading-relaxed">
+            “Describe a recent software project or technical initiative you worked on. Briefly explain the problem it solved, your role in the team, and what technology stack you selected.”
+          </p>
+        </div>
+
+        <!-- Acoustic Real-Time Meter -->
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="text-slate-200">Whisper Metal Listener Ready</span>
+          </div>
+          <span class="font-mono text-slate-400">Latency: 0.0s | Fillers: 0</span>
+        </div>
+
+        <!-- Push-to-Talk Simulation Button -->
+        <div class="flex flex-col gap-2">
+          <button id="benchmarkPttBtn" onmousedown="startBenchmarkRecording()" onmouseup="stopBenchmarkRecording()" class="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
+            <span>🎙️</span>
+            <span id="benchmarkBtnText">Hold Space to Speak Task 1 Answer</span>
+          </button>
+          <span class="text-[11px] text-slate-500 text-center">Press and hold Spacebar or mouse to record. Speak naturally.</span>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs">
+        <span class="text-slate-500">Audio discarded immediately after STT.</span>
+        <button onclick="closeBenchmarkModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">
+          Cancel Benchmark
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 2: Full Benchmark Detailed Examiner Report -->
+  <div id="reportModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col">
+      
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-white" id="reportTitle">Benchmark Report: Mar 24, 2026</h3>
+          <p class="text-xs text-slate-400" id="reportBand">CEFR Speaking Band: B2 Working Entry (76/100)</p>
+        </div>
+        <button onclick="closeReportModal()" class="text-slate-400 hover:text-white font-bold p-1">✕</button>
+      </div>
+
+      <div class="p-6 flex flex-col gap-4 text-xs text-slate-300 leading-relaxed max-h-[70vh] overflow-y-auto custom-scroll">
+        
+        <!-- Summary Box -->
+        <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-start gap-3">
+          <span class="text-lg">🏆</span>
+          <div>
+            <strong class="text-emerald-300 font-bold block mb-0.5">Examiner Summary</strong>
+            <p class="text-slate-300 text-xs">
+              Clear transition from B1 hesitant phrasing to spontaneous B2 argumentation. Long pause count fell from 4.6/min to 1.6/min. The candidate demonstrated effective STAR discourse structuring when explaining technical bottlenecks.
+            </p>
+          </div>
+        </div>
+
+        <!-- Key Acoustic Stats -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">Avg Response Latency</span>
+            <span class="text-sm font-bold text-white font-mono">1.3s</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">Speaking Pace</span>
+            <span class="text-sm font-bold text-white font-mono">124 wpm</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-500 block">B2/C1 Collocations</span>
+            <span class="text-sm font-bold text-white font-mono">8 active</span>
+          </div>
+        </div>
+
+        <!-- Linguistic Evidence Snippet -->
+        <div class="flex flex-col gap-1.5">
+          <span class="font-bold text-white">Transcribed Candidate Turn (Task 2):</span>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 leading-relaxed">
+            “The <span class="text-emerald-400 font-bold">main trade-off</span> was between query latency and operational complexity. We decided to <span class="text-emerald-400 font-bold">streamline</span> the event pipeline, which prevented the Redis cache from becoming our <span class="text-emerald-400 font-bold">single point of failure</span>.”
+          </div>
+        </div>
+
+        <!-- 1 Area for Next Growth -->
+        <div class="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30">
+          <span class="font-bold text-amber-300 block mb-0.5">Primary Focus for Next 2 Weeks:</span>
+          <p class="text-slate-300 text-[11px]">
+            Reduce reliance on filler <em>“you know”</em> during sudden follow-up questions. Practice conversational stallers (*“Let me break that down…”*).
+          </p>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex justify-end">
+        <button onclick="closeReportModal()" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    let toastTimeout;
+    function showNotification(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMessage');
+      text.textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.remove('translate-y-2');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-2');
+        toast.classList.add('hidden');
+      }, 3200);
+    }
+
+    function toggleNotes() {
+      const el = document.getElementById('notesSection');
+      el.classList.toggle('hidden');
+    }
+
+    function setFilter(range) {
+      document.getElementById('btn7d').className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-colors";
+      document.getElementById('btn30d').className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-colors";
+      document.getElementById('btnAll').className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-colors";
+
+      if (range === '7d') document.getElementById('btn7d').className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition-colors";
+      if (range === '30d') document.getElementById('btn30d').className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition-colors";
+      if (range === 'all') document.getElementById('btnAll').className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition-colors";
+
+      showNotification(`Aggregating metrics timeline for: ${range.toUpperCase()}`);
+    }
+
+    function toggleRadarBaseline(show) {
+      const baselinePoly = document.getElementById('radarBaselinePoly');
+      if (show) {
+        baselinePoly.style.display = 'block';
+        showNotification("Day 1 Baseline polygon visible (dashed gray).");
+      } else {
+        baselinePoly.style.display = 'none';
+        showNotification("Day 1 Baseline hidden.");
+      }
+    }
+
+    function openBenchmarkModal() {
+      document.getElementById('benchmarkModal').classList.remove('hidden');
+      showNotification("Starting Bi-Weekly Standardized Speaking Benchmark...");
+    }
+
+    function closeBenchmarkModal() {
+      document.getElementById('benchmarkModal').classList.add('hidden');
+    }
+
+    let isBenchmarkRecording = false;
+    function startBenchmarkRecording() {
+      isBenchmarkRecording = true;
+      const btn = document.getElementById('benchmarkPttBtn');
+      const text = document.getElementById('benchmarkBtnText');
+      btn.className = "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-red-600 text-white font-bold text-xs shadow-lg shadow-red-600/30 transition-all cursor-pointer";
+      text.textContent = "🔴 Recording Task 1 Answer (Release to evaluate)...";
+    }
+
+    function stopBenchmarkRecording() {
+      if (!isBenchmarkRecording) return;
+      isBenchmarkRecording = false;
+      const btn = document.getElementById('benchmarkPttBtn');
+      const text = document.getElementById('benchmarkBtnText');
+      btn.className = "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-amber-600 text-white font-bold text-xs";
+      text.textContent = "Evaluating Acoustic & Lexical Features (Whisper + Antigravity CLI)...";
+
+      setTimeout(() => {
+        btn.className = "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-emerald-600 text-white font-bold text-xs";
+        text.textContent = "✓ Task 1 Scored (82/100)! Advancing to Task 2...";
+        showNotification("Task 1 Completed: Response latency 1.2s, 0 unnatural mid-clause pauses!");
+        
+        setTimeout(() => {
+          document.getElementById('stepTab1').className = "text-slate-500 pb-1";
+          document.getElementById('stepTab2').className = "font-bold text-indigo-400 border-b-2 border-indigo-500 pb-1";
+          document.getElementById('taskPromptBox').innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Prompt 2 of 3 (Technical Trade-off)</span>
+              <span class="text-[10px] text-slate-400">Target Time: 60–90 seconds</span>
+            </div>
+            <p class="text-sm text-white font-medium leading-relaxed">
+              “Explain a technical trade-off or difficult engineering compromise you had to defend to your team or stakeholders. What was the conflict, and what resulted from your choice?”
+            </p>
+          `;
+          btn.className = "w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer";
+          text.textContent = "Hold Space to Speak Task 2 Answer";
+        }, 1200);
+      }, 900);
+    }
+
+    function openReportModal(date, band, score) {
+      document.getElementById('reportTitle').textContent = `Benchmark Report: ${date}, 2026`;
+      document.getElementById('reportBand').textContent = `CEFR Speaking Band: ${band} (${score}/100)`;
+      document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').classList.add('hidden');
+    }
+
+    // Spacebar Handlers for Benchmark Runner
+    let isSpaceDown = false;
+    window.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('benchmarkModal');
+      if (!modal.classList.contains('hidden') && e.code === 'Space' && !isSpaceDown) {
+        e.preventDefault();
+        isSpaceDown = true;
+        startBenchmarkRecording();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const modal = document.getElementById('benchmarkModal');
+      if (!modal.classList.contains('hidden') && e.code === 'Space' && isSpaceDown) {
+        e.preventDefault();
+        isSpaceDown = false;
+        stopBenchmarkRecording();
+      }
+    });
+  </script>
+</body>
+</html>

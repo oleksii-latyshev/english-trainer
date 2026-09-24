@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Trainer - Conversation Mode Prototype</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: #181b24;
+      --card-border: #282d3d;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-light: rgba(99, 102, 241, 0.15);
+      --success: #10b981;
+      --success-light: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-light: rgba(245, 158, 11, 0.15);
+      --sidebar-bg: #13161f;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #2d3348;
+      border-radius: 4px;
+    }
+    @keyframes wave {
+      0%, 100% { height: 6px; }
+      50% { height: 28px; }
+    }
+    .wave-bar {
+      animation: wave 1.2s infinite ease-in-out;
+    }
+    .bubble-enter {
+      animation: bubbleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes bubbleIn {
+      0% { transform: translateY(8px) scale(0.97); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col p-4 md:p-6 antialiased">
+
+  <!-- Desktop App Container (macOS Window Frame) -->
+  <div class="max-w-6xl w-full mx-auto flex flex-col flex-1 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl shadow-2xl overflow-hidden min-h-[820px]">
+    
+    <!-- macOS Window Titlebar -->
+    <header class="h-11 bg-[var(--sidebar-bg)] border-b border-[var(--card-border)] flex items-center justify-between px-4 select-none">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f56] inline-block shadow-sm"></span>
+        <span class="w-3 h-3 rounded-full bg-[#ffbd2e] inline-block shadow-sm"></span>
+        <span class="w-3 h-3 rounded-full bg-[#27c93f] inline-block shadow-sm"></span>
+        <div class="ml-4 flex items-center gap-2 text-xs">
+          <span class="text-slate-400">English Trainer</span>
+          <span class="text-slate-600">›</span>
+          <span class="text-indigo-400 font-semibold">Conversation Mode (Fluency)</span>
+        </div>
+      </div>
+
+      <!-- Top Right: Audio speed + Mini Eva + Notes -->
+      <div class="flex items-center gap-3">
+        <!-- TTS Speech Speed Selector -->
+        <div class="flex items-center bg-slate-900 border border-slate-700/80 rounded-lg p-0.5 text-xs text-slate-300">
+          <span class="text-[10px] px-2 text-slate-500 font-medium">TTS Rate:</span>
+          <button id="speed09" onclick="setSpeed(0.9)" class="px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white">0.9x</button>
+          <button id="speed10" onclick="setSpeed(1.0)" class="px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-600 text-white">1.0x</button>
+          <button id="speed11" onclick="setSpeed(1.15)" class="px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white">1.15x</button>
+        </div>
+
+        <!-- Mini Eva Capsule -->
+        <div class="flex items-center gap-2 bg-purple-950/40 border border-purple-800/50 px-3 py-1 rounded-full cursor-pointer" onclick="showNotification('Mini Eva is listening silently. No interruptions during speaking!')">
+          <div id="evaAvatar" class="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-bold text-white shadow-sm">🎧</div>
+          <span class="text-xs font-semibold text-purple-200">Mini Eva</span>
+          <span id="evaXpBadge" class="text-[10px] text-purple-400 bg-purple-900/60 px-1.5 py-0.2 rounded-full font-mono">240 XP</span>
+        </div>
+
+        <!-- Layout Notes Toggle -->
+        <button id="toggleNotesBtn" onclick="toggleNotes()" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span id="notesLabel">Show Layout Notes</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- App Body (Sidebar + Content Viewport) -->
+    <div class="flex flex-1 overflow-hidden">
+      
+      <!-- 1. Left Sidebar Navigation -->
+      <aside class="w-60 bg-[var(--sidebar-bg)] border-r border-[var(--card-border)] flex flex-col justify-between p-3 select-none flex-shrink-0">
+        <div class="flex flex-col gap-5">
+          <div class="px-2 pt-1">
+            <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Training Modes</div>
+          </div>
+
+          <nav class="flex flex-col gap-1">
+            <button onclick="window.location.href='dashboard_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">🎙️</span>
+              <span>Daily Practice</span>
+            </button>
+
+            <!-- Active Item: Conversation -->
+            <button class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-left transition-all">
+              <span class="text-base">💬</span>
+              <span>Conversation</span>
+              <span class="ml-auto w-2 h-2 rounded-full bg-indigo-400"></span>
+            </button>
+
+            <button onclick="window.location.href='coach_rehearsal_prototype.html'" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">🎯</span>
+              <span>Coach & Re-Speak</span>
+            </button>
+
+            <button onclick="showNotification('Switched to The Hot Seat Interview Packs')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">💼</span>
+              <span>The Hot Seat</span>
+            </button>
+
+            <button onclick="showNotification('Switched to Skill Builders Drills')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">⚡</span>
+              <span>Skill Drills</span>
+            </button>
+          </nav>
+
+          <div class="flex flex-col gap-1">
+            <div class="px-2 text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Knowledge & Growth</div>
+
+            <button onclick="showNotification('Opening Learning Memory Vault')" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <div class="flex items-center gap-3">
+                <span class="text-base">🧠</span>
+                <span>Learning Memory</span>
+              </div>
+              <span class="text-[11px] font-semibold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">4 due</span>
+            </button>
+
+            <button onclick="showNotification('Opening Progress Radar')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 text-left transition-all">
+              <span class="text-base">📊</span>
+              <span>Progress Radar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar Speaking Rhythm Meter -->
+        <div class="p-3 bg-slate-900/70 rounded-xl border border-slate-800 flex flex-col gap-2 text-xs">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="font-semibold text-slate-200">Speaking Rhythm</span>
+            <span class="text-emerald-400 font-bold">Fluid 🟢</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Speech/Pause Ratio:</span>
+            <span class="font-mono text-slate-300">74%</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>Avg Hesitation:</span>
+            <span class="font-mono text-slate-300">1.1s</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 2. Main Content Canvas -->
+      <main class="flex-1 flex flex-col overflow-hidden p-6 md:p-8 gap-4">
+
+        <!-- Optional UI Annotation Banner -->
+        <div id="notesSection" class="p-4 bg-amber-950/30 border border-amber-500/40 rounded-xl text-xs text-amber-200 flex items-start justify-between gap-4 transition-all">
+          <div class="flex items-start gap-2.5">
+            <span class="text-base">💡</span>
+            <div>
+              <strong class="font-semibold block text-amber-300 mb-0.5">UI Architecture & Decisions for Screen 03 (Conversation Mode)</strong>
+              <p class="text-amber-200/90 leading-relaxed">
+                • <strong>No Mid-Sentence Interruptions:</strong> Grammatical and lexical evaluation is queued silently in the background (see counter top right).<br>
+                • <strong>Spontaneous Conversational Immersion:</strong> Dynamic follow-up questions simulate realistic dialogue without feeling like a grammar quiz.<br>
+                • <strong>Rescue Scaffolding Drawer:</strong> Subtle, optional transition starters when the speaker is stuck searching for words.<br>
+                • <strong>End & Review Summary:</strong> Transparent end-of-session aggregation with fluency statistics and phrase takeaways.
+              </p>
+            </div>
+          </div>
+          <button onclick="toggleNotes()" class="text-amber-400 hover:text-amber-200 text-sm font-bold">✕</button>
+        </div>
+
+        <!-- Sub-Header Status Bar -->
+        <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+          <div class="flex items-center gap-3">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold border border-blue-500/30">
+              💬 Scenario: Explaining Tech to Non-Technical Execs
+            </span>
+            <span class="text-xs text-slate-400">Target: High fluency, clear connectors, no jargon</span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- Silent Feedback Collector Pill -->
+            <button onclick="openSilentNotesPreview()" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700/80 hover:border-slate-600 text-slate-300 text-xs transition-colors cursor-pointer">
+              <span>🤫</span>
+              <span id="silentFeedbackCount">2 notes collected silently</span>
+            </button>
+
+            <!-- Finish Session Button -->
+            <button onclick="openSummaryModal()" class="px-4 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-red-300 text-xs font-semibold transition-colors cursor-pointer">
+              Finish & Review
+            </button>
+          </div>
+        </div>
+
+        <!-- Dialogue Message Stream -->
+        <div id="chatStream" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-4 pr-2">
+          
+          <!-- Turn 1: AI Prompt -->
+          <div class="flex items-start gap-3.5 bubble-enter">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+              🤖
+            </div>
+            <div class="flex flex-col gap-1 max-w-xl">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-indigo-300">Coach Eva</span>
+                <span class="text-[10px] text-slate-500">2 min ago</span>
+              </div>
+              <div class="p-4 rounded-2xl rounded-tl-sm bg-slate-900 border border-slate-800 text-sm text-slate-100 shadow-sm leading-relaxed">
+                “Thanks for meeting with me! Our stakeholders keep asking why the database migration took two weeks longer than planned. Could you explain what happened in simple terms that non-engineers can grasp?”
+              </div>
+              <button onclick="simulateTtsPlay('Eva Turn 1')" class="self-start text-[11px] text-slate-400 hover:text-indigo-300 flex items-center gap-1 mt-0.5">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                <span>Replay Voice</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Turn 1: User Answer -->
+          <div class="flex items-start gap-3.5 justify-end bubble-enter">
+            <div class="flex flex-col gap-1 max-w-xl items-end">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-emerald-400 font-mono">1.1s latency</span>
+                <span class="text-slate-600">·</span>
+                <span class="text-[10px] text-slate-400 font-mono">14s speaking</span>
+                <span class="text-xs font-bold text-slate-300">You</span>
+              </div>
+              <div class="p-4 rounded-2xl rounded-tr-sm bg-indigo-950/40 border border-indigo-500/30 text-sm text-slate-200 shadow-sm leading-relaxed text-left">
+                “Basically, our old database was struggling with traffic spikes. We had to move the customer data to a new distributed system without shutting down the website for our users.”
+              </div>
+            </div>
+            <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+              🗣️
+            </div>
+          </div>
+
+          <!-- Turn 2: AI Follow-Up -->
+          <div class="flex items-start gap-3.5 bubble-enter">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+              🤖
+            </div>
+            <div class="flex flex-col gap-1 max-w-xl">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-indigo-300">Coach Eva</span>
+                  <span class="text-[10px] text-slate-500">Just now</span>
+                </div>
+                <div id="aiSpeakingIndicator" class="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Audio Ready</span>
+                </div>
+              </div>
+              <div class="p-4 rounded-2xl rounded-tl-sm bg-slate-900 border border-slate-800 text-sm text-slate-100 shadow-sm leading-relaxed">
+                “That paints a very clear picture. What was the single riskiest moment during that transfer, and how did your team make sure zero customer data was lost?”
+              </div>
+              <button onclick="simulateTtsPlay('Eva Turn 2')" class="self-start text-[11px] text-slate-400 hover:text-indigo-300 flex items-center gap-1 mt-0.5">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                <span>Replay Voice</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic User Messages will appear here -->
+          <div id="dynamicMessages" class="flex flex-col gap-4"></div>
+
+        </div>
+
+        <!-- Optional Rescue Drawer (Collapsible) -->
+        <div id="rescueDrawer" class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-2 transition-all">
+          <div class="flex items-center justify-between cursor-pointer" onclick="toggleRescueContent()">
+            <div class="flex items-center gap-2 text-xs font-semibold text-amber-300">
+              <span>💡 Need a connector or starter?</span>
+              <span class="text-[10px] text-slate-500 font-normal">(Click to toggle rescue bank)</span>
+            </div>
+            <span id="rescueArrow" class="text-xs text-slate-500">▼</span>
+          </div>
+
+          <div id="rescueContent" class="flex flex-wrap items-center gap-2 pt-1">
+            <button onclick="insertStarter('The biggest bottleneck turned out to be...')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700 transition-colors">
+              "The biggest bottleneck turned out to be..."
+            </button>
+            <button onclick="insertStarter('To ensure nothing went wrong, we...')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700 transition-colors">
+              "To ensure nothing went wrong, we..."
+            </button>
+            <button onclick="insertStarter('What made it especially tricky was...')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700 transition-colors">
+              "What made it especially tricky was..."
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Push-to-Talk Speaking Canvas -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-[var(--card-bg)] to-slate-950 border border-[var(--card-border)] flex flex-col items-center justify-center gap-3 shadow-lg">
+          
+          <!-- Animated Audio Waveform Bars -->
+          <div id="waveformArea" class="flex items-center justify-center gap-1.5 h-10 w-full max-w-xs px-4">
+            <div class="w-1 bg-indigo-500/40 rounded-full h-2"></div>
+            <div class="w-1 bg-indigo-500/60 rounded-full h-3"></div>
+            <div class="w-1 bg-indigo-500 rounded-full h-5"></div>
+            <div class="w-1 bg-indigo-400 rounded-full h-2"></div>
+            <div class="w-1 bg-indigo-500/80 rounded-full h-4"></div>
+            <div class="w-1 bg-indigo-500 rounded-full h-6"></div>
+            <div class="w-1 bg-indigo-400 rounded-full h-3"></div>
+            <div class="w-1 bg-indigo-500/60 rounded-full h-2"></div>
+          </div>
+
+          <!-- Main Push-to-Talk Button -->
+          <button id="pttButton" onmousedown="startPtt()" onmouseup="stopPtt()" class="flex items-center gap-3 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition-all cursor-pointer">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            <span id="pttButtonText">Hold Space to Answer Eva</span>
+          </button>
+
+          <span id="pttSubtitle" class="text-xs text-slate-400">
+            Push-to-Talk active · Speak continuously without fear of minor mistakes
+          </span>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- 4. Global macOS Bottom Audio Bar -->
+    <footer class="h-12 bg-[var(--sidebar-bg)] border-t border-[var(--card-border)] px-4 flex items-center justify-between text-xs select-none">
+      <div class="flex items-center gap-4 text-slate-400">
+        <span class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>MacBook Pro Mic (16kHz PCM)</span>
+        </span>
+        <span class="text-slate-600">|</span>
+        <span>Local Whisper Metal ⚡ (14ms latency)</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div id="footerPtt" class="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+          <span id="footerPttText">Hold <kbd class="font-mono bg-slate-700 px-1.5 py-0.5 rounded text-white text-[10px]">Space</kbd> to Speak</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- End of Session Review Modal (Hidden by Default) -->
+  <div id="summaryModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-5 bubble-enter">
+      
+      <div class="flex items-center justify-between border-b border-[var(--card-border)] pb-3">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <span>🎉 Session Complete! Spoken Summary</span>
+          </h2>
+          <p class="text-xs text-slate-400">Scenario: Explaining Tech to Execs · 4 turns completed</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30">
+          +35 XP Earned 🌱
+        </span>
+      </div>
+
+      <!-- Quick Fluency Stats -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
+          <span class="text-[11px] text-slate-400 block mb-0.5">Total Speaking</span>
+          <span class="text-base font-bold font-mono text-emerald-400">3m 42s</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
+          <span class="text-[11px] text-slate-400 block mb-0.5">Avg Latency</span>
+          <span class="text-base font-bold font-mono text-indigo-400">1.2s</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
+          <span class="text-[11px] text-slate-400 block mb-0.5">Disruptive Pauses</span>
+          <span class="text-base font-bold font-mono text-slate-200">1</span>
+        </div>
+      </div>
+
+      <!-- 1 Thing that Improved & 1 Thing to Focus on -->
+      <div class="flex flex-col gap-2.5">
+        <div class="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs">
+          <strong class="text-emerald-400 font-semibold block mb-0.5">✅ One Thing That Improved:</strong>
+          <p class="text-slate-300">You maintained a steady speaking rhythm without translating sentences in your head first.</p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 text-xs">
+          <strong class="text-amber-400 font-semibold block mb-0.5">🎯 One Thing to Focus on Next:</strong>
+          <p class="text-slate-300">Use transition connectors ("the trade-off was...", "what made it tricky was...") instead of relying on "and then".</p>
+        </div>
+      </div>
+
+      <!-- Silent Feedback Insights Gathered -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Useful Phrases to Keep:</span>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono">distributed system</span>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono">zero downtime</span>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono">steeper learning curve</span>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="flex items-center justify-between pt-3 border-t border-[var(--card-border)]">
+        <button onclick="saveSessionPhrases()" id="savePhrasesBtn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors">
+          ⭐ Save 3 Phrases to Memory
+        </button>
+        <button onclick="closeSummaryModal()" class="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all">
+          Return to Dashboard
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Interactive Live Toast Message -->
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs shadow-xl opacity-0 translate-y-3 transition-all pointer-events-none z-50 flex items-center gap-2">
+    <span class="text-base">ℹ️</span>
+    <span id="toastMsg">Action triggered</span>
+  </div>
+
+  <!-- Interactive Simulation Script -->
+  <script>
+    let isSpaceDown = false;
+    let isNotesVisible = true;
+    let turnCount = 2;
+    let silentNotes = 2;
+    let isRescueOpen = true;
+
+    function showNotification(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+      }, 3400);
+    }
+
+    function toggleNotes() {
+      isNotesVisible = !isNotesVisible;
+      const section = document.getElementById('notesSection');
+      const label = document.getElementById('notesLabel');
+      if (isNotesVisible) {
+        section.classList.remove('hidden');
+        label.textContent = "Hide Layout Notes";
+      } else {
+        section.classList.add('hidden');
+        label.textContent = "Show Layout Notes";
+      }
+    }
+
+    function toggleRescueContent() {
+      isRescueOpen = !isRescueOpen;
+      const content = document.getElementById('rescueContent');
+      const arrow = document.getElementById('rescueArrow');
+      if (isRescueOpen) {
+        content.classList.remove('hidden');
+        arrow.textContent = '▼';
+      } else {
+        content.classList.add('hidden');
+        arrow.textContent = '▶';
+      }
+    }
+
+    function insertStarter(text) {
+      showNotification(`Starter selected: "${text}". Hold Space to speak your full answer!`);
+    }
+
+    function setSpeed(rate) {
+      document.getElementById('speed09').className = rate === 0.9 ? "px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-600 text-white" : "px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white";
+      document.getElementById('speed10').className = rate === 1.0 ? "px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-600 text-white" : "px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white";
+      document.getElementById('speed11').className = rate === 1.15 ? "px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-600 text-white" : "px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-white";
+      showNotification(`TTS rate configured to ${rate}x`);
+    }
+
+    function startPtt() {
+      if (isSpaceDown) return;
+      isSpaceDown = true;
+      const btn = document.getElementById('pttButton');
+      const btnText = document.getElementById('pttButtonText');
+      const subtitle = document.getElementById('pttSubtitle');
+      const waveform = document.getElementById('waveformArea');
+
+      btn.className = "flex items-center gap-3 px-8 py-3.5 rounded-xl bg-red-600 text-white font-semibold text-sm shadow-xl shadow-red-600/40 transition-all cursor-pointer";
+      btnText.textContent = "🔴 Recording... (Release to Send)";
+      subtitle.innerHTML = "<span class='text-red-400 font-medium'>Speaking into MacBook Pro Mic (16kHz PCM mono buffer active)</span>";
+      
+      // Animate waveform
+      waveform.querySelectorAll('div').forEach((bar, idx) => {
+        bar.className = "w-1.5 bg-red-500 rounded-full wave-bar";
+        bar.style.animationDelay = `${idx * 0.1}s`;
+      });
+    }
+
+    function stopPtt() {
+      if (!isSpaceDown) return;
+      isSpaceDown = false;
+      const btn = document.getElementById('pttButton');
+      const btnText = document.getElementById('pttButtonText');
+      const subtitle = document.getElementById('pttSubtitle');
+      const waveform = document.getElementById('waveformArea');
+
+      btn.className = "flex items-center gap-3 px-8 py-3.5 rounded-xl bg-indigo-900 text-indigo-200 font-semibold text-sm transition-all";
+      btnText.textContent = "⚡ Whisper Transcribing (18ms)...";
+      subtitle.textContent = "Evaluating speech metrics & generating next conversational follow-up...";
+
+      // Reset waveform
+      waveform.querySelectorAll('div').forEach(bar => {
+        bar.className = "w-1 bg-indigo-500/50 rounded-full h-3";
+      });
+
+      // Simulate Turn 3 User message insertion
+      setTimeout(() => {
+        const dynamicArea = document.getElementById('dynamicMessages');
+        
+        // 1. Append User message
+        const userMsg = document.createElement('div');
+        userMsg.className = "flex items-start gap-3.5 justify-end bubble-enter";
+        userMsg.innerHTML = `
+          <div class="flex flex-col gap-1 max-w-xl items-end">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-emerald-400 font-mono">0.8s latency</span>
+              <span class="text-slate-600">·</span>
+              <span class="text-[10px] text-slate-400 font-mono">16s speaking</span>
+              <span class="text-xs font-bold text-slate-300">You</span>
+            </div>
+            <div class="p-4 rounded-2xl rounded-tr-sm bg-indigo-950/40 border border-indigo-500/30 text-sm text-slate-200 shadow-sm leading-relaxed text-left">
+              “The riskiest part was running both databases simultaneously for two days and verifying that replication didn't drop any incoming transactions.”
+            </div>
+          </div>
+          <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+            🗣️
+          </div>
+        `;
+        dynamicArea.appendChild(userMsg);
+
+        // Update silent feedback counter
+        silentNotes += 1;
+        document.getElementById('silentFeedbackCount').textContent = `${silentNotes} notes collected silently`;
+
+        // 2. Eva replies after brief thinking delay
+        setTimeout(() => {
+          const aiMsg = document.createElement('div');
+          aiMsg.className = "flex items-start gap-3.5 bubble-enter";
+          aiMsg.innerHTML = `
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-sm shadow-md flex-shrink-0">
+              🤖
+            </div>
+            <div class="flex flex-col gap-1 max-w-xl">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-indigo-300">Coach Eva</span>
+                <span class="text-[10px] text-slate-500">Just now</span>
+              </div>
+              <div class="p-4 rounded-2xl rounded-tl-sm bg-slate-900 border border-slate-800 text-sm text-slate-100 shadow-sm leading-relaxed">
+                “Dual-write verification — excellent decision! If you were explaining this to the VP of Sales, how would you justify the extra cloud bill for those two days?”
+              </div>
+              <button onclick="simulateTtsPlay('Eva Turn 3')" class="self-start text-[11px] text-slate-400 hover:text-indigo-300 flex items-center gap-1 mt-0.5">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                <span>Replay Voice</span>
+              </button>
+            </div>
+          `;
+          dynamicArea.appendChild(aiMsg);
+
+          // Scroll stream down
+          document.getElementById('chatStream').scrollTop = document.getElementById('chatStream').scrollHeight;
+
+          // Reset PTT button
+          btn.className = "flex items-center gap-3 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition-all cursor-pointer";
+          btnText.textContent = "Hold Space to Answer Eva";
+          subtitle.textContent = "Push-to-Talk active · Speak continuously without fear of minor mistakes";
+          showNotification("Eva answered! Keep the conversation flowing.");
+        }, 800);
+
+      }, 600);
+    }
+
+    function openSilentNotesPreview() {
+      showNotification("Silent Queue: 3 notes gathered for review. They will be displayed when you click 'Finish & Review'.");
+    }
+
+    function openSummaryModal() {
+      document.getElementById('summaryModal').classList.remove('hidden');
+    }
+
+    function closeSummaryModal() {
+      document.getElementById('summaryModal').classList.add('hidden');
+      window.location.href = 'dashboard_prototype.html';
+    }
+
+    function saveSessionPhrases() {
+      const btn = document.getElementById('savePhrasesBtn');
+      btn.className = "px-3.5 py-2 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs font-semibold";
+      btn.textContent = "✓ 3 Phrases Added to Memory Vault";
+      showNotification("Saved phrases into Learning Memory SQLite repository.");
+    }
+
+    function simulateTtsPlay(turnName) {
+      showNotification(`TTS Playing ${turnName} via macOS speech synthesis (1.0x).`);
+    }
+
+    // Spacebar Event Handlers
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !isSpaceDown && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        startPtt();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && isSpaceDown) {
+        e.preventDefault();
+        stopPtt();
+      }
+    });
+  </script>
+</body>
+</html>
