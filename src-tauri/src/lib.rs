@@ -94,6 +94,11 @@ fn get_active_practice_session(
     sessions.get_active()
 }
 
+#[tauri::command]
+fn get_question_scaffold(question: String) -> conversation::QuestionScaffold {
+    conversation::question_scaffold(&question)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -117,7 +122,8 @@ pub fn run() {
             start_practice_session,
             send_practice_turn,
             finish_practice_session,
-            get_active_practice_session
+            get_active_practice_session,
+            get_question_scaffold
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

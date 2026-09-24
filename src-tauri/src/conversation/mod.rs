@@ -6,12 +6,14 @@ use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod rules;
+mod scaffold;
 #[cfg(test)]
 use rules::MAX_TRANSCRIPT_CHARS;
 use rules::{
     context_char_count, validate_transcript, MAX_CONTEXT_CHARS, MAX_SAFE_SESSION_ID, MAX_TURNS,
     OPENING_QUESTION,
 };
+pub use scaffold::{question_scaffold, QuestionScaffold};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PracticeSession {

@@ -33,6 +33,33 @@ export type PracticeSession = {
   turn_count: number;
 };
 
+export type QuestionScaffold = {
+  sentence_starters: string[];
+  useful_expressions: string[];
+  structure: string[];
+};
+
+function isShortTextList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= 3 &&
+    value.every((item) => typeof item === 'string' && item.trim().length > 0 && item.length <= 120)
+  );
+}
+
+export function isQuestionScaffold(value: unknown): value is QuestionScaffold {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'sentence_starters' in value &&
+    isShortTextList(value.sentence_starters) &&
+    'useful_expressions' in value &&
+    isShortTextList(value.useful_expressions) &&
+    'structure' in value &&
+    isShortTextList(value.structure)
+  );
+}
+
 export type FinishedPracticeSession = {
   session_id: number;
   finished: true;

@@ -3,6 +3,7 @@ import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecov
 import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
 import { type PracticeState, sessionDetails } from './lib/practiceState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { ScaffoldingPanel } from './ScaffoldingPanel';
 
 function formatDuration(durationMs: number): string {
   const seconds = Math.floor(durationMs / 1000);
@@ -97,14 +98,13 @@ export function PracticeControls({
   } = model;
   const { startRecording, stopRecording, transcribeRecording } = actions;
   const session = sessionDetails(practice);
+  const question = session?.question ?? 'What was the most interesting part of your day?';
   return (
     <Card className="panel practice-panel" variant="secondary">
       <Card.Header className="panel-header">
         <div>
           <p className="section-kicker">TODAY’S PROMPT</p>
-          <Card.Title className="prompt-title">
-            {session?.question ?? 'What was the most interesting part of your day?'}
-          </Card.Title>
+          <Card.Title className="prompt-title">{question}</Card.Title>
         </div>
         <span className="prompt-index">
           {session ? `TURN ${session.turnCount + 1}` : '01 / 01'}
@@ -127,6 +127,7 @@ export function PracticeControls({
             {practiceError}
           </p>
         )}
+        <ScaffoldingPanel question={question} />
         <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
           <div className="mic-orb" aria-hidden="true">
             <span className="mic-symbol">●</span>

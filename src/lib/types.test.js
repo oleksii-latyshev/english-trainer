@@ -4,6 +4,7 @@ import {
   isFinishedPracticeSession,
   isPracticeSession,
   isProviderError,
+  isQuestionScaffold,
 } from './types';
 
 describe('conversation IPC payloads', () => {
@@ -41,5 +42,16 @@ describe('conversation IPC payloads', () => {
     expect(isPracticeSession({ session_id: 1, opening_question: '', turn_count: 0 })).toBe(false);
     expect(isFinishedPracticeSession({ session_id: 1, finished: true })).toBe(true);
     expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);
+  });
+
+  it('accepts bounded question help and rejects malformed IPC data', () => {
+    const hints = {
+      sentence_starters: ['In my view…'],
+      useful_expressions: ['for instance'],
+      structure: ['State your view', 'Give a reason'],
+    };
+    expect(isQuestionScaffold(hints)).toBe(true);
+    expect(isQuestionScaffold({ ...hints, structure: [] })).toBe(false);
+    expect(isQuestionScaffold({ ...hints, sentence_starters: [4] })).toBe(false);
   });
 });
