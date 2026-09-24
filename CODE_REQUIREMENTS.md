@@ -1,75 +1,131 @@
-# Code Requirements
+# CODE_REQUIREMENTS.md
 
-Engineering conventions for English Trainer. Product behavior and priorities live in
-[`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md);
-the intended boundaries and contracts live in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-and [`docs/TECHNICAL_REQUIREMENTS.md`](docs/TECHNICAL_REQUIREMENTS.md).
+How code in this repository is written. *What* the app does and *why* it is built this way is in
+[`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md), [`docs/ROADMAP.md`](docs/ROADMAP.md),
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), and [`docs/TECHNICAL_REQUIREMENTS.md`](docs/TECHNICAL_REQUIREMENTS.md).
+The bar: a reviewer signs off without a follow-up conversation.
 
-## Scope and structure
+Everything in the repository is English.
 
-- The repository is currently a Tauri starter. The stack in the docs is a target, not a claim
-  that every library or subsystem is already installed.
-- Keep React components, recording controls, and view state in `src/`. Put reusable frontend
-  logic near its first consumer; move it to a shared module when another feature needs it.
-- Keep Tauri commands thin. Put session orchestration, persistence, learning decisions, speech
-  metrics, and provider adapters in focused Rust modules under `src-tauri/src/` as they appear.
-- Domain and learning code depends on provider interfaces, not a particular CLI or model name.
-  Keep conversation generation separate from deeper feedback so evaluation cannot block the
-  next spoken turn.
-- Prefer small files organized by responsibility. Aim for at most 300 lines per code file;
-  split a growing module where its responsibilities naturally divide.
-- Add dependencies only for a concrete feature. Do not create the full planned directory tree
-  before it is used.
+## 1. Where code lives
 
-## Types and contracts
+```
+src/
+  App.tsx               main view switch, route shell, and window layout
+  components/           shared by more than one feature; ui/ is vendored shadcn/radix
+  lib/                  shared and DOM-free: audio, api, types, preferences, storage
+  features/<feature>/   one user-facing area: practice, conversation, coach, memory, drills, progress, companion, settings
+    components/         that feature's components
+    lib/                that feature's pure logic, tests beside it
+src-tauri/src/          session orchestrator, local STT, providers, learning engine, SQLite
+src-tauri/tests/        pipeline integration tests against a temp database and fake agy
+e2e/                    Playwright against Vite / Tauri, command layer faked
+```
 
-- Keep TypeScript strict. Avoid `any`, unchecked non-null assertions, and casts used only to
-  silence errors. Validate data from storage, IPC, and providers at the boundary.
-- Treat Tauri IPC as a versioned contract. When a command or serialized Rust type changes,
-  update its TypeScript type and callers together. Use explicit names for units such as
-  `durationMs` and `sampleRateHz`.
+- Code starts in the feature that uses it and moves to `components/` or `lib/` when a second
+  feature needs it — not before.
+- Features depend one way: `practice → conversation, coach, memory`; features are leaves
+  otherwise. No cycles, and `components/` / `lib/` never import a feature. When two features
+  need each other, the shared part belongs in `components/` or `lib/`.
+- Import through `@/…`; only files in the same folder import each other relatively. No barrels.
+- Split growing modules and components by responsibility or job (`orchestrator/session.rs`),
+  never by technical kind (`hooks/`, `helpers/`).
+- A Rust module split into a directory re-exports its public surface from `mod.rs`, so callers
+  keep writing `orchestrator::start_session` whichever file it lives in.
+- **Rust owns state, learning decisions, and persistence.** Rust owns sessions, speech metrics,
+  provider calls, spaced repetition (SRS), and SQLite. The UI is a thin declarative presentation
+  layer that renders results and captures user input. A rule the UI needs without a round trip
+  lives in `src/lib/`, once, and names its Rust counterpart.
+- **Separation of conversation from evaluation:** Fast dialogue turns (`next_turn`) must never
+  wait for deep feedback evaluation (`evaluate_turn`). Conversation responsiveness comes first.
+
+## 2. Functional principles & State
+
+- **Pure logic separation:** Calculations (SRS intervals, metric aggregations, score derivations,
+  text normalization) are pure, side-effect-free functions in `lib/` or Rust. Needing a DOM for a
+  unit test means logic is in the wrong place.
+- **Discriminated unions over boolean flags:** States are tagged unions, not bags of flags.
+  Model UI and session lifecycle as explicit variants (e.g. `idle | recording | transcribing |
+  thinking | speaking | feedback | error`). Make illegal states unrepresentable.
+- **Parse, don't validate at boundaries:** Whatever is read from the outside (IPC payloads,
+  `localStorage`, STT transcripts, LLM JSON) is `unknown` until narrowed by type guards or
+  validated by Zod / serde. Narrow, don't cast (`as`).
+- **Immutability & derived values:** Treat state as immutable. Compute derived values during
+  render; never mirror or synchronize state via `useEffect`.
+- **Effects only at the edges:** Effects strictly synchronize with outside systems (`invoke()`,
+  Web Audio hardware, timers, DOM) and must always clean up listeners, streams, and intervals.
+
+## 3. Types, IPC, and Errors
+
+- `strict`; no `any`, no non-null `!`, no `as` to silence the compiler. Narrow or validate.
+- Tauri IPC is a versioned contract: when a Rust struct crosses `invoke()`, update its TypeScript
+  type in `src/lib/types.ts` in the same commit.
+- Fields that cross `invoke()` stay `snake_case` on both sides; do not rename them to camelCase in TS.
+- Units explicit in names: `durationMs`, `sampleRateHz`, `wordsPerMinute`, `dueAt`.
+- Never swallow an error. An empty `catch` is only for failures that are harmless by design
+  (storage unavailable), and says so.
+- Rust: `anyhow` with `.context()` naming what was being done internally; typed error categories
+  across IPC (`AudioCaptureError`, `TranscriptionError`, `ProviderUnavailable`, etc.). TS branches
+  on typed error kinds, NEVER matches on error message strings.
 - Parse model output into typed Rust structures. Invalid output is a recoverable provider error,
   never a panic or a partially accepted learning result.
-- Use typed error categories when the UI needs different recovery actions. Show a useful retry
-  or settings action for microphone, model, provider, and storage failures.
-- Persist related learning changes transactionally. Do not silently replace a failed provider
-  with behavior that changes learning semantics.
 
-## Audio, privacy, and macOS
+## 4. Audio, Privacy, and macOS
 
-- Capture audio with Push-to-Talk first. Do not assume `MediaRecorder` emits a particular PCM
-  format in WebKit; normalize input explicitly when the STT provider requires it.
-- Transcribe locally and discard raw audio by default. Store a recording only after an explicit
-  user setting enables retention. Send the configured LLM provider only the transcript and
-  context needed for that request.
-- Run `agy` in isolated temporary directories, with bounded timeouts and structured responses.
-  Do not grant it the repository as a working directory.
-- Ambient prompts, notifications, and launch at login are opt-in. Normal practice must not
-  depend on Screen Recording or Accessibility permission.
-- Never present internal speaking scores as an official CEFR certification or Whisper
-  transcription as phoneme-level pronunciation scoring.
+- Push-to-Talk first. Capture 16-bit mono PCM normalized to 16 kHz via Web Audio / AudioWorklet;
+  never assume `MediaRecorder` emits a specific format in WebKit.
+- Transcribe locally with Whisper and discard raw PCM by default. Storing audio requires an explicit
+  user setting. Send the configured LLM provider only the transcript and prompt context needed.
+- Antigravity CLI (`agy`) runs in isolated scratch directories (`/tmp/eng-trainer-agy-{uuid}/`) with
+  bounded timeouts and structured responses. Never pass the repository as working directory.
+- macOS companion: Ambient prompts, notifications, and autostart are opt-in and respect quiet
+  hours. Normal practice never requires Accessibility or Screen Recording permissions.
+- Honest metrics: Internal scores are CEFR-inspired trend indicators, never presented as official
+  CEFR certifications or Whisper transcription as phoneme-level pronunciation grading.
 
-## UI and code style
+## 5. React & UI
 
-- Prefer explicit state variants for recording, transcribing, thinking, speaking, and error
-  states over combinations of independent booleans.
-- Effects synchronize with the outside world and clean up listeners, timers, and audio resources.
-  Derive values during render when possible.
-- Use accessible controls with visible recording and error states. Keep normal feedback focused
-  on the highest-value 1–3 corrections, as specified in the product docs.
-- Comments explain non-obvious constraints or decisions. Do not add comments that restate code.
-- Use Biome for TypeScript, TSX, CSS, and JSON formatting/linting, and `cargo fmt` / `cargo clippy`
-  for Rust. The repository's `biome.json` defines the frontend formatting style.
+- Function components, props typed inline or as a local `Props`. No classes except `ErrorBoundary`.
+- No effect for derived state — compute during render.
+- No `useMemo` / `useCallback` by reflex; only for a measurable cost or a dependency that must stay
+  stable.
+- One level of ternary in JSX. Past that, return early or extract a component.
+- Read `event.target.value` into a local variable before `setState`.
+- Keep controls accessible and semantic.
 
-## Validation
+## 6. Shape & Naming
 
-- Test deterministic logic where mistakes are costly: schema parsing, migrations, learning
-  transitions, review scheduling, speech metrics, quiet hours, and provider error mapping.
-- Use focused integration fixtures for provider and audio boundaries. Add UI flow tests as the
-  speaking experience stabilizes; do not require exhaustive UI tests for early exploration.
-- For each change, run the checks relevant to touched files. Available commands are
-  `bun run check`, `bun run typecheck`, `bun run build`,
-  `cargo fmt --manifest-path src-tauri/Cargo.toml --all --check`, and
-  `cargo test --manifest-path src-tauri/Cargo.toml` once dependencies are installed.
-- Manual speech checks on the target Mac are required for microphone permissions, local STT,
-  TTS, and perceived turn latency; a green unit test does not validate those experiences.
+- Guard clauses over deep nesting.
+- More than ~4 parameters: an options object in TS, a struct in Rust.
+- Export what is used, nothing speculative. No dependency for what the platform or an installed
+  package already does.
+- Model tiers, not model ids, at call sites.
+- `camelCase` values and functions, `PascalCase` types and components, `SCREAMING_SNAKE_CASE`
+  module constants. Rust follows `rustfmt`.
+- Booleans read as assertions: `isRecording`, `hasNotes`, `canStart` — never `flag` or `status`.
+- `handleX` implements, `onX` is the prop.
+- Components `PascalCase.tsx`; other modules lowercase, named for what they do. No `utils.ts`
+  dumping ground.
+- Comments explain the *why*: a platform workaround, a constraint from `agy` or macOS, a choice
+  that looks wrong and is not. Never restate code, narrate history, or leave a `TODO`. Every
+  `biome-ignore` states its reason.
+
+## 7. Tests
+
+| What | Where | Command |
+|---|---|---|
+| Pure TS logic | `*.test.ts` beside it in a `lib/`, no DOM | `bun test` |
+| Rust logic | `#[cfg(test)] mod tests` beside the code | `bun run test:rust` |
+| End-to-end pipeline | `src-tauri/tests/pipeline.rs` | `bun run test:rust` |
+| User flows | `e2e/*.e2e.ts` | `bun run test:e2e` |
+
+- To test logic, move it out of the component into a `lib/` or Rust. Needing a DOM for a unit
+  test means the logic is in the wrong place.
+- No mocks of code we own. Two seams are faked, both at the edge: `agy` (through
+  `ENG_TRAINER_AGY_BIN`) and, in E2E only, `invoke()`, whose fixtures are typed against `types.ts`.
+- E2E covers flows, not details. Select by role and visible English text, never by class name.
+- Every bug fix starts with a test that reproduces it.
+- No snapshot tests of rendered output.
+- Manual speech checks on physical Mac are required for microphone permissions, local STT, TTS,
+  and perceived turn latency; a green unit test does not validate those experiences.
+- Automated verification runs via Lefthook pre-commit hooks and GitHub Actions CI.
