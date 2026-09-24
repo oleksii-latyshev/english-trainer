@@ -12,6 +12,15 @@ fn turn(reply: &str, question: &str) -> ConversationTurn {
     }
 }
 
+fn temporary_database_path() -> std::path::PathBuf {
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let index = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    std::env::temp_dir().join(format!(
+        "english-trainer-session-{}-{index}.sqlite3",
+        std::process::id()
+    ))
+}
+
 #[test]
 fn start_turn_context_resume_and_finish_form_a_session() {
     let store = SessionStore::default();
@@ -169,4 +178,67 @@ fn context_discards_oldest_turns_to_stay_within_character_budget() {
             )
             .unwrap();
     }
+}
+
+#[test]
+fn active_session_and_all_turns_resume_after_store_restart() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    for index in 0..10 {
+        store
+            .send_turn(session.session_id, format!("answer {index}"), |context| {
+                assert!(context.recent_turns.len() <= MAX_TURNS);
+                Ok(turn("Okay.", &format!("Question {index}?")))
+            })
+            .unwrap();
+    }
+    drop(store);
+
+    let resumed = SessionStore::open(&path).unwrap();
+    let state = resumed.get_active().unwrap();
+    assert_eq!(state.session_id, session.session_id);
+    assert_eq!(state.turn_count, 10);
+    assert_eq!(state.opening_question, "Question 9?");
+    resumed
+        .send_turn(state.session_id, "answer after restart".into(), |context| {
+            assert_eq!(context.recent_turns.len(), MAX_TURNS);
+            assert_eq!(context.recent_turns[0].learner, "answer 2");
+            Ok(turn("Sure.", "What else?"))
+        })
+        .unwrap();
+    drop(resumed);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn failed_provider_turn_is_not_saved_and_finish_survives_restart() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    let error = store
+        .send_turn(session.session_id, "An answer".into(), |_| {
+            Err(ProviderError::new(ProviderErrorCode::Timeout, "retry"))
+        })
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::Timeout);
+    assert_eq!(
+        store
+            .lock()
+            .database
+            .turn_count(session.session_id)
+            .unwrap(),
+        0
+    );
+    store
+        .send_turn(session.session_id, "A saved answer".into(), |_| {
+            Ok(turn("Good.", "Next question?"))
+        })
+        .unwrap();
+    store.finish(session.session_id).unwrap();
+    drop(store);
+
+    let reopened = SessionStore::open(&path).unwrap();
+    assert!(reopened.get_active().is_none());
+    let _ = std::fs::remove_file(path);
 }

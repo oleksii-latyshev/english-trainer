@@ -73,7 +73,8 @@ export type ProviderErrorCode =
   | 'process_failed'
   | 'invalid_request'
   | 'invalid_session'
-  | 'busy';
+  | 'busy'
+  | 'database_error';
 
 export type ProviderError = {
   code: ProviderErrorCode;
@@ -141,6 +142,7 @@ function isProviderErrorCode(value: unknown): value is ProviderErrorCode {
     case 'invalid_request':
     case 'invalid_session':
     case 'busy':
+    case 'database_error':
       return true;
     default:
       return false;

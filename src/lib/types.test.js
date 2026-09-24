@@ -24,6 +24,7 @@ describe('conversation IPC payloads', () => {
     expect(isProviderError({ code: 'invalid_session', message: 'Start a new session.' })).toBe(
       true,
     );
+    expect(isProviderError({ code: 'database_error', message: 'Please retry.' })).toBe(true);
     expect(isProviderError({ code: 'unexpected', message: 'Internal data' })).toBe(false);
     expect(isProviderError('unavailable')).toBe(false);
   });

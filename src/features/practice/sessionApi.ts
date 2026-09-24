@@ -7,6 +7,13 @@ export async function startPracticeSession(): Promise<PracticeSession> {
   return result;
 }
 
+export async function getActivePracticeSession(): Promise<PracticeSession | null> {
+  const result = await invoke<unknown>('get_active_practice_session');
+  if (result === null) return null;
+  if (!isPracticeSession(result)) throw new Error('Unexpected active practice session response.');
+  return result;
+}
+
 export async function finishPracticeSession(sessionId: number): Promise<void> {
   const result = await invoke<unknown>('finish_practice_session', { sessionId });
   if (!isFinishedPracticeSession(result) || result.session_id !== sessionId) {

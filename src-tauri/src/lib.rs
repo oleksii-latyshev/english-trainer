@@ -1,5 +1,6 @@
 mod audio;
 mod conversation;
+mod persistence;
 mod providers;
 
 use tauri::Manager;
@@ -86,17 +87,37 @@ fn finish_practice_session(
     sessions.finish(session_id)
 }
 
+#[tauri::command]
+fn get_active_practice_session(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Option<conversation::PracticeSession> {
+    sessions.get_active()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .manage(conversation::SessionStore::default())
+        .setup(|app| {
+            let app_data = app.path().app_data_dir()?;
+            std::fs::create_dir_all(&app_data)?;
+            let database_path = app_data.join("english-trainer.sqlite3");
+            let sessions = conversation::SessionStore::open(&database_path).map_err(|error| {
+                std::io::Error::other(format!(
+                    "Could not initialize local practice history at {}: {error}",
+                    database_path.display()
+                ))
+            })?;
+            app.manage(sessions);
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             transcribe_audio,
             generate_follow_up,
             start_practice_session,
             send_practice_turn,
-            finish_practice_session
+            finish_practice_session,
+            get_active_practice_session
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

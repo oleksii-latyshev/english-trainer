@@ -43,6 +43,7 @@ pub enum ProviderErrorCode {
     InvalidRequest,
     Busy,
     InvalidSession,
+    DatabaseError,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

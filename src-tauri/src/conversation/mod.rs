@@ -1,14 +1,17 @@
+use crate::persistence::SessionDatabase;
 use crate::providers::{
     ContextTurn, ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
 };
 use serde::Serialize;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
-
-const OPENING_QUESTION: &str = "What is something interesting that happened to you recently?";
-const MAX_TURNS: usize = 8;
-const MAX_TRANSCRIPT_CHARS: usize = 4_000;
-const MAX_CONTEXT_CHARS: usize = 8_000;
-const MAX_SAFE_SESSION_ID: u64 = 9_007_199_254_740_991;
+mod rules;
+#[cfg(test)]
+use rules::MAX_TRANSCRIPT_CHARS;
+use rules::{
+    context_char_count, validate_transcript, MAX_CONTEXT_CHARS, MAX_SAFE_SESSION_ID, MAX_TURNS,
+    OPENING_QUESTION,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PracticeSession {
@@ -23,25 +26,52 @@ pub struct FinishedPracticeSession {
     pub finished: bool,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct SessionStore {
     state: Arc<Mutex<State>>,
 }
 
-#[derive(Default)]
 struct State {
-    next_id: u64,
+    database: SessionDatabase,
     active: Option<ActiveSession>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StoredTurn {
+    pub learner: String,
+    pub assistant_reply: String,
+    pub assistant_question: String,
 }
 
 struct ActiveSession {
     id: u64,
     opening_question: String,
-    turns: Vec<ContextTurn>,
+    turns: Vec<StoredTurn>,
     in_flight: bool,
 }
 
 impl SessionStore {
+    pub fn open(path: impl AsRef<Path>) -> rusqlite::Result<Self> {
+        let database = SessionDatabase::open(path)?;
+        Self::from_database(database)
+    }
+
+    fn from_database(database: SessionDatabase) -> rusqlite::Result<Self> {
+        let active = if let Some(stored) = database.active_session()? {
+            Some(ActiveSession {
+                id: stored.id,
+                opening_question: stored.opening_question,
+                turns: database.turns(stored.id)?,
+                in_flight: false,
+            })
+        } else {
+            None
+        };
+        Ok(Self {
+            state: Arc::new(Mutex::new(State { database, active })),
+        })
+    }
+
     pub fn start(&self) -> Result<PracticeSession, ProviderError> {
         let mut state = self.lock();
         if let Some(active) = &state.active {
@@ -55,13 +85,15 @@ impl SessionStore {
                 turn_count: active.turns.len(),
             });
         }
-        state.next_id = if state.next_id >= MAX_SAFE_SESSION_ID {
-            1
-        } else {
-            state.next_id + 1
-        };
-        let session_id = state.next_id;
         let opening_question = OPENING_QUESTION.to_string();
+        let session_id = state
+            .database
+            .create_session(&opening_question)
+            .map_err(database_error)?;
+        if session_id > MAX_SAFE_SESSION_ID {
+            let _ = state.database.finish_session(session_id);
+            return Err(database_error_message());
+        }
         state.active = Some(ActiveSession {
             id: session_id,
             opening_question: opening_question.clone(),
@@ -72,6 +104,19 @@ impl SessionStore {
             session_id,
             opening_question,
             turn_count: 0,
+        })
+    }
+
+    pub fn get_active(&self) -> Option<PracticeSession> {
+        let state = self.lock();
+        state.active.as_ref().map(|active| PracticeSession {
+            session_id: active.id,
+            opening_question: active
+                .turns
+                .last()
+                .map(|turn| turn.assistant_question.clone())
+                .unwrap_or_else(|| active.opening_question.clone()),
+            turn_count: active.turns.len(),
         })
     }
 
@@ -99,7 +144,11 @@ impl SessionStore {
                     .iter()
                     .rev()
                     .take(MAX_TURNS)
-                    .cloned()
+                    .map(|turn| ContextTurn {
+                        learner: turn.learner.clone(),
+                        assistant_reply: turn.assistant_reply.clone(),
+                        assistant_question: turn.assistant_question.clone(),
+                    })
                     .collect::<Vec<_>>()
                     .into_iter()
                     .rev()
@@ -116,24 +165,46 @@ impl SessionStore {
 
         let result = generate(&context);
         let mut state = self.lock();
-        let Some(session) = state
-            .active
-            .as_mut()
-            .filter(|session| session.id == session_id)
-        else {
-            return Err(invalid_session_error());
+        let turn = match result {
+            Ok(turn) => turn,
+            Err(error) => {
+                if let Some(session) = state
+                    .active
+                    .as_mut()
+                    .filter(|session| session.id == session_id)
+                {
+                    session.in_flight = false;
+                }
+                return Err(error);
+            }
         };
-        session.in_flight = false;
-        let turn = result?;
+        let sequence = {
+            let Some(session) = state
+                .active
+                .as_mut()
+                .filter(|session| session.id == session_id)
+            else {
+                return Err(invalid_session_error());
+            };
+            session.in_flight = false;
+            session.turns.len() + 1
+        };
         let assistant_question = turn.question.clone().unwrap_or_default();
-        session.turns.push(ContextTurn {
+        let stored = StoredTurn {
             learner: context.latest_transcript,
             assistant_reply: turn.spoken_reply.clone(),
             assistant_question,
-        });
-        if session.turns.len() > MAX_TURNS {
-            session.turns.remove(0);
-        }
+        };
+        state
+            .database
+            .save_turn(session_id, sequence, &stored)
+            .map_err(database_error)?;
+        state
+            .active
+            .as_mut()
+            .expect("session remains active while locked")
+            .turns
+            .push(stored);
         Ok(turn)
     }
 
@@ -142,6 +213,13 @@ impl SessionStore {
         let session = active_session_mut(&mut state, session_id)?;
         if session.in_flight {
             return Err(busy_error());
+        }
+        if !state
+            .database
+            .finish_session(session_id)
+            .map_err(database_error)?
+        {
+            return Err(invalid_session_error());
         }
         state.active = None;
         Ok(FinishedPracticeSession {
@@ -155,6 +233,26 @@ impl SessionStore {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
+}
+
+impl Default for SessionStore {
+    fn default() -> Self {
+        Self::from_database(
+            SessionDatabase::open_in_memory().expect("in-memory SQLite should open"),
+        )
+        .expect("new in-memory database should load")
+    }
+}
+
+fn database_error(_: rusqlite::Error) -> ProviderError {
+    database_error_message()
+}
+
+fn database_error_message() -> ProviderError {
+    ProviderError::new(
+        ProviderErrorCode::DatabaseError,
+        "Could not save this practice session locally. Please retry.",
+    )
 }
 
 fn active_session_mut(
@@ -180,31 +278,6 @@ fn busy_error() -> ProviderError {
         ProviderErrorCode::Busy,
         "A response is already being generated. Please wait and retry.",
     )
-}
-
-fn validate_transcript(transcript: &str) -> Result<(), ProviderError> {
-    let length = transcript.trim().chars().count();
-    if length == 0 || length > MAX_TRANSCRIPT_CHARS {
-        return Err(ProviderError::new(
-            ProviderErrorCode::InvalidRequest,
-            "Transcript must contain between 1 and 4,000 characters.",
-        ));
-    }
-    Ok(())
-}
-
-fn context_char_count(context: &ConversationContext) -> usize {
-    context.opening_question.chars().count()
-        + context.latest_transcript.chars().count()
-        + context
-            .recent_turns
-            .iter()
-            .map(|turn| {
-                turn.learner.chars().count()
-                    + turn.assistant_reply.chars().count()
-                    + turn.assistant_question.chars().count()
-            })
-            .sum::<usize>()
 }
 
 #[cfg(test)]
