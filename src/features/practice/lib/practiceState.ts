@@ -1,6 +1,11 @@
 import type { ConversationTurn } from '@/lib/types';
 
-type SessionDetails = { sessionId: number; question: string; turnCount: number };
+export type SessionDetails = {
+  sessionId: number;
+  question: string;
+  turnCount: number;
+  targetTurns: number;
+};
 
 export type PracticeState =
   | { tag: 'idle' }

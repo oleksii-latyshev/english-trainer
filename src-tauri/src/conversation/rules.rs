@@ -6,6 +6,7 @@ pub(super) const MAX_TURNS: usize = 8;
 pub(super) const MAX_TRANSCRIPT_CHARS: usize = 4_000;
 pub(super) const MAX_CONTEXT_CHARS: usize = 8_000;
 pub(super) const MAX_SAFE_SESSION_ID: u64 = 9_007_199_254_740_991;
+pub(super) const DAILY_TARGET_TURNS: usize = 8;
 
 pub(super) fn validate_transcript(transcript: &str) -> Result<(), ProviderError> {
     let length = transcript.trim().chars().count();

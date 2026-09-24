@@ -28,6 +28,7 @@ fn start_turn_context_resume_and_finish_form_a_session() {
     let session = store.start().unwrap();
     assert_eq!(session.opening_question, OPENING_QUESTION);
     assert_eq!(session.turn_count, 0);
+    assert_eq!(session.target_turns, DAILY_TARGET_TURNS);
 
     let first = store
         .send_turn(
@@ -60,6 +61,7 @@ fn start_turn_context_resume_and_finish_form_a_session() {
     assert_eq!(resumed.session_id, session.session_id);
     assert_eq!(resumed.opening_question, "How old was it?");
     assert_eq!(resumed.turn_count, 2);
+    assert_eq!(resumed.target_turns, DAILY_TARGET_TURNS);
     assert_eq!(store.finish(session.session_id).unwrap().finished, true);
     assert_eq!(
         store.finish(session.session_id).unwrap_err().code,
@@ -200,6 +202,7 @@ fn active_session_and_all_turns_resume_after_store_restart() {
     let state = resumed.get_active().unwrap();
     assert_eq!(state.session_id, session.session_id);
     assert_eq!(state.turn_count, 10);
+    assert_eq!(state.target_turns, DAILY_TARGET_TURNS);
     assert_eq!(state.opening_question, "Question 9?");
     resumed
         .send_turn(state.session_id, "answer after restart".into(), |context| {

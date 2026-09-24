@@ -34,12 +34,27 @@ describe('conversation IPC payloads', () => {
 
   it('requires a valid practice session identifier and opening question', () => {
     expect(
-      isPracticeSession({ session_id: 1, opening_question: 'How was your day?', turn_count: 2 }),
+      isPracticeSession({
+        session_id: 1,
+        opening_question: 'How was your day?',
+        turn_count: 2,
+        target_turns: 8,
+      }),
     ).toBe(true);
     expect(
-      isPracticeSession({ session_id: 0, opening_question: 'How was your day?', turn_count: 0 }),
+      isPracticeSession({
+        session_id: 0,
+        opening_question: 'How was your day?',
+        turn_count: 0,
+        target_turns: 8,
+      }),
     ).toBe(false);
-    expect(isPracticeSession({ session_id: 1, opening_question: '', turn_count: 0 })).toBe(false);
+    expect(
+      isPracticeSession({ session_id: 1, opening_question: '', turn_count: 0, target_turns: 8 }),
+    ).toBe(false);
+    expect(isPracticeSession({ session_id: 1, opening_question: 'Question?', turn_count: 0 })).toBe(
+      false,
+    );
     expect(isFinishedPracticeSession({ session_id: 1, finished: true })).toBe(true);
     expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);
   });

@@ -36,7 +36,7 @@ export function PracticeView({ model, actions, speech }: Props) {
             <h1 id="practice-title">Your voice, in English.</h1>
             <p className="intro">
               {session
-                ? 'Answer Eva’s question aloud, then send your local transcript to continue.'
+                ? 'Answer Eva’s question aloud, then send your local transcript. Aim for a detailed answer each turn.'
                 : 'Take a moment to answer the prompt. We’ll transcribe your words locally, then read them back so you can hear the phrasing.'}
             </p>
 

@@ -31,6 +31,7 @@ export type PracticeSession = {
   session_id: number;
   opening_question: string;
   turn_count: number;
+  target_turns: number;
 };
 
 export type QuestionScaffold = {
@@ -90,7 +91,11 @@ export function isPracticeSession(value: unknown): value is PracticeSession {
     'turn_count' in value &&
     typeof value.turn_count === 'number' &&
     Number.isSafeInteger(value.turn_count) &&
-    value.turn_count >= 0
+    value.turn_count >= 0 &&
+    'target_turns' in value &&
+    typeof value.target_turns === 'number' &&
+    Number.isSafeInteger(value.target_turns) &&
+    value.target_turns > 0
   );
 }
 

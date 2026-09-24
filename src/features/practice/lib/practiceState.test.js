@@ -7,6 +7,7 @@ describe('practice prompt progression', () => {
     sessionId: 7,
     question: 'How was your day?',
     turnCount: 1,
+    targetTurns: 8,
   };
   const turn = {
     spoken_reply: 'That sounds interesting.',

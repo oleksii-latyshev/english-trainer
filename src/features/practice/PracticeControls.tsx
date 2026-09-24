@@ -4,6 +4,7 @@ import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
 import { type PracticeState, sessionDetails } from './lib/practiceState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { ScaffoldingPanel } from './ScaffoldingPanel';
+import { SessionProgress } from './SessionProgress';
 
 function formatDuration(durationMs: number): string {
   const seconds = Math.floor(durationMs / 1000);
@@ -45,7 +46,7 @@ function recordButtonLabel(status: RecordingStatus, hasTranscript: boolean): str
 function startSessionLabel(practice: PracticeState): string {
   if (practice.tag === 'loading') return 'Restoring conversation…';
   if (practice.tag === 'starting') return 'Starting conversation…';
-  return 'Start conversation';
+  return 'Start daily practice';
 }
 
 function SessionAction({ model, actions }: { model: PracticeViewModel; actions: PracticeActions }) {
@@ -71,7 +72,7 @@ function SessionAction({ model, actions }: { model: PracticeViewModel; actions: 
       onPress={finishPractice}
       variant="secondary"
     >
-      {practice.tag === 'finishing' ? 'Ending…' : 'End conversation'}
+      {practice.tag === 'finishing' ? 'Finishing…' : 'Finish practice'}
     </Button>
   );
 }
@@ -122,6 +123,7 @@ export function PracticeControls({
             This conversation is saved locally. You can resume it after restarting the app.
           </p>
         )}
+        {session && <SessionProgress session={session} />}
         {practiceError && (
           <p className="error-message" role="alert">
             {practiceError}

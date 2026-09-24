@@ -10,8 +10,8 @@ mod scaffold;
 #[cfg(test)]
 use rules::MAX_TRANSCRIPT_CHARS;
 use rules::{
-    context_char_count, validate_transcript, MAX_CONTEXT_CHARS, MAX_SAFE_SESSION_ID, MAX_TURNS,
-    OPENING_QUESTION,
+    context_char_count, validate_transcript, DAILY_TARGET_TURNS, MAX_CONTEXT_CHARS,
+    MAX_SAFE_SESSION_ID, MAX_TURNS, OPENING_QUESTION,
 };
 pub use scaffold::{question_scaffold, QuestionScaffold};
 
@@ -20,6 +20,7 @@ pub struct PracticeSession {
     pub session_id: u64,
     pub opening_question: String,
     pub turn_count: usize,
+    pub target_turns: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -85,6 +86,7 @@ impl SessionStore {
                     .map(|turn| turn.assistant_question.clone())
                     .unwrap_or_else(|| active.opening_question.clone()),
                 turn_count: active.turns.len(),
+                target_turns: DAILY_TARGET_TURNS,
             });
         }
         let opening_question = OPENING_QUESTION.to_string();
@@ -106,6 +108,7 @@ impl SessionStore {
             session_id,
             opening_question,
             turn_count: 0,
+            target_turns: DAILY_TARGET_TURNS,
         })
     }
 
@@ -119,6 +122,7 @@ impl SessionStore {
                 .map(|turn| turn.assistant_question.clone())
                 .unwrap_or_else(|| active.opening_question.clone()),
             turn_count: active.turns.len(),
+            target_turns: DAILY_TARGET_TURNS,
         })
     }
 

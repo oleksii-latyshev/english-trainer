@@ -38,6 +38,7 @@ export function usePracticeSession(dependencies: Dependencies) {
                 sessionId: session.session_id,
                 question: session.opening_question,
                 turnCount: session.turn_count,
+                targetTurns: session.target_turns,
               }
             : { tag: 'idle' },
         );
@@ -69,6 +70,7 @@ export function usePracticeSession(dependencies: Dependencies) {
         sessionId: session.session_id,
         question: session.opening_question,
         turnCount: session.turn_count,
+        targetTurns: session.target_turns,
       });
       dependencies.playQuestion(session.opening_question);
     } catch (cause) {
