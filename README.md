@@ -107,6 +107,17 @@ Gamification        → downstream presentation of real learning events
 
 ---
 
+## Development
+
+```bash
+bun install
+bun run dev
+```
+
+`bun run dev` opens the Tauri desktop app with Vite hot reload. Use `bun run dev:web`
+only when you want to inspect the frontend in a browser; native Tauri commands are
+available in the desktop app.
+
 ## Documentation
 
 - [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) — product vision, learning methodology, practice modes, Ambient Mode, and Mini Eva.
