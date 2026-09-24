@@ -1,4 +1,5 @@
 mod audio;
+mod providers;
 
 use tauri::Manager;
 
@@ -32,11 +33,28 @@ async fn transcribe_audio(
         })?
 }
 
+#[tauri::command]
+async fn generate_follow_up(
+    transcript: String,
+) -> Result<providers::ConversationTurn, providers::ProviderError> {
+    tauri::async_runtime::spawn_blocking(move || providers::generate_follow_up(transcript))
+        .await
+        .map_err(|_| {
+            providers::ProviderError::new(
+                providers::ProviderErrorCode::ProcessFailed,
+                "The conversation task failed. Please try again.",
+            )
+        })?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![transcribe_audio])
+        .invoke_handler(tauri::generate_handler![
+            transcribe_audio,
+            generate_follow_up
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -19,6 +19,25 @@ export type TranscriptionError = {
   message: string;
 };
 
+export type ConversationTurn = {
+  spoken_reply: string;
+  question: string | null;
+  session_phase: string;
+  is_complete: boolean;
+};
+
+export type ProviderErrorCode =
+  | 'unavailable'
+  | 'timeout'
+  | 'invalid_output'
+  | 'process_failed'
+  | 'invalid_request';
+
+export type ProviderError = {
+  code: ProviderErrorCode;
+  message: string;
+};
+
 export function isTranscript(value: unknown): value is Transcript {
   if (typeof value !== 'object' || value === null) return false;
   return (
@@ -52,6 +71,43 @@ export function isTranscriptionError(value: unknown): value is TranscriptionErro
   return (
     'code' in value &&
     isTranscriptionErrorCode(value.code) &&
+    'message' in value &&
+    typeof value.message === 'string'
+  );
+}
+
+export function isConversationTurn(value: unknown): value is ConversationTurn {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'spoken_reply' in value &&
+    typeof value.spoken_reply === 'string' &&
+    'question' in value &&
+    (typeof value.question === 'string' || value.question === null) &&
+    'session_phase' in value &&
+    typeof value.session_phase === 'string' &&
+    'is_complete' in value &&
+    typeof value.is_complete === 'boolean'
+  );
+}
+
+function isProviderErrorCode(value: unknown): value is ProviderErrorCode {
+  switch (value) {
+    case 'unavailable':
+    case 'timeout':
+    case 'invalid_output':
+    case 'process_failed':
+    case 'invalid_request':
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function isProviderError(value: unknown): value is ProviderError {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'code' in value &&
+    isProviderErrorCode(value.code) &&
     'message' in value &&
     typeof value.message === 'string'
   );

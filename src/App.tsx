@@ -2,6 +2,7 @@ import { Button, Card } from '@heroui/react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
+import { FollowUpPanel } from '@/features/conversation/FollowUpPanel';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
 import { type SpeechTiming, TimingPanel } from '@/features/speech/TimingPanel';
 import {
@@ -256,6 +257,7 @@ function App() {
   }
 
   const busy = status === 'requesting' || status === 'stopping';
+  const currentRequestId = requestIdRef.current;
 
   return (
     <main className="app-shell min-h-screen text-slate-100">
@@ -368,6 +370,14 @@ function App() {
                 )}
               </Card.Content>
             </Card>
+            {transcript && (
+              <FollowUpPanel
+                isCurrent={() => currentRequestId === requestIdRef.current}
+                key={currentRequestId}
+                speak={speech.play}
+                transcript={transcript}
+              />
+            )}
             <TimingPanel timing={timing} />
           </section>
 
