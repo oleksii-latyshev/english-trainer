@@ -1,5 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-import { isFinishedPracticeSession, isPracticeSession, type PracticeSession } from '@/lib/types';
+import {
+  isAttemptComparison,
+  isFinishedPracticeSession,
+  isPracticeSession,
+  type PracticeSession,
+  type TurnFeedback,
+} from '@/lib/types';
 
 export async function startPracticeSession(): Promise<PracticeSession> {
   const result = await invoke<unknown>('start_practice_session');
@@ -19,4 +25,28 @@ export async function finishPracticeSession(sessionId: number): Promise<void> {
   if (!isFinishedPracticeSession(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected practice session finish response.');
   }
+}
+
+export async function savePracticeFeedback(
+  sessionId: number,
+  sequence: number,
+  transcript: string,
+  feedback: TurnFeedback,
+): Promise<void> {
+  await invoke<void>('save_practice_feedback', {
+    sessionId,
+    sequence,
+    transcript,
+    feedback,
+  });
+}
+
+export async function retryPracticeTurn(sessionId: number, sequence: number, transcript: string) {
+  const result = await invoke<unknown>('retry_practice_turn', {
+    sessionId,
+    sequence,
+    transcript,
+  });
+  if (!isAttemptComparison(result)) throw new Error('Unexpected retry comparison response.');
+  return result;
 }

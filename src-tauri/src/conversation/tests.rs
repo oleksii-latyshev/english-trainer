@@ -22,6 +22,80 @@ fn temporary_database_path() -> std::path::PathBuf {
     ))
 }
 
+fn sample_feedback() -> TurnFeedback {
+    TurnFeedback {
+        focus_feedback: vec![crate::providers::FocusFeedback {
+            category: crate::providers::FocusCategory::Grammar,
+            original: "I work in there".into(),
+            improved: "I work there".into(),
+            explanation: "Drop the extra preposition.".into(),
+        }],
+        b2_rewrite: "I work there as an engineer.".into(),
+    }
+}
+
+#[test]
+fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    let sent = "  I work in there  ";
+    store
+        .send_turn(session.session_id, sent.into(), |_| {
+            Ok(turn("Next?", "Follow up?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(session.session_id, 1, sent, &sample_feedback())
+        .unwrap();
+    let result = store
+        .retry_turn(session.session_id, 1, "I work there now".into())
+        .unwrap();
+    assert_eq!(result.original_transcript, "I work in there");
+    assert_eq!(
+        result.target_evidence,
+        crate::providers::TargetEvidence::NewlyObservedInRetry
+    );
+    assert_eq!(store.get_active().unwrap().unwrap().turn_count, 1);
+    drop(store);
+
+    let reopened = SessionStore::open(&path).unwrap();
+    let resumed = reopened.get_active().unwrap().unwrap();
+    assert_eq!(resumed.turn_count, 1);
+    assert_eq!(resumed.retry_evidence, vec![result]);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn retry_validation_failure_preserves_the_reviewed_answer_and_session() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "Original answer".into(), |_| {
+            Ok(turn("Next?", "Follow up?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(session.session_id, 1, "Original answer", &sample_feedback())
+        .unwrap();
+
+    let error = store
+        .retry_turn(session.session_id, 2, "Different retry".into())
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::InvalidRequest);
+    assert_eq!(store.get_active().unwrap().unwrap().turn_count, 1);
+    assert_eq!(
+        store
+            .lock()
+            .database
+            .turn(session.session_id, 1)
+            .unwrap()
+            .unwrap()
+            .learner,
+        "Original answer"
+    );
+}
+
 #[test]
 fn start_turn_context_resume_and_finish_form_a_session() {
     let store = SessionStore::default();
@@ -199,7 +273,7 @@ fn active_session_and_all_turns_resume_after_store_restart() {
     drop(store);
 
     let resumed = SessionStore::open(&path).unwrap();
-    let state = resumed.get_active().unwrap();
+    let state = resumed.get_active().unwrap().unwrap();
     assert_eq!(state.session_id, session.session_id);
     assert_eq!(state.turn_count, 10);
     assert_eq!(state.target_turns, DAILY_TARGET_TURNS);
@@ -243,6 +317,6 @@ fn failed_provider_turn_is_not_saved_and_finish_survives_restart() {
     drop(store);
 
     let reopened = SessionStore::open(&path).unwrap();
-    assert!(reopened.get_active().is_none());
+    assert!(reopened.get_active().unwrap().is_none());
     let _ = std::fs::remove_file(path);
 }

@@ -7,6 +7,12 @@ type Props = {
   question: string;
   transcript: string;
   isCurrent: () => boolean;
+  persistReviewed?: (transcript: string, feedback: TurnFeedback) => Promise<void>;
+  initialFeedback?: TurnFeedback;
+  isAnswerSent?: boolean;
+  canReview?: boolean;
+  onReviewed?: (feedback: TurnFeedback, question: string) => void;
+  onTryAgain?: () => void;
 };
 
 type FeedbackState =
@@ -31,10 +37,33 @@ function reviewButtonLabel(state: FeedbackState): string {
   }
 }
 
-export function FeedbackPanel({ question, transcript, isCurrent }: Props) {
+async function loadFeedback(question: string, transcript: string): Promise<TurnFeedback> {
+  if (!isTauri()) throw new Error('Open the desktop app to review your answer.');
+  const result = await invoke<unknown>('get_turn_feedback', { question, transcript });
+  if (!isTurnFeedback(result)) throw new Error('Unexpected coaching response');
+  return result;
+}
+
+function isLatestReview(requestId: number, generation: number, isCurrent: () => boolean): boolean {
+  return requestId === generation && isCurrent();
+}
+
+export function FeedbackPanel({
+  question,
+  transcript,
+  isCurrent,
+  persistReviewed,
+  initialFeedback,
+  isAnswerSent = true,
+  canReview = true,
+  onReviewed,
+  onTryAgain,
+}: Props) {
   // Keep the question paired with this recording when the next conversation turn arrives.
   const [answerQuestion] = useState(question);
-  const [state, setState] = useState<FeedbackState>({ tag: 'idle' });
+  const [state, setState] = useState<FeedbackState>(
+    initialFeedback ? { tag: 'ready', feedback: initialFeedback } : { tag: 'idle' },
+  );
   const generation = useRef(0);
 
   useEffect(() => {
@@ -45,23 +74,17 @@ export function FeedbackPanel({ question, transcript, isCurrent }: Props) {
 
   async function reviewAnswer() {
     if (state.tag === 'loading') return;
-    if (!isTauri()) {
-      setState({ tag: 'error', message: 'Open the desktop app to review your answer.' });
-      return;
-    }
     const requestId = ++generation.current;
     setState({ tag: 'loading' });
     try {
-      const result = await invoke<unknown>('get_turn_feedback', {
-        question: answerQuestion,
-        transcript,
-      });
-      if (!isTurnFeedback(result)) throw new Error('Unexpected coaching response');
-      if (requestId === generation.current && isCurrent()) {
+      const result = await loadFeedback(answerQuestion, transcript);
+      if (persistReviewed) await persistReviewed(transcript, result);
+      if (isLatestReview(requestId, generation.current, isCurrent)) {
         setState({ tag: 'ready', feedback: result });
+        onReviewed?.(result, answerQuestion);
       }
     } catch (cause) {
-      if (requestId === generation.current && isCurrent()) {
+      if (isLatestReview(requestId, generation.current, isCurrent)) {
         setState({ tag: 'error', message: feedbackError(cause) });
       }
     }
@@ -79,12 +102,15 @@ export function FeedbackPanel({ question, transcript, isCurrent }: Props) {
       </Card.Header>
       <Card.Content className="panel-content">
         <p className="mt-0 text-sm leading-6 text-slate-400">
-          Review one useful improvement when you are ready. You can keep practising while the review
-          runs.
+          {!canReview
+            ? 'The first answer and its feedback stay anchored while you record the retry.'
+            : isAnswerSent
+              ? 'Review one useful improvement when you are ready. You can keep practising while the review runs.'
+              : 'Send this answer to Eva first. Then the review and Try Again will stay linked to this saved turn.'}
         </p>
         <Button
           className="secondary-action"
-          isDisabled={state.tag === 'loading'}
+          isDisabled={state.tag === 'loading' || !isAnswerSent || !canReview}
           onPress={() => void reviewAnswer()}
           variant="secondary"
         >
@@ -119,6 +145,11 @@ export function FeedbackPanel({ question, transcript, isCurrent }: Props) {
                 {state.feedback.b2_rewrite}
               </blockquote>
             </div>
+            {onTryAgain && (
+              <Button className="primary-action w-fit" onPress={onTryAgain} variant="primary">
+                Try Again
+              </Button>
+            )}
           </div>
         )}
       </Card.Content>

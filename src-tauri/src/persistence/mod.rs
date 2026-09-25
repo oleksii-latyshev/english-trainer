@@ -1,8 +1,9 @@
 use crate::conversation::StoredTurn;
+use crate::providers::{AttemptComparison, TurnFeedback};
 use rusqlite::{params, Connection, OptionalExtension};
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 pub struct SessionDatabase {
     connection: Connection,
@@ -80,6 +81,92 @@ impl SessionDatabase {
         transaction.commit()
     }
 
+    pub fn turn(&self, session_id: u64, sequence: usize) -> rusqlite::Result<Option<StoredTurn>> {
+        self.connection
+            .query_row(
+                "SELECT user_transcript, assistant_reply, assistant_question FROM turns WHERE session_id = ?1 AND sequence = ?2",
+                params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
+                |row| Ok(StoredTurn {
+                    learner: row.get(0)?,
+                    assistant_reply: row.get(1)?,
+                    assistant_question: row.get(2)?,
+                }),
+            )
+            .optional()
+    }
+
+    pub fn save_turn_feedback(
+        &mut self,
+        session_id: u64,
+        sequence: usize,
+        feedback: &TurnFeedback,
+    ) -> rusqlite::Result<()> {
+        let encoded = serde_json::to_string(feedback)
+            .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
+        self.connection.execute(
+            "INSERT INTO turn_feedback (session_id, sequence, feedback_json) VALUES (?1, ?2, ?3) ON CONFLICT(session_id, sequence) DO UPDATE SET feedback_json = excluded.feedback_json",
+            params![to_sql_id(session_id)?, to_sql_sequence(sequence)?, encoded],
+        )?;
+        Ok(())
+    }
+
+    pub fn turn_feedback(
+        &self,
+        session_id: u64,
+        sequence: usize,
+    ) -> rusqlite::Result<Option<TurnFeedback>> {
+        let encoded: Option<String> = self
+            .connection
+            .query_row(
+                "SELECT feedback_json FROM turn_feedback WHERE session_id = ?1 AND sequence = ?2",
+                params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
+                |row| row.get(0),
+            )
+            .optional()?;
+        encoded
+            .map(|json| {
+                serde_json::from_str(&json).map_err(|error| {
+                    rusqlite::Error::FromSqlConversionFailure(
+                        0,
+                        rusqlite::types::Type::Text,
+                        Box::new(error),
+                    )
+                })
+            })
+            .transpose()
+    }
+
+    pub fn save_comparison(
+        &mut self,
+        session_id: u64,
+        comparison: &AttemptComparison,
+    ) -> rusqlite::Result<()> {
+        let encoded = serde_json::to_string(comparison)
+            .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
+        self.connection.execute(
+            "INSERT INTO attempt_comparisons (session_id, sequence, comparison_json, created_at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(session_id, sequence) DO UPDATE SET comparison_json = excluded.comparison_json, created_at = excluded.created_at",
+            params![to_sql_id(session_id)?, to_sql_sequence(comparison.turn_sequence)?, encoded, now_ms()],
+        )?;
+        Ok(())
+    }
+
+    pub fn comparisons(&self, session_id: u64) -> rusqlite::Result<Vec<AttemptComparison>> {
+        let mut statement = self.connection.prepare(
+            "SELECT comparison_json FROM attempt_comparisons WHERE session_id = ?1 ORDER BY sequence",
+        )?;
+        let rows = statement.query_map([to_sql_id(session_id)?], |row| {
+            let json: String = row.get(0)?;
+            serde_json::from_str(&json).map_err(|error| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    0,
+                    rusqlite::types::Type::Text,
+                    Box::new(error),
+                )
+            })
+        })?;
+        rows.collect()
+    }
+
     pub fn finish_session(&mut self, session_id: u64) -> rusqlite::Result<bool> {
         Ok(self.connection.execute(
             "UPDATE sessions SET ended_at = ?1 WHERE id = ?2 AND ended_at IS NULL",
@@ -135,10 +222,39 @@ fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             );
             ",
         )?;
+        transaction.commit()?;
+    }
+    if version < 2 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE turn_feedback (
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                feedback_json TEXT NOT NULL,
+                PRIMARY KEY(session_id, sequence),
+                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+            );
+            CREATE TABLE attempt_comparisons (
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                comparison_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                PRIMARY KEY(session_id, sequence),
+                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+            );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }
     Ok(())
+}
+
+fn to_sql_id(value: u64) -> rusqlite::Result<i64> {
+    i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))
+}
+
+fn to_sql_sequence(value: usize) -> rusqlite::Result<i64> {
+    i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))
 }
 
 fn now_ms() -> i64 {

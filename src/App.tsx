@@ -32,6 +32,7 @@ function App() {
         startPractice: practice.start,
         finishPractice: practice.finish,
         handlePracticeTurn: practice.acceptTurn,
+        handleRetryComparison: practice.acceptRetryComparison,
         isCurrent: () => capture.isCurrentRequest(currentRequestId),
         onTurnPendingChange: practice.onTurnPendingChange,
       }}

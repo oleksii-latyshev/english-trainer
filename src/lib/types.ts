@@ -39,6 +39,50 @@ export type TurnFeedback = {
   b2_rewrite: string;
 };
 
+export type AttemptComparison = {
+  turn_sequence: number;
+  original_transcript: string;
+  retry_transcript: string;
+  target: string;
+  target_evidence:
+    | 'already_present_in_both'
+    | 'newly_observed_in_retry'
+    | 'partially_observed'
+    | 'not_observed'
+    | 'uncertain';
+  word_count_change: number;
+  hesitation: string;
+};
+
+export function isAttemptComparison(value: unknown): value is AttemptComparison {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'turn_sequence' in value &&
+    typeof value.turn_sequence === 'number' &&
+    Number.isSafeInteger(value.turn_sequence) &&
+    value.turn_sequence > 0 &&
+    'original_transcript' in value &&
+    isBoundedText(value.original_transcript, 4000) &&
+    'retry_transcript' in value &&
+    isBoundedText(value.retry_transcript, 4000) &&
+    'target' in value &&
+    typeof value.target === 'string' &&
+    value.target.length <= 300 &&
+    'target_evidence' in value &&
+    (value.target_evidence === 'already_present_in_both' ||
+      value.target_evidence === 'newly_observed_in_retry' ||
+      value.target_evidence === 'partially_observed' ||
+      value.target_evidence === 'not_observed' ||
+      value.target_evidence === 'uncertain') &&
+    'word_count_change' in value &&
+    typeof value.word_count_change === 'number' &&
+    Number.isSafeInteger(value.word_count_change) &&
+    'hesitation' in value &&
+    typeof value.hesitation === 'string'
+  );
+}
+
 function isFeedbackCategory(value: unknown): value is FeedbackCategory {
   return (
     value === 'grammar' ||
@@ -79,6 +123,7 @@ export type PracticeSession = {
   opening_question: string;
   turn_count: number;
   target_turns: number;
+  retry_evidence: AttemptComparison[];
 };
 
 export type QuestionScaffold = {
@@ -142,7 +187,10 @@ export function isPracticeSession(value: unknown): value is PracticeSession {
     'target_turns' in value &&
     typeof value.target_turns === 'number' &&
     Number.isSafeInteger(value.target_turns) &&
-    value.target_turns > 0
+    value.target_turns > 0 &&
+    'retry_evidence' in value &&
+    Array.isArray(value.retry_evidence) &&
+    value.retry_evidence.every(isAttemptComparison)
   );
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  isAttemptComparison,
   isConversationTurn,
   isFinishedPracticeSession,
   isPracticeSession,
@@ -40,6 +41,7 @@ describe('conversation IPC payloads', () => {
         opening_question: 'How was your day?',
         turn_count: 2,
         target_turns: 8,
+        retry_evidence: [],
       }),
     ).toBe(true);
     expect(
@@ -98,5 +100,19 @@ describe('conversation IPC payloads', () => {
     ).toBe(false);
     expect(isTurnFeedback({ ...feedback, b2_rewrite: '' })).toBe(false);
     expect(isTurnFeedback({ ...feedback, focus_feedback: [] })).toBe(true);
+  });
+
+  it('accepts grounded retry evidence and rejects malformed evidence', () => {
+    const comparison = {
+      turn_sequence: 1,
+      original_transcript: 'I work in there.',
+      retry_transcript: 'I work there now.',
+      target: 'I work there',
+      target_evidence: 'newly_observed_in_retry',
+      word_count_change: 0,
+      hesitation: 'Not measured from transcript text.',
+    };
+    expect(isAttemptComparison(comparison)).toBe(true);
+    expect(isAttemptComparison({ ...comparison, target_evidence: 'fixed' })).toBe(false);
   });
 });

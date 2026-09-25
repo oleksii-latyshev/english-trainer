@@ -1,7 +1,12 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
-import { type ConversationTurn, isProviderError } from '@/lib/types';
-import { advancePractice, type PracticeState, setTurnPending } from './lib/practiceState';
+import { type AttemptComparison, type ConversationTurn, isProviderError } from '@/lib/types';
+import {
+  advancePractice,
+  type PracticeState,
+  recordRetryComparison,
+  setTurnPending,
+} from './lib/practiceState';
 import {
   finishPracticeSession,
   getActivePracticeSession,
@@ -39,6 +44,7 @@ export function usePracticeSession(dependencies: Dependencies) {
                 question: session.opening_question,
                 turnCount: session.turn_count,
                 targetTurns: session.target_turns,
+                retryEvidence: session.retry_evidence,
               }
             : { tag: 'idle' },
         );
@@ -71,6 +77,7 @@ export function usePracticeSession(dependencies: Dependencies) {
         question: session.opening_question,
         turnCount: session.turn_count,
         targetTurns: session.target_turns,
+        retryEvidence: session.retry_evidence,
       });
       dependencies.playQuestion(session.opening_question);
     } catch (cause) {
@@ -105,6 +112,8 @@ export function usePracticeSession(dependencies: Dependencies) {
     finish,
     acceptTurn: (sessionId: number, turn: ConversationTurn) =>
       setState((current) => advancePractice(current, sessionId, turn)),
+    acceptRetryComparison: (sessionId: number, comparison: AttemptComparison) =>
+      setState((current) => recordRetryComparison(current, sessionId, comparison)),
     onTurnPendingChange: (isPending: boolean) =>
       setState((current) => setTurnPending(current, isPending)),
   };

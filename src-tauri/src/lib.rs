@@ -70,6 +70,27 @@ async fn get_turn_feedback(
 }
 
 #[tauri::command]
+fn save_practice_feedback(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+    transcript: String,
+    feedback: providers::TurnFeedback,
+) -> Result<(), providers::ProviderError> {
+    sessions.save_feedback(session_id, sequence, &transcript, &feedback)
+}
+
+#[tauri::command]
+fn retry_practice_turn(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+    transcript: String,
+) -> Result<providers::AttemptComparison, providers::ProviderError> {
+    sessions.retry_turn(session_id, sequence, transcript)
+}
+
+#[tauri::command]
 fn start_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<conversation::PracticeSession, providers::ProviderError> {
@@ -110,7 +131,7 @@ fn finish_practice_session(
 #[tauri::command]
 fn get_active_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Option<conversation::PracticeSession> {
+) -> Result<Option<conversation::PracticeSession>, providers::ProviderError> {
     sessions.get_active()
 }
 
@@ -140,6 +161,8 @@ pub fn run() {
             transcribe_audio,
             generate_follow_up,
             get_turn_feedback,
+            save_practice_feedback,
+            retry_practice_turn,
             start_practice_session,
             send_practice_turn,
             finish_practice_session,

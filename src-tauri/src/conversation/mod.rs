@@ -1,17 +1,16 @@
 use crate::persistence::SessionDatabase;
 use crate::providers::{
-    ContextTurn, ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
+    compare_attempts, AttemptComparison, ContextTurn, ConversationContext, ConversationTurn,
+    ProviderError, ProviderErrorCode, TurnFeedback,
 };
 use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod rules;
 mod scaffold;
-#[cfg(test)]
-use rules::MAX_TRANSCRIPT_CHARS;
 use rules::{
     context_char_count, validate_transcript, DAILY_TARGET_TURNS, MAX_CONTEXT_CHARS,
-    MAX_SAFE_SESSION_ID, MAX_TURNS, OPENING_QUESTION,
+    MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS, MAX_TURNS, OPENING_QUESTION,
 };
 pub use scaffold::{question_scaffold, QuestionScaffold};
 
@@ -21,6 +20,7 @@ pub struct PracticeSession {
     pub opening_question: String,
     pub turn_count: usize,
     pub target_turns: usize,
+    pub retry_evidence: Vec<AttemptComparison>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -87,6 +87,10 @@ impl SessionStore {
                     .unwrap_or_else(|| active.opening_question.clone()),
                 turn_count: active.turns.len(),
                 target_turns: DAILY_TARGET_TURNS,
+                retry_evidence: state
+                    .database
+                    .comparisons(active.id)
+                    .map_err(database_error)?,
             });
         }
         let opening_question = OPENING_QUESTION.to_string();
@@ -109,21 +113,32 @@ impl SessionStore {
             opening_question,
             turn_count: 0,
             target_turns: DAILY_TARGET_TURNS,
+            retry_evidence: Vec::new(),
         })
     }
 
-    pub fn get_active(&self) -> Option<PracticeSession> {
+    pub fn get_active(&self) -> Result<Option<PracticeSession>, ProviderError> {
         let state = self.lock();
-        state.active.as_ref().map(|active| PracticeSession {
-            session_id: active.id,
-            opening_question: active
-                .turns
-                .last()
-                .map(|turn| turn.assistant_question.clone())
-                .unwrap_or_else(|| active.opening_question.clone()),
-            turn_count: active.turns.len(),
-            target_turns: DAILY_TARGET_TURNS,
-        })
+        state
+            .active
+            .as_ref()
+            .map(|active| {
+                Ok(PracticeSession {
+                    session_id: active.id,
+                    opening_question: active
+                        .turns
+                        .last()
+                        .map(|turn| turn.assistant_question.clone())
+                        .unwrap_or_else(|| active.opening_question.clone()),
+                    turn_count: active.turns.len(),
+                    target_turns: DAILY_TARGET_TURNS,
+                    retry_evidence: state
+                        .database
+                        .comparisons(active.id)
+                        .map_err(database_error)?,
+                })
+            })
+            .transpose()
     }
 
     pub fn send_turn<F>(
@@ -234,6 +249,81 @@ impl SessionStore {
         })
     }
 
+    pub fn save_feedback(
+        &self,
+        session_id: u64,
+        sequence: usize,
+        transcript: &str,
+        feedback: &TurnFeedback,
+    ) -> Result<(), ProviderError> {
+        validate_transcript(&transcript.to_string())?;
+        if session_id > MAX_SAFE_SESSION_ID || sequence == 0 {
+            return Err(invalid_retry_error());
+        }
+        if feedback.focus_feedback.len() > 1
+            || !bounded_feedback_text(&feedback.b2_rewrite)
+            || feedback.focus_feedback.iter().any(|focus| {
+                !bounded_feedback_text(&focus.original)
+                    || !bounded_feedback_text(&focus.improved)
+                    || !bounded_feedback_text(&focus.explanation)
+            })
+        {
+            return Err(invalid_retry_error());
+        }
+        let mut state = self.lock();
+        active_session_mut(&mut state, session_id)?;
+        let original = state
+            .database
+            .turn(session_id, sequence)
+            .map_err(database_error)?
+            .ok_or_else(invalid_retry_error)?;
+        if original.learner.trim() != transcript.trim() {
+            return Err(invalid_retry_error());
+        }
+        state
+            .database
+            .save_turn_feedback(session_id, sequence, feedback)
+            .map_err(database_error)
+    }
+
+    pub fn retry_turn(
+        &self,
+        session_id: u64,
+        sequence: usize,
+        transcript: String,
+    ) -> Result<AttemptComparison, ProviderError> {
+        validate_transcript(&transcript)?;
+        if session_id > MAX_SAFE_SESSION_ID || sequence == 0 {
+            return Err(invalid_retry_error());
+        }
+        let mut state = self.lock();
+        active_session_mut(&mut state, session_id)?;
+        let original = state
+            .database
+            .turn(session_id, sequence)
+            .map_err(database_error)?
+            .ok_or_else(invalid_retry_error)?;
+        let feedback = state
+            .database
+            .turn_feedback(session_id, sequence)
+            .map_err(database_error)?
+            .ok_or_else(invalid_retry_error)?;
+        let target = feedback
+            .focus_feedback
+            .first()
+            .map(|focus| focus.improved.as_str())
+            .unwrap_or("");
+        if target.len() > 300 || transcript.len() > MAX_TRANSCRIPT_CHARS {
+            return Err(invalid_retry_error());
+        }
+        let comparison = compare_attempts(sequence, &original.learner, &transcript, target);
+        state
+            .database
+            .save_comparison(session_id, &comparison)
+            .map_err(database_error)?;
+        Ok(comparison)
+    }
+
     fn lock(&self) -> std::sync::MutexGuard<'_, State> {
         self.state
             .lock()
@@ -284,6 +374,17 @@ fn busy_error() -> ProviderError {
         ProviderErrorCode::Busy,
         "A response is already being generated. Please wait and retry.",
     )
+}
+
+fn invalid_retry_error() -> ProviderError {
+    ProviderError::new(
+        ProviderErrorCode::InvalidRequest,
+        "This retry does not match a reviewed answer. Keep the original answer and try again.",
+    )
+}
+
+fn bounded_feedback_text(value: &str) -> bool {
+    !value.trim().is_empty() && value.chars().count() <= 300
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { advancePractice, setTurnPending } from './practiceState';
+import { advancePractice, recordRetryComparison, setTurnPending } from './practiceState';
 
 describe('practice prompt progression', () => {
   const active = {
@@ -8,6 +8,7 @@ describe('practice prompt progression', () => {
     question: 'How was your day?',
     turnCount: 1,
     targetTurns: 8,
+    retryEvidence: [],
   };
   const turn = {
     spoken_reply: 'That sounds interesting.',
@@ -33,5 +34,20 @@ describe('practice prompt progression', () => {
     expect(waiting.tag).toBe('waiting');
     expect(advancePractice(waiting, 7, turn)).toMatchObject({ question: 'What happened next?' });
     expect(setTurnPending(waiting, false).tag).toBe('active');
+  });
+
+  it('shows a saved retry immediately without advancing the conversation', () => {
+    const comparison = { turn_sequence: 1, retry_transcript: 'I work there now.' };
+    const updated = recordRetryComparison(active, 7, comparison);
+    expect(updated).toMatchObject({
+      question: active.question,
+      turnCount: active.turnCount,
+      retryEvidence: [comparison],
+    });
+    expect(
+      recordRetryComparison(updated, 7, { ...comparison, retry_transcript: 'I work there.' })
+        .retryEvidence,
+    ).toHaveLength(1);
+    expect(recordRetryComparison(active, 6, comparison)).toBe(active);
   });
 });
