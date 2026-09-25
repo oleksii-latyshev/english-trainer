@@ -10,3 +10,13 @@ pre-commit:
     rust-fmt:
       glob: "src-tauri/**/*.rs"
       run: cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
+
+post-checkout:
+  commands:
+    codebase-memory:
+      run: sh ./scripts/cbm-reindex.sh
+
+post-merge:
+  commands:
+    codebase-memory:
+      run: sh ./scripts/cbm-reindex.sh
