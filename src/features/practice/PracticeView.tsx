@@ -1,3 +1,4 @@
+import { FeedbackPanel } from '@/features/coach/FeedbackPanel';
 import { FollowUpPanel } from '@/features/conversation/FollowUpPanel';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
 import { TimingPanel } from '@/features/speech/TimingPanel';
@@ -44,20 +45,30 @@ export function PracticeView({ model, actions, speech }: Props) {
 
             <TranscriptPanel transcript={transcript} />
             {transcript && (
-              <FollowUpPanel
-                isCurrent={isCurrent}
-                key={currentRequestId}
-                onPendingChange={
-                  practice.tag === 'active' || practice.tag === 'waiting'
-                    ? onTurnPendingChange
-                    : undefined
-                }
-                onTurn={session ? (turn) => handlePracticeTurn(session.sessionId, turn) : undefined}
-                sessionId={session?.sessionId}
-                speak={speech.play}
-                speechStoppedAtMs={speechStoppedAtMs}
-                transcript={transcript}
-              />
+              <>
+                <FollowUpPanel
+                  isCurrent={isCurrent}
+                  key={`follow-up-${currentRequestId}`}
+                  onPendingChange={
+                    practice.tag === 'active' || practice.tag === 'waiting'
+                      ? onTurnPendingChange
+                      : undefined
+                  }
+                  onTurn={
+                    session ? (turn) => handlePracticeTurn(session.sessionId, turn) : undefined
+                  }
+                  sessionId={session?.sessionId}
+                  speak={speech.play}
+                  speechStoppedAtMs={speechStoppedAtMs}
+                  transcript={transcript}
+                />
+                <FeedbackPanel
+                  isCurrent={isCurrent}
+                  key={`feedback-${currentRequestId}`}
+                  question={session?.question ?? 'What was the most interesting part of your day?'}
+                  transcript={transcript}
+                />
+              </>
             )}
             <TimingPanel timing={timing} />
           </section>

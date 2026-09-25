@@ -17,6 +17,10 @@ pub fn generate_conversation_turn(
     measure_turn(|| agy::generate_turn(context))
 }
 
+pub fn evaluate_turn_feedback(request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError> {
+    agy::evaluate_turn_feedback(request)
+}
+
 fn measure_turn(
     generate: impl FnOnce() -> Result<ConversationTurn, ProviderError>,
 ) -> Result<ConversationTurn, ProviderError> {
@@ -32,6 +36,41 @@ pub trait ConversationEngine: Send + Sync {
         &self,
         context: &ConversationContext,
     ) -> Result<ConversationTurn, ProviderError>;
+}
+
+pub trait FeedbackEngine: Send + Sync {
+    fn evaluate_turn(&self, request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct FeedbackRequest {
+    pub question: String,
+    pub transcript: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TurnFeedback {
+    pub focus_feedback: Vec<FocusFeedback>,
+    pub b2_rewrite: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FocusFeedback {
+    pub category: FocusCategory,
+    pub original: String,
+    pub improved: String,
+    pub explanation: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FocusCategory {
+    Grammar,
+    Vocabulary,
+    Coherence,
+    Interaction,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

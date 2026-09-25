@@ -5,6 +5,7 @@ import {
   isPracticeSession,
   isProviderError,
   isQuestionScaffold,
+  isTurnFeedback,
 } from './types';
 
 describe('conversation IPC payloads', () => {
@@ -68,5 +69,34 @@ describe('conversation IPC payloads', () => {
     expect(isQuestionScaffold(hints)).toBe(true);
     expect(isQuestionScaffold({ ...hints, structure: [] })).toBe(false);
     expect(isQuestionScaffold({ ...hints, sentence_starters: [4] })).toBe(false);
+  });
+
+  it('accepts one focused coaching item and a stronger rewrite', () => {
+    const feedback = {
+      focus_feedback: [
+        {
+          category: 'grammar',
+          original: 'I go yesterday.',
+          improved: 'I went yesterday.',
+          explanation: 'Use the past tense for a finished event.',
+        },
+      ],
+      b2_rewrite: 'Yesterday, I went there to catch up with a friend.',
+    };
+    expect(isTurnFeedback(feedback)).toBe(true);
+    expect(
+      isTurnFeedback({
+        ...feedback,
+        focus_feedback: [feedback.focus_feedback[0], feedback.focus_feedback[0]],
+      }),
+    ).toBe(false);
+    expect(
+      isTurnFeedback({
+        ...feedback,
+        focus_feedback: [{ ...feedback.focus_feedback[0], category: 'unknown' }],
+      }),
+    ).toBe(false);
+    expect(isTurnFeedback({ ...feedback, b2_rewrite: '' })).toBe(false);
+    expect(isTurnFeedback({ ...feedback, focus_feedback: [] })).toBe(true);
   });
 });

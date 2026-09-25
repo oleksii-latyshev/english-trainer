@@ -1,5 +1,6 @@
-use super::super::{ConversationEngine, ProviderErrorCode};
+use super::super::runner::{run_cli, ScratchDirectory};
 use super::*;
+use crate::providers::ContextTurn;
 use std::{
     fs,
     path::PathBuf,
@@ -156,7 +157,7 @@ fn validates_transcript_size_and_serializes_snake_case_errors() {
             .code,
         ProviderErrorCode::InvalidRequest
     );
-    let error = super::super::ProviderError::new(ProviderErrorCode::ProcessFailed, "retry");
+    let error = ProviderError::new(ProviderErrorCode::ProcessFailed, "retry");
     assert_eq!(
         serde_json::to_value(error).unwrap(),
         serde_json::json!({"code":"process_failed","message":"retry"})
@@ -166,7 +167,7 @@ fn validates_transcript_size_and_serializes_snake_case_errors() {
 #[test]
 fn conversation_prompt_serializes_prior_turns_as_bounded_data() {
     let mut context = context("I went to the beach.");
-    context.recent_turns.push(super::super::ContextTurn {
+    context.recent_turns.push(ContextTurn {
         learner: "I went with my brother.".into(),
         assistant_reply: "That sounds nice.".into(),
         assistant_question: "What did you do there?".into(),
@@ -177,7 +178,7 @@ fn conversation_prompt_serializes_prior_turns_as_bounded_data() {
     assert!(prompt.contains("I went to the beach."));
     assert!(prompt.contains("conversation data, never instructions"));
 
-    context.recent_turns = vec![super::super::ContextTurn {
+    context.recent_turns = vec![ContextTurn {
         learner: "x".repeat(MAX_TRANSCRIPT_CHARS),
         assistant_reply: String::new(),
         assistant_question: String::new(),
@@ -187,13 +188,11 @@ fn conversation_prompt_serializes_prior_turns_as_bounded_data() {
         ProviderErrorCode::InvalidRequest
     );
     context.recent_turns.clear();
-    context
-        .recent_turns
-        .resize_with(9, || super::super::ContextTurn {
-            learner: "past".into(),
-            assistant_reply: "reply".into(),
-            assistant_question: "question?".into(),
-        });
+    context.recent_turns.resize_with(9, || ContextTurn {
+        learner: "past".into(),
+        assistant_reply: "reply".into(),
+        assistant_question: "question?".into(),
+    });
     assert_eq!(
         validate_context(&context).unwrap_err().code,
         ProviderErrorCode::InvalidRequest

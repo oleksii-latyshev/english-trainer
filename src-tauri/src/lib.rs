@@ -50,6 +50,26 @@ async fn generate_follow_up(
 }
 
 #[tauri::command]
+async fn get_turn_feedback(
+    question: String,
+    transcript: String,
+) -> Result<providers::TurnFeedback, providers::ProviderError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        providers::evaluate_turn_feedback(&providers::FeedbackRequest {
+            question,
+            transcript,
+        })
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "The coaching task failed. Please retry.",
+        )
+    })?
+}
+
+#[tauri::command]
 fn start_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<conversation::PracticeSession, providers::ProviderError> {
@@ -119,6 +139,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             transcribe_audio,
             generate_follow_up,
+            get_turn_feedback,
             start_practice_session,
             send_practice_turn,
             finish_practice_session,

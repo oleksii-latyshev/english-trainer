@@ -27,6 +27,53 @@ export type ConversationTurn = {
   provider_latency_ms?: number;
 };
 
+export type FeedbackCategory = 'grammar' | 'vocabulary' | 'coherence' | 'interaction';
+
+export type TurnFeedback = {
+  focus_feedback: {
+    category: FeedbackCategory;
+    original: string;
+    improved: string;
+    explanation: string;
+  }[];
+  b2_rewrite: string;
+};
+
+function isFeedbackCategory(value: unknown): value is FeedbackCategory {
+  return (
+    value === 'grammar' ||
+    value === 'vocabulary' ||
+    value === 'coherence' ||
+    value === 'interaction'
+  );
+}
+
+function isBoundedText(value: unknown, maxLength: number): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= maxLength;
+}
+
+export function isTurnFeedback(value: unknown): value is TurnFeedback {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('b2_rewrite' in value) || !isBoundedText(value.b2_rewrite, 300)) return false;
+  if (!('focus_feedback' in value) || !Array.isArray(value.focus_feedback)) return false;
+  return (
+    value.focus_feedback.length <= 1 &&
+    value.focus_feedback.every(
+      (item: unknown) =>
+        typeof item === 'object' &&
+        item !== null &&
+        'category' in item &&
+        isFeedbackCategory(item.category) &&
+        'original' in item &&
+        isBoundedText(item.original, 300) &&
+        'improved' in item &&
+        isBoundedText(item.improved, 300) &&
+        'explanation' in item &&
+        isBoundedText(item.explanation, 300),
+    )
+  );
+}
+
 export type PracticeSession = {
   session_id: number;
   opening_question: string;
