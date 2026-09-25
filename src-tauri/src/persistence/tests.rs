@@ -1,4 +1,6 @@
 use super::*;
+use crate::learning::{LearningItemType, LearningStatus, ReviewResponse};
+use crate::providers::{FocusCategory, FocusFeedback};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static NEXT_PATH: AtomicUsize = AtomicUsize::new(0);
@@ -9,6 +11,18 @@ fn test_database_path() -> std::path::PathBuf {
         "english-trainer-db-{}-{index}.sqlite3",
         std::process::id()
     ))
+}
+
+fn sample_turn_feedback(category: FocusCategory, improved: &str) -> TurnFeedback {
+    TurnFeedback {
+        focus_feedback: vec![FocusFeedback {
+            category,
+            original: "Original text".into(),
+            improved: improved.into(),
+            explanation: "Explanation note".into(),
+        }],
+        b2_rewrite: "Stronger rewrite.".into(),
+    }
 }
 
 #[test]
@@ -32,11 +46,12 @@ fn creates_versioned_schema_and_enforces_one_active_session() {
 }
 
 #[test]
-fn migrates_existing_version_one_sessions_and_turns() {
+fn migrates_existing_version_two_database_to_version_three() {
     let path = test_database_path();
     let connection = rusqlite::Connection::open(&path).unwrap();
-    connection.execute_batch(
-        "CREATE TABLE sessions (
+    connection
+        .execute_batch(
+            "CREATE TABLE sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, mode TEXT NOT NULL, scenario TEXT NOT NULL,
             started_at INTEGER NOT NULL, ended_at INTEGER, conversation_provider TEXT NOT NULL DEFAULT 'agy',
             opening_question TEXT NOT NULL
@@ -47,25 +62,242 @@ fn migrates_existing_version_one_sessions_and_turns() {
             sequence INTEGER NOT NULL, user_transcript TEXT NOT NULL, assistant_reply TEXT NOT NULL,
             assistant_question TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(session_id, sequence)
         );
+        CREATE TABLE turn_feedback (
+            session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, feedback_json TEXT NOT NULL,
+            PRIMARY KEY(session_id, sequence),
+            FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+        );
+        CREATE TABLE attempt_comparisons (
+            session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, comparison_json TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY(session_id, sequence),
+            FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+        );
         INSERT INTO sessions (mode, scenario, started_at, opening_question) VALUES ('conversation', 'free', 1, 'Question?');
         INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at)
         VALUES (1, 1, 'Original', 'Reply', 'Next?', 1);
-        PRAGMA user_version = 1;",
-    ).unwrap();
+        INSERT INTO attempt_comparisons (session_id, sequence, comparison_json, created_at)
+        VALUES (1, 1, '{\"turn_sequence\":1,\"original_transcript\":\"Original\",\"retry_transcript\":\"Retry\",\"target\":\"Target\",\"target_evidence\":\"newly_observed_in_retry\",\"word_count_change\":0,\"hesitation\":\"None\"}', 1);
+        PRAGMA user_version = 2;",
+        )
+        .unwrap();
     drop(connection);
 
-    let db = SessionDatabase::open(&path).unwrap();
+    let mut db = SessionDatabase::open(&path).unwrap();
     let version: i64 = db
         .connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 2);
+    assert_eq!(version, 3);
     assert_eq!(db.turns(1).unwrap()[0].learner, "Original");
-    db.connection
-        .query_row("SELECT COUNT(*) FROM attempt_comparisons", [], |row| {
-            row.get::<_, i64>(0)
-        })
+    let comparisons = db.comparisons(1).unwrap();
+    assert_eq!(comparisons.len(), 1);
+    assert_eq!(comparisons[0].retry_transcript, "Retry");
+
+    // Verify new v3 memory tables work
+    let card = db
+        .save_phrase_card("I work there", "Work note", Some(1), Some(1))
         .unwrap();
+    assert_eq!(card.phrase, "I work there");
+    let memory = db.get_learning_memory().unwrap();
+    assert_eq!(memory.phrase_cards.len(), 1);
+
     drop(db);
     let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn mistake_observation_is_idempotent_for_same_turn_and_increments_for_distinct_turn() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session_id = db.create_session("Opening?").unwrap();
+    let turn1 = StoredTurn {
+        learner: "I work in there".into(),
+        assistant_reply: "Reply".into(),
+        assistant_question: "Next?".into(),
+    };
+    db.save_turn(session_id, 1, &turn1).unwrap();
+    let turn2 = StoredTurn {
+        learner: "I worked in there".into(),
+        assistant_reply: "Reply".into(),
+        assistant_question: "Next?".into(),
+    };
+    db.save_turn(session_id, 2, &turn2).unwrap();
+
+    let feedback = sample_turn_feedback(FocusCategory::Grammar, "I work there");
+
+    // Saving feedback for turn 1 first time creates mistake with times_seen = 1
+    db.save_turn_feedback(session_id, 1, &feedback).unwrap();
+    let mistake = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(mistake.times_seen, 1);
+
+    // Saving feedback for turn 1 second time is idempotent: times_seen remains 1
+    db.save_turn_feedback(session_id, 1, &feedback).unwrap();
+    let mistake_again = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(mistake_again.times_seen, 1);
+
+    // Saving feedback for turn 2 with same normalized correction increments times_seen to 2
+    let feedback2 = sample_turn_feedback(FocusCategory::Grammar, "  I work there.  ");
+    db.save_turn_feedback(session_id, 2, &feedback2).unwrap();
+    let mistake_after_turn2 = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(mistake_after_turn2.times_seen, 2);
+
+    // Saving feedback for turn 2 again is idempotent: times_seen remains 2
+    db.save_turn_feedback(session_id, 2, &feedback2).unwrap();
+    let mistake_after_turn2_again = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(mistake_after_turn2_again.times_seen, 2);
+}
+
+#[test]
+fn changing_feedback_for_a_turn_replaces_its_single_mistake_observation() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session_id = db.create_session("Opening?").unwrap();
+    db.save_turn(
+        session_id,
+        1,
+        &StoredTurn {
+            learner: "I work there".into(),
+            assistant_reply: "Reply".into(),
+            assistant_question: "Next?".into(),
+        },
+    )
+    .unwrap();
+    db.save_turn_feedback(
+        session_id,
+        1,
+        &sample_turn_feedback(FocusCategory::Grammar, "I work at there"),
+    )
+    .unwrap();
+    db.save_turn_feedback(
+        session_id,
+        1,
+        &sample_turn_feedback(FocusCategory::Grammar, "I work in that place"),
+    )
+    .unwrap();
+
+    let old = db
+        .mistake_by_key("grammar:i work at there")
+        .unwrap()
+        .unwrap();
+    let replacement = db
+        .mistake_by_key("grammar:i work in that place")
+        .unwrap()
+        .unwrap();
+    assert_eq!(old.times_seen, 0);
+    assert_eq!(old.status, LearningStatus::Archived);
+    assert_eq!(replacement.times_seen, 1);
+
+    db.save_turn_feedback(
+        session_id,
+        1,
+        &sample_turn_feedback(FocusCategory::Grammar, "I work in that place."),
+    )
+    .unwrap();
+    assert_eq!(
+        db.mistake_by_key("grammar:i work in that place")
+            .unwrap()
+            .unwrap()
+            .times_seen,
+        1
+    );
+}
+
+#[test]
+fn removing_a_turn_correction_archives_its_observation_until_it_recurs() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session_id = db.create_session("Opening?").unwrap();
+    for sequence in 1..=2 {
+        db.save_turn(
+            session_id,
+            sequence,
+            &StoredTurn {
+                learner: "I work in there".into(),
+                assistant_reply: "Reply".into(),
+                assistant_question: "Next?".into(),
+            },
+        )
+        .unwrap();
+    }
+    let correction = sample_turn_feedback(FocusCategory::Grammar, "I work there");
+    db.save_turn_feedback(session_id, 1, &correction).unwrap();
+    db.save_turn_feedback(
+        session_id,
+        1,
+        &TurnFeedback {
+            focus_feedback: vec![],
+            b2_rewrite: "I work there".into(),
+        },
+    )
+    .unwrap();
+
+    let old = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(old.times_seen, 0);
+    assert_eq!(old.status, LearningStatus::Archived);
+    let memory = db.get_learning_memory().unwrap();
+    assert!(!memory.mistakes[0].is_due);
+    assert_eq!(memory.due_count, 0);
+
+    db.save_turn_feedback(session_id, 2, &correction).unwrap();
+    let revived = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(revived.times_seen, 1);
+    assert_eq!(revived.status, LearningStatus::New);
+}
+
+#[test]
+fn phrase_save_rejects_empty_normalized_text_and_incomplete_provenance() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    assert!(db.save_phrase_card("... !!!", "", None, None).is_err());
+    assert!(db
+        .save_phrase_card("Useful phrase", "", Some(1), None)
+        .is_err());
+}
+
+#[test]
+fn saving_phrase_card_deduplicates_by_normalized_text() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let card1 = db
+        .save_phrase_card("The main trade-off was...", "Note 1", None, None)
+        .unwrap();
+    assert_eq!(card1.id, 1);
+
+    // Saving identical or normalized-equivalent phrase returns existing card
+    let card2 = db
+        .save_phrase_card("the main trade-off was", "Note 2", None, None)
+        .unwrap();
+    assert_eq!(card2.id, card1.id);
+    assert_eq!(card2.normalized_phrase, card1.normalized_phrase);
+
+    let memory = db.get_learning_memory().unwrap();
+    assert_eq!(memory.phrase_cards.len(), 1);
+}
+
+#[test]
+fn review_event_updates_schedule_and_persists_event() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let card = db
+        .save_phrase_card("I work there", "Work note", None, None)
+        .unwrap();
+    assert_eq!(card.status, LearningStatus::Learning);
+
+    // Record review: Remembered
+    let result = db
+        .record_review(
+            LearningItemType::Phrase,
+            card.id,
+            ReviewResponse::Remembered,
+        )
+        .unwrap();
+    assert_eq!(result.status, LearningStatus::Learning);
+    assert_eq!(result.interval_days, 2);
+
+    // Verify review event was stored
+    let count: i64 = db
+        .connection
+        .query_row("SELECT COUNT(*) FROM review_events", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(count, 1);
+
+    // Verify updated state in database
+    let memory = db.get_learning_memory().unwrap();
+    assert_eq!(memory.phrase_cards[0].interval_days, 2);
+    assert_eq!(memory.phrase_cards[0].last_reviewed_at.is_some(), true);
 }

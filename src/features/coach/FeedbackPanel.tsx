@@ -11,6 +11,14 @@ type Props = {
   initialFeedback?: TurnFeedback;
   isAnswerSent?: boolean;
   canReview?: boolean;
+  sessionId?: number;
+  sequence?: number;
+  onSavePhrase?: (
+    phrase: string,
+    note: string,
+    sessionId?: number,
+    sequence?: number,
+  ) => Promise<unknown>;
   onReviewed?: (feedback: TurnFeedback, question: string) => void;
   onTryAgain?: () => void;
 };
@@ -56,6 +64,9 @@ export function FeedbackPanel({
   initialFeedback,
   isAnswerSent = true,
   canReview = true,
+  sessionId,
+  sequence,
+  onSavePhrase,
   onReviewed,
   onTryAgain,
 }: Props) {
@@ -64,6 +75,12 @@ export function FeedbackPanel({
   const [state, setState] = useState<FeedbackState>(
     initialFeedback ? { tag: 'ready', feedback: initialFeedback } : { tag: 'idle' },
   );
+  const [persistError, setPersistError] = useState<string | null>(null);
+  const [isFeedbackSaved, setIsFeedbackSaved] = useState(Boolean(initialFeedback));
+  const [phraseSaveState, setPhraseSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle',
+  );
+  const [phraseSaveError, setPhraseSaveError] = useState<string | null>(null);
   const generation = useRef(0);
 
   useEffect(() => {
@@ -76,17 +93,67 @@ export function FeedbackPanel({
     if (state.tag === 'loading') return;
     const requestId = ++generation.current;
     setState({ tag: 'loading' });
+    setPersistError(null);
+    setIsFeedbackSaved(false);
+
+    let result: TurnFeedback;
     try {
-      const result = await loadFeedback(answerQuestion, transcript);
-      if (persistReviewed) await persistReviewed(transcript, result);
-      if (isLatestReview(requestId, generation.current, isCurrent)) {
-        setState({ tag: 'ready', feedback: result });
-        onReviewed?.(result, answerQuestion);
-      }
+      result = await loadFeedback(answerQuestion, transcript);
     } catch (cause) {
       if (isLatestReview(requestId, generation.current, isCurrent)) {
         setState({ tag: 'error', message: feedbackError(cause) });
       }
+      return;
+    }
+
+    if (!isLatestReview(requestId, generation.current, isCurrent)) return;
+    setState({ tag: 'ready', feedback: result });
+
+    if (persistReviewed) {
+      try {
+        await persistReviewed(transcript, result);
+        setPersistError(null);
+        if (isLatestReview(requestId, generation.current, isCurrent)) {
+          setIsFeedbackSaved(true);
+          onReviewed?.(result, answerQuestion);
+        }
+      } catch (cause) {
+        // Memory write failure isolation: feedback is kept usable, error offered with retry
+        setPersistError(feedbackError(cause));
+      }
+    } else {
+      setIsFeedbackSaved(true);
+      onReviewed?.(result, answerQuestion);
+    }
+  }
+
+  async function retryPersist() {
+    if (state.tag !== 'ready' || !persistReviewed) return;
+    setPersistError(null);
+    try {
+      await persistReviewed(transcript, state.feedback);
+      if (isCurrent()) {
+        setIsFeedbackSaved(true);
+        onReviewed?.(state.feedback, answerQuestion);
+      }
+    } catch (cause) {
+      setPersistError(feedbackError(cause));
+    }
+  }
+
+  async function handleSavePhrase() {
+    if (state.tag !== 'ready' || phraseSaveState === 'saving' || !onSavePhrase) return;
+    const focus = state.feedback.focus_feedback[0];
+    const phrase = focus ? focus.improved : state.feedback.b2_rewrite;
+    const note = focus ? focus.explanation : 'Stronger phrasing from conversation feedback';
+    setPhraseSaveState('saving');
+    setPhraseSaveError(null);
+    try {
+      await onSavePhrase(phrase, note, sessionId, sequence);
+      setPhraseSaveState('saved');
+    } catch {
+      setPhraseSaveState('error');
+      setPhraseSaveError('Could not save phrase to Learning Memory. Please retry.');
     }
   }
 
@@ -145,10 +212,46 @@ export function FeedbackPanel({
                 {state.feedback.b2_rewrite}
               </blockquote>
             </div>
-            {onTryAgain && (
-              <Button className="primary-action w-fit" onPress={onTryAgain} variant="primary">
-                Try Again
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              {onTryAgain && isFeedbackSaved && (
+                <Button className="primary-action w-fit" onPress={onTryAgain} variant="primary">
+                  Try Again
+                </Button>
+              )}
+              <Button
+                className="secondary-action w-fit"
+                isDisabled={phraseSaveState === 'saving' || !onSavePhrase}
+                onPress={() => void handleSavePhrase()}
+                variant="secondary"
+              >
+                {phraseSaveState === 'saving'
+                  ? 'Saving phrase…'
+                  : phraseSaveState === 'saved'
+                    ? 'Phrase saved ✓'
+                    : phraseSaveState === 'error'
+                      ? 'Retry saving phrase'
+                      : 'Save phrase'}
               </Button>
+            </div>
+
+            {phraseSaveError && (
+              <p className="error-message text-xs" role="alert">
+                {phraseSaveError}
+              </p>
+            )}
+
+            {persistError && (
+              <div className="mt-2 flex items-center justify-between gap-3 rounded border border-amber-500/30 bg-amber-950/20 p-2.5 text-xs text-amber-200">
+                <span>Could not save feedback to memory: {persistError}</span>
+                <Button
+                  className="secondary-action text-xs"
+                  onPress={() => void retryPersist()}
+                  variant="secondary"
+                >
+                  Retry save
+                </Button>
+              </div>
             )}
           </div>
         )}

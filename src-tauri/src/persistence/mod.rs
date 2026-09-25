@@ -1,9 +1,17 @@
 use crate::conversation::StoredTurn;
+#[cfg(test)]
+use crate::learning::{LearningStatus, MistakeRecord};
+#[cfg(test)]
+use crate::providers::FocusCategory;
 use crate::providers::{AttemptComparison, TurnFeedback};
 use rusqlite::{params, Connection, OptionalExtension};
+
+mod learning_reviews;
+mod learning_writes;
+mod schema;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 
 pub struct SessionDatabase {
     connection: Connection,
@@ -95,21 +103,6 @@ impl SessionDatabase {
             .optional()
     }
 
-    pub fn save_turn_feedback(
-        &mut self,
-        session_id: u64,
-        sequence: usize,
-        feedback: &TurnFeedback,
-    ) -> rusqlite::Result<()> {
-        let encoded = serde_json::to_string(feedback)
-            .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
-        self.connection.execute(
-            "INSERT INTO turn_feedback (session_id, sequence, feedback_json) VALUES (?1, ?2, ?3) ON CONFLICT(session_id, sequence) DO UPDATE SET feedback_json = excluded.feedback_json",
-            params![to_sql_id(session_id)?, to_sql_sequence(sequence)?, encoded],
-        )?;
-        Ok(())
-    }
-
     pub fn turn_feedback(
         &self,
         session_id: u64,
@@ -187,6 +180,47 @@ impl SessionDatabase {
             |row| row.get::<_, i64>(0).map(|count| count as usize),
         )
     }
+
+    #[cfg(test)]
+    pub fn mistake_by_key(&self, key: &str) -> rusqlite::Result<Option<MistakeRecord>> {
+        self.connection
+            .query_row(
+                "SELECT id, normalized_key, category, original_example, corrected_example,
+                        explanation, times_seen, times_correct_afterwards, last_seen_at,
+                        last_reviewed_at, next_review_at, interval_days, ease_factor, status
+                 FROM mistakes WHERE normalized_key = ?1",
+                params![key],
+                |row| {
+                    let cat_str: String = row.get(2)?;
+                    let category = match cat_str.as_str() {
+                        "vocabulary" => FocusCategory::Vocabulary,
+                        "coherence" => FocusCategory::Coherence,
+                        "interaction" => FocusCategory::Interaction,
+                        _ => FocusCategory::Grammar,
+                    };
+                    let status_str: String = row.get(13)?;
+                    let next_review: i64 = row.get(10)?;
+                    Ok(MistakeRecord {
+                        id: row.get::<_, i64>(0)? as u64,
+                        normalized_key: row.get(1)?,
+                        category,
+                        original_example: row.get(3)?,
+                        corrected_example: row.get(4)?,
+                        explanation: row.get(5)?,
+                        times_seen: row.get::<_, i64>(6)? as usize,
+                        times_correct_afterwards: row.get::<_, i64>(7)? as usize,
+                        last_seen_at: row.get(8)?,
+                        last_reviewed_at: row.get(9)?,
+                        next_review_at: next_review,
+                        interval_days: row.get(11)?,
+                        ease_factor: row.get(12)?,
+                        status: LearningStatus::parse(&status_str).unwrap_or(LearningStatus::New),
+                        is_due: next_review <= now_ms(),
+                    })
+                },
+            )
+            .optional()
+    }
 }
 
 #[derive(Debug)]
@@ -195,59 +229,7 @@ pub struct StoredSession {
     pub opening_question: String,
 }
 
-fn migrate(connection: &Connection) -> rusqlite::Result<()> {
-    let version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
-    if version < 1 {
-        let transaction = connection.unchecked_transaction()?;
-        transaction.execute_batch(
-            "CREATE TABLE sessions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                mode TEXT NOT NULL,
-                scenario TEXT NOT NULL,
-                started_at INTEGER NOT NULL,
-                ended_at INTEGER,
-                conversation_provider TEXT NOT NULL DEFAULT 'agy',
-                opening_question TEXT NOT NULL
-            );
-            CREATE UNIQUE INDEX one_active_session ON sessions ((1)) WHERE ended_at IS NULL;
-            CREATE TABLE turns (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-                sequence INTEGER NOT NULL,
-                user_transcript TEXT NOT NULL,
-                assistant_reply TEXT NOT NULL,
-                assistant_question TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                UNIQUE(session_id, sequence)
-            );
-            ",
-        )?;
-        transaction.commit()?;
-    }
-    if version < 2 {
-        let transaction = connection.unchecked_transaction()?;
-        transaction.execute_batch(
-            "CREATE TABLE turn_feedback (
-                session_id INTEGER NOT NULL,
-                sequence INTEGER NOT NULL,
-                feedback_json TEXT NOT NULL,
-                PRIMARY KEY(session_id, sequence),
-                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
-            );
-            CREATE TABLE attempt_comparisons (
-                session_id INTEGER NOT NULL,
-                sequence INTEGER NOT NULL,
-                comparison_json TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                PRIMARY KEY(session_id, sequence),
-                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
-            );",
-        )?;
-        transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
-        transaction.commit()?;
-    }
-    Ok(())
-}
+use schema::migrate;
 
 fn to_sql_id(value: u64) -> rusqlite::Result<i64> {
     i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))

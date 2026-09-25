@@ -1,5 +1,6 @@
 mod audio;
 mod conversation;
+mod learning;
 mod persistence;
 mod providers;
 
@@ -140,6 +141,39 @@ fn get_question_scaffold(question: String) -> conversation::QuestionScaffold {
     conversation::question_scaffold(&question)
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn save_phrase_card(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    phrase: String,
+    meaning_or_note: Option<String>,
+    session_id: Option<u64>,
+    sequence: Option<usize>,
+) -> Result<learning::PhraseCardRecord, providers::ProviderError> {
+    sessions.save_phrase(
+        phrase,
+        meaning_or_note.unwrap_or_default(),
+        session_id,
+        sequence,
+    )
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn get_learning_memory(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<learning::LearningMemoryView, providers::ProviderError> {
+    sessions.get_learning_memory()
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn submit_learning_review(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    item_type: learning::LearningItemType,
+    item_id: u64,
+    response: learning::ReviewResponse,
+) -> Result<learning::ReviewResult, providers::ProviderError> {
+    sessions.submit_review(item_type, item_id, response)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -167,7 +201,10 @@ pub fn run() {
             send_practice_turn,
             finish_practice_session,
             get_active_practice_session,
-            get_question_scaffold
+            get_question_scaffold,
+            save_phrase_card,
+            get_learning_memory,
+            submit_learning_review,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,7 +1,10 @@
+import { Button } from '@heroui/react';
 import { useState } from 'react';
 import { FeedbackPanel } from '@/features/coach/FeedbackPanel';
 import { RetryComparisonPanel } from '@/features/coach/RetryComparisonPanel';
 import { FollowUpPanel } from '@/features/conversation/FollowUpPanel';
+import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
+import { savePhraseCard } from '@/features/memory/memoryApi';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { type SentAnswer, sentAnswerMatches } from '@/features/practice/lib/sentAnswer';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
@@ -46,6 +49,7 @@ export function PracticeView({ model, actions, speech }: Props) {
     null,
   );
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const { transcript, timing, practice, currentRequestId, speechStoppedAtMs } = model;
   const { handlePracticeTurn, isCurrent, onTurnPendingChange, startRecording } = actions;
   const session = sessionDetails(practice);
@@ -93,7 +97,16 @@ export function PracticeView({ model, actions, speech }: Props) {
             </span>
             <span>English Trainer</span>
           </div>
-          <span className="header-pill">LOCAL SPEECH LAB</span>
+          <div className="flex items-center gap-2">
+            <Button
+              className="secondary-action text-xs"
+              onPress={() => setIsMemoryOpen((open) => !open)}
+              variant="secondary"
+            >
+              {isMemoryOpen ? 'Back to Practice' : 'Learning Memory'}
+            </Button>
+            <span className="header-pill">LOCAL SPEECH LAB</span>
+          </div>
         </header>
 
         <div className="content-grid grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
@@ -107,6 +120,8 @@ export function PracticeView({ model, actions, speech }: Props) {
             </p>
 
             <PracticeControls model={model} actions={controlActions} />
+
+            {isMemoryOpen && <LearningMemoryPanel onClose={() => setIsMemoryOpen(false)} />}
 
             {session?.retryEvidence.map((evidence) => (
               <article className="panel mt-[18px] p-5" key={evidence.turn_sequence}>
@@ -161,10 +176,13 @@ export function PracticeView({ model, actions, speech }: Props) {
                 onReviewed={(feedback) => {
                   if (savedAnswer) setRetryAnchor({ ...savedAnswer, feedback });
                 }}
+                onSavePhrase={savePhraseCard}
                 onTryAgain={retryAnchor ? startRetry : undefined}
                 initialFeedback={isRetrying ? retryAnchor?.feedback : undefined}
                 isAnswerSent={session === undefined || savedAnswer !== null || retryAnchor !== null}
                 canReview={!isRetrying}
+                sessionId={savedAnswer?.sessionId ?? retryAnchor?.sessionId}
+                sequence={savedAnswer?.sequence ?? retryAnchor?.sequence}
                 persistReviewed={
                   savedAnswer
                     ? (_answer, feedback) =>

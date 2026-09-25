@@ -83,7 +83,7 @@ export function isAttemptComparison(value: unknown): value is AttemptComparison 
   );
 }
 
-function isFeedbackCategory(value: unknown): value is FeedbackCategory {
+export function isFeedbackCategory(value: unknown): value is FeedbackCategory {
   return (
     value === 'grammar' ||
     value === 'vocabulary' ||

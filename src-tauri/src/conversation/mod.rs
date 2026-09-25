@@ -266,6 +266,7 @@ impl SessionStore {
                 !bounded_feedback_text(&focus.original)
                     || !bounded_feedback_text(&focus.improved)
                     || !bounded_feedback_text(&focus.explanation)
+                    || crate::learning::normalize_phrase(&focus.improved).is_empty()
             })
         {
             return Err(invalid_retry_error());
@@ -322,6 +323,95 @@ impl SessionStore {
             .save_comparison(session_id, &comparison)
             .map_err(database_error)?;
         Ok(comparison)
+    }
+
+    pub fn save_phrase(
+        &self,
+        phrase: String,
+        meaning_or_note: String,
+        session_id: Option<u64>,
+        sequence: Option<usize>,
+    ) -> Result<crate::learning::PhraseCardRecord, ProviderError> {
+        let trimmed_phrase = phrase.trim();
+        if trimmed_phrase.is_empty() || trimmed_phrase.chars().count() > 300 {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Phrase must be between 1 and 300 characters.",
+            ));
+        }
+        if meaning_or_note.chars().count() > 500 {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Note must be 500 characters or fewer.",
+            ));
+        }
+        if let Some(sid) = session_id {
+            if sid > MAX_SAFE_SESSION_ID {
+                return Err(ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "Invalid session ID.",
+                ));
+            }
+        }
+        if let Some(seq) = sequence {
+            if seq == 0 || seq > 10_000 {
+                return Err(ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "Invalid turn sequence.",
+                ));
+            }
+        }
+        if session_id.is_some() != sequence.is_some() {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Phrase provenance requires both a session ID and a turn sequence.",
+            ));
+        }
+
+        let mut state = self.lock();
+        if let (Some(sid), Some(seq)) = (session_id, sequence) {
+            if state
+                .database
+                .turn(sid, seq)
+                .map_err(database_error)?
+                .is_none()
+            {
+                return Err(ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "The phrase source turn could not be found.",
+                ));
+            }
+        }
+        state
+            .database
+            .save_phrase_card(trimmed_phrase, &meaning_or_note, session_id, sequence)
+            .map_err(database_error)
+    }
+
+    pub fn get_learning_memory(
+        &self,
+    ) -> Result<crate::learning::LearningMemoryView, ProviderError> {
+        let state = self.lock();
+        state.database.get_learning_memory().map_err(database_error)
+    }
+
+    pub fn submit_review(
+        &self,
+        item_type: crate::learning::LearningItemType,
+        item_id: u64,
+        response: crate::learning::ReviewResponse,
+    ) -> Result<crate::learning::ReviewResult, ProviderError> {
+        if item_id == 0 || item_id > MAX_SAFE_SESSION_ID {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Invalid learning item ID.",
+            ));
+        }
+        let mut state = self.lock();
+        state
+            .database
+            .record_review(item_type, item_id, response)
+            .map_err(database_error)
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, State> {
