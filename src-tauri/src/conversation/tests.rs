@@ -454,6 +454,94 @@ fn phrase_saved_in_one_session_persists_and_can_be_reviewed_in_later_session() {
 }
 
 #[test]
+fn due_memory_returns_as_a_bounded_later_session_conversation_cue() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let first = store.start().unwrap();
+    store
+        .send_turn(first.session_id, "I work in there".into(), |_| {
+            Ok(turn("I see.", "What do you do?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(first.session_id, 1, "I work in there", &sample_feedback())
+        .unwrap();
+    store
+        .save_phrase(
+            "The main trade-off was".into(),
+            "A way to discuss a decision".into(),
+            Some(first.session_id),
+            Some(1),
+        )
+        .unwrap();
+    store.finish(first.session_id).unwrap();
+    drop(store);
+
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute("UPDATE mistakes SET next_review_at = 0", [])
+        .unwrap();
+    db.execute("UPDATE phrase_cards SET next_review_at = 0", [])
+        .unwrap();
+    drop(db);
+
+    let later = SessionStore::open(&path).unwrap();
+    let second = later.start().unwrap();
+    later
+        .send_turn(second.session_id, "First answer".into(), |context| {
+            assert!(context.learning_targets.is_empty());
+            Ok(turn("Thanks.", "What else?"))
+        })
+        .unwrap();
+    drop(later);
+    let resumed = SessionStore::open(&path).unwrap();
+    resumed
+        .send_turn(second.session_id, "Second answer".into(), |context| {
+            assert_eq!(context.learning_targets.len(), 2);
+            assert_eq!(context.learning_targets[0].kind, "mistake");
+            assert_eq!(context.learning_targets[0].target, "I work there");
+            assert_eq!(context.learning_targets[1].kind, "phrase");
+            assert_eq!(context.learning_targets[1].target, "The main trade-off was");
+            Ok(turn("Thanks.", "What else?"))
+        })
+        .unwrap();
+    resumed
+        .send_turn(second.session_id, "Third answer".into(), |context| {
+            assert!(context.learning_targets.is_empty());
+            Ok(turn("Thanks.", "What else?"))
+        })
+        .unwrap();
+    drop(resumed);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn memory_query_failure_does_not_leave_conversation_busy() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "First answer".into(), |_| {
+            Ok(turn("Thanks.", "What else?"))
+        })
+        .unwrap();
+    rusqlite::Connection::open(&path)
+        .unwrap()
+        .execute("DROP TABLE phrase_cards", [])
+        .unwrap();
+
+    for _ in 0..2 {
+        let error = store
+            .send_turn(session.session_id, "Second answer".into(), |_| {
+                panic!("provider should not run when memory lookup fails")
+            })
+            .unwrap_err();
+        assert_eq!(error.code, ProviderErrorCode::DatabaseError);
+    }
+    drop(store);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn failure_isolation_keeps_conversation_usable() {
     let store = SessionStore::default();
     let session = store.start().unwrap();

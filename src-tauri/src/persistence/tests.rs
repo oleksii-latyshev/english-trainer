@@ -301,3 +301,79 @@ fn review_event_updates_schedule_and_persists_event() {
     assert_eq!(memory.phrase_cards[0].interval_days, 2);
     assert_eq!(memory.phrase_cards[0].last_reviewed_at.is_some(), true);
 }
+
+#[test]
+fn due_target_selection_excludes_future_archived_and_current_session_items() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = db.create_session("Opening?").unwrap();
+    db.save_turn(
+        first,
+        1,
+        &StoredTurn {
+            learner: "I work in there".into(),
+            assistant_reply: "Reply".into(),
+            assistant_question: "Next?".into(),
+        },
+    )
+    .unwrap();
+    db.save_turn_feedback(
+        first,
+        1,
+        &sample_turn_feedback(FocusCategory::Grammar, "I work there"),
+    )
+    .unwrap();
+    db.save_phrase_card(
+        "The main trade-off was",
+        "Decision cue",
+        Some(first),
+        Some(1),
+    )
+    .unwrap();
+    db.save_phrase_card("Future phrase", "Later", Some(first), Some(1))
+        .unwrap();
+    db.save_phrase_card("Archived phrase", "Old", Some(first), Some(1))
+        .unwrap();
+    db.finish_session(first).unwrap();
+    let second = db.create_session("Opening?").unwrap();
+    db.save_turn(
+        second,
+        1,
+        &StoredTurn {
+            learner: "Current answer".into(),
+            assistant_reply: "Reply".into(),
+            assistant_question: "Next?".into(),
+        },
+    )
+    .unwrap();
+    db.save_phrase_card("Current phrase", "Current", Some(second), Some(1))
+        .unwrap();
+    db.connection
+        .execute("UPDATE mistakes SET next_review_at = 0", [])
+        .unwrap();
+    db.connection
+        .execute(
+            "UPDATE phrase_cards SET next_review_at = 0 WHERE phrase != 'Future phrase'",
+            [],
+        )
+        .unwrap();
+    db.connection
+        .execute(
+            "UPDATE phrase_cards SET status = 'archived' WHERE phrase = 'Archived phrase'",
+            [],
+        )
+        .unwrap();
+
+    let targets = db.due_learning_targets(second).unwrap();
+    assert_eq!(targets.len(), 2);
+    assert_eq!(targets[0].target, "I work there");
+    assert_eq!(targets[1].target, "The main trade-off was");
+
+    db.connection
+        .execute(
+            "UPDATE phrase_cards SET meaning_or_note = ?1 WHERE phrase = 'The main trade-off was'",
+            ["word ".repeat(50)],
+        )
+        .unwrap();
+    let bounded = db.due_learning_targets(second).unwrap();
+    assert_eq!(bounded[1].cue.chars().count(), 160);
+}

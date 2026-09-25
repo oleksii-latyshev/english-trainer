@@ -8,6 +8,7 @@ pub fn generate_follow_up(transcript: String) -> Result<ConversationTurn, Provid
         opening_question: String::new(),
         recent_turns: Vec::new(),
         latest_transcript: transcript,
+        learning_targets: Vec::new(),
     })
 }
 
@@ -150,6 +151,14 @@ pub struct ConversationContext {
     pub opening_question: String,
     pub recent_turns: Vec<ContextTurn>,
     pub latest_transcript: String,
+    pub learning_targets: Vec<LearningPromptTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct LearningPromptTarget {
+    pub kind: String,
+    pub cue: String,
+    pub target: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

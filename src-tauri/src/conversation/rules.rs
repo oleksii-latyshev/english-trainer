@@ -23,6 +23,13 @@ pub(super) fn context_char_count(context: &ConversationContext) -> usize {
     context.opening_question.chars().count()
         + context.latest_transcript.chars().count()
         + context
+            .learning_targets
+            .iter()
+            .map(|item| {
+                item.kind.chars().count() + item.cue.chars().count() + item.target.chars().count()
+            })
+            .sum::<usize>()
+        + context
             .recent_turns
             .iter()
             .map(|turn| {

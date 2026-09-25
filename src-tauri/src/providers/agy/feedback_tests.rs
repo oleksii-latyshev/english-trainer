@@ -13,6 +13,7 @@ fn context(transcript: &str) -> ConversationContext {
         opening_question: "What happened recently?".into(),
         recent_turns: Vec::new(),
         latest_transcript: transcript.into(),
+        learning_targets: Vec::new(),
     }
 }
 

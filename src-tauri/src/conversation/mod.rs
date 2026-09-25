@@ -153,10 +153,23 @@ impl SessionStore {
         validate_transcript(&transcript)?;
         let context = {
             let mut state = self.lock();
-            let session = active_session_mut(&mut state, session_id)?;
+            let session = state
+                .active
+                .as_ref()
+                .filter(|session| session.id == session_id)
+                .ok_or_else(invalid_session_error)?;
             if session.in_flight {
                 return Err(busy_error());
             }
+            let learning_targets = if session.turns.len() == 1 || session.turns.len() == 5 {
+                state
+                    .database
+                    .due_learning_targets(session_id)
+                    .map_err(database_error)?
+            } else {
+                Vec::new()
+            };
+            let session = active_session_mut(&mut state, session_id)?;
             session.in_flight = true;
             let mut context = ConversationContext {
                 opening_question: session.opening_question.clone(),
@@ -175,6 +188,7 @@ impl SessionStore {
                     .rev()
                     .collect(),
                 latest_transcript: transcript.trim().to_string(),
+                learning_targets,
             };
             while context_char_count(&context) > MAX_CONTEXT_CHARS
                 && !context.recent_turns.is_empty()

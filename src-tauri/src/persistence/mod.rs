@@ -7,6 +7,7 @@ use crate::providers::{AttemptComparison, TurnFeedback};
 use rusqlite::{params, Connection, OptionalExtension};
 
 mod learning_reviews;
+mod learning_targets;
 mod learning_writes;
 mod schema;
 use std::path::Path;
