@@ -1,4 +1,5 @@
 import { Button, Card } from '@heroui/react';
+import type { ReactNode } from 'react';
 import type { SessionDetails } from '@/features/practice/lib/practiceState';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import { PracticeControls } from '@/features/practice/PracticeControls';
@@ -19,11 +20,11 @@ type Props = {
   retryAnchor: (SentAnswer & { feedback: TurnFeedback }) | null;
   isRetrying: boolean;
   isCurrent: () => boolean;
+  followUpPanel?: ReactNode;
   onRetryAnchor: (answer: SentAnswer & { feedback: TurnFeedback }) => void;
   onTryAgain: () => void;
   onCancelRetry: () => void;
   onContinueFromRetry: () => void;
-  onNavigateToConversation: () => void;
 };
 
 function stepBadgeClass(isActive: boolean): string {
@@ -55,11 +56,11 @@ export function CoachWorkspace({
   retryAnchor,
   isRetrying,
   isCurrent,
+  followUpPanel,
   onRetryAnchor,
   onTryAgain,
   onCancelRetry,
   onContinueFromRetry,
-  onNavigateToConversation,
 }: Props) {
   const { transcript, currentRequestId } = model;
   const currentStep = deriveCoachStep({
@@ -73,7 +74,6 @@ export function CoachWorkspace({
       false,
   });
   const currentQuestion = promptQuestion(retryAnchor, savedAnswer, session?.question);
-  const isUnsentTurn = session !== undefined && savedAnswer === null && Boolean(transcript);
 
   return (
     <div className="coach-workspace flex flex-col gap-6">
@@ -154,28 +154,6 @@ export function CoachWorkspace({
             </Card.Header>
           </Card>
 
-          {isUnsentTurn && !isRetrying && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-5">
-              <p className="section-kicker text-amber-300">SAVED ANSWER REQUIRED</p>
-              <p className="text-sm font-semibold text-amber-100 mt-1 mb-0">
-                Send your answer to Eva to save this turn before reviewing feedback.
-              </p>
-              <p className="text-xs text-amber-200/80 mt-1 mb-4 leading-relaxed">
-                Feedback evaluation and Try Again are linked to saved conversation turns. Send it
-                through the Conversation flow, then return here for focused review.
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  className="primary-action text-xs"
-                  onPress={onNavigateToConversation}
-                  variant="primary"
-                >
-                  Go to Conversation to send →
-                </Button>
-              </div>
-            </div>
-          )}
-
           {savedAnswer && (
             <Card className="panel" variant="secondary">
               <Card.Header className="panel-header">
@@ -189,6 +167,8 @@ export function CoachWorkspace({
               </Card.Content>
             </Card>
           )}
+
+          {followUpPanel}
 
           <PracticeControls
             actions={actions}

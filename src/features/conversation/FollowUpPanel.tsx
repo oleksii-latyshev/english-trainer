@@ -1,26 +1,10 @@
 import { Button, Card } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
-import { useEffect, useRef, useState } from 'react';
 import { formatTiming } from '@/lib/formatTiming';
-import {
-  type ConversationTurn,
-  isConversationTurn,
-  isProviderError,
-  type ProviderErrorCode,
-} from '@/lib/types';
+import { type ConversationTurn, isProviderError, type ProviderErrorCode } from '@/lib/types';
 import { turnTiming } from './lib/turnTiming';
 
-type Props = {
-  transcript: string;
-  speak: (text: string, onStart?: (latencyMs: number) => void) => void;
-  isCurrent: () => boolean;
-  speechStoppedAtMs?: number;
-  sessionId?: number;
-  onTurn?: (turn: ConversationTurn) => void;
-  onPendingChange?: (isPending: boolean) => void;
-};
-
-type FollowUpState =
+export type FollowUpState =
   | { tag: 'idle' }
   | { tag: 'thinking' }
   | {
@@ -33,11 +17,19 @@ type FollowUpState =
     }
   | { tag: 'error'; code: ProviderErrorCode | 'unknown'; message: string };
 
-function spokenTurn(turn: ConversationTurn): string {
+type Props = {
+  speechStoppedAtMs?: number;
+  sessionId?: number;
+  surface?: 'conversation' | 'coach';
+  state: FollowUpState;
+  onAskFollowUp: () => void;
+};
+
+export function spokenTurn(turn: ConversationTurn): string {
   return turn.question ? `${turn.spoken_reply} ${turn.question}` : turn.spoken_reply;
 }
 
-function followUpError(cause: unknown): Extract<FollowUpState, { tag: 'error' }> {
+export function followUpError(cause: unknown): Extract<FollowUpState, { tag: 'error' }> {
   if (isProviderError(cause)) return { tag: 'error', code: cause.code, message: cause.message };
   return {
     tag: 'error',
@@ -46,72 +38,64 @@ function followUpError(cause: unknown): Extract<FollowUpState, { tag: 'error' }>
   };
 }
 
-function actionLabel(state: FollowUpState, isSession: boolean): string {
+export function actionLabel(
+  state: FollowUpState,
+  isSession: boolean,
+  surface: 'conversation' | 'coach' = 'conversation',
+): string {
   switch (state.tag) {
     case 'thinking':
       return 'Thinking…';
     case 'ready':
       return 'Try another follow-up';
     case 'error':
-      return state.code === 'unavailable' ? 'Retry after setup' : 'Retry follow-up';
+      if (state.code === 'unavailable') return 'Retry after setup';
+      return surface === 'coach' ? 'Retry send' : 'Retry follow-up';
     default:
       return isSession ? 'Send answer to Eva' : 'Ask a follow-up';
   }
 }
 
-function requestTurn(sessionId: number | undefined, transcript: string): Promise<unknown> {
+export function requestTurn(sessionId: number | undefined, transcript: string): Promise<unknown> {
   if (sessionId === undefined) return invoke<unknown>('generate_follow_up', { transcript });
   return invoke<unknown>('send_practice_turn', { sessionId, transcript });
 }
 
-export function FollowUpPanel({
-  transcript,
-  speak,
-  isCurrent,
-  sessionId,
-  onTurn,
-  onPendingChange,
-  speechStoppedAtMs,
-}: Props) {
-  const [state, setState] = useState<FollowUpState>({ tag: 'idle' });
-  const generation = useRef(0);
-  const pending = useRef(false);
+function panelKicker(surface: 'conversation' | 'coach'): string {
+  return surface === 'coach' ? 'COACH MODE' : 'CONVERSATION PREVIEW';
+}
 
-  useEffect(() => {
-    return () => {
-      generation.current += 1;
-    };
-  }, []);
+function panelTitle(surface: 'conversation' | 'coach'): string {
+  return surface === 'coach' ? 'Save answer to Eva' : 'Keep the conversation going';
+}
 
-  async function askFollowUp() {
-    if (pending.current) return;
-    const requestId = ++generation.current;
-    pending.current = true;
-    onPendingChange?.(true);
-    setState({ tag: 'thinking' });
-    const sentAtMs = performance.now();
-    try {
-      const result = await requestTurn(sessionId, transcript);
-      const replyAtMs = performance.now();
-      if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
-      if (requestId !== generation.current || !isCurrent()) return;
-      setState({ tag: 'ready', turn: result, sentAtMs, replyAtMs });
-      onTurn?.(result);
-      speak(spokenTurn(result), (voiceStartMs) => {
-        if (requestId !== generation.current || !isCurrent()) return;
-        const audioAtMs = performance.now();
-        setState((current) =>
-          current.tag === 'ready' ? { ...current, audioAtMs, voiceStartMs } : current,
-        );
-      });
-    } catch (cause) {
-      if (requestId === generation.current && isCurrent()) setState(followUpError(cause));
-    } finally {
-      pending.current = false;
-      onPendingChange?.(false);
-    }
+function emptyTranscriptMessage(
+  sessionId: number | undefined,
+  surface: 'conversation' | 'coach',
+): string {
+  if (sessionId === undefined) {
+    return 'Ask Eva for one short reply and a question about what you said.';
   }
+  if (surface === 'coach') {
+    return 'Send your answer to Eva to save this turn and unlock focused feedback.';
+  }
+  return 'Send your answer to Eva to continue the conversation.';
+}
 
+function readyContinuationMessage(surface: 'conversation' | 'coach'): string {
+  if (surface === 'coach') {
+    return 'Answer saved. Review focused feedback below, or record an answer to Eva’s new question.';
+  }
+  return 'Record an answer to Eva’s new question to continue.';
+}
+
+export function FollowUpPanel({
+  sessionId,
+  speechStoppedAtMs,
+  surface = 'conversation',
+  state,
+  onAskFollowUp,
+}: Props) {
   const timing =
     state.tag === 'ready'
       ? turnTiming({
@@ -124,21 +108,19 @@ export function FollowUpPanel({
         })
       : undefined;
 
+  const isSessionReady = sessionId !== undefined && state.tag === 'ready';
+
   return (
     <Card className="panel mt-[18px]" variant="secondary">
       <Card.Header className="panel-header">
         <div>
-          <p className="section-kicker">CONVERSATION PREVIEW</p>
-          <Card.Title className="section-title">Keep the conversation going</Card.Title>
+          <p className="section-kicker">{panelKicker(surface)}</p>
+          <Card.Title className="section-title">{panelTitle(surface)}</Card.Title>
         </div>
       </Card.Header>
       <Card.Content className="panel-content">
         {state.tag === 'idle' && (
-          <p className="empty-transcript">
-            {sessionId === undefined
-              ? 'Ask Eva for one short reply and a question about what you said.'
-              : 'Send your answer to Eva to continue the conversation.'}
-          </p>
+          <p className="empty-transcript">{emptyTranscriptMessage(sessionId, surface)}</p>
         )}
         {state.tag === 'ready' && (
           <div aria-live="polite" className="grid gap-3 text-[0.96rem] leading-7 text-slate-100">
@@ -184,18 +166,16 @@ export function FollowUpPanel({
             {state.message}
           </p>
         )}
-        {sessionId !== undefined && state.tag === 'ready' ? (
-          <p className="mt-4 mb-0 text-sm text-slate-300">
-            Record an answer to Eva’s new question to continue.
-          </p>
+        {isSessionReady ? (
+          <p className="mt-4 mb-0 text-sm text-slate-300">{readyContinuationMessage(surface)}</p>
         ) : (
           <Button
             className="secondary-action mt-5 self-start"
             isDisabled={state.tag === 'thinking'}
-            onPress={askFollowUp}
+            onPress={onAskFollowUp}
             variant="secondary"
           >
-            {actionLabel(state, sessionId !== undefined)}
+            {actionLabel(state, sessionId !== undefined, surface)}
           </Button>
         )}
         <p className="mt-3 mb-0 text-xs leading-5 text-slate-400">

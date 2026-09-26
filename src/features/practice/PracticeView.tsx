@@ -1,13 +1,19 @@
 import { Button } from '@heroui/react';
-import { useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { CoachWorkspace } from '@/features/coach/CoachWorkspace';
-import { FollowUpPanel } from '@/features/conversation/FollowUpPanel';
+import {
+  FollowUpPanel,
+  type FollowUpState,
+  followUpError,
+  requestTurn,
+  spokenTurn,
+} from '@/features/conversation/FollowUpPanel';
 import { type SessionDetails, sessionDetails } from '@/features/practice/lib/practiceState';
 import { type SentAnswer, sentAnswerMatches } from '@/features/practice/lib/sentAnswer';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
 import { TimingPanel } from '@/features/speech/TimingPanel';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import type { TurnFeedback } from '@/lib/types';
+import { type ConversationTurn, isConversationTurn, type TurnFeedback } from '@/lib/types';
 import { DailyRecallPanel } from './DailyRecallPanel';
 import { PracticeControls } from './PracticeControls';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
@@ -23,6 +29,8 @@ type Props = {
   activeScreen?: 'conversation' | 'coach';
   onNavigate?: (screen: Screen) => void;
 };
+
+const IDLE_FOLLOW_UP: FollowUpState = { tag: 'idle' };
 
 function matchingSentAnswer(
   answer: SentAnswer | null,
@@ -61,6 +69,13 @@ export function PracticeView({
     null,
   );
   const [isRetrying, setIsRetrying] = useState(false);
+  const [followUpRecord, setFollowUpRecord] = useState<{
+    requestId: number;
+    state: FollowUpState;
+  }>({ requestId: model.currentRequestId, state: IDLE_FOLLOW_UP });
+
+  const generation = useRef(0);
+  const pending = useRef(false);
 
   const { transcript, timing, practice, currentRequestId, speechStoppedAtMs } = model;
   const { handlePracticeTurn, isCurrent, onTurnPendingChange, startRecording } = actions;
@@ -69,22 +84,81 @@ export function PracticeView({
   const recall = useDailyRecall(recallId);
   const savedAnswer = matchingSentAnswer(sentAnswer, currentRequestId, transcript);
 
-  function startNewAnswer() {
+  useEffect(() => {
+    return () => {
+      generation.current += 1;
+    };
+  }, []);
+
+  const followUpState: FollowUpState =
+    followUpRecord.requestId === currentRequestId ? followUpRecord.state : IDLE_FOLLOW_UP;
+
+  function acceptSentTurn(turn: ConversationTurn, sentTranscript: string) {
+    if (!session) return;
+    setSentAnswer({
+      sessionId: session.sessionId,
+      sequence: session.turnCount + 1,
+      originalTranscript: sentTranscript,
+      answeredQuestion: session.question,
+      requestId: currentRequestId,
+    });
+    handlePracticeTurn(session.sessionId, turn);
+  }
+
+  function recordVoiceStart(requestId: number, voiceStartMs: number) {
+    if (requestId !== generation.current || !isCurrent()) return;
+    const audioAtMs = performance.now();
+    setFollowUpRecord((current) =>
+      current.requestId === currentRequestId && current.state.tag === 'ready'
+        ? { ...current, state: { ...current.state, audioAtMs, voiceStartMs } }
+        : current,
+    );
+  }
+
+  function isLatestSend(requestId: number): boolean {
+    return requestId === generation.current && isCurrent();
+  }
+
+  function failSend(requestId: number, cause: unknown) {
+    if (isLatestSend(requestId)) {
+      setFollowUpRecord({ requestId: currentRequestId, state: followUpError(cause) });
+    }
+  }
+
+  function finishSend() {
+    pending.current = false;
+    if (practice.tag === 'active' || practice.tag === 'waiting') onTurnPendingChange(false);
+  }
+
+  function resetTurnState() {
     setSentAnswer(null);
     setRetryAnchor(null);
     setIsRetrying(false);
-    startRecording();
   }
 
-  function finishSession() {
-    actions.finishPractice();
-  }
-
-  function startSession() {
-    setSentAnswer(null);
-    setRetryAnchor(null);
-    setIsRetrying(false);
-    actions.startPractice();
+  async function handleSendTurn() {
+    if (pending.current || !transcript || isRetrying) return;
+    const reqId = ++generation.current;
+    pending.current = true;
+    if (practice.tag === 'active' || practice.tag === 'waiting') onTurnPendingChange(true);
+    setFollowUpRecord({ requestId: currentRequestId, state: { tag: 'thinking' } });
+    const sentAtMs = performance.now();
+    try {
+      const result = await requestTurn(session?.sessionId, transcript);
+      const replyAtMs = performance.now();
+      if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
+      if (!isLatestSend(reqId)) return;
+      setFollowUpRecord({
+        requestId: currentRequestId,
+        state: { tag: 'ready', turn: result, sentAtMs, replyAtMs },
+      });
+      acceptSentTurn(result, transcript);
+      speech.play(spokenTurn(result), (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs));
+    } catch (cause) {
+      failSend(reqId, cause);
+    } finally {
+      finishSend();
+    }
   }
 
   function startRetry() {
@@ -94,10 +168,31 @@ export function PracticeView({
 
   const controlActions = {
     ...actions,
-    startRecording: isRetrying ? startRetry : startNewAnswer,
-    startPractice: startSession,
-    finishPractice: finishSession,
+    startRecording: isRetrying
+      ? startRetry
+      : () => {
+          resetTurnState();
+          startRecording();
+        },
+    startPractice: () => {
+      resetTurnState();
+      actions.startPractice();
+    },
+    finishPractice: actions.finishPractice,
   };
+
+  const showFollowUp = shouldShowFollowUp(transcript, isRetrying, recall.active);
+
+  const followUpPanelNode: ReactNode = showFollowUp ? (
+    <FollowUpPanel
+      key={`follow-up-${currentRequestId}`}
+      onAskFollowUp={handleSendTurn}
+      sessionId={session?.sessionId}
+      speechStoppedAtMs={speechStoppedAtMs}
+      state={followUpState}
+      surface={activeScreen}
+    />
+  ) : null;
 
   return (
     <div className="practice-screen">
@@ -144,35 +239,7 @@ export function PracticeView({
 
             <TranscriptPanel transcript={transcript} />
 
-            {shouldShowFollowUp(transcript, isRetrying, recall.active) && (
-              <FollowUpPanel
-                isCurrent={isCurrent}
-                key={`follow-up-${currentRequestId}`}
-                onPendingChange={
-                  practice.tag === 'active' || practice.tag === 'waiting'
-                    ? onTurnPendingChange
-                    : undefined
-                }
-                onTurn={
-                  session
-                    ? (turn) => {
-                        setSentAnswer({
-                          sessionId: session.sessionId,
-                          sequence: session.turnCount + 1,
-                          originalTranscript: transcript,
-                          answeredQuestion: session.question,
-                          requestId: currentRequestId,
-                        });
-                        handlePracticeTurn(session.sessionId, turn);
-                      }
-                    : undefined
-                }
-                sessionId={session?.sessionId}
-                speak={speech.play}
-                speechStoppedAtMs={speechStoppedAtMs}
-                transcript={transcript}
-              />
-            )}
+            {activeScreen === 'conversation' ? followUpPanelNode : null}
 
             {(savedAnswer !== null || Boolean(transcript)) && (
               <div className="panel mt-[18px] flex flex-wrap items-center justify-between gap-4 p-5">
@@ -209,6 +276,7 @@ export function PracticeView({
       <section aria-label="Coach workspace" hidden={activeScreen !== 'coach'}>
         <CoachWorkspace
           actions={controlActions}
+          followUpPanel={activeScreen === 'coach' ? followUpPanelNode : null}
           isCurrent={isCurrent}
           isRetrying={isRetrying}
           model={model}
@@ -217,12 +285,9 @@ export function PracticeView({
             setIsRetrying(false);
           }}
           onContinueFromRetry={() => {
-            setIsRetrying(false);
-            setRetryAnchor(null);
-            setSentAnswer(null);
+            resetTurnState();
             actions.resetCapture();
           }}
-          onNavigateToConversation={() => onNavigate?.('practice')}
           onRetryAnchor={setRetryAnchor}
           onTryAgain={startRetry}
           retryAnchor={retryAnchor}
