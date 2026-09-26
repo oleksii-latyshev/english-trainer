@@ -67,7 +67,8 @@
   min-width: 0;
   padding: 42px clamp(22px, 4vw, 58px) 72px;
 }
-.screen-content > section[hidden] {
+.screen-content > section[hidden],
+.practice-screen > section[hidden] {
   display: none;
 }
 @media (max-width: 760px) {

@@ -45,21 +45,22 @@ export function PracticeFeedbackArea({
   onRetryAnchor,
   onTryAgain,
 }: Props) {
-  if ((!transcript && !retryAnchor) || recallActive) return null;
+  if ((!transcript && !retryAnchor && !savedAnswer) || recallActive) return null;
+  const isAnswerSent = session === undefined || savedAnswer !== null || retryAnchor !== null;
+  const effectiveSessionId = savedAnswer?.sessionId ?? retryAnchor?.sessionId;
+  const effectiveSequence = savedAnswer?.sequence ?? retryAnchor?.sequence;
   return (
     <FeedbackPanel
+      canReview={!isRetrying && (savedAnswer !== null || session === undefined)}
+      initialFeedback={retryAnchor?.feedback}
+      isAnswerSent={isAnswerSent}
       isCurrent={isCurrent}
-      key={`feedback-${retryAnchor?.requestId ?? requestId}`}
+      key={`feedback-${retryAnchor?.requestId ?? savedAnswer?.requestId ?? requestId}`}
       onReviewed={(feedback) => {
         if (savedAnswer) onRetryAnchor({ ...savedAnswer, feedback });
       }}
       onSavePhrase={savePhraseCard}
       onTryAgain={retryAnchor ? onTryAgain : undefined}
-      initialFeedback={isRetrying ? retryAnchor?.feedback : undefined}
-      isAnswerSent={session === undefined || savedAnswer !== null || retryAnchor !== null}
-      canReview={!isRetrying}
-      sessionId={savedAnswer?.sessionId ?? retryAnchor?.sessionId}
-      sequence={savedAnswer?.sequence ?? retryAnchor?.sequence}
       persistReviewed={
         savedAnswer
           ? (_answer, feedback) =>
@@ -72,7 +73,11 @@ export function PracticeFeedbackArea({
           : undefined
       }
       question={feedbackQuestion(retryAnchor, savedAnswer, session?.question)}
-      transcript={retryAnchor?.originalTranscript ?? transcript ?? ''}
+      sequence={effectiveSequence}
+      sessionId={effectiveSessionId}
+      transcript={
+        retryAnchor?.originalTranscript ?? savedAnswer?.originalTranscript ?? transcript ?? ''
+      }
     />
   );
 }

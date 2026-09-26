@@ -37,7 +37,16 @@ function transcribeButtonLabel(
   return failure ? 'Retry transcription' : 'Transcribe';
 }
 
-function recordButtonLabel(status: RecordingStatus, hasTranscript: boolean): string {
+function recordButtonLabel(
+  status: RecordingStatus,
+  hasTranscript: boolean,
+  isRetrying: boolean,
+): string {
+  if (isRetrying) {
+    if (status === 'error') return 'Try recording retry again';
+    if (status === 'ready' || hasTranscript) return 'Record retry again';
+    return 'Start re-speaking';
+  }
   if (status === 'error') return 'Try recording again';
   if (status === 'ready' || hasTranscript) return 'Record again';
   return 'Start recording';
@@ -49,11 +58,22 @@ function startSessionLabel(practice: PracticeState): string {
   return 'Start daily practice';
 }
 
-function promptKicker(recallActive: boolean): string {
+function promptKicker(
+  recallActive: boolean,
+  surface: 'conversation' | 'coach',
+  isRetrying: boolean,
+): string {
+  if (isRetrying) return 'RE-SPEAKING / ATTEMPT 2';
+  if (surface === 'coach') return 'COACH PROMPT';
   return recallActive ? 'PHRASE RECALL CUE' : 'TODAY’S PROMPT';
 }
 
-function promptIndex(session: ReturnType<typeof sessionDetails>, recallActive: boolean): string {
+function promptIndex(
+  session: ReturnType<typeof sessionDetails>,
+  recallActive: boolean,
+  isRetrying: boolean,
+): string {
+  if (isRetrying) return 'RETRY';
   if (recallActive) return 'RECALL';
   return session ? `TURN ${session.turnCount + 1}` : '01 / 01';
 }
@@ -106,6 +126,9 @@ export function PracticeControls({
   recallActive = false,
   recallLocked = false,
   recallCompletedCount = 0,
+  surface = 'conversation',
+  isRetrying = false,
+  retryPrompt,
 }: {
   model: PracticeViewModel;
   actions: PracticeActions;
@@ -113,6 +136,9 @@ export function PracticeControls({
   recallActive?: boolean;
   recallLocked?: boolean;
   recallCompletedCount?: number;
+  surface?: 'conversation' | 'coach';
+  isRetrying?: boolean;
+  retryPrompt?: string;
 }) {
   const {
     status,
@@ -130,17 +156,19 @@ export function PracticeControls({
   const { startRecording, stopRecording, transcribeRecording } = actions;
   const session = sessionDetails(practice);
   const conversationOpen = isConversationOpen(practice);
-  const question = recallActive
-    ? (recallCue ?? 'Review your saved recall below.')
-    : (session?.question ?? 'What was the most interesting part of your day?');
+  const question = isRetrying
+    ? (retryPrompt ?? 'Speak your corrected answer now.')
+    : recallActive
+      ? (recallCue ?? 'Review your saved recall below.')
+      : (session?.question ?? 'What was the most interesting part of your day?');
   return (
     <Card className="panel practice-panel" variant="secondary">
       <Card.Header className="panel-header">
         <div>
-          <p className="section-kicker">{promptKicker(recallActive)}</p>
+          <p className="section-kicker">{promptKicker(recallActive, surface, isRetrying)}</p>
           <Card.Title className="prompt-title">{question}</Card.Title>
         </div>
-        <span className="prompt-index">{promptIndex(session, recallActive)}</span>
+        <span className="prompt-index">{promptIndex(session, recallActive, isRetrying)}</span>
       </Card.Header>
       <Card.Content className="panel-content">
         <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -166,7 +194,7 @@ export function PracticeControls({
             {practiceError}
           </p>
         )}
-        {!recallActive && <ScaffoldingPanel question={question} />}
+        {!recallActive && !isRetrying && <ScaffoldingPanel question={question} />}
         <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
           <div className="mic-orb" aria-hidden="true">
             <span className="mic-symbol">●</span>
@@ -185,7 +213,7 @@ export function PracticeControls({
               onPress={startRecording}
               variant="primary"
             >
-              {recordButtonLabel(status, Boolean(transcript))}
+              {recordButtonLabel(status, Boolean(transcript), isRetrying)}
             </Button>
           )}
           {playbackUrl && (
@@ -211,9 +239,11 @@ export function PracticeControls({
         )}
         {playbackUrl && (
           <div className="recording-preview">
-            <label htmlFor="recording-playback">Review your recording before transcription</label>
+            <label htmlFor={`${surface}-recording-playback`}>
+              Review your recording before transcription
+            </label>
             {/* biome-ignore lint/a11y/useMediaCaption: A timed caption is unavailable before transcription. */}
-            <audio controls id="recording-playback" src={playbackUrl} />
+            <audio controls id={`${surface}-recording-playback`} src={playbackUrl} />
           </div>
         )}
       </Card.Content>

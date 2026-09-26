@@ -40,6 +40,8 @@ function reviewButtonLabel(state: FeedbackState): string {
       return 'Reviewing…';
     case 'ready':
       return 'Review again';
+    case 'error':
+      return 'Retry review';
     default:
       return 'Review my answer';
   }
@@ -90,7 +92,7 @@ export function FeedbackPanel({
   }, []);
 
   async function reviewAnswer() {
-    if (state.tag === 'loading') return;
+    if (state.tag === 'loading' || !isAnswerSent || !canReview) return;
     const requestId = ++generation.current;
     setState({ tag: 'loading' });
     setPersistError(null);
@@ -121,7 +123,7 @@ export function FeedbackPanel({
         // Memory write failure isolation: feedback is kept usable, error offered with retry
         setPersistError(feedbackError(cause));
       }
-    } else {
+    } else if (isAnswerSent && sessionId === undefined) {
       setIsFeedbackSaved(true);
       onReviewed?.(result, answerQuestion);
     }
@@ -184,7 +186,7 @@ export function FeedbackPanel({
           {reviewButtonLabel(state)}
         </Button>
         {state.tag === 'error' && (
-          <p className="error-message" role="alert">
+          <p className="error-message mt-3" role="alert">
             {state.message}
           </p>
         )}

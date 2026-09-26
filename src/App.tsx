@@ -11,18 +11,20 @@ import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import './App.css';
 import './appShell.css';
 
-type Screen = 'home' | 'practice' | 'memory' | 'summary';
+type Screen = 'home' | 'practice' | 'coach' | 'memory' | 'summary';
 
 function screenTitle(screen: Screen): string {
   switch (screen) {
     case 'home':
       return 'Daily Practice';
+    case 'coach':
+      return 'Coach';
     case 'memory':
       return 'Learning Memory';
     case 'summary':
       return 'Session complete';
     case 'practice':
-      return 'Practice';
+      return 'Conversation';
   }
 }
 
@@ -112,6 +114,14 @@ function App() {
             >
               <span aria-hidden="true">◉</span> Conversation
             </Button>
+            <Button
+              aria-current={screen === 'coach' ? 'page' : undefined}
+              className={`nav-item ${screen === 'coach' ? 'nav-item--active' : ''}`}
+              onPress={() => selectScreen('coach')}
+              variant="tertiary"
+            >
+              <span aria-hidden="true">🎯</span> Coach
+            </Button>
             <p className="sidebar-label sidebar-label--spaced">LEARNING</p>
             <Button
               aria-current={screen === 'memory' ? 'page' : undefined}
@@ -137,8 +147,12 @@ function App() {
                 onStartPractice={startOrResumePractice}
               />
             </section>
-            <section aria-label="Conversation practice" hidden={screen !== 'practice'}>
+            <section
+              aria-label={screen === 'coach' ? 'Coach' : 'Conversation practice'}
+              hidden={screen !== 'practice' && screen !== 'coach'}
+            >
               <PracticeView
+                activeScreen={screen === 'coach' ? 'coach' : 'conversation'}
                 key={sessionDetails(practice.state)?.sessionId ?? 'no-session'}
                 model={{
                   ...capture.view,
@@ -159,6 +173,7 @@ function App() {
                   isCurrent: () => capture.isCurrentRequest(currentRequestId),
                   onTurnPendingChange: practice.onTurnPendingChange,
                 }}
+                onNavigate={selectScreen}
                 speech={speech}
               />
             </section>
