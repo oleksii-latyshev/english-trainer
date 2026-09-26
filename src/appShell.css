@@ -1,11 +1,12 @@
+@import "./appHeader.css";
+
+/* Apple macOS & Codex Desktop App Shell Styles */
 .app-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: #0d0d0f;
   color: #ededed;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -15,129 +16,11 @@
   flex-direction: column;
 }
 
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  height: 48px;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background-color: rgba(18, 18, 20, 0.85);
-  backdrop-filter: blur(24px);
-  user-select: none;
-}
-
-.window-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.traffic-light {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-}
-
-.traffic-light--close {
-  background-color: #ff5f56;
-}
-
-.traffic-light--minimize {
-  background-color: #ffbd2e;
-}
-
-.traffic-light--maximize {
-  background-color: #27c93f;
-}
-
-.window-title-area {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 12px;
-}
-
-.brand {
-  font-size: 0.82rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  color: #f4f4f5;
-}
-
-.brand-badge {
-  font-size: 0.68rem;
-  color: #71717a;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 2px 7px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.header-context {
-  color: #a1a1aa;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.eva-header-capsule {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 3px 10px 3px 6px;
-  border-radius: 9999px;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.25);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.eva-header-capsule:hover {
-  background: rgba(168, 85, 247, 0.18);
-  border-color: rgba(168, 85, 247, 0.4);
-}
-
-.eva-capsule-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #9333ea;
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-}
-
-.eva-capsule-label {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: #e9d5ff;
-}
-
-.eva-capsule-xp {
-  font-size: 0.68rem;
-  color: #c084fc;
-  background: rgba(147, 51, 234, 0.3);
-  padding: 1px 6px;
-  border-radius: 9999px;
-}
-
 .app-layout {
   display: grid;
   flex: 1;
   min-height: calc(100vh - 82px);
-  grid-template-columns: 230px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .app-sidebar {
@@ -146,11 +29,13 @@
   background-color: #121214;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  width: 240px;
+  box-sizing: border-box;
 }
 
 .sidebar-label {
-  margin: 14px 0 6px 10px;
+  margin: 16px 0 6px 10px;
   color: #71717a;
   font-size: 0.65rem;
   font-weight: 700;
@@ -166,8 +51,9 @@
   display: flex;
   width: 100%;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  min-height: 36px;
+  min-height: 38px;
   padding: 0 10px;
   border: 1px solid transparent;
   border-radius: 9px;
@@ -178,6 +64,8 @@
   font-weight: 500;
   text-align: left;
   transition: all 0.12s ease;
+  box-sizing: border-box;
+  text-decoration: none;
 }
 
 .nav-item:hover {
@@ -197,6 +85,14 @@
   font-weight: 600;
 }
 
+.nav-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
 .nav-item-icon {
   width: 18px;
   display: flex;
@@ -210,11 +106,18 @@
   color: #ffffff;
 }
 
+.nav-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .nav-badge {
-  margin-left: auto;
-  font-size: 0.68rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.65rem;
   font-weight: 600;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 9999px;
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
@@ -230,11 +133,6 @@
   padding: 32px clamp(20px, 3.5vw, 48px) 64px;
   background-color: #0d0d0f;
   overflow-y: auto;
-}
-
-.screen-content > section[hidden],
-.practice-screen > section[hidden] {
-  display: none;
 }
 
 .app-footer {
@@ -278,7 +176,7 @@
     grid-template-columns: 1fr;
   }
   .app-sidebar {
-    display: flex;
+    width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 4px;

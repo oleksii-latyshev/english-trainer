@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from '@heroui/react';
+import { Button, Chip } from '@heroui/react';
 import { Briefcase, Flame, MessageSquare, Rabbit, Target, Zap } from 'lucide-react';
 import { MemorySnapshot } from './MemorySnapshot';
 import './dashboard.css';
@@ -52,74 +52,70 @@ export function DailyPracticeDashboard({
 
   return (
     <div className="dashboard-content">
-      {/* 1. Hero Card */}
+      {/* 1. Golden Path Hero: Start Today's Practice */}
       <section aria-labelledby="dashboard-title">
-        <Card className="panel dashboard-hero-card border border-white/[0.08] bg-[#161619] shadow-xl">
-          <Card.Header className="dashboard-hero-header">
-            <div>
-              <p className="eyebrow text-xs font-semibold tracking-wider text-zinc-400 uppercase">
-                DAILY PRACTICE · GUIDED ROUTINE
-              </p>
-              <h1
-                className="mt-1 text-3xl font-bold tracking-tight text-zinc-100 md:text-4xl"
-                id="dashboard-title"
-              >
-                Make today a speaking day.
-              </h1>
-            </div>
-            <Chip
-              className="dashboard-status"
-              color={hasActiveSession ? 'success' : 'default'}
-              size="sm"
-              variant="soft"
-            >
-              {sessionStatus}
-            </Chip>
-          </Card.Header>
+        <div className="dashboard-hero-card">
+          <div className="dashboard-hero-grid">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-300">
+                  RECOMMENDED DAILY WORKOUT · ~12 MIN
+                </span>
+                <Chip color={hasActiveSession ? 'success' : 'default'} size="sm" variant="soft">
+                  {sessionStatus}
+                </Chip>
+              </div>
 
-          <Card.Content className="dashboard-hero-content">
-            <div className="dashboard-hero-grid">
               <div>
-                <p className="intro text-sm leading-relaxed text-zinc-400">
-                  Start with a spoken question, build your answer aloud, and get a chance to try
-                  again with focused feedback.
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    className="dashboard-cta rounded-xl bg-white px-7 py-3 text-sm font-semibold text-black shadow-lg shadow-white/[0.04] transition-all hover:bg-zinc-200 active:scale-[0.98]"
-                    isDisabled={busy || isRestoring}
-                    onPress={onStartPractice}
-                    variant="primary"
-                  >
-                    <span aria-hidden="true" className="mr-1.5 text-xs">
-                      ▶
-                    </span>{' '}
-                    {actionLabel}
-                  </Button>
-                </div>
-                <p className="dashboard-caption mt-3 text-xs text-zinc-500">
-                  Recommended routine · 8 spoken answers · 4 steps · ~12 minutes total. All data is
-                  stored locally.
+                <h1
+                  className="text-3xl font-bold tracking-tight text-zinc-100 md:text-4xl"
+                  id="dashboard-title"
+                >
+                  Ready for today's spoken session?
+                </h1>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
+                  No configuration needed. Click the button below to start: Eva will ask an
+                  authentic question, you hold Space to speak aloud, and we'll refine your answers
+                  with B2 phrasing.
                 </p>
               </div>
 
-              {/* Animated Mini Eva Companion Figure */}
-              <figure className={`nori-figure${isLoading ? ' is-running' : ''}`}>
-                <div className="nori-stage" aria-hidden="true">
-                  <span className="nori-speed-lines" />
-                  <Rabbit className="nori-rabbit text-purple-200" strokeWidth={1.6} />
-                </div>
-                <figcaption className="mt-2 text-xs text-zinc-400">
-                  {isLoading ? 'Mini Eva is preparing…' : 'Mini Eva: Lv. 3 Companion'}
-                </figcaption>
-              </figure>
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Button
+                  className="dashboard-cta flex items-center gap-2"
+                  isDisabled={busy || isRestoring}
+                  onPress={onStartPractice}
+                  variant="primary"
+                >
+                  <span aria-hidden="true" className="text-xs">
+                    ▶
+                  </span>
+                  <span>{actionLabel}</span>
+                </Button>
+              </div>
+
+              <p className="text-xs text-zinc-500">
+                8 spoken turns · 1 B2 upgrade & re-speaking · 3 due flashcards recall. Data saved
+                locally.
+              </p>
             </div>
-          </Card.Content>
-        </Card>
+
+            {/* Animated Mini Eva Companion Figure */}
+            <figure className={`nori-figure${isLoading ? ' is-running' : ''}`}>
+              <div className="nori-stage" aria-hidden="true">
+                <span className="nori-speed-lines" />
+                <Rabbit className="nori-rabbit" strokeWidth={1.6} />
+              </div>
+              <figcaption className="mt-3 text-center text-xs font-medium text-zinc-400">
+                {isLoading ? 'Mini Eva is preparing…' : 'Mini Eva · Lv.3 Companion'}
+              </figcaption>
+            </figure>
+          </div>
+        </div>
 
         {error && (
           <div
-            className="mt-3 flex items-center justify-between rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-300"
+            className="mt-4 flex items-center justify-between rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300"
             role="alert"
           >
             <span>{error}</span>
@@ -136,176 +132,194 @@ export function DailyPracticeDashboard({
         )}
       </section>
 
-      {/* 2. Today's Guided Session Blueprint */}
-      <Card className="panel dashboard-card border border-white/[0.08] bg-[#161619] shadow-lg">
-        <Card.Header className="dashboard-card-header flex items-center justify-between border-b border-white/[0.06] pb-3">
+      {/* 2. Visual Blueprint: Exactly What Happens in a Session */}
+      <div className="dashboard-card">
+        <div className="flex items-center justify-between pb-1">
           <div>
-            <p className="section-kicker text-xs font-semibold tracking-wider text-zinc-400 uppercase">
-              YOUR SESSION BLUEPRINT
-            </p>
-            <Card.Title className="section-title text-base font-semibold text-zinc-100">
-              4 Steps to Spoken Confidence
-            </Card.Title>
+            <span className="text-xs font-bold tracking-wider text-zinc-400 uppercase">
+              THE 4-STEP LEARNING LOOP
+            </span>
+            <h2 className="mt-1 text-base font-semibold text-zinc-100">
+              How today's 12-minute workout unfolds
+            </h2>
           </div>
-          <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-400">
-            8-answer goal · 10–15 min suggested
+          <span className="hidden rounded-full bg-zinc-800/80 px-3 py-1 text-xs text-zinc-400 sm:inline-block">
+            Target: 8 spoken turns
           </span>
-        </Card.Header>
-        <Card.Content className="dashboard-steps pt-2">
-          <div className="dashboard-step">
-            <span className="step-number bg-white/[0.06] text-zinc-200">1</span>
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-100">Hear a spoken question</h2>
-              <p className="text-xs text-zinc-400">
-                The conversation opens with an authentic prompt you answer aloud in your own words.
-              </p>
-            </div>
-          </div>
-          <div className="dashboard-step">
-            <span className="step-number bg-white/[0.06] text-zinc-200">2</span>
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-100">Speak and review transcripts</h2>
-              <p className="text-xs text-zinc-400">
-                Transcribed locally via Metal-accelerated Whisper; speech is read back naturally.
-              </p>
-            </div>
-          </div>
-          <div className="dashboard-step">
-            <span className="step-number bg-white/[0.06] text-zinc-200">3</span>
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-100">
-                Strengthen with focused feedback
-              </h2>
-              <p className="text-xs text-zinc-400">
-                Receive 1–3 focused corrections, B1→B2 natural phrase rewrites, and immediate Try
-                Again.
-              </p>
-            </div>
-          </div>
-          <div className="dashboard-step">
-            <span className="step-number bg-white/[0.06] text-zinc-200">4</span>
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-100">Spaced recall & wrap up</h2>
-              <p className="text-xs text-zinc-400">
-                Vocalize up to three phrases due for review, then review your session metrics and
-                XP.
-              </p>
-            </div>
-          </div>
-        </Card.Content>
-      </Card>
+        </div>
 
-      {/* 3. 3-Card Momentum & Memory Row */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="dashboard-steps">
+          <div className="dashboard-step-item">
+            <div className="flex items-center justify-between">
+              <span className="step-badge">1</span>
+              <span className="text-[11px] text-zinc-500">1–2 min</span>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-200">Hear a Question</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                Eva opens with a clear question. Listen to the audio or read the transcript.
+              </p>
+            </div>
+          </div>
+
+          <div className="dashboard-step-item">
+            <div className="flex items-center justify-between">
+              <span className="step-badge">2</span>
+              <span className="text-[11px] text-zinc-500">5–7 min</span>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-200">Speak Aloud</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                Hold Space to speak. Audio is transcribed locally with Apple Silicon Metal Whisper.
+              </p>
+            </div>
+          </div>
+
+          <div className="dashboard-step-item">
+            <div className="flex items-center justify-between">
+              <span className="step-badge">3</span>
+              <span className="text-[11px] text-zinc-500">2–3 min</span>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-200">Deliberate Upgrade</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                Inspect 1 focused correction & B2 phrase rewrites, then re-speak your answer.
+              </p>
+            </div>
+          </div>
+
+          <div className="dashboard-step-item">
+            <div className="flex items-center justify-between">
+              <span className="step-badge">4</span>
+              <span className="text-[11px] text-zinc-500">1–2 min</span>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-200">Spaced Recall</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                Vocalize 3 due phrases from earlier sessions without seeing the text.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. 3-Card Momentum & Flashcard Queue */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Widget 1: Mini Eva Daily Quest */}
-        <Card className="border border-white/[0.08] bg-[#161619] p-4 shadow-sm">
+        <div className="dashboard-card flex flex-col justify-between gap-4 p-5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-purple-400">🌱 MINI EVA QUEST</span>
-            <span className="rounded-full bg-purple-950 px-2 py-0.5 text-[10px] text-purple-300">
+            <span className="font-bold text-purple-400 uppercase">🌱 MINI EVA QUEST</span>
+            <span className="rounded-full bg-purple-950/80 px-2 py-0.5 text-[10px] font-semibold text-purple-300">
               +30 XP
             </span>
           </div>
-          <p className="mt-2 text-xs font-medium text-zinc-200">
-            "Explain a recent technical trade-off or challenge in 3 sentences."
-          </p>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400">
-            <span>Level 3 · Progress</span>
-            <span>240 / 300 XP</span>
+          <div>
+            <p className="text-xs leading-relaxed font-medium text-zinc-200">
+              "Explain a recent technical trade-off or challenge in 3 sentences."
+            </p>
+            <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400">
+              <span>Level 3 Progress</span>
+              <span>240 / 300 XP</span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-full bg-purple-500" style={{ width: '80%' }} />
+            </div>
           </div>
-          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-            <div className="h-full bg-purple-500" style={{ width: '80%' }} />
-          </div>
-        </Card>
+        </div>
 
-        {/* Widget 2: Spaced Repetition Snapshot */}
+        {/* Widget 2: Spaced Repetition Memory Queue */}
         <MemorySnapshot onOpenMemory={onOpenMemory} />
 
         {/* Widget 3: Weekly Speaking Volume */}
-        <Card className="border border-white/[0.08] bg-[#161619] p-4 shadow-sm">
+        <div className="dashboard-card flex flex-col justify-between gap-4 p-5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-emerald-400">⏱️ WEEKLY SPEAKING</span>
-            <span className="flex items-center gap-1 text-[10px] text-amber-400">
-              <Flame className="h-3 w-3" /> 3-Day Streak
+            <span className="font-bold text-emerald-400 uppercase">⏱️ WEEKLY SPEAKING</span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400">
+              <Flame className="h-3.5 w-3.5" /> 3-Day Streak
             </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-xl font-bold text-zinc-100">28 min</span>
-            <span className="text-xs text-zinc-500">/ 45 min target</span>
-          </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400">
-            <span>Weekly Momentum</span>
-            <span>62%</span>
-          </div>
-          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-            <div className="h-full bg-emerald-500" style={{ width: '62%' }} />
-          </div>
-        </Card>
-      </div>
-
-      {/* 4. Quick Specialized Modes Access */}
-      {onNavigate && (
-        <Card className="border border-white/[0.08] bg-[#161619] p-5 shadow-lg">
-          <div className="flex items-center justify-between pb-3">
-            <div>
-              <p className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
-                SPECIALIZED TRAINING MODES
-              </p>
-              <h3 className="text-sm font-semibold text-zinc-100">
-                Target Specific Fluency Dimensions
-              </h3>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-zinc-100">28 min</span>
+              <span className="text-xs text-zinc-500">/ 45 min target</span>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400">
+              <span>Weekly Momentum</span>
+              <span>62%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+              <div className="h-full bg-emerald-500" style={{ width: '62%' }} />
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <button
-              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/20 p-3.5 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
-              onClick={() => onNavigate('conversation')}
-              type="button"
-            >
-              <MessageSquare className="h-5 w-5 text-indigo-400" />
-              <span className="mt-2 text-xs font-semibold text-zinc-200">Conversation Mode</span>
-              <p className="mt-1 text-[11px] text-zinc-500">
-                Spontaneous back-and-forth dialogue with low latency.
-              </p>
-            </button>
+      {/* 4. Specialized Training Gyms (When user wants specific practice) */}
+      {onNavigate && (
+        <div className="dashboard-card">
+          <div className="pb-2">
+            <span className="text-xs font-bold tracking-wider text-zinc-400 uppercase">
+              TARGETED TRAINING GYMS
+            </span>
+            <h2 className="mt-1 text-base font-semibold text-zinc-100">
+              Want to practice something specific today?
+            </h2>
+            <p className="mt-1 text-xs text-zinc-400">
+              Pick a specialized mode to train interviews, rapid pitch timing, or review saved
+              flashcards.
+            </p>
+          </div>
 
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <button
-              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/20 p-3.5 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
-              onClick={() => onNavigate('coach')}
-              type="button"
-            >
-              <Target className="h-5 w-5 text-purple-400" />
-              <span className="mt-2 text-xs font-semibold text-zinc-200">Coach & Re-Speak</span>
-              <p className="mt-1 text-[11px] text-zinc-500">
-                Deliberate feedback, B2 upgrades, and Try Again side-by-side.
-              </p>
-            </button>
-
-            <button
-              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/20 p-3.5 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
+              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/25 p-4 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
               onClick={() => onNavigate('interview')}
               type="button"
             >
               <Briefcase className="h-5 w-5 text-rose-400" />
-              <span className="mt-2 text-xs font-semibold text-zinc-200">The Hot Seat</span>
-              <p className="mt-1 text-[11px] text-zinc-500">
-                High-stakes technical and behavioral interview pressure.
+              <span className="mt-2.5 text-xs font-semibold text-zinc-200">The Hot Seat</span>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                High-pressure technical and behavioral STAR interview scenarios.
               </p>
             </button>
 
             <button
-              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/20 p-3.5 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
+              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/25 p-4 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
               onClick={() => onNavigate('drills')}
               type="button"
             >
               <Zap className="h-5 w-5 text-amber-400" />
-              <span className="mt-2 text-xs font-semibold text-zinc-200">Skill Drills</span>
-              <p className="mt-1 text-[11px] text-zinc-500">
-                30s elevator pitches, STAR vocalizers, and paraphrasing.
+              <span className="mt-2.5 text-xs font-semibold text-zinc-200">Skill Drills</span>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                30s elevator pitch, rapid paraphrasing, and jargon simplification.
+              </p>
+            </button>
+
+            <button
+              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/25 p-4 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
+              onClick={() => onNavigate('conversation')}
+              type="button"
+            >
+              <MessageSquare className="h-5 w-5 text-indigo-400" />
+              <span className="mt-2.5 text-xs font-semibold text-zinc-200">Conversation Mode</span>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                Continuous spoken dialogue with Eva without coaching pauses.
+              </p>
+            </button>
+
+            <button
+              className="flex flex-col items-start rounded-xl border border-white/[0.06] bg-black/25 p-4 text-left transition-all hover:border-white/20 hover:bg-white/[0.04]"
+              onClick={() => onNavigate('memory')}
+              type="button"
+            >
+              <Target className="h-5 w-5 text-purple-400" />
+              <span className="mt-2.5 text-xs font-semibold text-zinc-200">Phrase Flashcards</span>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                Review your saved B2 collocations and eliminated Slavicisms.
               </p>
             </button>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );
