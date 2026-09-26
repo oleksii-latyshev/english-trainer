@@ -24,10 +24,46 @@ flowchart LR
     P3 --> P4["Phase 4: Coaching + Re-Speaking"]
     P4 --> P5["Phase 5: Conversation + Interview Packs"]
     P5 --> P6["Phase 6: Learning Memory + Adaptation"]
-    P6 --> P7["Phase 7: Ambient Practice + Mini Eva"]
+    P6 --> P7["Phase 7: Ambient Practice + Nori"]
     P7 --> P8["Phase 8: Benchmarks + Progress"]
     P8 --> P9["Phase 9: Pronunciation + Native Widget"]
 ```
+
+---
+
+## Current Reality & Route to MVP (2026-09-26)
+
+**MVP status: not ready for daily use.** The app now has an app shell with Home, Conversation, and Learning Memory navigation. Home contains a first functional Daily Practice dashboard: it starts or resumes the existing conversation, shows a Learning Memory snapshot, and keeps the dashboard visible while a session starts. Conversation, coaching, and Try Again still share one speaking workspace. The dashboard describes a 10–15 minute target but does not yet run a timed or staged daily practice flow. The HTML and Markdown examples in `docs/ui/` remain design references, not exact implementation requirements.
+
+### What is working so far
+
+| Area | Current evidence | Still missing |
+| :--- | :--- | :--- |
+| Native speech path | The macOS app opened, recorded microphone audio, and ran local transcription. Automated audio, provider, and session tests pass. | A meaningful spoken conversation with reliable STT, voiced AI follow-up, coaching, and Try Again has not been verified end to end on a physical Mac. The exploratory microphone recording did not contain a useful learner answer. |
+| Learning loop | Focused feedback, saved Try Again comparisons, SQLite mistakes and phrase cards, recall scheduling, and typed IPC exist as slices. Due items from earlier sessions can enter selected conversation prompts. | Later-session **spoken** correct-use evidence, grounded mastery transitions, a complete recall flow, and a session summary. Self-reported recall must not count as spoken mastery. |
+| Product UI | App shell and responsive Home / Conversation / Learning Memory navigation; a Daily Practice dashboard with a live due-item snapshot; the existing speaking workspace and basic Learning Memory panel. HeroUI supplies dashboard controls and surfaces. Nori is currently a Lucide Rabbit icon with idle and loading motion. | A guided daily session, separate Coach experience, complete Learning Memory recall flow, Settings, quick practice, specialist screens, and session summary. The Lucide mascot has no companion state or learning-event reactions. |
+| Ambient entry | None. | Tray quick launch, compact quick-practice window, opt-in notifications, and quiet-hour controls required by the MVP definition below. |
+
+### Screen implementation inventory
+
+| Designed surface | App state | MVP priority |
+| :--- | :--- | :--- |
+| [Daily Practice dashboard](ui/01_DAILY_PRACTICE_DASHBOARD.md) | First functional Home screen built with start/resume, session status, three-step explanation, and a live Learning Memory snapshot. The suggested duration is not enforced and the described stages are not an implemented flow. | Continue the daily flow |
+| [Coach & Re-Speaking](ui/02_COACH_AND_RESPEAKING.md) and [Conversation](ui/03_CONVERSATION_MODE.md) | Conversation has a navigation destination backed by the existing speaking workspace. Feedback, Try Again, and follow-up components remain inside that workspace; there is no separate Coach screen or full mode behavior. | Before MVP |
+| [Learning Memory](ui/06_LEARNING_MEMORY.md) | Basic panel for saved items and self-reported recall now has its own navigation destination. The dashboard shows live saved and due counts; there is no spoken recall drill or full designed screen. | Before MVP |
+| [Settings](ui/08_SETTINGS_AND_HARDWARE.md) and [Ambient Quick Practice](ui/09_AMBIENT_COMPANION_QUICK_PRACTICE.md) | No screens. Basic TTS voice controls exist in the workspace. | MVP settings and quick-practice subset |
+| [Interview](ui/04_THE_HOT_SEAT_INTERVIEW.md), [Drills](ui/05_SKILL_BUILDERS_DRILLS.md), [Progress](ui/07_PROGRESS_AND_BENCHMARKS.md) | Prototypes only. | After the core MVP loop |
+| Session summary in the [navigation map](ui/NAVIGATION_MAP.md) | Not built. Finishing returns to Home without a summary. | Before MVP |
+
+### Next implementation order
+
+1. **Complete the daily flow:** turn the new Home/dashboard entry into a guided, finishable practice session with honest progress and recovery states. Keep the existing voice path and start/resume behavior working.
+2. **Finish the visible core loop:** Conversation and Coach experiences, focused feedback, Try Again, and a session summary. Validate a real spoken multi-turn session, restart/resume, and the path from feedback to saved memory on a physical Mac.
+3. **Complete Learning Memory adaptation:** dedicated memory screen, useful recall flow, later-session spoken-use evidence, and mastery rules. Verify that a due item from one session returns naturally in a later session and changes state only with supported evidence.
+4. **Add the MVP ambient subset:** menu-bar quick launch, compact 20–90 second practice, and opt-in local notifications with quiet hours. Leave Nori's learning-event state, benchmarks, interview packs, drills, WidgetKit, and pronunciation scoring for later.
+5. **Run the MVP acceptance pass:** check every item in Section 14 through the built app, including privacy and repeated real-microphone sessions, before marking phases or MVP complete.
+
+This order is the current delivery priority. The phase sections below remain the product requirements and exit criteria; their unchecked boxes should not be read as proof that no code exists, or changed to complete because a backend slice or prototype exists.
 
 ---
 
@@ -70,10 +106,12 @@ Remove the largest unknowns before building the product around them.
 
 Create the desktop shell and persistence boundaries.
 
+Current state: Tauri, React, TypeScript, Vite, Bun, Tailwind, HeroUI, typed IPC, and SQLite migrations are present. The app shell uses local screen state for Home, Conversation, and Learning Memory. TanStack Router, the remaining navigation destinations, and the tray/window exit criteria are still open.
+
 ### Deliverables
 
 - [ ] Initialize Tauri v2 + React 19 + TypeScript + Vite + Bun.
-- [ ] Configure Tailwind CSS v4 and Shadcn/ui.
+- [ ] Configure Tailwind CSS v4 and HeroUI.
 - [ ] Configure TanStack Router.
 - [ ] Configure strict TypeScript and Biome.
 - [ ] Add microphone permission metadata.
@@ -135,6 +173,8 @@ The user can complete this flow repeatedly without restarting the app.
 ### Goal
 
 Create the first version worth using every day.
+
+Current state: the Home dashboard offers a start/resume entry point, session status, a suggested 10–15 minute target, and a Learning Memory snapshot. Practice still runs as an open conversation; the timed or staged daily flow and this phase's exit criterion remain open.
 
 ### Deliverables
 
@@ -240,6 +280,8 @@ The same core engine supports both general B1→B2 speaking and professional int
 
 Make sessions remember the user and retest important weaknesses.
 
+Current state: persistence, recall scheduling, a basic panel on its own navigation destination, a Home snapshot, and bounded due-item prompt context are implemented as slices. The phase is still open because spoken later-use evidence, a complete recall experience, the session summary, and its exit criterion are not verified.
+
 ### Deliverables
 
 - [ ] `mistakes` table and repository.
@@ -267,11 +309,13 @@ A mistake or phrase from one session can intentionally return in a later session
 
 ---
 
-## 10. Phase 7 — Ambient Practice & Mini Eva
+## 10. Phase 7 — Ambient Practice & Nori
 
 ### Goal
 
 Make English practice feel lightweight, spontaneous, and game-like instead of requiring a single long study block.
+
+Current state: the Home dashboard displays Nori as a Lucide Rabbit icon with gentle idle motion and a running animation while a session starts or restores. This is a visual mascot only; ambient entry, companion state, XP, and learning-event reactions are not implemented.
 
 ### 10.1 Menu-Bar Companion
 
@@ -304,7 +348,7 @@ Make English practice feel lightweight, spontaneous, and game-like instead of re
 - [ ] Due phrase recall.
 - [ ] One B1 → B2 phrase upgrade.
 
-### 10.4 Mini Eva v1
+### 10.4 Nori v1
 
 - [ ] Companion state model.
 - [ ] XP from learning events.
@@ -369,7 +413,7 @@ These features are valuable but intentionally outside the MVP critical path.
 
 - [ ] Add native Swift WidgetKit target.
 - [ ] Define shared snapshot/state mechanism.
-- [ ] Show due phrase / current quest / Mini Eva state.
+- [ ] Show due phrase / current quest / Nori state.
 - [ ] Deep-link into compact practice.
 - [ ] Keep widget read-mostly and lightweight.
 
@@ -434,7 +478,7 @@ Useful questions:
 - Do short micro-quests increase total speaking frequency?
 - Does re-speaking get used or skipped?
 - Which feedback categories are actually useful?
-- Does Mini Eva make practice more inviting or become visual noise?
+- Does Nori make practice more inviting or become visual noise?
 - Are notifications useful at 1, 2, or 3 prompts per day?
 - Does the user prefer long Daily Practice sessions or many micro-sessions?
 - Which metrics correlate with the user feeling more fluent?

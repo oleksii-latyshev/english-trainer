@@ -22,16 +22,22 @@ audio {
 }
 
 .app-shell {
-  padding: 0 28px 72px;
+  min-height: 100vh;
+  padding: 0;
   background: radial-gradient(ellipse at 52% -18%, #1d3b57 0, #0c1424 53%);
 }
 .app-frame {
   min-height: 100vh;
 }
 .app-header {
-  min-height: 88px;
-  margin-bottom: 66px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 72px;
+  padding: 0 30px;
   border-bottom: 1px solid #263348;
+  background: #0d1727eb;
+  backdrop-filter: blur(18px);
 }
 .brand {
   font-size: 0.97rem;
@@ -228,12 +234,9 @@ h1 {
   line-height: 1.6;
 }
 @media (max-width: 620px) {
-  .app-shell {
-    padding-inline: 16px;
-  }
   .app-header {
-    min-height: 74px;
-    margin-bottom: 44px;
+    min-height: 62px;
+    padding-inline: 16px;
   }
   .header-pill {
     display: none;
