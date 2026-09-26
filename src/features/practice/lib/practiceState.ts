@@ -1,4 +1,4 @@
-import type { AttemptComparison, ConversationTurn } from '@/lib/types';
+import type { AttemptComparison, ConversationTurn, FinishedPracticeSession } from '@/lib/types';
 
 export type SessionDetails = {
   sessionId: number;
@@ -12,10 +12,17 @@ export type PracticeState =
   | { tag: 'idle' }
   | { tag: 'loading' }
   | { tag: 'starting' }
+  | { tag: 'completed'; summary: FinishedPracticeSession }
   | ({ tag: 'active' | 'waiting' | 'finishing' } & SessionDetails);
 
 export function sessionDetails(state: PracticeState): SessionDetails | undefined {
-  if (state.tag === 'idle' || state.tag === 'loading' || state.tag === 'starting') return undefined;
+  if (
+    state.tag === 'idle' ||
+    state.tag === 'loading' ||
+    state.tag === 'starting' ||
+    state.tag === 'completed'
+  )
+    return undefined;
   return state;
 }
 

@@ -27,6 +27,9 @@ pub struct PracticeSession {
 pub struct FinishedPracticeSession {
     pub session_id: u64,
     pub finished: bool,
+    pub turn_count: usize,
+    pub retry_count: usize,
+    pub target_turns: usize,
 }
 
 #[derive(Clone)]
@@ -249,6 +252,12 @@ impl SessionStore {
         if session.in_flight {
             return Err(busy_error());
         }
+        let turn_count = session.turns.len();
+        let retry_count = state
+            .database
+            .comparisons(session_id)
+            .map_err(database_error)?
+            .len();
         if !state
             .database
             .finish_session(session_id)
@@ -260,6 +269,9 @@ impl SessionStore {
         Ok(FinishedPracticeSession {
             session_id,
             finished: true,
+            turn_count,
+            retry_count,
+            target_turns: DAILY_TARGET_TURNS,
         })
     }
 

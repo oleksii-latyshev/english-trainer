@@ -2,6 +2,8 @@ import { Button } from '@heroui/react';
 import { useEffect, useRef, useState } from 'react';
 import { DailyPracticeDashboard } from '@/features/dashboard/DailyPracticeDashboard';
 import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
+import { sessionDetails } from '@/features/practice/lib/practiceState';
+import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
@@ -9,7 +11,20 @@ import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import './App.css';
 import './appShell.css';
 
-type Screen = 'home' | 'practice' | 'memory';
+type Screen = 'home' | 'practice' | 'memory' | 'summary';
+
+function screenTitle(screen: Screen): string {
+  switch (screen) {
+    case 'home':
+      return 'Daily Practice';
+    case 'memory':
+      return 'Learning Memory';
+    case 'summary':
+      return 'Session complete';
+    case 'practice':
+      return 'Practice';
+  }
+}
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home');
@@ -37,8 +52,8 @@ function App() {
     ) {
       setScreen('practice');
     }
-    if (previousPracticeTag.current === 'finishing' && practice.state.tag === 'idle') {
-      setScreen('home');
+    if (previousPracticeTag.current === 'finishing' && practice.state.tag === 'completed') {
+      setScreen('summary');
     }
     previousPracticeTag.current = practice.state.tag;
   }, [practice.state.tag]);
@@ -53,6 +68,9 @@ function App() {
   }
 
   function selectScreen(next: Screen) {
+    if (practice.state.tag === 'completed' && next !== 'summary') {
+      practice.dismissSummary();
+    }
     setScreen(next);
   }
 
@@ -72,13 +90,7 @@ function App() {
             ✦
           </span>
           <span className="brand">English Trainer</span>
-          <span className="header-context">
-            {screen === 'home'
-              ? 'Daily Practice'
-              : screen === 'memory'
-                ? 'Learning Memory'
-                : 'Practice'}
-          </span>
+          <span className="header-context">{screenTitle(screen)}</span>
         </header>
 
         <div className="app-layout">
@@ -127,6 +139,7 @@ function App() {
             </section>
             <section aria-label="Conversation practice" hidden={screen !== 'practice'}>
               <PracticeView
+                key={sessionDetails(practice.state)?.sessionId ?? 'no-session'}
                 model={{
                   ...capture.view,
                   practice: practice.state,
@@ -149,6 +162,17 @@ function App() {
             </section>
             <section aria-label="Learning Memory" hidden={screen !== 'memory'}>
               {screen === 'memory' && <LearningMemoryPanel />}
+            </section>
+            <section aria-label="Practice summary" hidden={screen !== 'summary'}>
+              {practice.state.tag === 'completed' && (
+                <PracticeCompletion
+                  summary={practice.state.summary}
+                  onDone={() => {
+                    practice.dismissSummary();
+                    setScreen('home');
+                  }}
+                />
+              )}
             </section>
           </main>
         </div>

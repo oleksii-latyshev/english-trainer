@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
+  type FinishedPracticeSession,
   isAttemptComparison,
   isFinishedPracticeSession,
   isPracticeSession,
@@ -20,11 +21,12 @@ export async function getActivePracticeSession(): Promise<PracticeSession | null
   return result;
 }
 
-export async function finishPracticeSession(sessionId: number): Promise<void> {
+export async function finishPracticeSession(sessionId: number): Promise<FinishedPracticeSession> {
   const result = await invoke<unknown>('finish_practice_session', { sessionId });
   if (!isFinishedPracticeSession(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected practice session finish response.');
   }
+  return result;
 }
 
 export async function savePracticeFeedback(

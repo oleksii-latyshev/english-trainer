@@ -60,9 +60,6 @@ export function PracticeView({ model, actions, speech }: Props) {
   }
 
   function finishSession() {
-    setSentAnswer(null);
-    setRetryAnchor(null);
-    setIsRetrying(false);
     actions.finishPractice();
   }
 

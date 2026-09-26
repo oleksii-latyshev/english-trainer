@@ -153,22 +153,7 @@ export function isQuestionScaffold(value: unknown): value is QuestionScaffold {
   );
 }
 
-export type FinishedPracticeSession = {
-  session_id: number;
-  finished: true;
-};
-
-export function isFinishedPracticeSession(value: unknown): value is FinishedPracticeSession {
-  if (typeof value !== 'object' || value === null) return false;
-  return (
-    'session_id' in value &&
-    typeof value.session_id === 'number' &&
-    Number.isSafeInteger(value.session_id) &&
-    value.session_id > 0 &&
-    'finished' in value &&
-    value.finished === true
-  );
-}
+export { type FinishedPracticeSession, isFinishedPracticeSession } from './finishedPracticeSession';
 
 export function isPracticeSession(value: unknown): value is PracticeSession {
   if (typeof value !== 'object' || value === null) return false;

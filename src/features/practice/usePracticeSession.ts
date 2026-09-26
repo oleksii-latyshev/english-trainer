@@ -92,10 +92,10 @@ export function usePracticeSession(dependencies: Dependencies) {
     setState({ ...previous, tag: 'finishing' });
     setError('');
     try {
-      await finishPracticeSession(previous.sessionId);
+      const summary = await finishPracticeSession(previous.sessionId);
       dependencies.stopSpeech();
       dependencies.resetCapture();
-      setState({ tag: 'idle' });
+      setState({ tag: 'completed', summary });
     } catch (cause) {
       setState(previous);
       setError(sessionError(cause, 'Could not end practice. Please try again.'));
@@ -110,6 +110,8 @@ export function usePracticeSession(dependencies: Dependencies) {
     isBusy,
     start,
     finish,
+    dismissSummary: () =>
+      setState((current) => (current.tag === 'completed' ? { tag: 'idle' } : current)),
     acceptTurn: (sessionId: number, turn: ConversationTurn) =>
       setState((current) => advancePractice(current, sessionId, turn)),
     acceptRetryComparison: (sessionId: number, comparison: AttemptComparison) =>

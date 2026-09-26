@@ -63,6 +63,9 @@ fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
     let resumed = reopened.get_active().unwrap().unwrap();
     assert_eq!(resumed.turn_count, 1);
     assert_eq!(resumed.retry_evidence, vec![result]);
+    let finished = reopened.finish(session.session_id).unwrap();
+    assert_eq!(finished.turn_count, 1);
+    assert_eq!(finished.retry_count, 1);
     std::fs::remove_file(path).unwrap();
 }
 
@@ -136,7 +139,11 @@ fn start_turn_context_resume_and_finish_form_a_session() {
     assert_eq!(resumed.opening_question, "How old was it?");
     assert_eq!(resumed.turn_count, 2);
     assert_eq!(resumed.target_turns, DAILY_TARGET_TURNS);
-    assert_eq!(store.finish(session.session_id).unwrap().finished, true);
+    let finished = store.finish(session.session_id).unwrap();
+    assert!(finished.finished);
+    assert_eq!(finished.turn_count, 2);
+    assert_eq!(finished.retry_count, 0);
+    assert_eq!(finished.target_turns, DAILY_TARGET_TURNS);
     assert_eq!(
         store.finish(session.session_id).unwrap_err().code,
         ProviderErrorCode::InvalidSession

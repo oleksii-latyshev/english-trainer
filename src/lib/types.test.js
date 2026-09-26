@@ -58,7 +58,15 @@ describe('conversation IPC payloads', () => {
     expect(isPracticeSession({ session_id: 1, opening_question: 'Question?', turn_count: 0 })).toBe(
       false,
     );
-    expect(isFinishedPracticeSession({ session_id: 1, finished: true })).toBe(true);
+    const finished = {
+      session_id: 1,
+      finished: true,
+      turn_count: 3,
+      retry_count: 1,
+      target_turns: 8,
+    };
+    expect(isFinishedPracticeSession(finished)).toBe(true);
+    expect(isFinishedPracticeSession({ ...finished, retry_count: 4 })).toBe(false);
     expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);
   });
 

@@ -71,8 +71,8 @@ export function DailyPracticeDashboard({
                   <span aria-hidden="true">▶</span> {actionLabel}
                 </Button>
                 <p className="dashboard-caption">
-                  A suggested 10–15 minute target. The current session is an open conversation; it
-                  does not yet guide you through separate warm-up, recall, or summary stages.
+                  Aim for eight spoken answers, then review and re-speak one if useful. Finish early
+                  whenever you need to; your answers are saved locally.
                 </p>
               </div>
               <figure className={`nori-figure${isLoading ? ' is-running' : ''}`}>
@@ -108,7 +108,7 @@ export function DailyPracticeDashboard({
             <p className="section-kicker">YOUR SESSION</p>
             <Card.Title className="section-title">A simple speaking loop</Card.Title>
           </div>
-          <span className="session-length">10–15 min target</span>
+          <span className="session-length">8-answer goal · 10–15 min suggested</span>
         </Card.Header>
         <Card.Content className="dashboard-steps">
           <div className="dashboard-step">
@@ -128,8 +128,10 @@ export function DailyPracticeDashboard({
           <div className="dashboard-step">
             <span className="step-number">3</span>
             <div>
-              <h2>Strengthen an answer</h2>
-              <p>See focused feedback and use Try Again to practise a clearer version.</p>
+              <h2>Strengthen and finish</h2>
+              <p>
+                Use focused feedback and Try Again if useful, then see your saved session counts.
+              </p>
             </div>
           </div>
         </Card.Content>
