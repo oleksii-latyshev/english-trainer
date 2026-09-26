@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { isProviderError, isTurnFeedback, type TurnFeedback } from '@/lib/types';
@@ -58,6 +58,92 @@ function isLatestReview(requestId: number, generation: number, isCurrent: () => 
   return requestId === generation && isCurrent();
 }
 
+function FeedbackReadyContent({
+  feedback,
+  onTryAgain,
+  isFeedbackSaved,
+  phraseSaveState,
+  onSavePhrase,
+  phraseSaveError,
+  persistError,
+  onRetryPersist,
+}: {
+  feedback: TurnFeedback;
+  onTryAgain?: () => void;
+  isFeedbackSaved: boolean;
+  phraseSaveState: 'idle' | 'saving' | 'saved' | 'error';
+  onSavePhrase: () => void;
+  phraseSaveError: string | null;
+  persistError: string | null;
+  onRetryPersist: () => void;
+}) {
+  const focus = feedback.focus_feedback[0];
+  return (
+    <div aria-live="polite" className="mt-4 flex flex-col gap-4 border-t border-white/8 pt-4">
+      {focus ? (
+        <div className="feedback-highlight-box">
+          <div className="flex items-center justify-between">
+            <p className="section-kicker !text-emerald-400">PRIORITY CORRECTION</p>
+            <span className="feedback-category-badge">{focus.category}</span>
+          </div>
+          <p className="feedback-original-text">
+            <span className="text-zinc-500 line-through">You said:</span> “{focus.original}”
+          </p>
+          <p className="feedback-improved-text">
+            <span className="text-emerald-400">Try:</span> “{focus.improved}”
+          </p>
+          <p className="feedback-explanation">{focus.explanation}</p>
+        </div>
+      ) : (
+        <p className="m-0 text-sm text-zinc-400">
+          No priority correction was found for this answer.
+        </p>
+      )}
+
+      <div className="b2-rewrite-card">
+        <p className="section-kicker !text-purple-300">A STRONGER B2 VERSION</p>
+        <blockquote className="b2-quote">“{feedback.b2_rewrite}”</blockquote>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 pt-2">
+        {onTryAgain && isFeedbackSaved && (
+          <Button className="primary-action" onPress={onTryAgain}>
+            Try Again ▶
+          </Button>
+        )}
+        <Button
+          className="secondary-action"
+          isDisabled={phraseSaveState === 'saving'}
+          onPress={onSavePhrase}
+        >
+          {phraseSaveState === 'saving'
+            ? 'Saving phrase…'
+            : phraseSaveState === 'saved'
+              ? 'Phrase saved ✓'
+              : phraseSaveState === 'error'
+                ? 'Retry saving phrase'
+                : 'Save phrase to Learning Memory +'}
+        </Button>
+      </div>
+
+      {phraseSaveError && (
+        <p className="error-message text-xs" role="alert">
+          {phraseSaveError}
+        </p>
+      )}
+
+      {persistError && (
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200">
+          <span>Could not save feedback to memory: {persistError}</span>
+          <Button className="secondary-action text-xs" onPress={onRetryPersist}>
+            Retry save
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FeedbackPanel({
   question,
   transcript,
@@ -72,7 +158,6 @@ export function FeedbackPanel({
   onReviewed,
   onTryAgain,
 }: Props) {
-  // Keep the question paired with this recording when the next conversation turn arrives.
   const [answerQuestion] = useState(question);
   const [state, setState] = useState<FeedbackState>(
     initialFeedback ? { tag: 'ready', feedback: initialFeedback } : { tag: 'idle' },
@@ -91,6 +176,24 @@ export function FeedbackPanel({
     };
   }, []);
 
+  async function handlePersistence(result: TurnFeedback, requestId: number) {
+    const isLatest = () => isLatestReview(requestId, generation.current, isCurrent);
+    if (persistReviewed) {
+      try {
+        await persistReviewed(transcript, result);
+        if (isLatest()) {
+          setIsFeedbackSaved(true);
+          onReviewed?.(result, answerQuestion);
+        }
+      } catch (cause) {
+        setPersistError(feedbackError(cause));
+      }
+    } else if (isAnswerSent && sessionId === undefined) {
+      setIsFeedbackSaved(true);
+      onReviewed?.(result, answerQuestion);
+    }
+  }
+
   async function reviewAnswer() {
     if (state.tag === 'loading' || !isAnswerSent || !canReview) return;
     const requestId = ++generation.current;
@@ -98,34 +201,15 @@ export function FeedbackPanel({
     setPersistError(null);
     setIsFeedbackSaved(false);
 
-    let result: TurnFeedback;
     try {
-      result = await loadFeedback(answerQuestion, transcript);
+      const result = await loadFeedback(answerQuestion, transcript);
+      if (!isLatestReview(requestId, generation.current, isCurrent)) return;
+      setState({ tag: 'ready', feedback: result });
+      await handlePersistence(result, requestId);
     } catch (cause) {
       if (isLatestReview(requestId, generation.current, isCurrent)) {
         setState({ tag: 'error', message: feedbackError(cause) });
       }
-      return;
-    }
-
-    if (!isLatestReview(requestId, generation.current, isCurrent)) return;
-    setState({ tag: 'ready', feedback: result });
-
-    if (persistReviewed) {
-      try {
-        await persistReviewed(transcript, result);
-        setPersistError(null);
-        if (isLatestReview(requestId, generation.current, isCurrent)) {
-          setIsFeedbackSaved(true);
-          onReviewed?.(result, answerQuestion);
-        }
-      } catch (cause) {
-        // Memory write failure isolation: feedback is kept usable, error offered with retry
-        setPersistError(feedbackError(cause));
-      }
-    } else if (isAnswerSent && sessionId === undefined) {
-      setIsFeedbackSaved(true);
-      onReviewed?.(result, answerQuestion);
     }
   }
 
@@ -159,18 +243,16 @@ export function FeedbackPanel({
     }
   }
 
-  const focus = state.tag === 'ready' ? state.feedback.focus_feedback[0] : undefined;
-
   return (
-    <Card className="panel mt-[18px]" variant="secondary">
-      <Card.Header className="panel-header">
+    <div className="coach-card">
+      <div className="prompt-card-header">
         <div>
           <p className="section-kicker">OPTIONAL COACHING</p>
-          <Card.Title className="section-title">Make this answer stronger</Card.Title>
+          <h3 className="text-base font-semibold text-zinc-100">Make this answer stronger</h3>
         </div>
-      </Card.Header>
-      <Card.Content className="panel-content">
-        <p className="mt-0 text-sm leading-6 text-slate-400">
+      </div>
+      <div>
+        <p className="mt-0 mb-3 text-sm leading-6 text-zinc-400">
           {!canReview
             ? 'The first answer and its feedback stay anchored while you record the retry.'
             : isAnswerSent
@@ -181,7 +263,6 @@ export function FeedbackPanel({
           className="secondary-action"
           isDisabled={state.tag === 'loading' || !isAnswerSent || !canReview}
           onPress={() => void reviewAnswer()}
-          variant="secondary"
         >
           {reviewButtonLabel(state)}
         </Button>
@@ -191,73 +272,18 @@ export function FeedbackPanel({
           </p>
         )}
         {state.tag === 'ready' && (
-          <div aria-live="polite" className="mt-5 grid gap-4 border-t border-white/10 pt-4">
-            {focus ? (
-              <div>
-                <p className="section-kicker">
-                  ONE THING TO IMPROVE · {focus.category.toUpperCase()}
-                </p>
-                <p className="m-0 text-sm text-slate-300">You said: {focus.original}</p>
-                <p className="mt-2 mb-0 text-base font-semibold text-teal-100">
-                  Try: {focus.improved}
-                </p>
-                <p className="mt-2 mb-0 text-sm leading-6 text-slate-400">{focus.explanation}</p>
-              </div>
-            ) : (
-              <p className="m-0 text-sm text-slate-300">
-                No priority correction was found for this answer.
-              </p>
-            )}
-            <div>
-              <p className="section-kicker">A STRONGER VERSION</p>
-              <blockquote className="m-0 border-l-2 border-teal-400/70 pl-4 text-base leading-7 text-slate-100">
-                {state.feedback.b2_rewrite}
-              </blockquote>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              {onTryAgain && isFeedbackSaved && (
-                <Button className="primary-action w-fit" onPress={onTryAgain} variant="primary">
-                  Try Again
-                </Button>
-              )}
-              <Button
-                className="secondary-action w-fit"
-                isDisabled={phraseSaveState === 'saving' || !onSavePhrase}
-                onPress={() => void handleSavePhrase()}
-                variant="secondary"
-              >
-                {phraseSaveState === 'saving'
-                  ? 'Saving phrase…'
-                  : phraseSaveState === 'saved'
-                    ? 'Phrase saved ✓'
-                    : phraseSaveState === 'error'
-                      ? 'Retry saving phrase'
-                      : 'Save phrase'}
-              </Button>
-            </div>
-
-            {phraseSaveError && (
-              <p className="error-message text-xs" role="alert">
-                {phraseSaveError}
-              </p>
-            )}
-
-            {persistError && (
-              <div className="mt-2 flex items-center justify-between gap-3 rounded border border-amber-500/30 bg-amber-950/20 p-2.5 text-xs text-amber-200">
-                <span>Could not save feedback to memory: {persistError}</span>
-                <Button
-                  className="secondary-action text-xs"
-                  onPress={() => void retryPersist()}
-                  variant="secondary"
-                >
-                  Retry save
-                </Button>
-              </div>
-            )}
-          </div>
+          <FeedbackReadyContent
+            feedback={state.feedback}
+            isFeedbackSaved={isFeedbackSaved}
+            onRetryPersist={() => void retryPersist()}
+            onSavePhrase={() => void handleSavePhrase()}
+            onTryAgain={onTryAgain}
+            persistError={persistError}
+            phraseSaveError={phraseSaveError}
+            phraseSaveState={phraseSaveState}
+          />
         )}
-      </Card.Content>
-    </Card>
+      </div>
+    </div>
   );
 }

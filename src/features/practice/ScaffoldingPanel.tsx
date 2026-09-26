@@ -44,38 +44,40 @@ export function ScaffoldingPanel({ question }: Props) {
   const showExpressions = revealedQuestion === question;
 
   return (
-    <section
-      aria-label="Answer help"
-      className="mb-5 rounded-xl border border-slate-600/50 bg-slate-900/30 p-4"
-    >
-      <fieldset>
-        <legend className="mb-2 text-sm font-semibold text-slate-100">Answer help</legend>
-        <div className="flex flex-wrap gap-4 text-sm text-slate-300">
+    <section aria-label="Answer help" className="scaffold-card">
+      <div className="scaffold-toggle-row">
+        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          Answer Scaffolding
+        </span>
+        <div className="flex items-center gap-1 rounded-lg border border-white/8 bg-black/30 p-1 text-xs">
           {MODES.map((option) => (
-            <label className="flex cursor-pointer items-center gap-2" key={option}>
-              <input
-                checked={mode === option}
-                name="answer-help"
-                onChange={() => setMode(option)}
-                type="radio"
-                value={option}
-              />
-              {option === 'full' ? 'Full' : option === 'partial' ? 'Partial' : 'Off'}
-            </label>
+            <button
+              className={`rounded px-2.5 py-1 text-xs font-medium transition-all ${
+                mode === option
+                  ? 'bg-purple-500/20 text-purple-200 border border-purple-500/40'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+              key={option}
+              onClick={() => setMode(option)}
+              type="button"
+            >
+              {option === 'full' ? 'Full Help' : option === 'partial' ? 'Key Points' : 'Off'}
+            </button>
           ))}
         </div>
-      </fieldset>
+      </div>
+
       {mode !== 'off' && !isTauri() && (
-        <p className="mb-0 text-sm text-slate-400">Answer help is available in the desktop app.</p>
+        <p className="m-0 text-xs text-zinc-400">Answer help is available in the desktop app.</p>
       )}
       {mode !== 'off' && isTauri() && !hints && !hasError && (
-        <p className="mb-0 text-sm text-slate-400">Preparing help for this question…</p>
+        <p className="m-0 text-xs text-zinc-400">Preparing help for this question…</p>
       )}
       {mode !== 'off' && hasError && (
-        <div className="mt-3 text-sm text-rose-200" role="alert">
+        <div className="text-xs text-rose-300" role="alert">
           <p className="m-0">Answer help is unavailable. You can still keep speaking.</p>
           <button
-            className="mt-2 text-teal-200 underline underline-offset-4"
+            className="mt-1 text-purple-300 underline underline-offset-4"
             onClick={() => {
               setHintState({ tag: 'loading' });
               setRetryCount((current) => current + 1);
@@ -87,36 +89,51 @@ export function ScaffoldingPanel({ question }: Props) {
         </div>
       )}
       {mode !== 'off' && hints && (
-        <div className="mt-4 grid gap-4 text-sm text-slate-200">
+        <div className="grid gap-3 pt-1 text-xs text-zinc-300">
           <div>
-            <p className="mb-1 font-semibold text-slate-100">A simple structure</p>
-            <p className="m-0">{hints.structure.join(' → ')}</p>
+            <p className="mb-1.5 font-semibold text-zinc-200">Recommended flow:</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {hints.structure.map((step, idx) => (
+                <span className="flex items-center gap-1.5" key={step}>
+                  <span className="scaffold-pill font-medium">{step}</span>
+                  {idx < hints.structure.length - 1 && <span className="text-zinc-500">→</span>}
+                </span>
+              ))}
+            </div>
           </div>
           {mode === 'full' && (
             <div>
-              <p className="mb-1 font-semibold text-slate-100">Sentence starters</p>
-              <ul className="m-0 list-disc pl-5">
+              <p className="mb-1.5 font-semibold text-zinc-200">Sentence starters:</p>
+              <div className="scaffold-pills">
                 {hints.sentence_starters.map((starter) => (
-                  <li key={starter}>{starter}</li>
+                  <span className="scaffold-pill" key={starter}>
+                    {starter}
+                  </span>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
           {(mode === 'full' || showExpressions) && (
             <div>
-              <p className="mb-1 font-semibold text-slate-100">Useful expressions</p>
-              <p className="m-0">{hints.useful_expressions.join(' · ')}</p>
+              <p className="mb-1.5 font-semibold text-zinc-200">Useful B2 collocations:</p>
+              <div className="scaffold-pills">
+                {hints.useful_expressions.map((expr) => (
+                  <span className="scaffold-pill !border-purple-500/20 !text-purple-300" key={expr}>
+                    {expr}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
           {mode === 'partial' && (
             <button
-              className="w-fit text-left text-teal-200 underline underline-offset-4"
+              className="w-fit text-left text-xs text-purple-300 hover:text-purple-200 underline underline-offset-4"
               onClick={() =>
                 setRevealedQuestion((current) => (current === question ? null : question))
               }
               type="button"
             >
-              {showExpressions ? 'Hide expressions' : 'Show expressions'}
+              {showExpressions ? 'Hide expressions' : 'Show useful expressions'}
             </button>
           )}
         </div>

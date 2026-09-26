@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "./features/speech/speech.css";
+@import "./features/practice/practice.css";
+@import "./features/coach/coach.css";
 
 /* Standardized Typography Tokens */
 :root {

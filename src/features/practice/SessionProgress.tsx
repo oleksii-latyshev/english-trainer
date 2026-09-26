@@ -43,27 +43,38 @@ export function SessionProgress({ session, recallActive, recallCompletedCount }:
     ? 'Speak the phrase from the cue, then save the local transcript. Leave recall to finish practice.'
     : practiceGuidance(turnCount, targetTurns, hasRetried);
   return (
-    <div className="mb-5 rounded-xl border border-teal-700/40 bg-teal-950/20 p-4">
+    <div className="rounded-xl border border-white/8 bg-black/25 p-4 flex flex-col gap-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="m-0 text-sm font-semibold text-teal-100">
-          Step {currentStep} of 4 · Daily practice
+        <p className="m-0 text-xs font-semibold uppercase tracking-wider text-purple-300">
+          Step {currentStep} of 4 · Daily Practice
         </p>
-        <p className="m-0 text-sm text-slate-300">
+        <span className="text-xs font-medium text-zinc-400">
           {turnCount} {turnCount === 1 ? 'answer' : 'answers'} · goal {targetTurns}
-        </p>
+        </span>
       </div>
-      <progress
-        aria-label="Daily practice answers"
-        className="mt-3 h-2 w-full accent-teal-400"
-        max={targetTurns}
-        value={Math.min(turnCount, targetTurns)}
-      />
-      <p className="mt-2 mb-0 text-xs leading-5 text-slate-400">{guidance}</p>
-      <ol className="mt-3 mb-0 flex flex-wrap gap-x-5 gap-y-1 pl-5 text-xs text-slate-400">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-purple-500 to-emerald-400 transition-all duration-300"
+          style={{ width: `${Math.min(100, (turnCount / targetTurns) * 100)}%` }}
+        />
+      </div>
+      <p className="m-0 text-xs leading-relaxed text-zinc-400">{guidance}</p>
+      <div className="flex flex-wrap gap-2 pt-1 text-[0.72rem]">
         {labels.map((label) => (
-          <li key={label}>{label}</li>
+          <span
+            className={`rounded-md px-2 py-0.5 border ${
+              label.includes('✓')
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-medium'
+                : label.includes('now')
+                  ? 'border-purple-500/30 bg-purple-500/10 text-purple-200 font-semibold'
+                  : 'border-white/5 bg-white/5 text-zinc-500'
+            }`}
+            key={label}
+          >
+            {label}
+          </span>
         ))}
-      </ol>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
 import { formatTiming } from '@/lib/formatTiming';
 import { type ConversationTurn, isProviderError, type ProviderErrorCode } from '@/lib/types';
@@ -58,24 +58,23 @@ export function actionLabel(
 
 export function requestTurn(sessionId: number | undefined, transcript: string): Promise<unknown> {
   if (sessionId === undefined) return invoke<unknown>('generate_follow_up', { transcript });
-  return invoke<unknown>('send_practice_turn', { sessionId, transcript });
+  return invoke<unknown>('send_practice_turn', {
+    sessionId,
+    transcript,
+  });
 }
 
 function panelKicker(surface: 'conversation' | 'coach'): string {
-  return surface === 'coach' ? 'COACH MODE' : 'CONVERSATION PREVIEW';
+  if (surface === 'coach') return 'SAVED CONVERSATION TURN';
+  return 'AI CONVERSATION';
 }
 
 function panelTitle(surface: 'conversation' | 'coach'): string {
-  return surface === 'coach' ? 'Save answer to Eva' : 'Keep the conversation going';
+  if (surface === 'coach') return 'Send turn for coach review';
+  return 'Eva’s follow-up';
 }
 
-function emptyTranscriptMessage(
-  sessionId: number | undefined,
-  surface: 'conversation' | 'coach',
-): string {
-  if (sessionId === undefined) {
-    return 'Ask Eva for one short reply and a question about what you said.';
-  }
+function emptyTranscriptMessage(surface: 'conversation' | 'coach'): string {
   if (surface === 'coach') {
     return 'Send your answer to Eva to save this turn and unlock focused feedback.';
   }
@@ -111,54 +110,54 @@ export function FollowUpPanel({
   const isSessionReady = sessionId !== undefined && state.tag === 'ready';
 
   return (
-    <Card className="panel mt-[18px]" variant="secondary">
-      <Card.Header className="panel-header">
+    <div className="prompt-card">
+      <div className="prompt-card-header">
         <div>
           <p className="section-kicker">{panelKicker(surface)}</p>
-          <Card.Title className="section-title">{panelTitle(surface)}</Card.Title>
+          <h3 className="text-base font-semibold text-zinc-100">{panelTitle(surface)}</h3>
         </div>
-      </Card.Header>
-      <Card.Content className="panel-content">
+        {state.tag === 'ready' && (
+          <span className="flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
+            <span>🌱</span> Eva replied
+          </span>
+        )}
+      </div>
+
+      <div>
         {state.tag === 'idle' && (
-          <p className="empty-transcript">{emptyTranscriptMessage(sessionId, surface)}</p>
+          <p className="transcript-empty">{emptyTranscriptMessage(surface)}</p>
         )}
         {state.tag === 'ready' && (
-          <div aria-live="polite" className="grid gap-3 text-[0.96rem] leading-7 text-slate-100">
-            <p className="m-0">{state.turn.spoken_reply}</p>
-            {state.turn.question && (
-              <p className="m-0 font-semibold text-teal-200">{state.turn.question}</p>
-            )}
+          <div aria-live="polite" className="followup-bubble">
+            <p className="m-0 text-base leading-relaxed text-zinc-200">{state.turn.spoken_reply}</p>
+            {state.turn.question && <p className="followup-question m-0">{state.turn.question}</p>}
           </div>
         )}
         {timing && (
-          <div className="mt-5 border-t border-white/10 pt-4">
-            <p className="section-kicker mb-3">RESPONSE TIMING</p>
-            <dl className="timing-grid" aria-label="Conversation response timing">
-              <div>
-                <dt>agy</dt>
+          <div className="mt-4 border-t border-white/8 pt-3">
+            <p className="section-kicker mb-2">RESPONSE TIMING</p>
+            <dl className="timing-grid-codex" aria-label="Conversation response timing">
+              <div className="timing-stat-box">
+                <dt>agy CLI</dt>
                 <dd>{formatTiming(timing.agyMs)}</dd>
               </div>
-              <div>
+              <div className="timing-stat-box">
                 <dt>AI request</dt>
                 <dd>{formatTiming(timing.aiRequestMs)}</dd>
               </div>
-              <div>
-                <dt>AI voice start</dt>
+              <div className="timing-stat-box">
+                <dt>AI voice</dt>
                 <dd>{formatTiming(timing.aiVoiceStartMs)}</dd>
               </div>
-              <div>
+              <div className="timing-stat-box">
                 <dt>Send → audio</dt>
                 <dd>{formatTiming(timing.sendToAudioMs)}</dd>
               </div>
-              <div>
+              <div className="timing-stat-box">
                 <dt>Stop → audio</dt>
                 <dd>{formatTiming(timing.stopToAudioMs)}</dd>
               </div>
             </dl>
-            <p className="timing-note">
-              AI request includes agy, IPC, and local saving. Stop → audio also includes the time
-              you spent reviewing and sending your answer.
-            </p>
           </div>
         )}
         {state.tag === 'error' && (
@@ -167,22 +166,23 @@ export function FollowUpPanel({
           </p>
         )}
         {isSessionReady ? (
-          <p className="mt-4 mb-0 text-sm text-slate-300">{readyContinuationMessage(surface)}</p>
+          <p className="mt-4 mb-0 text-xs text-zinc-400">{readyContinuationMessage(surface)}</p>
         ) : (
-          <Button
-            className="secondary-action mt-5 self-start"
-            isDisabled={state.tag === 'thinking'}
-            onPress={onAskFollowUp}
-            variant="secondary"
-          >
-            {actionLabel(state, sessionId !== undefined, surface)}
-          </Button>
+          <div className="pt-2">
+            <Button
+              className="primary-action"
+              isDisabled={state.tag === 'thinking'}
+              onPress={onAskFollowUp}
+            >
+              {actionLabel(state, sessionId !== undefined, surface)}
+            </Button>
+          </div>
         )}
-        <p className="mt-3 mb-0 text-xs leading-5 text-slate-400">
+        <p className="mt-3 mb-0 text-xs leading-5 text-zinc-500">
           Audio stays local. This transcript is sent to the configured AI provider only when you
           ask.
         </p>
-      </Card.Content>
-    </Card>
+      </div>
+    </div>
   );
 }

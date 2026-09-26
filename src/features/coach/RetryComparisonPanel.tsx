@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { isTauri } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type AttemptComparison, isAttemptComparison, isProviderError } from '@/lib/types';
@@ -19,6 +19,49 @@ type State =
 
 function errorMessage(cause: unknown): string {
   return isProviderError(cause) ? cause.message : 'Could not compare this attempt. Please retry.';
+}
+
+type ReadyProps = {
+  result: AttemptComparison;
+  onContinue: () => void;
+};
+
+function RetryComparisonReady({ result, onContinue }: ReadyProps) {
+  const wordDelta =
+    result.word_count_change > 0 ? `+${result.word_count_change}` : `${result.word_count_change}`;
+
+  return (
+    <div aria-live="polite" className="flex flex-col gap-4">
+      <div className="comparison-grid">
+        <div className="comparison-column">
+          <span className="comparison-label">Original Attempt</span>
+          <p className="comparison-text">{result.original_transcript}</p>
+        </div>
+        <div className="comparison-column comparison-column--retry">
+          <span className="comparison-label">Try Again Attempt</span>
+          <p className="comparison-text">{result.retry_transcript}</p>
+        </div>
+      </div>
+
+      <div className="comparison-metrics">
+        <span className="metric-pill metric-pill--highlight">
+          Target wording: {result.target_evidence.replace(/_/g, ' ')}
+        </span>
+        <span className="metric-pill">Word count change: {wordDelta}</span>
+        <span className="metric-pill">Hesitation: {result.hesitation}</span>
+      </div>
+
+      {result.target.length === 0 && (
+        <p className="m-0 text-xs text-zinc-400">
+          No focused correction was available for a target wording comparison.
+        </p>
+      )}
+
+      <Button className="secondary-action w-fit mt-1" onPress={onContinue} variant="secondary">
+        Continue with a new answer
+      </Button>
+    </div>
+  );
 }
 
 export function RetryComparisonPanel({
@@ -80,14 +123,14 @@ export function RetryComparisonPanel({
   }, [compare, retry, state.tag]);
 
   return (
-    <Card className="panel mt-[18px]" variant="secondary">
-      <Card.Header className="panel-header">
+    <div className="coach-card">
+      <div className="prompt-card-header">
         <div>
-          <p className="section-kicker">TRY AGAIN</p>
-          <Card.Title className="section-title">Compare your second attempt</Card.Title>
+          <p className="section-kicker">STEP 5 · RETRY COMPARISON</p>
+          <h3 className="section-title">Compare your second attempt</h3>
         </div>
-      </Card.Header>
-      <Card.Content className="panel-content">
+      </div>
+      <div>
         {state.tag === 'waiting' && (
           <p className="empty-transcript">
             Record and transcribe your answer to compare it with the original.
@@ -111,32 +154,9 @@ export function RetryComparisonPanel({
           </div>
         )}
         {state.tag === 'ready' && (
-          <div aria-live="polite" className="grid gap-4">
-            <div>
-              <p className="section-kicker">FIRST ATTEMPT</p>
-              <p className="transcript-text">{state.result.original_transcript}</p>
-            </div>
-            <div>
-              <p className="section-kicker">TRY AGAIN</p>
-              <p className="transcript-text">{state.result.retry_transcript}</p>
-            </div>
-            <p className="m-0 text-sm text-slate-300">
-              Target wording evidence: {state.result.target_evidence.replace(/_/g, ' ')} · Word
-              count change: {state.result.word_count_change > 0 ? '+' : ''}
-              {state.result.word_count_change}
-            </p>
-            {state.result.target.length === 0 && (
-              <p className="m-0 text-xs text-slate-400">
-                No focused correction was available for a target wording comparison.
-              </p>
-            )}
-            <p className="m-0 text-xs text-slate-400">Hesitation: {state.result.hesitation}</p>
-            <Button className="secondary-action w-fit" onPress={onContinue} variant="secondary">
-              Continue with a new answer
-            </Button>
-          </div>
+          <RetryComparisonReady onContinue={onContinue} result={state.result} />
         )}
-      </Card.Content>
-    </Card>
+      </div>
+    </div>
   );
 }

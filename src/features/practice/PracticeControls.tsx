@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react';
+import { Button } from '@heroui/react';
 import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
 import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
 import { type PracticeState, sessionDetails } from './lib/practiceState';
@@ -119,6 +119,96 @@ function SessionAction({
   );
 }
 
+function resolveQuestion(
+  session: ReturnType<typeof sessionDetails>,
+  isRetrying: boolean,
+  retryPrompt?: string,
+  recallActive?: boolean,
+  recallCue?: string,
+): string {
+  if (isRetrying) return retryPrompt ?? 'Speak your corrected answer now.';
+  if (recallActive) return recallCue ?? 'Review your saved recall below.';
+  return session?.question ?? 'What was the most interesting part of your day?';
+}
+
+function VoiceRecorderHud({
+  status,
+  elapsedMs,
+  durationMs,
+  isRetrying,
+  hasTranscript,
+  busy,
+  transcribing,
+  isWaiting,
+  recallLocked,
+  playbackUrl,
+  transcriptionFailure,
+  onStartRecording,
+  onStopRecording,
+  onTranscribe,
+}: {
+  status: RecordingStatus;
+  elapsedMs: number;
+  durationMs: number;
+  isRetrying: boolean;
+  hasTranscript: boolean;
+  busy: boolean;
+  transcribing: boolean;
+  isWaiting: boolean;
+  recallLocked: boolean;
+  playbackUrl?: string;
+  transcriptionFailure?: TranscriptionRecovery;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
+  onTranscribe: () => void;
+}) {
+  const isRecording = status === 'recording';
+  return (
+    <div
+      className={`voice-recorder-hud ${isRecording ? 'voice-recorder-hud--recording' : ''}`}
+      aria-live="polite"
+    >
+      <div className="hud-left">
+        <div className="hud-mic-capsule" aria-hidden="true">
+          <span className="text-base">{isRecording ? '■' : '🎤'}</span>
+        </div>
+        <div className="hud-text">
+          <p className="hud-status-title">{recordingLabel(status, elapsedMs, durationMs)}</p>
+          <p className="hud-status-sub">
+            {isRecording
+              ? 'Speak clearly into your microphone · Click stop when finished'
+              : 'Hold Space to talk, or click the button on the right'}
+          </p>
+        </div>
+      </div>
+
+      <div className="hud-actions">
+        {isRecording ? (
+          <Button
+            className="primary-action !bg-rose-500 !text-white hover:!bg-rose-600"
+            onPress={onStopRecording}
+          >
+            Stop recording
+          </Button>
+        ) : (
+          <Button
+            className="primary-action"
+            isDisabled={busy || transcribing || isWaiting || recallLocked}
+            onPress={onStartRecording}
+          >
+            {recordButtonLabel(status, hasTranscript, isRetrying)}
+          </Button>
+        )}
+        {playbackUrl && (
+          <Button className="secondary-action" isDisabled={transcribing} onPress={onTranscribe}>
+            {transcribeButtonLabel(transcribing, transcriptionFailure)}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function PracticeControls({
   model,
   actions,
@@ -156,97 +246,89 @@ export function PracticeControls({
   const { startRecording, stopRecording, transcribeRecording } = actions;
   const session = sessionDetails(practice);
   const conversationOpen = isConversationOpen(practice);
-  const question = isRetrying
-    ? (retryPrompt ?? 'Speak your corrected answer now.')
-    : recallActive
-      ? (recallCue ?? 'Review your saved recall below.')
-      : (session?.question ?? 'What was the most interesting part of your day?');
+  const question = resolveQuestion(session, isRetrying, retryPrompt, recallActive, recallCue);
+
   return (
-    <Card className="panel practice-panel" variant="secondary">
-      <Card.Header className="panel-header">
+    <div className="prompt-card">
+      <div className="prompt-card-header">
         <div>
           <p className="section-kicker">{promptKicker(recallActive, surface, isRetrying)}</p>
-          <Card.Title className="prompt-title">{question}</Card.Title>
+          <h2 className="prompt-title">{question}</h2>
         </div>
         <span className="prompt-index">{promptIndex(session, recallActive, isRetrying)}</span>
-      </Card.Header>
-      <Card.Content className="panel-content">
-        <div className="mb-5 flex flex-wrap items-center gap-3">
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-white/5 py-3">
+        <div className="flex items-center gap-3">
           <SessionAction actions={actions} model={model} recallActive={recallActive} />
           {conversationOpen && (
-            <span className="text-sm text-teal-200">Conversation in progress</span>
+            <span className="flex items-center gap-2 text-xs font-medium text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Session in progress · Saved locally
+            </span>
           )}
         </div>
-        {conversationOpen && (
-          <p className="mt-0 mb-4 text-xs text-slate-400">
-            This conversation is saved locally. You can resume it after restarting the app.
-          </p>
-        )}
-        {session && (
-          <SessionProgress
-            session={session}
-            recallActive={recallActive}
-            recallCompletedCount={recallCompletedCount}
+      </div>
+
+      {session && (
+        <SessionProgress
+          session={session}
+          recallActive={recallActive}
+          recallCompletedCount={recallCompletedCount}
+        />
+      )}
+
+      {practiceError && (
+        <p className="error-message" role="alert">
+          {practiceError}
+        </p>
+      )}
+
+      {!recallActive && !isRetrying && <ScaffoldingPanel question={question} />}
+
+      <VoiceRecorderHud
+        busy={busy}
+        durationMs={durationMs}
+        elapsedMs={elapsedMs}
+        hasTranscript={Boolean(transcript)}
+        isRetrying={isRetrying}
+        isWaiting={practice.tag === 'waiting'}
+        onStartRecording={startRecording}
+        onStopRecording={stopRecording}
+        onTranscribe={transcribeRecording}
+        playbackUrl={playbackUrl}
+        recallLocked={recallLocked}
+        status={status}
+        transcribing={transcribing}
+        transcriptionFailure={transcriptionFailure}
+      />
+
+      {error && (
+        <p className="error-message" role="alert">
+          {error}
+        </p>
+      )}
+
+      {transcriptionFailure && (
+        <p className="error-message" role="alert">
+          {transcriptionFailure.message}
+        </p>
+      )}
+
+      {playbackUrl && (
+        <div className="recording-preview flex flex-col gap-2 rounded-xl border border-white/5 bg-black/20 p-3">
+          <label className="text-xs text-zinc-400" htmlFor={`${surface}-recording-playback`}>
+            Review audio take before transcription
+          </label>
+          {/* biome-ignore lint/a11y/useMediaCaption: A timed caption is unavailable before transcription. */}
+          <audio
+            className="w-full h-8"
+            controls
+            id={`${surface}-recording-playback`}
+            src={playbackUrl}
           />
-        )}
-        {practiceError && (
-          <p className="error-message" role="alert">
-            {practiceError}
-          </p>
-        )}
-        {!recallActive && !isRetrying && <ScaffoldingPanel question={question} />}
-        <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
-          <div className="mic-orb" aria-hidden="true">
-            <span className="mic-symbol">●</span>
-          </div>
-          <span className="recorder-copy">{recordingLabel(status, elapsedMs, durationMs)}</span>
         </div>
-        <div className="controls flex flex-wrap gap-3">
-          {status === 'recording' ? (
-            <Button className="primary-action" onPress={stopRecording} variant="danger">
-              Stop recording
-            </Button>
-          ) : (
-            <Button
-              className="primary-action"
-              isDisabled={busy || transcribing || practice.tag === 'waiting' || recallLocked}
-              onPress={startRecording}
-              variant="primary"
-            >
-              {recordButtonLabel(status, Boolean(transcript), isRetrying)}
-            </Button>
-          )}
-          {playbackUrl && (
-            <Button
-              className="secondary-action"
-              isDisabled={transcribing}
-              onPress={transcribeRecording}
-              variant="secondary"
-            >
-              {transcribeButtonLabel(transcribing, transcriptionFailure)}
-            </Button>
-          )}
-        </div>
-        {error && (
-          <p className="error-message" role="alert">
-            {error}
-          </p>
-        )}
-        {transcriptionFailure && (
-          <p className="error-message" role="alert">
-            {transcriptionFailure.message}
-          </p>
-        )}
-        {playbackUrl && (
-          <div className="recording-preview">
-            <label htmlFor={`${surface}-recording-playback`}>
-              Review your recording before transcription
-            </label>
-            {/* biome-ignore lint/a11y/useMediaCaption: A timed caption is unavailable before transcription. */}
-            <audio controls id={`${surface}-recording-playback`} src={playbackUrl} />
-          </div>
-        )}
-      </Card.Content>
-    </Card>
+      )}
+    </div>
   );
 }

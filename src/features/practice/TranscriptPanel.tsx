@@ -1,30 +1,32 @@
-import { Card } from '@heroui/react';
+import { Chip } from '@heroui/react';
 
 type Props = { transcript?: string };
 
 export function TranscriptPanel({ transcript }: Props) {
   return (
-    <Card className="panel transcript-panel" variant="secondary">
-      <Card.Header className="panel-header">
+    <div className="transcript-card">
+      <div className="prompt-card-header">
         <div>
-          <p className="section-kicker">YOUR WORDS</p>
-          <Card.Title className="section-title">Transcript</Card.Title>
+          <p className="section-kicker">LOCAL TRANSCRIPTION</p>
+          <h3 className="text-base font-semibold text-zinc-100">Your spoken words</h3>
         </div>
-        <span className={`result-indicator ${transcript ? 'result-indicator--ready' : ''}`}>
+        <Chip color={transcript ? 'success' : 'default'} size="sm" variant="soft">
           {transcript ? 'READY' : 'WAITING'}
-        </span>
-      </Card.Header>
-      <Card.Content className="panel-content">
+        </Chip>
+      </div>
+
+      <div>
         {transcript ? (
-          <p className="transcript-text" aria-live="polite">
+          <p className="transcript-quote" aria-live="polite">
             “{transcript}”
           </p>
         ) : (
-          <p className="empty-transcript">
-            Your transcript will appear here after you record and transcribe a short answer.
+          <p className="transcript-empty">
+            Your transcript will appear here after you speak. Local Whisper processes your words
+            privately on Metal GPU.
           </p>
         )}
-      </Card.Content>
-    </Card>
+      </div>
+    </div>
   );
 }
