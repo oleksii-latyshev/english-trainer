@@ -6,13 +6,14 @@ use crate::providers::FocusCategory;
 use crate::providers::{AttemptComparison, TurnFeedback};
 use rusqlite::{params, Connection, OptionalExtension};
 
+mod daily_recall;
 mod learning_reviews;
 mod learning_targets;
 mod learning_writes;
 mod schema;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
 
 pub struct SessionDatabase {
     connection: Connection,

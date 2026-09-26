@@ -6,8 +6,10 @@ use crate::providers::{
 use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+pub(crate) mod recall;
 mod rules;
 mod scaffold;
+pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
 use rules::{
     context_char_count, validate_transcript, DAILY_TARGET_TURNS, MAX_CONTEXT_CHARS,
     MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS, MAX_TURNS, OPENING_QUESTION,
@@ -30,6 +32,8 @@ pub struct FinishedPracticeSession {
     pub turn_count: usize,
     pub retry_count: usize,
     pub target_turns: usize,
+    pub recall_count: usize,
+    pub recall_wording_count: usize,
 }
 
 #[derive(Clone)]
@@ -258,6 +262,10 @@ impl SessionStore {
             .comparisons(session_id)
             .map_err(database_error)?
             .len();
+        let (recall_count, recall_wording_count) = state
+            .database
+            .daily_recall_counts(session_id)
+            .map_err(database_error)?;
         if !state
             .database
             .finish_session(session_id)
@@ -272,7 +280,68 @@ impl SessionStore {
             turn_count,
             retry_count,
             target_turns: DAILY_TARGET_TURNS,
+            recall_count,
+            recall_wording_count,
         })
+    }
+
+    pub fn daily_recall_plan(&self, session_id: u64) -> Result<DailyRecallPlan, ProviderError> {
+        let state = self.lock();
+        let session = state
+            .active
+            .as_ref()
+            .filter(|item| item.id == session_id)
+            .ok_or_else(invalid_session_error)?;
+        if session.turns.len() < DAILY_TARGET_TURNS {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Finish the suggested speaking goal before phrase recall.",
+            ));
+        }
+        state
+            .database
+            .daily_recall_plan(session_id)
+            .map_err(database_error)
+    }
+
+    pub fn submit_daily_recall(
+        &self,
+        session_id: u64,
+        phrase_id: u64,
+        transcript: String,
+    ) -> Result<SpokenRecallResult, ProviderError> {
+        validate_transcript(&transcript)?;
+        if phrase_id == 0 || phrase_id > MAX_SAFE_SESSION_ID {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Invalid phrase ID.",
+            ));
+        }
+        let mut state = self.lock();
+        let session = state
+            .active
+            .as_ref()
+            .filter(|item| item.id == session_id)
+            .ok_or_else(invalid_session_error)?;
+        if session.in_flight {
+            return Err(busy_error());
+        }
+        if session.turns.len() < DAILY_TARGET_TURNS {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Finish the suggested speaking goal before phrase recall.",
+            ));
+        }
+        state
+            .database
+            .record_daily_recall(session_id, phrase_id, &transcript)
+            .map_err(database_error)?
+            .ok_or_else(|| {
+                ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "This phrase is no longer due for this session. Refresh recall and try again.",
+                )
+            })
     }
 
     pub fn save_feedback(
@@ -282,7 +351,7 @@ impl SessionStore {
         transcript: &str,
         feedback: &TurnFeedback,
     ) -> Result<(), ProviderError> {
-        validate_transcript(&transcript.to_string())?;
+        validate_transcript(transcript)?;
         if session_id > MAX_SAFE_SESSION_ID || sequence == 0 {
             return Err(invalid_retry_error());
         }

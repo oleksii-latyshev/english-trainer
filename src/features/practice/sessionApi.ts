@@ -1,10 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
+  type DailyRecallPlan,
   type FinishedPracticeSession,
   isAttemptComparison,
+  isDailyRecallPlan,
   isFinishedPracticeSession,
   isPracticeSession,
+  isSpokenRecallResult,
   type PracticeSession,
+  type SpokenRecallResult,
   type TurnFeedback,
 } from '@/lib/types';
 
@@ -25,6 +29,24 @@ export async function finishPracticeSession(sessionId: number): Promise<Finished
   const result = await invoke<unknown>('finish_practice_session', { sessionId });
   if (!isFinishedPracticeSession(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected practice session finish response.');
+  }
+  return result;
+}
+
+export async function getDailyRecallPlan(sessionId: number): Promise<DailyRecallPlan> {
+  const result = await invoke<unknown>('get_daily_recall_plan', { sessionId });
+  if (!isDailyRecallPlan(result)) throw new Error('Unexpected daily recall plan response.');
+  return result;
+}
+
+export async function submitDailyRecall(
+  sessionId: number,
+  phraseId: number,
+  transcript: string,
+): Promise<SpokenRecallResult> {
+  const result = await invoke<unknown>('submit_daily_recall', { sessionId, phraseId, transcript });
+  if (!isSpokenRecallResult(result) || result.phrase_id !== phraseId) {
+    throw new Error('Unexpected spoken recall response.');
   }
   return result;
 }

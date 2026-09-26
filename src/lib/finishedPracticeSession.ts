@@ -4,6 +4,8 @@ export type FinishedPracticeSession = {
   turn_count: number;
   retry_count: number;
   target_turns: number;
+  recall_count: number;
+  recall_wording_count: number;
 };
 
 export function isFinishedPracticeSession(value: unknown): value is FinishedPracticeSession {
@@ -27,6 +29,15 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     'target_turns' in value &&
     typeof value.target_turns === 'number' &&
     Number.isSafeInteger(value.target_turns) &&
-    value.target_turns > 0
+    value.target_turns > 0 &&
+    'recall_count' in value &&
+    typeof value.recall_count === 'number' &&
+    Number.isSafeInteger(value.recall_count) &&
+    value.recall_count >= 0 &&
+    'recall_wording_count' in value &&
+    typeof value.recall_wording_count === 'number' &&
+    Number.isSafeInteger(value.recall_wording_count) &&
+    value.recall_wording_count >= 0 &&
+    value.recall_wording_count <= value.recall_count
   );
 }

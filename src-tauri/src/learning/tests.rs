@@ -61,7 +61,7 @@ fn scheduling_rule_advances_intervals_and_status_without_instant_mastery() {
     );
     assert_eq!(review_fail.status, LearningStatus::Learning);
     assert_eq!(review_fail.interval_days, 1);
-    assert_eq!(review_fail.next_review_at, now + 1 * MS_PER_DAY);
+    assert_eq!(review_fail.next_review_at, now + MS_PER_DAY);
 }
 
 #[test]

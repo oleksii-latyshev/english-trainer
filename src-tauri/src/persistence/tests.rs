@@ -46,7 +46,7 @@ fn creates_versioned_schema_and_enforces_one_active_session() {
 }
 
 #[test]
-fn migrates_existing_version_two_database_to_version_three() {
+fn migrates_existing_version_two_database_to_current_version() {
     let path = test_database_path();
     let connection = rusqlite::Connection::open(&path).unwrap();
     connection
@@ -88,7 +88,7 @@ fn migrates_existing_version_two_database_to_version_three() {
         .connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 3);
+    assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(db.turns(1).unwrap()[0].learner, "Original");
     let comparisons = db.comparisons(1).unwrap();
     assert_eq!(comparisons.len(), 1);
@@ -104,6 +104,27 @@ fn migrates_existing_version_two_database_to_version_three() {
 
     drop(db);
     let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn migrates_existing_version_three_database_to_recall_storage() {
+    let path = test_database_path();
+    let db = SessionDatabase::open(&path).unwrap();
+    db.connection
+        .execute_batch("DROP TABLE session_phrase_recalls; PRAGMA user_version = 3;")
+        .unwrap();
+    drop(db);
+    let db = SessionDatabase::open(&path).unwrap();
+    let version: i64 = db
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    assert!(db.daily_recall_plan(1).is_ok());
+    let session = db.active_session().unwrap();
+    assert!(session.is_none());
+    drop(db);
+    std::fs::remove_file(path).unwrap();
 }
 
 #[test]
@@ -271,6 +292,100 @@ fn saving_phrase_card_deduplicates_by_normalized_text() {
 }
 
 #[test]
+fn spoken_recall_queue_and_evidence_survive_without_changing_mastery() {
+    let path = test_database_path();
+    let mut db = SessionDatabase::open(&path).unwrap();
+    let first = db.create_session("Earlier question?").unwrap();
+    db.save_turn(
+        first,
+        1,
+        &StoredTurn {
+            learner: "A trade-off matters.".into(),
+            assistant_reply: "Yes.".into(),
+            assistant_question: "Why?".into(),
+        },
+    )
+    .unwrap();
+    let card = db
+        .save_phrase_card(
+            "trade-off",
+            "A compromise between two benefits",
+            Some(first),
+            Some(1),
+        )
+        .unwrap();
+    db.connection
+        .execute(
+            "UPDATE phrase_cards SET next_review_at = 0 WHERE id = ?1",
+            [card.id as i64],
+        )
+        .unwrap();
+    assert!(db.finish_session(first).unwrap());
+    let second = db.create_session("New question?").unwrap();
+    let plan = db.daily_recall_plan(second).unwrap();
+    assert_eq!(plan.completed_count, 0);
+    assert_eq!(plan.items.len(), 1);
+    assert_eq!(plan.items[0].phrase_id, card.id);
+    assert_eq!(plan.items[0].cue, "A compromise between two benefits");
+
+    let saved = db
+        .record_daily_recall(second, card.id, "The trade off was worth it.")
+        .unwrap()
+        .unwrap();
+    assert!(saved.wording_observed);
+    let duplicate = db
+        .record_daily_recall(second, card.id, "I changed my answer")
+        .unwrap()
+        .unwrap();
+    assert_eq!(duplicate, saved);
+    assert_eq!(db.daily_recall_plan(second).unwrap().completed_count, 1);
+    assert!(db.daily_recall_plan(second).unwrap().items.is_empty());
+    assert_eq!(db.daily_recall_counts(second).unwrap(), (1, 1));
+    let memory = db.get_learning_memory().unwrap();
+    assert_eq!(memory.phrase_cards[0].status, LearningStatus::Learning);
+    assert!(memory.phrase_cards[0].is_due);
+    drop(db);
+
+    let db = SessionDatabase::open(&path).unwrap();
+    assert_eq!(db.daily_recall_plan(second).unwrap().completed_count, 1);
+    assert_eq!(db.daily_recall_counts(second).unwrap(), (1, 1));
+    drop(db);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn spoken_recall_excludes_cues_that_reveal_the_phrase() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = db.create_session("Earlier?").unwrap();
+    db.save_turn(
+        first,
+        1,
+        &StoredTurn {
+            learner: "Answer".into(),
+            assistant_reply: "Reply".into(),
+            assistant_question: "Next?".into(),
+        },
+    )
+    .unwrap();
+    let leaked = db
+        .save_phrase_card("bottleneck", "A bottleneck slowed us", Some(first), Some(1))
+        .unwrap();
+    db.connection
+        .execute(
+            "UPDATE phrase_cards SET next_review_at = 0 WHERE id = ?1",
+            [leaked.id as i64],
+        )
+        .unwrap();
+    db.finish_session(first).unwrap();
+    let second = db.create_session("Now?").unwrap();
+    assert!(db.daily_recall_plan(second).unwrap().items.is_empty());
+    assert!(db
+        .record_daily_recall(second, leaked.id, "bottleneck")
+        .unwrap()
+        .is_none());
+}
+
+#[test]
 fn review_event_updates_schedule_and_persists_event() {
     let mut db = SessionDatabase::open_in_memory().unwrap();
     let card = db
@@ -299,7 +414,7 @@ fn review_event_updates_schedule_and_persists_event() {
     // Verify updated state in database
     let memory = db.get_learning_memory().unwrap();
     assert_eq!(memory.phrase_cards[0].interval_days, 2);
-    assert_eq!(memory.phrase_cards[0].last_reviewed_at.is_some(), true);
+    assert!(memory.phrase_cards[0].last_reviewed_at.is_some());
 }
 
 #[test]

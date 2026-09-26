@@ -2,10 +2,12 @@ import { describe, expect, it } from 'bun:test';
 import {
   isAttemptComparison,
   isConversationTurn,
+  isDailyRecallPlan,
   isFinishedPracticeSession,
   isPracticeSession,
   isProviderError,
   isQuestionScaffold,
+  isSpokenRecallResult,
   isTurnFeedback,
 } from './types';
 
@@ -64,10 +66,27 @@ describe('conversation IPC payloads', () => {
       turn_count: 3,
       retry_count: 1,
       target_turns: 8,
+      recall_count: 1,
+      recall_wording_count: 1,
     };
     expect(isFinishedPracticeSession(finished)).toBe(true);
     expect(isFinishedPracticeSession({ ...finished, retry_count: 4 })).toBe(false);
+    expect(isFinishedPracticeSession({ ...finished, recall_wording_count: 2 })).toBe(false);
     expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);
+  });
+
+  it('accepts bounded spoken recall plans and evidence', () => {
+    const plan = { completed_count: 1, items: [{ phrase_id: 7, cue: 'A trade-off' }] };
+    expect(isDailyRecallPlan(plan)).toBe(true);
+    expect(isDailyRecallPlan({ ...plan, completed_count: 3 })).toBe(false);
+    const result = {
+      phrase_id: 7,
+      transcript: 'The trade off matters.',
+      target: 'trade-off',
+      wording_observed: true,
+    };
+    expect(isSpokenRecallResult(result)).toBe(true);
+    expect(isSpokenRecallResult({ ...result, wording_observed: 'yes' })).toBe(false);
   });
 
   it('accepts bounded question help and rejects malformed IPC data', () => {

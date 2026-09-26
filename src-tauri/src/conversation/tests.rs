@@ -151,6 +151,32 @@ fn start_turn_context_resume_and_finish_form_a_session() {
 }
 
 #[test]
+fn spoken_recall_opens_after_speaking_goal_and_keeps_empty_queue_finishable() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    assert_eq!(
+        store
+            .daily_recall_plan(session.session_id)
+            .unwrap_err()
+            .code,
+        ProviderErrorCode::InvalidRequest
+    );
+    for index in 0..DAILY_TARGET_TURNS {
+        store
+            .send_turn(session.session_id, format!("Answer {index}"), |_| {
+                Ok(turn("Continue.", "Another question?"))
+            })
+            .unwrap();
+    }
+    let plan = store.daily_recall_plan(session.session_id).unwrap();
+    assert!(plan.items.is_empty());
+    assert_eq!(plan.completed_count, 0);
+    let finished = store.finish(session.session_id).unwrap();
+    assert_eq!(finished.recall_count, 0);
+    assert_eq!(finished.recall_wording_count, 0);
+}
+
+#[test]
 fn provider_failure_keeps_session_and_allows_retry() {
     let store = SessionStore::default();
     let session = store.start().unwrap();

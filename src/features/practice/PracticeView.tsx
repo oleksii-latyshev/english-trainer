@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { FeedbackPanel } from '@/features/coach/FeedbackPanel';
 import { RetryComparisonPanel } from '@/features/coach/RetryComparisonPanel';
 import { FollowUpPanel } from '@/features/conversation/FollowUpPanel';
-import { savePhraseCard } from '@/features/memory/memoryApi';
-import { sessionDetails } from '@/features/practice/lib/practiceState';
+import { type SessionDetails, sessionDetails } from '@/features/practice/lib/practiceState';
 import { type SentAnswer, sentAnswerMatches } from '@/features/practice/lib/sentAnswer';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
 import { TimingPanel } from '@/features/speech/TimingPanel';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { TurnFeedback } from '@/lib/types';
+import { DailyRecallPanel } from './DailyRecallPanel';
 import { PracticeControls } from './PracticeControls';
+import { PracticeFeedbackArea } from './PracticeFeedbackArea';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
-import { retryPracticeTurn, savePracticeFeedback } from './sessionApi';
+import { retryPracticeTurn } from './sessionApi';
 import { TranscriptPanel } from './TranscriptPanel';
+import { useDailyRecall } from './useDailyRecall';
 
 type Props = {
   model: PracticeViewModel;
@@ -20,25 +21,29 @@ type Props = {
   speech: ReturnType<typeof useSystemSpeech>;
 };
 
-function feedbackQuestion(
-  retryAnchor: SentAnswer | null,
-  savedAnswer: SentAnswer | null,
-  sessionQuestion?: string,
-): string {
-  return (
-    retryAnchor?.answeredQuestion ??
-    savedAnswer?.answeredQuestion ??
-    sessionQuestion ??
-    'What was the most interesting part of your day?'
-  );
-}
-
 function matchingSentAnswer(
   answer: SentAnswer | null,
   requestId: number,
   transcript: string | undefined,
 ): SentAnswer | null {
   return sentAnswerMatches(answer, requestId, transcript) ? answer : null;
+}
+
+function recallSessionId(session: SessionDetails | undefined): number | undefined {
+  if (!session || session.turnCount < session.targetTurns) return undefined;
+  return session.sessionId;
+}
+
+function canStartRecall(model: PracticeViewModel, isRetrying: boolean): boolean {
+  return model.canChangeSession && !model.busy && !isRetrying && model.practice.tag === 'active';
+}
+
+function shouldShowFollowUp(
+  transcript: string | undefined,
+  isRetrying: boolean,
+  recallActive: boolean,
+): transcript is string {
+  return Boolean(transcript) && !isRetrying && !recallActive;
 }
 
 export function PracticeView({ model, actions, speech }: Props) {
@@ -50,6 +55,8 @@ export function PracticeView({ model, actions, speech }: Props) {
   const { transcript, timing, practice, currentRequestId, speechStoppedAtMs } = model;
   const { handlePracticeTurn, isCurrent, onTurnPendingChange, startRecording } = actions;
   const session = sessionDetails(practice);
+  const recallId = recallSessionId(session);
+  const recall = useDailyRecall(recallId);
   const savedAnswer = matchingSentAnswer(sentAnswer, currentRequestId, transcript);
 
   function startNewAnswer() {
@@ -93,7 +100,32 @@ export function PracticeView({ model, actions, speech }: Props) {
               : 'Take a moment to answer the prompt. We’ll transcribe your words locally, then read them back so you can hear the phrasing.'}
           </p>
 
-          <PracticeControls model={model} actions={controlActions} />
+          <PracticeControls
+            model={model}
+            actions={controlActions}
+            recallCue={recall.active ? recall.currentItem?.cue : undefined}
+            recallActive={recall.active}
+            recallCompletedCount={
+              recall.state.tag === 'ready' ? recall.state.plan.completed_count : 0
+            }
+            recallLocked={recall.saving || recall.result !== null}
+          />
+
+          {recallId !== undefined && (
+            <DailyRecallPanel
+              recall={{
+                ...recall,
+                start: () => {
+                  actions.resetCapture();
+                  recall.start();
+                },
+              }}
+              transcript={transcript}
+              resetCapture={actions.resetCapture}
+              canStart={canStartRecall(model, isRetrying)}
+              canLeave={model.canChangeSession}
+            />
+          )}
 
           {session?.retryEvidence.map((evidence) => (
             <article className="panel mt-[18px] p-5" key={evidence.turn_sequence}>
@@ -110,7 +142,7 @@ export function PracticeView({ model, actions, speech }: Props) {
           ))}
 
           <TranscriptPanel transcript={transcript} />
-          {transcript && !isRetrying && (
+          {shouldShowFollowUp(transcript, isRetrying, recall.active) && (
             <FollowUpPanel
               isCurrent={isCurrent}
               key={`follow-up-${currentRequestId}`}
@@ -139,35 +171,18 @@ export function PracticeView({ model, actions, speech }: Props) {
               transcript={transcript}
             />
           )}
-          {(transcript || retryAnchor) && (
-            <FeedbackPanel
-              isCurrent={isCurrent}
-              key={`feedback-${retryAnchor?.requestId ?? currentRequestId}`}
-              onReviewed={(feedback) => {
-                if (savedAnswer) setRetryAnchor({ ...savedAnswer, feedback });
-              }}
-              onSavePhrase={savePhraseCard}
-              onTryAgain={retryAnchor ? startRetry : undefined}
-              initialFeedback={isRetrying ? retryAnchor?.feedback : undefined}
-              isAnswerSent={session === undefined || savedAnswer !== null || retryAnchor !== null}
-              canReview={!isRetrying}
-              sessionId={savedAnswer?.sessionId ?? retryAnchor?.sessionId}
-              sequence={savedAnswer?.sequence ?? retryAnchor?.sequence}
-              persistReviewed={
-                savedAnswer
-                  ? (_answer, feedback) =>
-                      savePracticeFeedback(
-                        savedAnswer.sessionId,
-                        savedAnswer.sequence,
-                        savedAnswer.originalTranscript,
-                        feedback,
-                      )
-                  : undefined
-              }
-              question={feedbackQuestion(retryAnchor, savedAnswer, session?.question)}
-              transcript={retryAnchor?.originalTranscript ?? transcript ?? ''}
-            />
-          )}
+          <PracticeFeedbackArea
+            transcript={transcript}
+            requestId={currentRequestId}
+            session={session}
+            savedAnswer={savedAnswer}
+            retryAnchor={retryAnchor}
+            isRetrying={isRetrying}
+            recallActive={recall.active}
+            isCurrent={isCurrent}
+            onRetryAnchor={setRetryAnchor}
+            onTryAgain={startRetry}
+          />
           {isRetrying && retryAnchor && (
             <RetryComparisonPanel
               key={`retry-${retryAnchor.requestId}`}

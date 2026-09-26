@@ -71,8 +71,8 @@ export function DailyPracticeDashboard({
                   <span aria-hidden="true">▶</span> {actionLabel}
                 </Button>
                 <p className="dashboard-caption">
-                  Aim for eight spoken answers, then review and re-speak one if useful. Finish early
-                  whenever you need to; your answers are saved locally.
+                  Aim for eight spoken answers, then re-speak one if useful and recall due phrases
+                  aloud. Finish early whenever you need to; your answers are saved locally.
                 </p>
               </div>
               <figure className={`nori-figure${isLoading ? ' is-running' : ''}`}>
@@ -128,9 +128,17 @@ export function DailyPracticeDashboard({
           <div className="dashboard-step">
             <span className="step-number">3</span>
             <div>
-              <h2>Strengthen and finish</h2>
+              <h2>Strengthen an answer</h2>
+              <p>Use focused feedback and Try Again if useful.</p>
+            </div>
+          </div>
+          <div className="dashboard-step">
+            <span className="step-number">4</span>
+            <div>
+              <h2>Recall and finish</h2>
               <p>
-                Use focused feedback and Try Again if useful, then see your saved session counts.
+                Speak up to three due phrases from earlier sessions, then review saved session
+                counts.
               </p>
             </div>
           </div>

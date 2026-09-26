@@ -145,11 +145,13 @@ function App() {
                   practice: practice.state,
                   practiceError: practice.error,
                   busy: isBusy,
+                  canChangeSession: capture.canChangeSession,
                 }}
                 actions={{
                   startRecording: capture.startRecording,
                   stopRecording: capture.stopRecording,
                   transcribeRecording: capture.transcribeRecording,
+                  resetCapture: capture.reset,
                   startPractice,
                   finishPractice,
                   handlePracticeTurn: practice.acceptTurn,

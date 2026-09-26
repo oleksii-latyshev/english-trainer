@@ -111,6 +111,21 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             CREATE INDEX idx_phrase_cards_next_review ON phrase_cards(next_review_at);
             CREATE INDEX idx_review_events_item ON review_events(item_type, item_id);",
         )?;
+        transaction.pragma_update(None, "user_version", 3)?;
+        transaction.commit()?;
+    }
+    if version < 4 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE session_phrase_recalls (
+                session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                phrase_id INTEGER NOT NULL REFERENCES phrase_cards(id) ON DELETE CASCADE,
+                transcript TEXT NOT NULL,
+                wording_observed INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                PRIMARY KEY(session_id, phrase_id)
+            );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

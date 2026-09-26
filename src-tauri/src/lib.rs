@@ -130,6 +130,24 @@ fn finish_practice_session(
 }
 
 #[tauri::command]
+fn get_daily_recall_plan(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+) -> Result<conversation::DailyRecallPlan, providers::ProviderError> {
+    sessions.daily_recall_plan(session_id)
+}
+
+#[tauri::command]
+fn submit_daily_recall(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    phrase_id: u64,
+    transcript: String,
+) -> Result<conversation::SpokenRecallResult, providers::ProviderError> {
+    sessions.submit_daily_recall(session_id, phrase_id, transcript)
+}
+
+#[tauri::command]
 fn get_active_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<Option<conversation::PracticeSession>, providers::ProviderError> {
@@ -200,6 +218,8 @@ pub fn run() {
             start_practice_session,
             send_practice_turn,
             finish_practice_session,
+            get_daily_recall_plan,
+            submit_daily_recall,
             get_active_practice_session,
             get_question_scaffold,
             save_phrase_card,

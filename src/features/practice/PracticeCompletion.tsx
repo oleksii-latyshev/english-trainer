@@ -29,9 +29,15 @@ export function PracticeCompletion({ summary, onDone }: Props) {
             ? `You reached the ${summary.target_turns}-answer practice goal.`
             : `You ended before the suggested ${summary.target_turns}-answer goal. Short sessions count too.`}
         </p>
+        <p className="m-0 text-sm text-slate-300">
+          {summary.recall_count} spoken phrase recall{' '}
+          {summary.recall_count === 1 ? 'attempt' : 'attempts'} saved; saved wording appeared in{' '}
+          {summary.recall_wording_count}{' '}
+          {summary.recall_wording_count === 1 ? 'transcript' : 'transcripts'}.
+        </p>
         <p className="m-0 text-xs text-slate-400">
-          These counts come from saved conversation turns and Try Again attempts. A language
-          progress assessment is not available for this session yet.
+          These counts come from saved conversation turns, Try Again attempts, and spoken recall
+          transcripts. A language progress assessment is not available for this session yet.
         </p>
         <Button className="self-start" onPress={onDone} variant="primary">
           Back to Home

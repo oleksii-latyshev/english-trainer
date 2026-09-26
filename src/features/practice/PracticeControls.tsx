@@ -49,10 +49,32 @@ function startSessionLabel(practice: PracticeState): string {
   return 'Start daily practice';
 }
 
-function SessionAction({ model, actions }: { model: PracticeViewModel; actions: PracticeActions }) {
+function promptKicker(recallActive: boolean): string {
+  return recallActive ? 'PHRASE RECALL CUE' : 'TODAY’S PROMPT';
+}
+
+function promptIndex(session: ReturnType<typeof sessionDetails>, recallActive: boolean): string {
+  if (recallActive) return 'RECALL';
+  return session ? `TURN ${session.turnCount + 1}` : '01 / 01';
+}
+
+function isConversationOpen(practice: PracticeState): boolean {
+  return practice.tag === 'active' || practice.tag === 'waiting';
+}
+
+function SessionAction({
+  model,
+  actions,
+  recallActive,
+}: {
+  model: PracticeViewModel;
+  actions: PracticeActions;
+  recallActive: boolean;
+}) {
   const { practice, busy, status, transcribing } = model;
   const { startPractice, finishPractice } = actions;
-  const isDisabled = busy || status === 'recording' || transcribing || practice.tag === 'waiting';
+  const isDisabled =
+    busy || status === 'recording' || transcribing || practice.tag === 'waiting' || recallActive;
   if (practice.tag === 'idle' || practice.tag === 'loading' || practice.tag === 'starting') {
     return (
       <Button
@@ -80,9 +102,17 @@ function SessionAction({ model, actions }: { model: PracticeViewModel; actions: 
 export function PracticeControls({
   model,
   actions,
+  recallCue,
+  recallActive = false,
+  recallLocked = false,
+  recallCompletedCount = 0,
 }: {
   model: PracticeViewModel;
   actions: PracticeActions;
+  recallCue?: string;
+  recallActive?: boolean;
+  recallLocked?: boolean;
+  recallCompletedCount?: number;
 }) {
   const {
     status,
@@ -99,37 +129,44 @@ export function PracticeControls({
   } = model;
   const { startRecording, stopRecording, transcribeRecording } = actions;
   const session = sessionDetails(practice);
-  const question = session?.question ?? 'What was the most interesting part of your day?';
+  const conversationOpen = isConversationOpen(practice);
+  const question = recallActive
+    ? (recallCue ?? 'Review your saved recall below.')
+    : (session?.question ?? 'What was the most interesting part of your day?');
   return (
     <Card className="panel practice-panel" variant="secondary">
       <Card.Header className="panel-header">
         <div>
-          <p className="section-kicker">TODAY’S PROMPT</p>
+          <p className="section-kicker">{promptKicker(recallActive)}</p>
           <Card.Title className="prompt-title">{question}</Card.Title>
         </div>
-        <span className="prompt-index">
-          {session ? `TURN ${session.turnCount + 1}` : '01 / 01'}
-        </span>
+        <span className="prompt-index">{promptIndex(session, recallActive)}</span>
       </Card.Header>
       <Card.Content className="panel-content">
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <SessionAction actions={actions} model={model} />
-          {(practice.tag === 'active' || practice.tag === 'waiting') && (
+          <SessionAction actions={actions} model={model} recallActive={recallActive} />
+          {conversationOpen && (
             <span className="text-sm text-teal-200">Conversation in progress</span>
           )}
         </div>
-        {(practice.tag === 'active' || practice.tag === 'waiting') && (
+        {conversationOpen && (
           <p className="mt-0 mb-4 text-xs text-slate-400">
             This conversation is saved locally. You can resume it after restarting the app.
           </p>
         )}
-        {session && <SessionProgress session={session} />}
+        {session && (
+          <SessionProgress
+            session={session}
+            recallActive={recallActive}
+            recallCompletedCount={recallCompletedCount}
+          />
+        )}
         {practiceError && (
           <p className="error-message" role="alert">
             {practiceError}
           </p>
         )}
-        <ScaffoldingPanel question={question} />
+        {!recallActive && <ScaffoldingPanel question={question} />}
         <div className={`recorder-state recorder-state--${status}`} aria-live="polite">
           <div className="mic-orb" aria-hidden="true">
             <span className="mic-symbol">●</span>
@@ -144,7 +181,7 @@ export function PracticeControls({
           ) : (
             <Button
               className="primary-action"
-              isDisabled={busy || transcribing || practice.tag === 'waiting'}
+              isDisabled={busy || transcribing || practice.tag === 'waiting' || recallLocked}
               onPress={startRecording}
               variant="primary"
             >

@@ -153,6 +153,12 @@ export function isQuestionScaffold(value: unknown): value is QuestionScaffold {
   );
 }
 
+export {
+  type DailyRecallPlan,
+  isDailyRecallPlan,
+  isSpokenRecallResult,
+  type SpokenRecallResult,
+} from './dailyRecallTypes';
 export { type FinishedPracticeSession, isFinishedPracticeSession } from './finishedPracticeSession';
 
 export function isPracticeSession(value: unknown): value is PracticeSession {

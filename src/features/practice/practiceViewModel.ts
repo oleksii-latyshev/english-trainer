@@ -6,12 +6,14 @@ export type PracticeViewModel = CaptureView & {
   practice: PracticeState;
   practiceError: string;
   busy: boolean;
+  canChangeSession: boolean;
 };
 
 export type PracticeActions = {
   startRecording: () => void;
   stopRecording: () => void;
   transcribeRecording: () => void;
+  resetCapture: () => void;
   startPractice: () => void;
   finishPractice: () => void;
   handlePracticeTurn: (sessionId: number, turn: ConversationTurn) => void;
