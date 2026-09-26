@@ -1,4 +1,4 @@
-import { Button, Card } from '@heroui/react';
+import { Button, Card, Chip } from '@heroui/react';
 import { useState } from 'react';
 import type { MistakeRecord, ReviewResponse } from '@/lib/learningTypes';
 import { formatDueText, formatStatusLabel } from '../lib/memoryState';
@@ -28,44 +28,48 @@ export function MistakeCard({ mistake, onReview }: Props) {
   const dueText = formatDueText(mistake.next_review_at);
 
   return (
-    <Card className="panel border border-white/10 bg-slate-900/60 p-4" variant="secondary">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+    <Card
+      className="panel border border-white/[0.08] bg-[#161619] p-4 shadow-sm"
+      variant="secondary"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-2.5">
         <div className="flex items-center gap-2">
-          <span className="rounded bg-teal-500/10 px-2 py-0.5 text-xs font-semibold text-teal-300">
+          <Chip color="danger" size="sm" variant="soft">
             {mistake.category.toUpperCase()}
-          </span>
-          <span className="rounded bg-slate-700/50 px-2 py-0.5 text-xs text-slate-300">
+          </Chip>
+          <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-400">
             {formatStatusLabel(mistake.status)}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-zinc-400">
           <span>
-            Observed {mistake.times_seen} {mistake.times_seen === 1 ? 'time' : 'times'}
+            Seen {mistake.times_seen} {mistake.times_seen === 1 ? 'time' : 'times'}
           </span>
           <span>·</span>
-          <span className={mistake.is_due ? 'font-medium text-amber-300' : 'text-slate-400'}>
+          <span className={mistake.is_due ? 'font-medium text-amber-400' : 'text-zinc-500'}>
             {dueText}
           </span>
         </div>
       </div>
 
-      <div className="mt-3 grid gap-1.5">
-        <p className="m-0 text-sm text-slate-300">
-          <span className="text-slate-400">You said:</span> {mistake.original_example}
+      <div className="mt-3 grid gap-1.5 text-xs">
+        <p className="m-0 text-zinc-400">
+          <span className="font-semibold text-zinc-500">Original spoken:</span> "
+          {mistake.original_example}"
         </p>
-        <p className="m-0 text-base font-semibold text-teal-100">
-          <span className="text-sm font-normal text-slate-400">Correction:</span>{' '}
-          {mistake.corrected_example}
+        <p className="m-0 text-sm font-semibold text-emerald-300">
+          <span className="text-xs font-normal text-zinc-400">Better phrasing:</span> "
+          {mistake.corrected_example}"
         </p>
-        <p className="m-0 text-xs text-slate-400">{mistake.explanation}</p>
+        <p className="m-0 text-[11px] text-zinc-400">{mistake.explanation}</p>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
         <span
-          className="text-xs text-slate-400"
+          className="text-xs text-zinc-400"
           title="Self-reported recall updates schedule without claiming spoken mastery."
         >
-          Review recall:
+          Spaced review recall:
         </span>
         <div className="flex items-center gap-2">
           <Button
@@ -88,7 +92,7 @@ export function MistakeCard({ mistake, onReview }: Props) {
       </div>
 
       {reviewError && (
-        <p className="error-message mt-2 text-xs" role="alert">
+        <p className="error-message mt-2 text-xs text-rose-300" role="alert">
           {reviewError}
         </p>
       )}
