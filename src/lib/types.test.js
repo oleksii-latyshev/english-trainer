@@ -68,8 +68,26 @@ describe('conversation IPC payloads', () => {
       target_turns: 8,
       recall_count: 1,
       recall_wording_count: 1,
+      improvement: { turn_sequence: 2, target: 'I work there' },
+      focus: {
+        turn_sequence: 2,
+        original: 'I work in there',
+        improved: 'I work there',
+        explanation: 'Drop the extra preposition.',
+      },
+      saved_phrases: ['I work there'],
     };
     expect(isFinishedPracticeSession(finished)).toBe(true);
+    expect(isFinishedPracticeSession({ ...finished, saved_phrases: ['é'.repeat(300)] })).toBe(true);
+    expect(
+      isFinishedPracticeSession({ ...finished, improvement: null, focus: null, saved_phrases: [] }),
+    ).toBe(true);
+    expect(
+      isFinishedPracticeSession({ ...finished, improvement: { turn_sequence: 0, target: 'word' } }),
+    ).toBe(false);
+    expect(isFinishedPracticeSession({ ...finished, saved_phrases: ['a', 'b', 'c', 'd'] })).toBe(
+      false,
+    );
     expect(isFinishedPracticeSession({ ...finished, retry_count: 4 })).toBe(false);
     expect(isFinishedPracticeSession({ ...finished, recall_wording_count: 2 })).toBe(false);
     expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);

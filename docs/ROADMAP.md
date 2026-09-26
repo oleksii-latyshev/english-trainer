@@ -33,27 +33,27 @@ flowchart LR
 
 ## Current Reality & Route to MVP (2026-09-26)
 
-**MVP status: not ready for daily use.** The app has an app shell with Home, Conversation, and Learning Memory navigation. Home starts or resumes a saved conversation and shows a Learning Memory snapshot. Daily Practice guides the opening answer, an eight-answer conversation goal, optional Try Again, and up to three due-phrase spoken recall attempts after the goal. Saved recall attempts resume after restart. A factual completion screen shows saved answer, retry, and recall counts. The 10–15 minute duration is a suggestion, not a timer. Spoken wording matching is transcript evidence only; it does not change mastery. An evidence-based language summary is still missing. Conversation, coaching, and Try Again still share one speaking workspace. The HTML and Markdown examples in `docs/ui/` remain design references, not exact implementation requirements.
+**MVP status: not ready for daily use.** The app has an app shell with Home, Conversation, and Learning Memory navigation. Home starts or resumes a saved conversation and shows a Learning Memory snapshot. Daily Practice guides the opening answer, an eight-answer conversation goal, optional Try Again, and up to three due-phrase spoken recall attempts after the goal. Saved recall attempts resume after restart. The completion screen shows saved answer, retry, and recall counts, plus one transcript-grounded Try Again wording observation, the latest saved correction, and up to three phrases saved in that session when available. The 10–15 minute duration is a suggestion, not a timer. Spoken wording matching is transcript evidence only; it does not change mastery. A broader language progress assessment is still missing. Conversation, coaching, and Try Again still share one speaking workspace. The HTML and Markdown examples in `docs/ui/` remain design references, not exact implementation requirements.
 
 ### What is working so far
 
 | Area | Current evidence | Still missing |
 | :--- | :--- | :--- |
 | Native speech path | The macOS app opened, recorded microphone audio, and ran local transcription. Automated audio, provider, and session tests pass. | A meaningful spoken conversation with reliable STT, voiced AI follow-up, coaching, and Try Again has not been verified end to end on a physical Mac. The exploratory microphone recording did not contain a useful learner answer. |
-| Learning loop | Focused feedback, saved Try Again comparisons, SQLite mistakes and phrase cards, recall scheduling, and typed IPC exist as slices. Due items from earlier sessions can enter selected conversation prompts. After eight answers, Daily Practice can save transcript evidence for due-phrase spoken recall; this evidence does not change mastery. | Grounded later-session mastery transitions, a broader recall flow, and an evidence-based language summary. Self-reported recall must not count as spoken mastery. |
-| Product UI | App shell and responsive Home / Conversation / Learning Memory navigation; Daily Practice dashboard, answer-based step guidance, due-phrase spoken recall, factual completion screen, and a live due-item snapshot; the existing speaking workspace and basic Learning Memory panel. HeroUI supplies dashboard controls and surfaces. Nori is currently a Lucide Rabbit icon with idle and loading motion. | Timed stages, evidence-based session summary, separate Coach experience, complete Learning Memory recall flow, Settings, quick practice, and specialist screens. The Lucide mascot has no companion state or learning-event reactions. |
+| Learning loop | Focused feedback, saved Try Again comparisons, SQLite mistakes and phrase cards, recall scheduling, and typed IPC exist as slices. Due items from earlier sessions can enter selected conversation prompts. After eight answers, Daily Practice can save transcript evidence for due-phrase spoken recall; this evidence does not change mastery. The session finish screen derives limited highlights from saved evidence. | Grounded later-session mastery transitions, a broader recall flow, and a broader language progress assessment. Self-reported recall must not count as spoken mastery. |
+| Product UI | App shell and responsive Home / Conversation / Learning Memory navigation; Daily Practice dashboard, answer-based step guidance, due-phrase spoken recall, saved-evidence completion highlights, and a live due-item snapshot; the existing speaking workspace and basic Learning Memory panel. HeroUI supplies dashboard controls and surfaces. Nori is currently a Lucide Rabbit icon with idle and loading motion. | Timed stages, broader language progress assessment, separate Coach experience, complete Learning Memory recall flow, Settings, quick practice, and specialist screens. The Lucide mascot has no companion state or learning-event reactions. |
 | Ambient entry | None. | Tray quick launch, compact quick-practice window, opt-in notifications, and quiet-hour controls required by the MVP definition below. |
 
 ### Screen implementation inventory
 
 | Designed surface | App state | MVP priority |
 | :--- | :--- | :--- |
-| [Daily Practice dashboard](ui/01_DAILY_PRACTICE_DASHBOARD.md) | Home supports start/resume, session status, and a live Learning Memory snapshot. The practice screen has answer-based step guidance, optional spoken due-phrase recall, and a factual completion screen. The suggested duration is not enforced; timed stages are not implemented. | Continue the daily flow |
+| [Daily Practice dashboard](ui/01_DAILY_PRACTICE_DASHBOARD.md) | Home supports start/resume, session status, and a live Learning Memory snapshot. The practice screen has answer-based step guidance, optional spoken due-phrase recall, and a saved-evidence completion screen. The suggested duration is not enforced; timed stages are not implemented. | Continue the daily flow |
 | [Coach & Re-Speaking](ui/02_COACH_AND_RESPEAKING.md) and [Conversation](ui/03_CONVERSATION_MODE.md) | Conversation has a navigation destination backed by the existing speaking workspace. Feedback, Try Again, and follow-up components remain inside that workspace; there is no separate Coach screen or full mode behavior. | Before MVP |
 | [Learning Memory](ui/06_LEARNING_MEMORY.md) | Basic panel for saved items and self-reported recall now has its own navigation destination. The dashboard shows live saved and due counts; there is no spoken recall drill or full designed screen. | Before MVP |
 | [Settings](ui/08_SETTINGS_AND_HARDWARE.md) and [Ambient Quick Practice](ui/09_AMBIENT_COMPANION_QUICK_PRACTICE.md) | No screens. Basic TTS voice controls exist in the workspace. | MVP settings and quick-practice subset |
 | [Interview](ui/04_THE_HOT_SEAT_INTERVIEW.md), [Drills](ui/05_SKILL_BUILDERS_DRILLS.md), [Progress](ui/07_PROGRESS_AND_BENCHMARKS.md) | Prototypes only. | After the core MVP loop |
-| Session summary in the [navigation map](ui/NAVIGATION_MAP.md) | Finishing opens a factual saved-answer, retry, and spoken-recall count screen. Improvement, focus, and phrase recommendations are not yet derived. | Before MVP |
+| Session summary in the [navigation map](ui/NAVIGATION_MAP.md) | Finishing shows saved counts, a newly observed Try Again target when supported, the latest saved correction, and up to three phrase cards saved in that session. It makes no fluency or mastery claim. | Expand after real-session validation |
 
 ### Next implementation order
 
@@ -280,7 +280,7 @@ The same core engine supports both general B1→B2 speaking and professional int
 
 Make sessions remember the user and retest important weaknesses.
 
-Current state: persistence, recall scheduling, a basic panel on its own navigation destination, a Home snapshot, and bounded due-item prompt context are implemented as slices. The phase is still open because spoken later-use evidence, a complete recall experience, the session summary, and its exit criterion are not verified.
+Current state: persistence, recall scheduling, a basic panel on its own navigation destination, a Home snapshot, bounded due-item prompt context, and a limited saved-evidence session summary are implemented as slices. The phase is still open because spoken later-use evidence, a complete recall experience, broader language assessment, and its exit criterion are not verified.
 
 ### Deliverables
 

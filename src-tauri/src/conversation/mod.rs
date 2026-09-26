@@ -34,6 +34,23 @@ pub struct FinishedPracticeSession {
     pub target_turns: usize,
     pub recall_count: usize,
     pub recall_wording_count: usize,
+    pub improvement: Option<SessionImprovement>,
+    pub focus: Option<SessionFocus>,
+    pub saved_phrases: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SessionImprovement {
+    pub turn_sequence: usize,
+    pub target: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SessionFocus {
+    pub turn_sequence: usize,
+    pub original: String,
+    pub improved: String,
+    pub explanation: String,
 }
 
 #[derive(Clone)]
@@ -266,6 +283,10 @@ impl SessionStore {
             .database
             .daily_recall_counts(session_id)
             .map_err(database_error)?;
+        let evidence = state
+            .database
+            .session_summary_evidence(session_id)
+            .map_err(database_error)?;
         if !state
             .database
             .finish_session(session_id)
@@ -282,6 +303,17 @@ impl SessionStore {
             target_turns: DAILY_TARGET_TURNS,
             recall_count,
             recall_wording_count,
+            improvement: evidence.improvement.map(|improvement| SessionImprovement {
+                turn_sequence: improvement.turn_sequence,
+                target: improvement.target,
+            }),
+            focus: evidence.focus.map(|focus| SessionFocus {
+                turn_sequence: focus.turn_sequence,
+                original: focus.original,
+                improved: focus.improved,
+                explanation: focus.explanation,
+            }),
+            saved_phrases: evidence.saved_phrases,
         })
     }
 

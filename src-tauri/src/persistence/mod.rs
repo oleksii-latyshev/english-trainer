@@ -11,6 +11,7 @@ mod learning_reviews;
 mod learning_targets;
 mod learning_writes;
 mod schema;
+mod session_summary;
 use std::path::Path;
 
 const SCHEMA_VERSION: i64 = 4;

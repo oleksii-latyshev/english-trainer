@@ -66,6 +66,23 @@ fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
     let finished = reopened.finish(session.session_id).unwrap();
     assert_eq!(finished.turn_count, 1);
     assert_eq!(finished.retry_count, 1);
+    assert_eq!(
+        finished.improvement,
+        Some(SessionImprovement {
+            turn_sequence: 1,
+            target: "I work there".into(),
+        })
+    );
+    assert_eq!(
+        finished.focus,
+        Some(SessionFocus {
+            turn_sequence: 1,
+            original: "I work in there".into(),
+            improved: "I work there".into(),
+            explanation: "Drop the extra preposition.".into(),
+        })
+    );
+    assert!(finished.saved_phrases.is_empty());
     std::fs::remove_file(path).unwrap();
 }
 
@@ -144,10 +161,176 @@ fn start_turn_context_resume_and_finish_form_a_session() {
     assert_eq!(finished.turn_count, 2);
     assert_eq!(finished.retry_count, 0);
     assert_eq!(finished.target_turns, DAILY_TARGET_TURNS);
+    assert_eq!(finished.improvement, None);
+    assert_eq!(finished.focus, None);
+    assert!(finished.saved_phrases.is_empty());
     assert_eq!(
         store.finish(session.session_id).unwrap_err().code,
         ProviderErrorCode::InvalidSession
     );
+}
+
+#[test]
+fn finished_summary_uses_only_current_session_phrases_and_limits_them_to_three() {
+    let store = SessionStore::default();
+    let earlier = store.start().unwrap();
+    store
+        .send_turn(earlier.session_id, "An earlier answer".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    store
+        .save_phrase(
+            "Phrase from earlier session".into(),
+            String::new(),
+            Some(earlier.session_id),
+            Some(1),
+        )
+        .unwrap();
+    store.finish(earlier.session_id).unwrap();
+
+    let current = store.start().unwrap();
+    store
+        .send_turn(current.session_id, "A current answer".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    for phrase in [
+        "Current phrase one",
+        "Current phrase two",
+        "Current phrase three",
+        "Current phrase four",
+    ] {
+        store
+            .save_phrase(
+                phrase.into(),
+                String::new(),
+                Some(current.session_id),
+                Some(1),
+            )
+            .unwrap();
+    }
+
+    let summary = store.finish(current.session_id).unwrap();
+    assert_eq!(
+        summary.saved_phrases,
+        vec![
+            "Current phrase one",
+            "Current phrase two",
+            "Current phrase three"
+        ]
+    );
+}
+
+#[test]
+fn finished_summary_uses_latest_nonempty_focus_feedback() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "First answer".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(session.session_id, 1, "First answer", &sample_feedback())
+        .unwrap();
+    store
+        .send_turn(session.session_id, "Second answer".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(
+            session.session_id,
+            2,
+            "Second answer",
+            &TurnFeedback {
+                focus_feedback: Vec::new(),
+                b2_rewrite: "That is a clear answer.".into(),
+            },
+        )
+        .unwrap();
+
+    let summary = store.finish(session.session_id).unwrap();
+    assert_eq!(
+        summary.focus,
+        Some(SessionFocus {
+            turn_sequence: 1,
+            original: "I work in there".into(),
+            improved: "I work there".into(),
+            explanation: "Drop the extra preposition.".into(),
+        })
+    );
+}
+
+#[test]
+fn uncertain_partial_and_already_present_retries_do_not_claim_improvement() {
+    let store = SessionStore::default();
+    let cases = [
+        (
+            "the target",
+            "the",
+            crate::providers::TargetEvidence::Uncertain,
+        ),
+        (
+            "I went home",
+            "I would be home",
+            crate::providers::TargetEvidence::PartiallyObserved,
+        ),
+        (
+            "I would go home",
+            "I would go home",
+            crate::providers::TargetEvidence::AlreadyPresentInBoth,
+        ),
+    ];
+
+    for (original, retry, expected_evidence) in cases {
+        let session = store.start().unwrap();
+        store
+            .send_turn(session.session_id, original.into(), |_| {
+                Ok(turn("Thanks.", "Next?"))
+            })
+            .unwrap();
+        let mut feedback = sample_feedback();
+        feedback.focus_feedback[0].improved = match expected_evidence {
+            crate::providers::TargetEvidence::Uncertain => "the".into(),
+            _ => "I would go home".into(),
+        };
+        store
+            .save_feedback(session.session_id, 1, original, &feedback)
+            .unwrap();
+        let comparison = store
+            .retry_turn(session.session_id, 1, retry.into())
+            .unwrap();
+        assert_eq!(comparison.target_evidence, expected_evidence);
+        let summary = store.finish(session.session_id).unwrap();
+        assert_eq!(summary.improvement, None);
+    }
+}
+
+#[test]
+fn summary_evidence_database_failure_keeps_the_session_active() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "A saved answer".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    rusqlite::Connection::open(&path)
+        .unwrap()
+        .execute("DROP TABLE turn_feedback", [])
+        .unwrap();
+
+    let error = store.finish(session.session_id).unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::DatabaseError);
+    assert_eq!(
+        store.get_active().unwrap().unwrap().session_id,
+        session.session_id
+    );
+    drop(store);
+    std::fs::remove_file(path).unwrap();
 }
 
 #[test]

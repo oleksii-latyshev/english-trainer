@@ -6,7 +6,51 @@ export type FinishedPracticeSession = {
   target_turns: number;
   recall_count: number;
   recall_wording_count: number;
+  improvement: { turn_sequence: number; target: string } | null;
+  focus: {
+    turn_sequence: number;
+    original: string;
+    improved: string;
+    explanation: string;
+  } | null;
+  saved_phrases: string[];
 };
+
+function isTurnNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+function isSummaryText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && Array.from(value).length <= 300;
+}
+
+function isImprovement(
+  value: unknown,
+): value is NonNullable<FinishedPracticeSession['improvement']> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'turn_sequence' in value &&
+    isTurnNumber(value.turn_sequence) &&
+    'target' in value &&
+    isSummaryText(value.target)
+  );
+}
+
+function isFocus(value: unknown): value is NonNullable<FinishedPracticeSession['focus']> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'turn_sequence' in value &&
+    isTurnNumber(value.turn_sequence) &&
+    'original' in value &&
+    isSummaryText(value.original) &&
+    'improved' in value &&
+    isSummaryText(value.improved) &&
+    'explanation' in value &&
+    isSummaryText(value.explanation)
+  );
+}
 
 export function isFinishedPracticeSession(value: unknown): value is FinishedPracticeSession {
   if (typeof value !== 'object' || value === null) return false;
@@ -38,6 +82,14 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     typeof value.recall_wording_count === 'number' &&
     Number.isSafeInteger(value.recall_wording_count) &&
     value.recall_wording_count >= 0 &&
-    value.recall_wording_count <= value.recall_count
+    value.recall_wording_count <= value.recall_count &&
+    'improvement' in value &&
+    (value.improvement === null || isImprovement(value.improvement)) &&
+    'focus' in value &&
+    (value.focus === null || isFocus(value.focus)) &&
+    'saved_phrases' in value &&
+    Array.isArray(value.saved_phrases) &&
+    value.saved_phrases.length <= 3 &&
+    value.saved_phrases.every(isSummaryText)
   );
 }
