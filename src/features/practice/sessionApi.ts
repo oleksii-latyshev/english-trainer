@@ -1,20 +1,47 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
+  type ConversationTurn,
   type DailyRecallPlan,
   type FinishedPracticeSession,
   isAttemptComparison,
+  isConversationTurn,
   isDailyRecallPlan,
   isFinishedPracticeSession,
   isPracticeSession,
+  isSavedCoachState,
   isSpokenRecallResult,
   type PracticeSession,
+  type SavedCoachState,
+  type SessionMode,
   type SpokenRecallResult,
   type TurnFeedback,
 } from '@/lib/types';
 
-export async function startPracticeSession(): Promise<PracticeSession> {
-  const result = await invoke<unknown>('start_practice_session');
+export async function startPracticeSession(mode?: SessionMode): Promise<PracticeSession> {
+  const result = await invoke<unknown>('start_practice_session', { mode });
   if (!isPracticeSession(result)) throw new Error('Unexpected practice session response.');
+  return result;
+}
+
+export async function saveCoachAnswer(
+  sessionId: number,
+  transcript: string,
+): Promise<SavedCoachState> {
+  const result = await invoke<unknown>('save_coach_answer', { sessionId, transcript });
+  if (!isSavedCoachState(result) || result.session_id !== sessionId) {
+    throw new Error('Unexpected coach answer response.');
+  }
+  return result;
+}
+
+export async function continueCoachTurn(
+  sessionId: number,
+  sequence: number,
+): Promise<ConversationTurn> {
+  const result = await invoke<unknown>('continue_coach_turn', { sessionId, sequence });
+  if (!isConversationTurn(result)) {
+    throw new Error('Unexpected coach continue response.');
+  }
   return result;
 }
 

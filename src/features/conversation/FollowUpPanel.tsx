@@ -21,6 +21,7 @@ type Props = {
   speechStoppedAtMs?: number;
   sessionId?: number;
   surface?: 'conversation' | 'coach';
+  localCoach?: boolean;
   state: FollowUpState;
   onAskFollowUp: () => void;
 };
@@ -42,7 +43,13 @@ export function actionLabel(
   state: FollowUpState,
   isSession: boolean,
   surface: 'conversation' | 'coach' = 'conversation',
+  localCoach = false,
 ): string {
+  if (localCoach) {
+    if (state.tag === 'thinking') return 'Saving…';
+    if (state.tag === 'error') return 'Retry save';
+    return 'Save answer';
+  }
   switch (state.tag) {
     case 'thinking':
       return 'Thinking…';
@@ -64,17 +71,22 @@ export function requestTurn(sessionId: number | undefined, transcript: string): 
   });
 }
 
-function panelKicker(surface: 'conversation' | 'coach'): string {
+function panelKicker(surface: 'conversation' | 'coach', localCoach: boolean): string {
+  if (localCoach) return 'COACH ANSWER';
   if (surface === 'coach') return 'SAVED CONVERSATION TURN';
   return 'AI CONVERSATION';
 }
 
-function panelTitle(surface: 'conversation' | 'coach'): string {
+function panelTitle(surface: 'conversation' | 'coach', localCoach: boolean): string {
+  if (localCoach) return 'Save answer for review';
   if (surface === 'coach') return 'Send turn for coach review';
   return 'Eva’s follow-up';
 }
 
-function emptyTranscriptMessage(surface: 'conversation' | 'coach'): string {
+function emptyTranscriptMessage(surface: 'conversation' | 'coach', localCoach: boolean): string {
+  if (localCoach) {
+    return 'Your transcript will be saved locally. Eva asks the next question only after you Continue.';
+  }
   if (surface === 'coach') {
     return 'Send your answer to Eva to save this turn and unlock focused feedback.';
   }
@@ -92,6 +104,7 @@ export function FollowUpPanel({
   sessionId,
   speechStoppedAtMs,
   surface = 'conversation',
+  localCoach = false,
   state,
   onAskFollowUp,
 }: Props) {
@@ -113,8 +126,10 @@ export function FollowUpPanel({
     <div className="prompt-card">
       <div className="prompt-card-header">
         <div>
-          <p className="section-kicker">{panelKicker(surface)}</p>
-          <h3 className="text-base font-semibold text-zinc-100">{panelTitle(surface)}</h3>
+          <p className="section-kicker">{panelKicker(surface, localCoach)}</p>
+          <h3 className="text-base font-semibold text-zinc-100">
+            {panelTitle(surface, localCoach)}
+          </h3>
         </div>
         {state.tag === 'ready' && (
           <span className="flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
@@ -125,7 +140,7 @@ export function FollowUpPanel({
 
       <div>
         {state.tag === 'idle' && (
-          <p className="transcript-empty">{emptyTranscriptMessage(surface)}</p>
+          <p className="transcript-empty">{emptyTranscriptMessage(surface, localCoach)}</p>
         )}
         {state.tag === 'ready' && (
           <div aria-live="polite" className="followup-bubble">
@@ -174,13 +189,14 @@ export function FollowUpPanel({
               isDisabled={state.tag === 'thinking'}
               onPress={onAskFollowUp}
             >
-              {actionLabel(state, sessionId !== undefined, surface)}
+              {actionLabel(state, sessionId !== undefined, surface, localCoach)}
             </Button>
           </div>
         )}
         <p className="mt-3 mb-0 text-xs leading-5 text-zinc-500">
-          Audio stays local. This transcript is sent to the configured AI provider only when you
-          ask.
+          {localCoach
+            ? 'Saving keeps this transcript on this device. Review and Continue send it to the configured AI provider when you choose them.'
+            : 'Audio stays local. This transcript is sent to the configured AI provider only when you ask.'}
         </p>
       </div>
     </div>

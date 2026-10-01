@@ -1,11 +1,30 @@
 import { Button } from '@heroui/react';
 import type { ReactNode } from 'react';
 import type { SessionDetails } from '@/features/practice/lib/practiceState';
+import {
+  coachPromptQuestion,
+  practicePromptSequence,
+} from '@/features/practice/lib/practiceViewState';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import { PracticeControls } from '@/features/practice/PracticeControls';
 import { PracticeFeedbackArea } from '@/features/practice/PracticeFeedbackArea';
 import type { PracticeActions, PracticeViewModel } from '@/features/practice/practiceViewModel';
 import { retryPracticeTurn } from '@/features/practice/sessionApi';
+import { TranscriptPanel } from '@/features/practice/TranscriptPanel';
+
+function CurrentAnswerTranscript({
+  transcript,
+  savedTranscript,
+  isRetrying,
+}: {
+  transcript?: string;
+  savedTranscript?: string;
+  isRetrying: boolean;
+}) {
+  if (isRetrying || !transcript || transcript === savedTranscript) return null;
+  return <TranscriptPanel transcript={transcript} />;
+}
+
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { TurnFeedback } from '@/lib/types';
 import { deriveCoachStep } from './lib/coachState';
@@ -25,20 +44,10 @@ type Props = {
   onTryAgain: () => void;
   onCancelRetry: () => void;
   onContinueFromRetry: () => void;
+  onContinueCoach: () => void;
+  isContinuingCoach: boolean;
+  continueError: string;
 };
-
-function promptQuestion(
-  retryAnchor: SentAnswer | null,
-  savedAnswer: SentAnswer | null,
-  sessionQuestion?: string,
-): string {
-  return (
-    retryAnchor?.answeredQuestion ??
-    savedAnswer?.answeredQuestion ??
-    sessionQuestion ??
-    'What was the most interesting part of your day?'
-  );
-}
 
 function StepPill({
   stepNumber,
@@ -77,6 +86,9 @@ export function CoachWorkspace({
   onTryAgain,
   onCancelRetry,
   onContinueFromRetry,
+  onContinueCoach,
+  isContinuingCoach,
+  continueError,
 }: Props) {
   const { transcript, currentRequestId } = model;
   const currentStep = deriveCoachStep({
@@ -89,7 +101,8 @@ export function CoachWorkspace({
       session?.retryEvidence.some((evidence) => evidence.turn_sequence === retryAnchor?.sequence) ??
       false,
   });
-  const currentQuestion = promptQuestion(retryAnchor, savedAnswer, session?.question);
+  const currentQuestion = coachPromptQuestion(retryAnchor, savedAnswer, session, isRetrying);
+  const promptSequence = practicePromptSequence(session);
 
   return (
     <div className="coach-workspace">
@@ -129,20 +142,25 @@ export function CoachWorkspace({
       {session === undefined && (
         <div className="coach-card">
           <div className="flex flex-col gap-2">
-            <p className="section-kicker">DAILY PRACTICE</p>
+            <p className="section-kicker">COACH PRACTICE</p>
             <h2 className="text-xl font-bold text-zinc-100">No conversation in progress</h2>
             <p className="m-0 text-sm leading-relaxed text-zinc-400">
-              Coach provides focused feedback and re-speaking for answers in your active
-              conversation. Start daily practice to begin.
+              Start a dedicated four answer Coach session. Your first answer is saved for review
+              before Eva asks the next question.
             </p>
           </div>
+          {model.practiceError && (
+            <p className="error-message" role="alert">
+              {model.practiceError}
+            </p>
+          )}
           <div className="pt-2">
             <Button
               className="primary-action"
               isDisabled={model.busy}
-              onPress={actions.startPractice}
+              onPress={() => actions.startPractice('coach')}
             >
-              Start daily practice
+              Start Coach practice
             </Button>
           </div>
         </div>
@@ -156,7 +174,7 @@ export function CoachWorkspace({
                 <p className="section-kicker">
                   {isRetrying
                     ? 'RE-SPEAKING PROMPT'
-                    : `COACH PROMPT · TURN ${savedAnswer?.sequence ?? session.turnCount + 1}`}
+                    : `COACH PROMPT · TURN ${promptSequence ?? session.turnCount + 1}`}
                 </p>
                 <h2 className="prompt-title">{currentQuestion}</h2>
               </div>
@@ -179,6 +197,12 @@ export function CoachWorkspace({
             </div>
           )}
 
+          <CurrentAnswerTranscript
+            isRetrying={isRetrying}
+            savedTranscript={savedAnswer?.originalTranscript}
+            transcript={transcript}
+          />
+
           {followUpPanel}
 
           <PracticeControls
@@ -189,11 +213,58 @@ export function CoachWorkspace({
             surface="coach"
           />
 
+          {session.mode === 'coach' && session.coachState?.is_pending && (
+            <div className="coach-card">
+              <p className="m-0 text-sm text-zinc-300">
+                Your answer is saved. Review the feedback, try again if you want, or continue when
+                you are ready. Coach comparisons use transcript wording only.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-3">
+                <Button
+                  className="primary-action"
+                  isDisabled={
+                    isContinuingCoach ||
+                    model.busy ||
+                    !model.canChangeSession ||
+                    model.practice.tag !== 'active'
+                  }
+                  onPress={onContinueCoach}
+                >
+                  {isContinuingCoach ? 'Getting next prompt…' : 'Continue to next prompt'}
+                </Button>
+                <Button
+                  className="secondary-action"
+                  isDisabled={
+                    isContinuingCoach ||
+                    model.busy ||
+                    !model.canChangeSession ||
+                    model.practice.tag !== 'active'
+                  }
+                  onPress={onContinueCoach}
+                >
+                  Skip review and continue
+                </Button>
+              </div>
+              {continueError && (
+                <p className="error-message" role="alert">
+                  {continueError}
+                </p>
+              )}
+            </div>
+          )}
+          {session.mode === 'coach' && session.turnCount >= session.targetTurns && (
+            <p className="coach-card m-0 text-sm text-zinc-300">
+              You reached the four answer Coach goal. You can finish now or keep practicing.
+            </p>
+          )}
+
           <PracticeFeedbackArea
             isCurrent={isCurrent}
             isRetrying={isRetrying}
             onRetryAnchor={onRetryAnchor}
             onTryAgain={onTryAgain}
+            onPersistFeedback={actions.saveFeedback}
+            onSpeakRewrite={speech.play}
             recallActive={false}
             requestId={currentRequestId}
             retryAnchor={retryAnchor}

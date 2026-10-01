@@ -94,8 +94,37 @@ fn retry_practice_turn(
 #[tauri::command]
 fn start_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
+    mode: Option<conversation::SessionMode>,
 ) -> Result<conversation::PracticeSession, providers::ProviderError> {
-    sessions.start()
+    sessions.start_session(mode)
+}
+
+#[tauri::command]
+fn save_coach_answer(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    transcript: String,
+) -> Result<conversation::SavedCoachState, providers::ProviderError> {
+    sessions.save_coach_answer(session_id, transcript)
+}
+
+#[tauri::command]
+async fn continue_coach_turn(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+) -> Result<providers::ConversationTurn, providers::ProviderError> {
+    let sessions = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sessions.continue_turn(session_id, sequence, providers::generate_conversation_turn)
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "The conversation task failed. Please retry.",
+        )
+    })?
 }
 
 #[tauri::command]
@@ -217,6 +246,8 @@ pub fn run() {
             retry_practice_turn,
             start_practice_session,
             send_practice_turn,
+            save_coach_answer,
+            continue_coach_turn,
             finish_practice_session,
             get_daily_recall_plan,
             submit_daily_recall,

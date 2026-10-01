@@ -2,6 +2,7 @@ import { Button } from '@heroui/react';
 import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
 import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
 import { type PracticeState, sessionDetails } from './lib/practiceState';
+import { practicePromptSequence } from './lib/practiceViewState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { ScaffoldingPanel } from './ScaffoldingPanel';
 import { SessionProgress } from './SessionProgress';
@@ -75,7 +76,8 @@ function promptIndex(
 ): string {
   if (isRetrying) return 'RETRY';
   if (recallActive) return 'RECALL';
-  return session ? `TURN ${session.turnCount + 1}` : '01 / 01';
+  const sequence = practicePromptSequence(session);
+  return sequence === undefined ? '01 / 01' : `TURN ${sequence}`;
 }
 
 function isConversationOpen(practice: PracticeState): boolean {
@@ -100,7 +102,7 @@ function SessionAction({
       <Button
         className="secondary-action"
         isDisabled={isDisabled}
-        onPress={startPractice}
+        onPress={() => startPractice()}
         variant="secondary"
       >
         {startSessionLabel(practice)}
@@ -292,7 +294,10 @@ export function PracticeControls({
         elapsedMs={elapsedMs}
         hasTranscript={Boolean(transcript)}
         isRetrying={isRetrying}
-        isWaiting={practice.tag === 'waiting'}
+        isWaiting={
+          practice.tag === 'waiting' ||
+          (surface === 'coach' && session?.coachState?.is_pending === true)
+        }
         onStartRecording={startRecording}
         onStopRecording={stopRecording}
         onTranscribe={transcribeRecording}

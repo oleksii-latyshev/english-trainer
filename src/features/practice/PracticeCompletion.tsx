@@ -12,7 +12,7 @@ export function PracticeCompletion({ summary, onDone }: Props) {
     <Card className="panel max-w-2xl" variant="secondary">
       <Card.Header>
         <div>
-          <p className="section-kicker">DAILY PRACTICE COMPLETE</p>
+          <p className="section-kicker">SESSION COMPLETE</p>
           <Card.Title>Session saved</Card.Title>
         </div>
       </Card.Header>

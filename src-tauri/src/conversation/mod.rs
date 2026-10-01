@@ -6,9 +6,13 @@ use crate::providers::{
 use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+pub(crate) mod coach;
 pub(crate) mod recall;
 mod rules;
 mod scaffold;
+pub use coach::{
+    session_conflict_error, wrong_mode_error, SavedCoachState, SessionMode, COACH_TARGET_TURNS,
+};
 pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
 use rules::{
     context_char_count, validate_transcript, DAILY_TARGET_TURNS, MAX_CONTEXT_CHARS,
@@ -19,10 +23,12 @@ pub use scaffold::{question_scaffold, QuestionScaffold};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PracticeSession {
     pub session_id: u64,
+    pub mode: SessionMode,
     pub opening_question: String,
     pub turn_count: usize,
     pub target_turns: usize,
     pub retry_evidence: Vec<AttemptComparison>,
+    pub coach_state: Option<SavedCoachState>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -72,9 +78,21 @@ pub struct StoredTurn {
 
 struct ActiveSession {
     id: u64,
+    mode: SessionMode,
     opening_question: String,
     turns: Vec<StoredTurn>,
     in_flight: bool,
+}
+
+impl ActiveSession {
+    fn has_pending_coach_answer(&self) -> bool {
+        self.mode == SessionMode::Coach
+            && self
+                .turns
+                .last()
+                .map(|turn| turn.assistant_reply.is_empty())
+                .unwrap_or(false)
+    }
 }
 
 impl SessionStore {
@@ -85,8 +103,10 @@ impl SessionStore {
 
     fn from_database(database: SessionDatabase) -> rusqlite::Result<Self> {
         let active = if let Some(stored) = database.active_session()? {
+            let mode = SessionMode::parse(&stored.mode);
             Some(ActiveSession {
                 id: stored.id,
+                mode,
                 opening_question: stored.opening_question,
                 turns: database.turns(stored.id)?,
                 in_flight: false,
@@ -99,46 +119,42 @@ impl SessionStore {
         })
     }
 
+    #[cfg(test)]
     pub fn start(&self) -> Result<PracticeSession, ProviderError> {
+        self.start_session(Some(SessionMode::Conversation))
+    }
+
+    pub fn start_session(
+        &self,
+        mode: Option<SessionMode>,
+    ) -> Result<PracticeSession, ProviderError> {
+        let requested_mode = mode.unwrap_or(SessionMode::Conversation);
         let mut state = self.lock();
         if let Some(active) = &state.active {
-            return Ok(PracticeSession {
-                session_id: active.id,
-                opening_question: active
-                    .turns
-                    .last()
-                    .map(|turn| turn.assistant_question.clone())
-                    .unwrap_or_else(|| active.opening_question.clone()),
-                turn_count: active.turns.len(),
-                target_turns: DAILY_TARGET_TURNS,
-                retry_evidence: state
-                    .database
-                    .comparisons(active.id)
-                    .map_err(database_error)?,
-            });
+            if active.mode != requested_mode {
+                return Err(session_conflict_error(active.mode));
+            }
+            return self.build_practice_session(&state, active);
         }
         let opening_question = OPENING_QUESTION.to_string();
         let session_id = state
             .database
-            .create_session(&opening_question)
+            .create_session_with_mode(requested_mode.as_str(), &opening_question)
             .map_err(database_error)?;
         if session_id > MAX_SAFE_SESSION_ID {
             let _ = state.database.finish_session(session_id);
             return Err(database_error_message());
         }
-        state.active = Some(ActiveSession {
+        let active = ActiveSession {
             id: session_id,
+            mode: requested_mode,
             opening_question: opening_question.clone(),
             turns: Vec::new(),
             in_flight: false,
-        });
-        Ok(PracticeSession {
-            session_id,
-            opening_question,
-            turn_count: 0,
-            target_turns: DAILY_TARGET_TURNS,
-            retry_evidence: Vec::new(),
-        })
+        };
+        let practice_session = self.build_practice_session(&state, &active)?;
+        state.active = Some(active);
+        Ok(practice_session)
     }
 
     pub fn get_active(&self) -> Result<Option<PracticeSession>, ProviderError> {
@@ -146,22 +162,7 @@ impl SessionStore {
         state
             .active
             .as_ref()
-            .map(|active| {
-                Ok(PracticeSession {
-                    session_id: active.id,
-                    opening_question: active
-                        .turns
-                        .last()
-                        .map(|turn| turn.assistant_question.clone())
-                        .unwrap_or_else(|| active.opening_question.clone()),
-                    turn_count: active.turns.len(),
-                    target_turns: DAILY_TARGET_TURNS,
-                    retry_evidence: state
-                        .database
-                        .comparisons(active.id)
-                        .map_err(database_error)?,
-                })
-            })
+            .map(|active| self.build_practice_session(&state, active))
             .transpose()
     }
 
@@ -182,6 +183,9 @@ impl SessionStore {
                 .as_ref()
                 .filter(|session| session.id == session_id)
                 .ok_or_else(invalid_session_error)?;
+            if session.mode != SessionMode::Conversation {
+                return Err(wrong_mode_error(SessionMode::Conversation));
+            }
             if session.in_flight {
                 return Err(busy_error());
             }
@@ -273,6 +277,10 @@ impl SessionStore {
         if session.in_flight {
             return Err(busy_error());
         }
+        let target_turns = match session.mode {
+            SessionMode::Conversation => DAILY_TARGET_TURNS,
+            SessionMode::Coach => COACH_TARGET_TURNS,
+        };
         let turn_count = session.turns.len();
         let retry_count = state
             .database
@@ -300,7 +308,7 @@ impl SessionStore {
             finished: true,
             turn_count,
             retry_count,
-            target_turns: DAILY_TARGET_TURNS,
+            target_turns,
             recall_count,
             recall_wording_count,
             improvement: evidence.improvement.map(|improvement| SessionImprovement {
@@ -324,6 +332,12 @@ impl SessionStore {
             .as_ref()
             .filter(|item| item.id == session_id)
             .ok_or_else(invalid_session_error)?;
+        if session.mode != SessionMode::Conversation {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Daily phrase recall is only available for conversation sessions.",
+            ));
+        }
         if session.turns.len() < DAILY_TARGET_TURNS {
             return Err(ProviderError::new(
                 ProviderErrorCode::InvalidRequest,
@@ -355,6 +369,12 @@ impl SessionStore {
             .as_ref()
             .filter(|item| item.id == session_id)
             .ok_or_else(invalid_session_error)?;
+        if session.mode != SessionMode::Conversation {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Daily phrase recall is only available for conversation sessions.",
+            ));
+        }
         if session.in_flight {
             return Err(busy_error());
         }
@@ -399,7 +419,9 @@ impl SessionStore {
             return Err(invalid_retry_error());
         }
         let mut state = self.lock();
-        active_session_mut(&mut state, session_id)?;
+        if active_session_mut(&mut state, session_id)?.in_flight {
+            return Err(busy_error());
+        }
         let original = state
             .database
             .turn(session_id, sequence)
@@ -425,7 +447,9 @@ impl SessionStore {
             return Err(invalid_retry_error());
         }
         let mut state = self.lock();
-        active_session_mut(&mut state, session_id)?;
+        if active_session_mut(&mut state, session_id)?.in_flight {
+            return Err(busy_error());
+        }
         let original = state
             .database
             .turn(session_id, sequence)

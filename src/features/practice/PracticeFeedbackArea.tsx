@@ -3,7 +3,6 @@ import { savePhraseCard } from '@/features/memory/memoryApi';
 import type { TurnFeedback } from '@/lib/types';
 import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
-import { savePracticeFeedback } from './sessionApi';
 
 type ReviewedAnswer = SentAnswer & { feedback: TurnFeedback };
 
@@ -18,6 +17,13 @@ type Props = {
   isCurrent: () => boolean;
   onRetryAnchor: (answer: ReviewedAnswer) => void;
   onTryAgain: () => void;
+  onPersistFeedback: (
+    sessionId: number,
+    sequence: number,
+    transcript: string,
+    feedback: TurnFeedback,
+  ) => Promise<void>;
+  onSpeakRewrite: (text: string) => void;
 };
 
 function feedbackQuestion(
@@ -44,6 +50,8 @@ export function PracticeFeedbackArea({
   isCurrent,
   onRetryAnchor,
   onTryAgain,
+  onPersistFeedback,
+  onSpeakRewrite,
 }: Props) {
   if ((!transcript && !retryAnchor && !savedAnswer) || recallActive) return null;
   const isAnswerSent = session === undefined || savedAnswer !== null || retryAnchor !== null;
@@ -60,11 +68,12 @@ export function PracticeFeedbackArea({
         if (savedAnswer) onRetryAnchor({ ...savedAnswer, feedback });
       }}
       onSavePhrase={savePhraseCard}
+      onSpeakRewrite={onSpeakRewrite}
       onTryAgain={retryAnchor ? onTryAgain : undefined}
       persistReviewed={
         savedAnswer
           ? (_answer, feedback) =>
-              savePracticeFeedback(
+              onPersistFeedback(
                 savedAnswer.sessionId,
                 savedAnswer.sequence,
                 savedAnswer.originalTranscript,

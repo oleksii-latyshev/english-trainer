@@ -21,6 +21,7 @@ type Props = {
   ) => Promise<unknown>;
   onReviewed?: (feedback: TurnFeedback, question: string) => void;
   onTryAgain?: () => void;
+  onSpeakRewrite?: (text: string) => void;
 };
 
 type FeedbackState =
@@ -67,6 +68,7 @@ function FeedbackReadyContent({
   phraseSaveError,
   persistError,
   onRetryPersist,
+  onSpeakRewrite,
 }: {
   feedback: TurnFeedback;
   onTryAgain?: () => void;
@@ -76,6 +78,7 @@ function FeedbackReadyContent({
   phraseSaveError: string | null;
   persistError: string | null;
   onRetryPersist: () => void;
+  onSpeakRewrite?: (text: string) => void;
 }) {
   const focus = feedback.focus_feedback[0];
   return (
@@ -103,6 +106,14 @@ function FeedbackReadyContent({
       <div className="b2-rewrite-card">
         <p className="section-kicker !text-purple-300">A STRONGER B2 VERSION</p>
         <blockquote className="b2-quote">“{feedback.b2_rewrite}”</blockquote>
+        {onSpeakRewrite && (
+          <Button
+            className="secondary-action mt-2"
+            onPress={() => onSpeakRewrite(feedback.b2_rewrite)}
+          >
+            Hear stronger version
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -157,6 +168,7 @@ export function FeedbackPanel({
   onSavePhrase,
   onReviewed,
   onTryAgain,
+  onSpeakRewrite,
 }: Props) {
   const [answerQuestion] = useState(question);
   const [state, setState] = useState<FeedbackState>(
@@ -276,6 +288,7 @@ export function FeedbackPanel({
             feedback={state.feedback}
             isFeedbackSaved={isFeedbackSaved}
             onRetryPersist={() => void retryPersist()}
+            onSpeakRewrite={onSpeakRewrite}
             onSavePhrase={() => void handleSavePhrase()}
             onTryAgain={onTryAgain}
             persistError={persistError}

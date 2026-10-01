@@ -320,7 +320,7 @@ fn summary_evidence_database_failure_keeps_the_session_active() {
         .unwrap();
     rusqlite::Connection::open(&path)
         .unwrap()
-        .execute("DROP TABLE turn_feedback", [])
+        .execute("DROP TABLE phrase_cards", [])
         .unwrap();
 
     let error = store.finish(session.session_id).unwrap_err();
@@ -331,6 +331,90 @@ fn summary_evidence_database_failure_keeps_the_session_active() {
     );
     drop(store);
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn failed_coach_continue_database_update_clears_in_flight_and_can_retry() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+    store
+        .save_coach_answer(session.session_id, "Saved answer".into())
+        .unwrap();
+    rusqlite::Connection::open(&path)
+        .unwrap()
+        .execute("DROP TABLE turns", [])
+        .unwrap();
+
+    let error = store
+        .continue_turn(session.session_id, 1, |_| Ok(turn("Reply", "Next?")))
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::DatabaseError);
+    assert_eq!(
+        store
+            .save_coach_answer(session.session_id, "Duplicate".into())
+            .unwrap_err()
+            .code,
+        ProviderErrorCode::InvalidRequest
+    );
+
+    rusqlite::Connection::open(&path).unwrap().execute(
+        "CREATE TABLE turns (session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, user_transcript TEXT NOT NULL, assistant_reply TEXT NOT NULL, assistant_question TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY(session_id, sequence))",
+        [],
+    ).unwrap();
+    rusqlite::Connection::open(&path).unwrap().execute(
+        "INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at) VALUES (?1, 1, 'Saved answer', '', '', 0)",
+        [session.session_id as i64],
+    ).unwrap();
+
+    assert_eq!(
+        store
+            .continue_turn(session.session_id, 1, |_| Ok(turn("Reply", "Next?")))
+            .unwrap()
+            .question
+            .as_deref(),
+        Some("Next?")
+    );
+    drop(store);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn coach_mutations_are_rejected_while_continue_provider_is_in_flight() {
+    let store = SessionStore::default();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+    store
+        .save_coach_answer(session.session_id, "Saved answer".into())
+        .unwrap();
+    let worker_store = store.clone();
+    let (started_tx, started_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let worker = thread::spawn(move || {
+        worker_store.continue_turn(session.session_id, 1, |_| {
+            started_tx.send(()).unwrap();
+            release_rx.recv().unwrap();
+            Ok(turn("Reply", "Next?"))
+        })
+    });
+    started_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert_eq!(
+        store
+            .save_coach_answer(session.session_id, "Duplicate".into())
+            .unwrap_err()
+            .code,
+        ProviderErrorCode::Busy
+    );
+    assert!(
+        store
+            .get_active()
+            .unwrap()
+            .unwrap()
+            .coach_state
+            .unwrap()
+            .is_pending
+    );
+    release_tx.send(()).unwrap();
+    worker.join().unwrap().unwrap();
 }
 
 #[test]
@@ -835,4 +919,280 @@ fn empty_focus_feedback_preserves_independent_flow() {
 
     let memory_after = store.get_learning_memory().unwrap();
     assert_eq!(memory_after.phrase_cards.len(), 1);
+}
+
+#[test]
+fn coach_session_lifecycle_target_turns_answer_save_and_continue() {
+    let store = SessionStore::default();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+    assert_eq!(session.mode, SessionMode::Coach);
+    assert_eq!(session.target_turns, COACH_TARGET_TURNS);
+    assert_eq!(session.turn_count, 0);
+    assert!(session.coach_state.is_none());
+
+    // Save first answer locally without provider
+    let saved = store
+        .save_coach_answer(session.session_id, "I worked on the migration.".into())
+        .unwrap();
+    assert_eq!(saved.sequence, 1);
+    assert_eq!(saved.answered_question, session.opening_question);
+    assert_eq!(saved.original_transcript, "I worked on the migration.");
+    assert!(saved.is_pending);
+
+    // Session reflects pending coach answer, question unchanged, turn count 1
+    let active = store.get_active().unwrap().unwrap();
+    assert_eq!(active.turn_count, 1);
+    assert_eq!(active.opening_question, session.opening_question);
+    let coach_state = active.coach_state.unwrap();
+    assert_eq!(coach_state.sequence, 1);
+    assert!(coach_state.is_pending);
+
+    // Continue explicitly generates follow up and updates the turn in place
+    let follow_up = store
+        .continue_turn(session.session_id, 1, |context| {
+            assert_eq!(context.opening_question, session.opening_question);
+            assert_eq!(context.latest_transcript, "I worked on the migration.");
+            assert!(context.recent_turns.is_empty());
+            Ok(turn("Great work.", "What was the main trade-off?"))
+        })
+        .unwrap();
+    assert_eq!(
+        follow_up.question.as_deref(),
+        Some("What was the main trade-off?")
+    );
+
+    // After continue, turn count remains 1, new question is active, no pending answer
+    let after_continue = store.get_active().unwrap().unwrap();
+    assert_eq!(after_continue.turn_count, 1);
+    assert_eq!(
+        after_continue.opening_question,
+        "What was the main trade-off?"
+    );
+    let state_after = after_continue.coach_state.unwrap();
+    assert_eq!(state_after.sequence, 1);
+    assert!(!state_after.is_pending);
+}
+
+#[test]
+fn persisted_coach_mode_and_pending_state_on_reopen() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+    store
+        .save_coach_answer(session.session_id, "I work in there".into())
+        .unwrap();
+    store
+        .save_feedback(session.session_id, 1, "I work in there", &sample_feedback())
+        .unwrap();
+    let comparison = store
+        .retry_turn(session.session_id, 1, "I work there now".into())
+        .unwrap();
+    assert_eq!(
+        comparison.target_evidence,
+        crate::providers::TargetEvidence::NewlyObservedInRetry
+    );
+    drop(store);
+
+    let reopened = SessionStore::open(&path).unwrap();
+    let resumed = reopened.get_active().unwrap().unwrap();
+    assert_eq!(resumed.mode, SessionMode::Coach);
+    assert_eq!(resumed.target_turns, COACH_TARGET_TURNS);
+    assert_eq!(resumed.turn_count, 1);
+    assert_eq!(resumed.retry_evidence.len(), 1);
+    let coach = resumed.coach_state.unwrap();
+    assert_eq!(coach.sequence, 1);
+    assert!(coach.is_pending);
+    assert_eq!(coach.original_transcript, "I work in there");
+    assert!(coach.feedback.is_some());
+
+    let finished = reopened.finish(session.session_id).unwrap();
+    assert_eq!(finished.target_turns, COACH_TARGET_TURNS);
+    assert_eq!(finished.turn_count, 1);
+    assert_eq!(finished.retry_count, 1);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn legacy_conversation_session_resumes_with_mode_conversation() {
+    let path = temporary_database_path();
+    let mut db = SessionDatabase::open(&path).unwrap();
+    let sid = db.create_session("Legacy question?").unwrap();
+    drop(db);
+
+    let store = SessionStore::open(&path).unwrap();
+    let resumed = store.get_active().unwrap().unwrap();
+    assert_eq!(resumed.session_id, sid);
+    assert_eq!(resumed.mode, SessionMode::Conversation);
+    assert_eq!(resumed.target_turns, DAILY_TARGET_TURNS);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn conflicting_mode_start_rejected_with_typed_error() {
+    let store = SessionStore::default();
+    let conv = store
+        .start_session(Some(SessionMode::Conversation))
+        .unwrap();
+    assert_eq!(conv.mode, SessionMode::Conversation);
+
+    // Requesting coach while conversation is active is rejected with typed error
+    let err = store.start_session(Some(SessionMode::Coach)).unwrap_err();
+    assert_eq!(err.code, ProviderErrorCode::InvalidRequest);
+    assert!(err.message.contains("conversation"));
+    assert!(err.message.contains("Finish the existing session first"));
+
+    // Requesting conversation again returns the active session
+    let resumed = store
+        .start_session(Some(SessionMode::Conversation))
+        .unwrap();
+    assert_eq!(resumed.session_id, conv.session_id);
+
+    // Finish conversation session
+    store.finish(conv.session_id).unwrap();
+
+    // Now coach mode can be started
+    let coach = store.start_session(Some(SessionMode::Coach)).unwrap();
+    assert_eq!(coach.mode, SessionMode::Coach);
+
+    // Requesting conversation while coach is active is rejected
+    let err2 = store
+        .start_session(Some(SessionMode::Conversation))
+        .unwrap_err();
+    assert_eq!(err2.code, ProviderErrorCode::InvalidRequest);
+    assert!(err2.message.contains("coach"));
+}
+
+#[test]
+fn failed_continue_preserves_pending_review_and_retry_and_can_be_retried() {
+    let store = SessionStore::default();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+    store
+        .save_coach_answer(session.session_id, "I work in there".into())
+        .unwrap();
+    store
+        .save_feedback(session.session_id, 1, "I work in there", &sample_feedback())
+        .unwrap();
+    store
+        .retry_turn(session.session_id, 1, "I work there now".into())
+        .unwrap();
+
+    // Continue provider fails
+    let err = store
+        .continue_turn(session.session_id, 1, |_| {
+            Err(ProviderError::new(ProviderErrorCode::Timeout, "Timeout"))
+        })
+        .unwrap_err();
+    assert_eq!(err.code, ProviderErrorCode::Timeout);
+
+    // Pending answer and all feedback/retry evidence remain completely available
+    let active = store.get_active().unwrap().unwrap();
+    assert_eq!(active.turn_count, 1);
+    assert_eq!(active.retry_evidence.len(), 1);
+    let coach = active.coach_state.unwrap();
+    assert!(coach.is_pending);
+    assert!(coach.feedback.is_some());
+
+    // Retrying continue succeeds and updates the turn without duplicating
+    let ok = store
+        .continue_turn(session.session_id, 1, |_| {
+            Ok(turn("Follow up response.", "Next question?"))
+        })
+        .unwrap();
+    assert_eq!(ok.spoken_reply, "Follow up response.");
+
+    let active_after = store.get_active().unwrap().unwrap();
+    assert_eq!(active_after.turn_count, 1);
+    assert_eq!(active_after.opening_question, "Next question?");
+    assert!(!active_after.coach_state.unwrap().is_pending);
+}
+
+#[test]
+fn mode_specific_target_and_recall_gates() {
+    let store = SessionStore::default();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+
+    for i in 1..=COACH_TARGET_TURNS {
+        store
+            .save_coach_answer(session.session_id, format!("Answer {i}"))
+            .unwrap();
+        store
+            .continue_turn(session.session_id, i, |_| {
+                Ok(turn("Reply.", &format!("Question {}?", i + 1)))
+            })
+            .unwrap();
+    }
+
+    // Daily recall is gated to conversation mode only
+    let recall_err = store.daily_recall_plan(session.session_id).unwrap_err();
+    assert_eq!(recall_err.code, ProviderErrorCode::InvalidRequest);
+    assert!(recall_err.message.contains("conversation"));
+
+    let submit_err = store
+        .submit_daily_recall(session.session_id, 1, "transcript".into())
+        .unwrap_err();
+    assert_eq!(submit_err.code, ProviderErrorCode::InvalidRequest);
+
+    // Finished session uses coach target of 4
+    let finished = store.finish(session.session_id).unwrap();
+    assert_eq!(finished.target_turns, COACH_TARGET_TURNS);
+    assert_eq!(finished.turn_count, COACH_TARGET_TURNS);
+    assert_eq!(finished.recall_count, 0);
+}
+
+#[test]
+fn typed_ipc_guards_and_state_transitions() {
+    let store = SessionStore::default();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+
+    // Normal send_practice_turn is rejected on coach session
+    let send_err = store
+        .send_turn(session.session_id, "Answer".into(), |_| unreachable!())
+        .unwrap_err();
+    assert_eq!(send_err.code, ProviderErrorCode::InvalidRequest);
+
+    // Save first answer
+    store
+        .save_coach_answer(session.session_id, "Answer 1".into())
+        .unwrap();
+
+    // Duplicate save while awaiting continue is rejected
+    let dup_err = store
+        .save_coach_answer(session.session_id, "Duplicate answer".into())
+        .unwrap_err();
+    assert_eq!(dup_err.code, ProviderErrorCode::InvalidRequest);
+
+    // Continue with stale sequence is rejected
+    let stale_err = store
+        .continue_turn(session.session_id, 999, |_| unreachable!())
+        .unwrap_err();
+    assert_eq!(stale_err.code, ProviderErrorCode::InvalidRequest);
+
+    // Continue succeeds
+    store
+        .continue_turn(session.session_id, 1, |_| Ok(turn("Reply.", "Next?")))
+        .unwrap();
+
+    // Continue when no answer is pending is rejected
+    let no_pending_err = store
+        .continue_turn(session.session_id, 1, |_| unreachable!())
+        .unwrap_err();
+    assert_eq!(no_pending_err.code, ProviderErrorCode::InvalidRequest);
+
+    // Finish session and test conversation session guards
+    store.finish(session.session_id).unwrap();
+    let conv = store
+        .start_session(Some(SessionMode::Conversation))
+        .unwrap();
+
+    // Coach save on conversation session is rejected
+    let coach_err = store
+        .save_coach_answer(conv.session_id, "Answer".into())
+        .unwrap_err();
+    assert_eq!(coach_err.code, ProviderErrorCode::InvalidRequest);
+
+    // Coach continue on conversation session is rejected
+    let coach_cont_err = store
+        .continue_turn(conv.session_id, 1, |_| unreachable!())
+        .unwrap_err();
+    assert_eq!(coach_cont_err.code, ProviderErrorCode::InvalidRequest);
 }

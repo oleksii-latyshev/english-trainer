@@ -18,6 +18,14 @@ function practiceGuidance(turnCount: number, targetTurns: number, hasRetried: bo
   return guidance;
 }
 
+function coachGuidance(turnCount: number, targetTurns: number): string {
+  if (turnCount >= targetTurns)
+    return 'Four answer Coach goal reached. Finish now or continue practicing.';
+  if (turnCount > 0)
+    return `Coach: ${targetTurns - turnCount} answers remain. Review and Continue are optional.`;
+  return 'Answer the Coach prompt, review focused feedback, then continue when you are ready.';
+}
+
 function practiceStep(turnCount: number, targetTurns: number, recallActive: boolean): number {
   if (turnCount === 0) return 1;
   if (turnCount < targetTurns) return 2;
@@ -37,16 +45,23 @@ function stepLabels(session: SessionDetails, recallActive: boolean, recallComple
 export function SessionProgress({ session, recallActive, recallCompletedCount }: Props) {
   const { turnCount, targetTurns } = session;
   const hasRetried = session.retryEvidence.length > 0;
-  const currentStep = practiceStep(turnCount, targetTurns, recallActive);
-  const labels = stepLabels(session, recallActive, recallCompletedCount);
+  const isCoach = session.mode === 'coach';
+  const currentStep = isCoach
+    ? Math.min(turnCount + 1, 3)
+    : practiceStep(turnCount, targetTurns, recallActive);
+  const labels = isCoach
+    ? ['Answer', 'Review feedback', 'Continue or finish']
+    : stepLabels(session, recallActive, recallCompletedCount);
   const guidance = recallActive
     ? 'Speak the phrase from the cue, then save the local transcript. Leave recall to finish practice.'
-    : practiceGuidance(turnCount, targetTurns, hasRetried);
+    : isCoach
+      ? coachGuidance(turnCount, targetTurns)
+      : practiceGuidance(turnCount, targetTurns, hasRetried);
   return (
     <div className="rounded-xl border border-white/8 bg-black/25 p-4 flex flex-col gap-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="m-0 text-xs font-semibold uppercase tracking-wider text-purple-300">
-          Step {currentStep} of 4 · Daily Practice
+          Step {currentStep} of {isCoach ? 3 : 4} · {isCoach ? 'Coach Practice' : 'Daily Practice'}
         </p>
         <span className="text-xs font-medium text-zinc-400">
           {turnCount} {turnCount === 1 ? 'answer' : 'answers'} · goal {targetTurns}

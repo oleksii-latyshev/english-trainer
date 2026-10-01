@@ -492,3 +492,42 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
     let bounded = db.due_learning_targets(second).unwrap();
     assert_eq!(bounded[1].cue.chars().count(), 160);
 }
+
+#[test]
+fn session_mode_persists_and_turn_can_be_updated_in_place() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session_id = db
+        .create_session_with_mode("coach", "What did you build?")
+        .unwrap();
+    let active = db.active_session().unwrap().unwrap();
+    assert_eq!(active.id, session_id);
+    assert_eq!(active.mode, "coach");
+    assert_eq!(active.opening_question, "What did you build?");
+
+    let initial_turn = StoredTurn {
+        learner: "I built a service.".into(),
+        assistant_reply: "".into(),
+        assistant_question: "".into(),
+    };
+    db.save_turn(session_id, 1, &initial_turn).unwrap();
+    let loaded = db.turn(session_id, 1).unwrap().unwrap();
+    assert_eq!(loaded.learner, "I built a service.");
+    assert_eq!(loaded.assistant_reply, "");
+
+    let updated = db
+        .update_turn(
+            session_id,
+            1,
+            "Sounds interesting.",
+            "What architecture did you use?",
+        )
+        .unwrap();
+    assert!(updated);
+    let after_update = db.turn(session_id, 1).unwrap().unwrap();
+    assert_eq!(after_update.learner, "I built a service.");
+    assert_eq!(after_update.assistant_reply, "Sounds interesting.");
+    assert_eq!(
+        after_update.assistant_question,
+        "What architecture did you use?"
+    );
+}

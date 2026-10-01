@@ -118,13 +118,14 @@ export function isTurnFeedback(value: unknown): value is TurnFeedback {
   );
 }
 
-export type PracticeSession = {
-  session_id: number;
-  opening_question: string;
-  turn_count: number;
-  target_turns: number;
-  retry_evidence: AttemptComparison[];
-};
+export {
+  isPracticeSession,
+  isSavedCoachState,
+  isSessionMode,
+  type PracticeSession,
+  type SavedCoachState,
+  type SessionMode,
+} from './practiceSessionTypes';
 
 export type QuestionScaffold = {
   sentence_starters: string[];
@@ -160,30 +161,6 @@ export {
   type SpokenRecallResult,
 } from './dailyRecallTypes';
 export { type FinishedPracticeSession, isFinishedPracticeSession } from './finishedPracticeSession';
-
-export function isPracticeSession(value: unknown): value is PracticeSession {
-  if (typeof value !== 'object' || value === null) return false;
-  return (
-    'session_id' in value &&
-    typeof value.session_id === 'number' &&
-    Number.isSafeInteger(value.session_id) &&
-    value.session_id > 0 &&
-    'opening_question' in value &&
-    typeof value.opening_question === 'string' &&
-    value.opening_question.trim().length > 0 &&
-    'turn_count' in value &&
-    typeof value.turn_count === 'number' &&
-    Number.isSafeInteger(value.turn_count) &&
-    value.turn_count >= 0 &&
-    'target_turns' in value &&
-    typeof value.target_turns === 'number' &&
-    Number.isSafeInteger(value.target_turns) &&
-    value.target_turns > 0 &&
-    'retry_evidence' in value &&
-    Array.isArray(value.retry_evidence) &&
-    value.retry_evidence.every(isAttemptComparison)
-  );
-}
 
 export type ProviderErrorCode =
   | 'unavailable'

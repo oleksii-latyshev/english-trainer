@@ -39,13 +39,14 @@ impl SessionDatabase {
     pub fn active_session(&self) -> rusqlite::Result<Option<StoredSession>> {
         self.connection
             .query_row(
-                "SELECT id, opening_question FROM sessions WHERE ended_at IS NULL LIMIT 1",
+                "SELECT id, mode, opening_question FROM sessions WHERE ended_at IS NULL LIMIT 1",
                 [],
                 |row| {
                     Ok(StoredSession {
                         id: u64::try_from(row.get::<_, i64>(0)?)
                             .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, -1))?,
-                        opening_question: row.get(1)?,
+                        mode: row.get(1)?,
+                        opening_question: row.get(2)?,
                     })
                 },
             )
@@ -70,10 +71,19 @@ impl SessionDatabase {
         rows.collect()
     }
 
+    #[cfg(test)]
     pub fn create_session(&mut self, opening_question: &str) -> rusqlite::Result<u64> {
+        self.create_session_with_mode("conversation", opening_question)
+    }
+
+    pub fn create_session_with_mode(
+        &mut self,
+        mode: &str,
+        opening_question: &str,
+    ) -> rusqlite::Result<u64> {
         self.connection.execute(
-            "INSERT INTO sessions (mode, scenario, started_at, opening_question) VALUES ('conversation', 'free_conversation', ?1, ?2)",
-            params![now_ms(), opening_question],
+            "INSERT INTO sessions (mode, scenario, started_at, opening_question) VALUES (?1, 'free_conversation', ?2, ?3)",
+            params![mode, now_ms(), opening_question],
         )?;
         Ok(self.connection.last_insert_rowid() as u64)
     }
@@ -90,6 +100,25 @@ impl SessionDatabase {
             params![i64::try_from(session_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?, i64::try_from(sequence).unwrap_or(i64::MAX), turn.learner, turn.assistant_reply, turn.assistant_question, now_ms()],
         )?;
         transaction.commit()
+    }
+
+    pub fn update_turn(
+        &mut self,
+        session_id: u64,
+        sequence: usize,
+        assistant_reply: &str,
+        assistant_question: &str,
+    ) -> rusqlite::Result<bool> {
+        let count = self.connection.execute(
+            "UPDATE turns SET assistant_reply = ?1, assistant_question = ?2 WHERE session_id = ?3 AND sequence = ?4",
+            params![
+                assistant_reply,
+                assistant_question,
+                to_sql_id(session_id)?,
+                to_sql_sequence(sequence)?,
+            ],
+        )?;
+        Ok(count == 1)
     }
 
     pub fn turn(&self, session_id: u64, sequence: usize) -> rusqlite::Result<Option<StoredTurn>> {
@@ -229,6 +258,7 @@ impl SessionDatabase {
 #[derive(Debug)]
 pub struct StoredSession {
     pub id: u64,
+    pub mode: String,
     pub opening_question: String,
 }
 
