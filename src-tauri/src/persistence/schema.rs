@@ -126,6 +126,38 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 PRIMARY KEY(session_id, phrase_id)
             );",
         )?;
+        transaction.pragma_update(None, "user_version", 4)?;
+        transaction.commit()?;
+    }
+    if version < 5 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE memory_review_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                started_at INTEGER NOT NULL,
+                completed_at INTEGER
+            );
+            CREATE UNIQUE INDEX one_active_memory_review_run ON memory_review_runs ((1)) WHERE completed_at IS NULL;
+            CREATE TABLE memory_review_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL REFERENCES memory_review_runs(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                item_type TEXT NOT NULL,
+                item_id INTEGER NOT NULL,
+                cue TEXT NOT NULL,
+                target TEXT NOT NULL,
+                transcript TEXT,
+                wording_observed INTEGER,
+                saved_response TEXT,
+                next_review_at INTEGER,
+                interval_days INTEGER,
+                status TEXT,
+                saved_at INTEGER,
+                UNIQUE(run_id, position),
+                UNIQUE(run_id, item_type, item_id)
+            );
+            CREATE INDEX idx_memory_review_items_run ON memory_review_items(run_id);",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

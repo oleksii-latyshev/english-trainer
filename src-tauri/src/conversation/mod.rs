@@ -7,6 +7,7 @@ use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 pub(crate) mod coach;
+pub(crate) mod memory_recall;
 pub(crate) mod recall;
 mod rules;
 mod scaffold;
@@ -581,7 +582,7 @@ impl Default for SessionStore {
     }
 }
 
-fn database_error(_: rusqlite::Error) -> ProviderError {
+pub(crate) fn database_error(_: rusqlite::Error) -> ProviderError {
     database_error_message()
 }
 

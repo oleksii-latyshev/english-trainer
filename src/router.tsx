@@ -170,8 +170,16 @@ export const memoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory',
   component: function MemoryComponent() {
+    const { capture, speech, practice } = useTrainer();
     const navigate = memoryRoute.useNavigate();
-    return <LearningMemoryPanel onClose={() => void navigate({ to: '/' })} />;
+    return (
+      <LearningMemoryPanel
+        capture={capture}
+        onClose={() => void navigate({ to: '/' })}
+        practiceBusy={practice.isBusy}
+        speech={speech}
+      />
+    );
   },
 });
 

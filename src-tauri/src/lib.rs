@@ -221,6 +221,39 @@ fn submit_learning_review(
     sessions.submit_review(item_type, item_id, response)
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn start_memory_review(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<Option<learning::MemoryReviewRun>, providers::ProviderError> {
+    sessions.start_memory_review()
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn get_memory_review(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<Option<learning::MemoryReviewRun>, providers::ProviderError> {
+    sessions.get_memory_review()
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn submit_memory_recall(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    run_id: u64,
+    item_type: learning::LearningItemType,
+    item_id: u64,
+    transcript: String,
+) -> Result<learning::MemoryRecallResult, providers::ProviderError> {
+    sessions.submit_memory_recall(run_id, item_type, item_id, transcript)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn finish_memory_review(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    run_id: u64,
+) -> Result<bool, providers::ProviderError> {
+    sessions.finish_memory_review(run_id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -256,6 +289,10 @@ pub fn run() {
             save_phrase_card,
             get_learning_memory,
             submit_learning_review,
+            start_memory_review,
+            get_memory_review,
+            submit_memory_recall,
+            finish_memory_review,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

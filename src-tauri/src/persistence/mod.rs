@@ -10,11 +10,12 @@ mod daily_recall;
 mod learning_reviews;
 mod learning_targets;
 mod learning_writes;
+mod memory_recall;
 mod schema;
 mod session_summary;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 4;
+const SCHEMA_VERSION: i64 = 5;
 
 pub struct SessionDatabase {
     connection: Connection,
@@ -268,6 +269,18 @@ fn to_sql_id(value: u64) -> rusqlite::Result<i64> {
     i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))
 }
 
+fn to_u64_id(value: i64) -> rusqlite::Result<u64> {
+    u64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, -1))
+}
+
+fn to_safe_u64_id(value: i64) -> rusqlite::Result<u64> {
+    let id = to_u64_id(value)?;
+    if id == 0 || id > 9_007_199_254_740_991 {
+        return Err(rusqlite::Error::IntegralValueOutOfRange(0, value));
+    }
+    Ok(id)
+}
+
 fn to_sql_sequence(value: usize) -> rusqlite::Result<i64> {
     i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))
 }
@@ -282,3 +295,7 @@ fn now_ms() -> i64 {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "memory_recall_tests.rs"]
+mod memory_recall_tests;
