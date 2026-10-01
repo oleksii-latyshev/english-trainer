@@ -45,7 +45,7 @@ export function LearningMemoryPanel({ onClose, capture, speech, practiceBusy }: 
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await getLearningMemory();
+      const data = await getLearningMemory(true);
       if (mountedRef.current && requestId === loadCheckRef.current) setView(data);
     } catch {
       if (mountedRef.current && requestId === loadCheckRef.current) {

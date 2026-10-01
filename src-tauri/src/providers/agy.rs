@@ -1,8 +1,12 @@
 mod conversation;
 mod feedback;
 mod runner;
+mod usage;
 
-use super::{ConversationContext, ConversationTurn, FeedbackRequest, ProviderError, TurnFeedback};
+use super::{
+    ConversationContext, ConversationTurn, FeedbackRequest, ProviderError, TurnFeedback,
+    UsageReviewRequest, UsageReviewResponse,
+};
 use std::path::PathBuf;
 
 pub(super) struct AgyEngine {
@@ -19,4 +23,10 @@ pub(super) fn evaluate_turn_feedback(
     request: &FeedbackRequest,
 ) -> Result<TurnFeedback, ProviderError> {
     feedback::evaluate_turn_feedback(request)
+}
+
+pub(super) fn review_turn_usage(
+    request: &UsageReviewRequest,
+) -> Result<UsageReviewResponse, ProviderError> {
+    usage::review_turn_usage(request)
 }

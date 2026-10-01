@@ -1,5 +1,6 @@
 import { Button } from '@heroui/react';
 import type { ReactNode } from 'react';
+import { MemoryUsageReview } from '@/features/memory/components/MemoryUsageReview';
 import { SpeechPanel } from '@/features/speech/SpeechPanel';
 import { TimingPanel } from '@/features/speech/TimingPanel';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
@@ -91,6 +92,16 @@ export function PracticeConversationWorkspace({
           )}
           <TranscriptPanel transcript={model.transcript} />
           {activeScreen === 'conversation' ? followUpPanel : null}
+          {session?.mode === 'conversation' &&
+            savedAnswer &&
+            savedAnswer.sequence <= 2 &&
+            !isRetrying &&
+            !recall.active && (
+              <MemoryUsageReview
+                sessionId={savedAnswer.sessionId}
+                sequence={savedAnswer.sequence}
+              />
+            )}
           {(savedAnswer || model.transcript) && (
             <div className="coach-gateway-banner">
               <div>

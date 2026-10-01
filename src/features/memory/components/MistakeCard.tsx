@@ -2,6 +2,7 @@ import { Button, Card, Chip } from '@heroui/react';
 import { useState } from 'react';
 import type { MistakeRecord, ReviewResponse } from '@/lib/learningTypes';
 import { formatDueText, formatStatusLabel } from '../lib/memoryState';
+import { UsageEvidenceSection } from './UsageEvidenceSection';
 
 type Props = {
   mistake: MistakeRecord;
@@ -96,6 +97,8 @@ export function MistakeCard({ mistake, onReview }: Props) {
           {reviewError}
         </p>
       )}
+
+      <UsageEvidenceSection itemType="mistake" itemId={mistake.id} />
     </Card>
   );
 }

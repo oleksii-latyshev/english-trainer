@@ -254,6 +254,50 @@ fn finish_memory_review(
     sessions.finish_memory_review(run_id)
 }
 
+#[tauri::command(rename_all = "snake_case")]
+async fn review_practice_memory_usage(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+) -> Result<learning::TurnUsageAssessment, providers::ProviderError> {
+    let sessions = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sessions.review_memory_usage(session_id, sequence, providers::review_turn_usage)
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "The usage review task failed. Please retry.",
+        )
+    })?
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn get_practice_memory_usage(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+) -> Result<Option<learning::TurnUsageAssessment>, providers::ProviderError> {
+    sessions.get_practice_memory_usage(session_id, sequence)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn get_memory_usage_evidence(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    item_type: learning::LearningItemType,
+    item_id: u64,
+) -> Result<learning::MemoryUsageEvidence, providers::ProviderError> {
+    sessions.get_memory_usage_evidence(item_type, item_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn view_learning_memory(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<learning::LearningMemoryView, providers::ProviderError> {
+    sessions.view_learning_memory()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -288,11 +332,15 @@ pub fn run() {
             get_question_scaffold,
             save_phrase_card,
             get_learning_memory,
+            view_learning_memory,
             submit_learning_review,
             start_memory_review,
             get_memory_review,
             submit_memory_recall,
             finish_memory_review,
+            review_practice_memory_usage,
+            get_practice_memory_usage,
+            get_memory_usage_evidence,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

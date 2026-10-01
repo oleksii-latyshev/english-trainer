@@ -11,6 +11,8 @@ pub(crate) mod memory_recall;
 pub(crate) mod recall;
 mod rules;
 mod scaffold;
+pub(crate) mod usage;
+mod usage_support;
 pub use coach::{
     session_conflict_error, wrong_mode_error, SavedCoachState, SessionMode, COACH_TARGET_TURNS,
 };
@@ -63,6 +65,7 @@ pub struct SessionFocus {
 #[derive(Clone)]
 pub struct SessionStore {
     state: Arc<Mutex<State>>,
+    pub(crate) usage_in_flight: Arc<usage_support::UsageInFlightTracker>,
 }
 
 struct State {
@@ -117,6 +120,7 @@ impl SessionStore {
         };
         Ok(Self {
             state: Arc::new(Mutex::new(State { database, active })),
+            usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
         })
     }
 

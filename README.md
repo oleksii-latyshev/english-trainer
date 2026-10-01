@@ -118,6 +118,18 @@ bun run dev
 only when you want to inspect the frontend in a browser; native Tauri commands are
 available in the desktop app.
 
+### Checks before committing
+
+`bun install` installs the Lefthook pre-commit hook. It checks the whole frontend
+with Biome, TypeScript, and unit tests, and runs Rust formatting, Clippy with
+warnings treated as errors, and Rust tests. These match the CI checks. The hook
+does not auto-edit or stage files; use `bun run check:fix` to fix formatting.
+
+Run `bunx lefthook run pre-commit --force` to check manually, or `bunx lefthook install`
+to reinstall the hook in an existing checkout. `bun run check:rust` uses the same
+Rust checks as CI. On macOS it uses Command Line Tools when installed and
+`DEVELOPER_DIR` is unset, without changing the system Xcode selection.
+
 ### Local transcription setup
 
 The current Whisper prototype uses a local `whisper-cli` executable and an English `base.en`

@@ -2,7 +2,7 @@ use super::SCHEMA_VERSION;
 use rusqlite::Connection;
 
 pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
-    let version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    let mut version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
     if version < 1 {
         let transaction = connection.unchecked_transaction()?;
         transaction.execute_batch(
@@ -30,6 +30,7 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
         )?;
         transaction.pragma_update(None, "user_version", 1)?;
         transaction.commit()?;
+        version = 1;
     }
     if version < 2 {
         let transaction = connection.unchecked_transaction()?;
@@ -52,6 +53,7 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
         )?;
         transaction.pragma_update(None, "user_version", 2)?;
         transaction.commit()?;
+        version = 2;
     }
     if version < 3 {
         let transaction = connection.unchecked_transaction()?;
@@ -113,6 +115,7 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
         )?;
         transaction.pragma_update(None, "user_version", 3)?;
         transaction.commit()?;
+        version = 3;
     }
     if version < 4 {
         let transaction = connection.unchecked_transaction()?;
@@ -128,6 +131,7 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
         )?;
         transaction.pragma_update(None, "user_version", 4)?;
         transaction.commit()?;
+        version = 4;
     }
     if version < 5 {
         let transaction = connection.unchecked_transaction()?;
@@ -157,6 +161,54 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 UNIQUE(run_id, item_type, item_id)
             );
             CREATE INDEX idx_memory_review_items_run ON memory_review_items(run_id);",
+        )?;
+        transaction.pragma_update(None, "user_version", 5)?;
+        transaction.commit()?;
+        version = 5;
+    }
+    if version < 6 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE turn_usage_assessments (
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                assessed_at INTEGER NOT NULL,
+                assessment_json TEXT NOT NULL,
+                PRIMARY KEY(session_id, sequence),
+                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+            );
+            CREATE TABLE learning_usage_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_type TEXT NOT NULL,
+                item_id INTEGER NOT NULL,
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                origin TEXT NOT NULL,
+                original_turn_time INTEGER NOT NULL,
+                outcome TEXT NOT NULL,
+                exact_excerpt TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+            );
+            CREATE INDEX idx_learning_usage_events_item ON learning_usage_events(item_type, item_id);
+            CREATE INDEX idx_learning_usage_events_turn ON learning_usage_events(session_id, sequence);
+            CREATE UNIQUE INDEX idx_learning_usage_origin_identity
+                ON learning_usage_events(session_id, sequence, item_type, item_id, origin);
+            CREATE TABLE learning_usage_counter_baselines (
+                item_id INTEGER PRIMARY KEY REFERENCES mistakes(id) ON DELETE CASCADE,
+                baseline_count INTEGER NOT NULL
+            );
+            INSERT INTO learning_usage_counter_baselines (item_id, baseline_count)
+                SELECT id, times_correct_afterwards FROM mistakes;
+            CREATE TABLE session_cue_exposures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                item_type TEXT,
+                item_id INTEGER,
+                exposed_at INTEGER NOT NULL
+            );
+            CREATE INDEX idx_session_cue_exposures_session ON session_cue_exposures(session_id);",
         )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;

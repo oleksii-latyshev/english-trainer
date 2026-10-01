@@ -31,7 +31,7 @@ fn insert_mistake(db: &mut SessionDatabase, original: &str, corrected: &str, due
 }
 
 #[test]
-fn migrates_a_real_version_four_database_to_version_five() {
+fn migrates_a_real_version_four_database_to_current_version() {
     let file = path();
     let connection = rusqlite::Connection::open(&file).unwrap();
     connection.execute_batch(
@@ -53,7 +53,7 @@ fn migrates_a_real_version_four_database_to_version_five() {
         .connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 5);
+    assert_eq!(version, 6);
     let preserved: String = db
         .connection
         .query_row("SELECT phrase FROM phrase_cards", [], |row| row.get(0))

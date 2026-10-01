@@ -54,8 +54,8 @@ pub fn calculate_next_review(
             // Self-reported recall rule:
             // - New transitions to Learning.
             // - Learning transitions to Improving only once interval >= 4 (at least 2 successful reviews).
-            // - Improving transitions to Stable only after sustained retention (interval >= 21).
-            // Single self-report never marks an item as stable.
+            // - Improving stays below Stable; grounded later-session usage owns that transition.
+            // Existing Stable evidence is preserved by a remembered review.
             let status = match current_status {
                 LearningStatus::New => LearningStatus::Learning,
                 LearningStatus::Learning => {

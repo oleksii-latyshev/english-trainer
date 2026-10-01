@@ -2,6 +2,7 @@ import { Button, Card, Chip } from '@heroui/react';
 import { useState } from 'react';
 import type { PhraseCardRecord, ReviewResponse } from '@/lib/learningTypes';
 import { formatDueText, formatStatusLabel } from '../lib/memoryState';
+import { UsageEvidenceSection } from './UsageEvidenceSection';
 
 type Props = {
   phraseCard: PhraseCardRecord;
@@ -93,6 +94,8 @@ export function PhraseCardItem({ phraseCard, onReview }: Props) {
           {reviewError}
         </p>
       )}
+
+      <UsageEvidenceSection itemType="phrase" itemId={phraseCard.id} />
     </Card>
   );
 }

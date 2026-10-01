@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 
 pub const COACH_TARGET_TURNS: usize = 4;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SessionMode {
+    #[default]
     Conversation,
     Coach,
 }
@@ -23,12 +24,6 @@ impl SessionMode {
             SessionMode::Conversation => "conversation",
             SessionMode::Coach => "coach",
         }
-    }
-}
-
-impl Default for SessionMode {
-    fn default() -> Self {
-        SessionMode::Conversation
     }
 }
 

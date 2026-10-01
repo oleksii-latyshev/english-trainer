@@ -9,13 +9,14 @@ use rusqlite::{params, Connection, OptionalExtension};
 mod daily_recall;
 mod learning_reviews;
 mod learning_targets;
+pub(crate) mod learning_usage;
 mod learning_writes;
 mod memory_recall;
 mod schema;
 mod session_summary;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 5;
+const SCHEMA_VERSION: i64 = 6;
 
 pub struct SessionDatabase {
     connection: Connection,
@@ -299,3 +300,7 @@ mod tests;
 #[cfg(test)]
 #[path = "memory_recall_tests.rs"]
 mod memory_recall_tests;
+
+#[cfg(test)]
+#[path = "learning_usage_tests.rs"]
+mod learning_usage_tests;

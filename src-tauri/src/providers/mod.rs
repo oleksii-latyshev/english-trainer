@@ -22,6 +22,12 @@ pub fn evaluate_turn_feedback(request: &FeedbackRequest) -> Result<TurnFeedback,
     agy::evaluate_turn_feedback(request)
 }
 
+pub fn review_turn_usage(
+    request: &UsageReviewRequest,
+) -> Result<UsageReviewResponse, ProviderError> {
+    agy::review_turn_usage(request)
+}
+
 fn measure_turn(
     generate: impl FnOnce() -> Result<ConversationTurn, ProviderError>,
 ) -> Result<ConversationTurn, ProviderError> {
@@ -41,6 +47,27 @@ pub trait ConversationEngine: Send + Sync {
 
 pub trait FeedbackEngine: Send + Sync {
     fn evaluate_turn(&self, request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError>;
+}
+
+pub trait UsageReviewEngine: Send + Sync {
+    fn review_usage(
+        &self,
+        request: &UsageReviewRequest,
+    ) -> Result<UsageReviewResponse, ProviderError>;
+}
+
+pub use crate::learning::usage::{UsageCandidate, UsageFinding, UsageOutcome};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UsageReviewRequest {
+    pub answered_question: String,
+    pub transcript: String,
+    pub candidates: Vec<UsageCandidate>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UsageReviewResponse {
+    pub findings: Vec<UsageFinding>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

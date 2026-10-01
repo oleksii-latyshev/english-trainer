@@ -493,6 +493,36 @@ A simplified SM-2-like algorithm can be used initially for phrase/mistake recall
 
 Do not use the same scheduling model for every signal. For example, a fluency issue such as long pauses should be trained through speaking sessions rather than flashcard review.
 
+### 10.4 Spontaneous Usage & Mastery Rules (Vertical Slice)
+
+1. **Eligibility Limits**:
+   - Limited to saved first-pass `conversation` turns 1 and 2 (`sequence <= 2`). Later turns are excluded because due-memory cues may enter AI prompts after turn 2. Dedicated Coach mode, retries, and cued drills are strictly excluded.
+   - Candidates: at most 3 non-archived items created before session `started_at` (mistakes with occurrences in earlier sessions before session start; phrases created before session start with provenance outside current session).
+   - Target length: 2+ words, <= 300 characters.
+   - Source rejection: target rejected if full wording was in opening question, preceding turn AI reply/question, earlier saved feedback (`original`, `improved`, `b2_rewrite`), or `question_scaffold(answered_question)` starters/expressions.
+   - Cue exposure check: targets with a session cue exposure timestamp `<= turn.created_at` are excluded during candidate preparation, so neither positive nor negative evidence is credited from an exposed target.
+   - No eligible candidates: persists honest empty assessment without calling LLM provider.
+
+2. **Semantic Review Engine**:
+   - `UsageReviewEngine` provider interface, isolated from fast dialogue turns.
+   - Prompt treats data as strict JSON, requires outcome (`correct`, `incorrect`, `uncertain`), confidence (0.0–1.0), and contiguous transcript excerpt (<= 500 chars).
+   - Backend independently revalidates findings: require confidence >= 0.9 for positive/negative credit; excerpt must be an exact contiguous transcript substring and contain normalized target words for correct use. Incorrect use must quote the full target, or for a mistake item the full original mistake wording; a phrase meaning or note is not evidence of phrase use.
+   - In-flight isolation: per-turn in-flight guard prevents duplicate provider requests without blocking `send_turn` or `finish`.
+
+3. **Mastery Progression & Relapse Rules**:
+   - `times_correct_afterwards`: cumulative count of distinct sessions with accepted correct evidence (lifetime, preserved across relapses).
+   - Mastery streak: count of accepted correct sessions on separate calendar days occurring strictly after latest relapse (excluding the relapse's whole session).
+   - `New -> Learning`: on first qualified success.
+   - `Learning -> Improving`: after >= 2 distinct qualifying sessions on separate days.
+   - `Improving -> Stable`: requires >= 3 distinct qualifying sessions on separate days, >= 3 distinct weekly buckets (7-day intervals from first success), and first-to-last >= 21 full days.
+   - `Stable persists on success`; `Archived` is never altered.
+   - Relapse: qualified incorrect use resets status to `Learning`, `interval_days = 1`, `next_review_at = original_turn_time` (due), and resets streak to 0.
+   - Repeated known correction in saved conversation feedback demotes `Stable` to `Learning` in the same transaction with an idempotent feedback-origin relapse event. If that feedback is detached, the relapse event is removed and projection is recomputed without fictitious evidence.
+
+The implemented slice is an explicit user action on saved first-pass conversation answers 1 and 2; opening Conversation never calls the semantic reviewer. It uses the stored transcript and the saved turn time, so reviewing an older answer later cannot create a new practice week. The database stores assessments, typed evidence events, and cue exposure timestamps separately. Assessment commit rechecks the saved answer and target identity/content/status/provenance and commits the assessment, evidence, counter, mastery projection, and returned-target exposure atomically. Duplicate reviews return the first saved assessment. Positive evidence preserves the existing SRS interval and due time; a relapse resets the interval and due time to the original answer time, including when older events are inserted later.
+
+`times_correct_afterwards` retains its pre-migration value as a fixed counter baseline and adds the count of distinct sessions with accepted correct evidence. No historical events are fabricated from the old counter. The displayed usage evidence describes transcript wording, not pronunciation or certified proficiency. The semantic evaluator has strict structural and quote checks but has not been calibrated against real learner sessions; physical-microphone acceptance remains open.
+
 ---
 
 ## 11. SQLite Data Model

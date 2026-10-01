@@ -111,7 +111,7 @@ fn migrates_existing_version_three_database_to_recall_storage() {
     let path = test_database_path();
     let db = SessionDatabase::open(&path).unwrap();
     db.connection
-        .execute_batch("DROP TABLE memory_review_items; DROP TABLE memory_review_runs; DROP TABLE session_phrase_recalls; PRAGMA user_version = 3;")
+        .execute_batch("DROP TABLE memory_review_items; DROP TABLE memory_review_runs; DROP TABLE session_phrase_recalls; DROP TABLE learning_usage_counter_baselines; DROP TABLE session_cue_exposures; DROP TABLE learning_usage_events; DROP TABLE turn_usage_assessments; PRAGMA user_version = 3;")
         .unwrap();
     drop(db);
     let db = SessionDatabase::open(&path).unwrap();
@@ -220,6 +220,160 @@ fn changing_feedback_for_a_turn_replaces_its_single_mistake_observation() {
             .times_seen,
         1
     );
+}
+
+#[test]
+fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = db
+        .create_session_with_mode("conversation", "First question?")
+        .unwrap();
+    db.save_turn(
+        first,
+        1,
+        &StoredTurn {
+            learner: "I said bad wording.".into(),
+            assistant_reply: "Thanks.".into(),
+            assistant_question: "Next?".into(),
+        },
+    )
+    .unwrap();
+    let initial_feedback = TurnFeedback {
+        focus_feedback: vec![FocusFeedback {
+            category: FocusCategory::Grammar,
+            original: "bad wording".into(),
+            improved: "good wording".into(),
+            explanation: "Correction.".into(),
+        }],
+        b2_rewrite: "I chose better words.".into(),
+    };
+    db.save_turn_feedback(first, 1, &initial_feedback).unwrap();
+    db.finish_session(first).unwrap();
+    let mistake = db.mistake_by_key("grammar:good wording").unwrap().unwrap();
+    db.connection
+        .execute(
+            "UPDATE mistakes SET status = 'stable' WHERE id = ?1",
+            [mistake.id as i64],
+        )
+        .unwrap();
+
+    let recurrence = db
+        .create_session_with_mode("conversation", "Another question?")
+        .unwrap();
+    db.save_turn(
+        recurrence,
+        1,
+        &StoredTurn {
+            learner: "I used very bad wording again.".into(),
+            assistant_reply: "I understand.".into(),
+            assistant_question: "Why?".into(),
+        },
+    )
+    .unwrap();
+    let turn_time: i64 = db
+        .connection
+        .query_row(
+            "SELECT created_at FROM turns WHERE session_id = ?1 AND sequence = 1",
+            [recurrence as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    let feedback = TurnFeedback {
+        focus_feedback: vec![FocusFeedback {
+            category: FocusCategory::Grammar,
+            original: "bad wording".into(),
+            improved: "good wording".into(),
+            explanation: "Correction.".into(),
+        }],
+        b2_rewrite: "I selected better words.".into(),
+    };
+    db.save_turn_feedback(recurrence, 1, &feedback).unwrap();
+    let relapse: (String, i64, String) = db
+        .connection
+        .query_row(
+            "SELECT outcome, original_turn_time, exact_excerpt FROM learning_usage_events
+             WHERE item_id = ?1 AND origin = 'feedback'",
+            [mistake.id as i64],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .unwrap();
+    assert_eq!(
+        relapse,
+        ("incorrect".into(), turn_time, "bad wording".into())
+    );
+
+    db.save_turn_feedback(recurrence, 1, &feedback).unwrap();
+    let count: i64 = db
+        .connection
+        .query_row(
+            "SELECT COUNT(*) FROM learning_usage_events WHERE item_id = ?1 AND origin = 'feedback'",
+            [mistake.id as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 1);
+
+    let changed = TurnFeedback {
+        focus_feedback: vec![FocusFeedback {
+            category: FocusCategory::Grammar,
+            original: "very bad wording".into(),
+            improved: "good wording".into(),
+            explanation: "Updated correction.".into(),
+        }],
+        b2_rewrite: "I selected much better words.".into(),
+    };
+    db.save_turn_feedback(recurrence, 1, &changed).unwrap();
+    let replacement: (i64, String) = db
+        .connection
+        .query_row(
+            "SELECT original_turn_time, exact_excerpt FROM learning_usage_events
+             WHERE item_id = ?1 AND origin = 'feedback'",
+            [mistake.id as i64],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(replacement, (turn_time, "very bad wording".into()));
+
+    let explanation_change = TurnFeedback {
+        focus_feedback: vec![FocusFeedback {
+            category: FocusCategory::Grammar,
+            original: "very bad wording".into(),
+            improved: "good wording".into(),
+            explanation: "More specific explanation.".into(),
+        }],
+        b2_rewrite: "I selected much better words indeed.".into(),
+    };
+    db.save_turn_feedback(recurrence, 1, &explanation_change)
+        .unwrap();
+    let count: i64 = db
+        .connection
+        .query_row(
+            "SELECT COUNT(*) FROM learning_usage_events WHERE item_id = ?1 AND origin = 'feedback'",
+            [mistake.id as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 1);
+
+    let ungrounded = TurnFeedback {
+        focus_feedback: vec![FocusFeedback {
+            category: FocusCategory::Grammar,
+            original: "bad phrased".into(),
+            improved: "good wording".into(),
+            explanation: "Ungrounded wording.".into(),
+        }],
+        b2_rewrite: "I selected much better words indeed.".into(),
+    };
+    db.save_turn_feedback(recurrence, 1, &ungrounded).unwrap();
+    let count: i64 = db
+        .connection
+        .query_row(
+            "SELECT COUNT(*) FROM learning_usage_events WHERE item_id = ?1 AND origin = 'feedback'",
+            [mistake.id as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 0);
 }
 
 #[test]
