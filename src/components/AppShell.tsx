@@ -53,6 +53,7 @@ function NavButton({
   return (
     <button
       aria-current={active ? 'page' : undefined}
+      aria-label={item.label}
       className={`nav-item ${active ? 'nav-item--active' : ''}`}
       onClick={() => onNavigate(item.path)}
       type="button"
@@ -77,11 +78,6 @@ function AppHeader({
   return (
     <header className="app-header">
       <div className="flex items-center">
-        <div aria-hidden="true" className="window-controls">
-          <span className="traffic-light traffic-light--close" />
-          <span className="traffic-light traffic-light--minimize" />
-          <span className="traffic-light traffic-light--maximize" />
-        </div>
         <div className="window-title-area">
           <span className="brand">English Trainer</span>
           <span className="brand-badge">v0.1</span>
@@ -112,16 +108,17 @@ function AppSidebar({
 }) {
   return (
     <nav aria-label="Main navigation" className="app-sidebar">
-      <p className="sidebar-label">PRACTICE</p>
-      {NAVIGATION.map((item) => (
-        <NavButton
-          active={currentPath === item.path}
-          item={item}
-          key={item.path}
-          onNavigate={onNavigate}
-        />
-      ))}
-      <div className="sidebar-spacer" />
+      <div className="sidebar-practice">
+        <p className="sidebar-label">PRACTICE</p>
+        {NAVIGATION.map((item) => (
+          <NavButton
+            active={currentPath === item.path}
+            item={item}
+            key={item.path}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
       <p className="sidebar-label">SETTINGS</p>
       <NavButton
         active={currentPath === '/settings'}
