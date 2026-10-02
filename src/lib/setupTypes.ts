@@ -1,0 +1,40 @@
+export type ComponentStatus = 'available' | 'missing' | 'unreadable';
+
+export type ComponentCheck = {
+  status: ComponentStatus;
+  path: string | null;
+  message: string;
+};
+
+export type SetupDiagnostics = {
+  whisper_cli: ComponentCheck;
+  whisper_model: ComponentCheck;
+  agy_cli: ComponentCheck;
+  database_path: string;
+};
+
+function isComponentCheck(value: unknown): value is ComponentCheck {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'status' in value &&
+    (value.status === 'available' || value.status === 'missing' || value.status === 'unreadable') &&
+    'path' in value &&
+    (typeof value.path === 'string' || value.path === null) &&
+    'message' in value &&
+    typeof value.message === 'string'
+  );
+}
+
+export function isSetupDiagnostics(value: unknown): value is SetupDiagnostics {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'whisper_cli' in value &&
+    isComponentCheck(value.whisper_cli) &&
+    'whisper_model' in value &&
+    isComponentCheck(value.whisper_model) &&
+    'agy_cli' in value &&
+    isComponentCheck(value.agy_cli) &&
+    'database_path' in value &&
+    typeof value.database_path === 'string'
+  );
+}

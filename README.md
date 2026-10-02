@@ -118,6 +118,12 @@ bun run dev
 only when you want to inspect the frontend in a browser; native Tauri commands are
 available in the desktop app.
 
+### Installable personal alpha
+
+Run `bun run build:desktop` to create an Apple Silicon macOS app and DMG.
+See [Personal Alpha setup](docs/PERSONAL_ALPHA.md) for installation, prerequisites,
+CI artifacts, and first-session checks.
+
 ### Checks before committing
 
 `bun install` installs the Lefthook pre-commit hook. It checks the whole frontend

@@ -34,7 +34,9 @@ function App() {
   const startOrResumePractice = useCallback(() => {
     if (isSessionOpen) {
       if (practice.state.tag === 'active' || practice.state.tag === 'waiting') {
-        void router.navigate({ to: practice.state.mode === 'coach' ? '/coach' : '/conversation' });
+        void router.navigate({
+          to: practice.state.mode === 'coach' ? '/coach' : '/conversation',
+        });
       }
       return;
     }

@@ -3,6 +3,7 @@ mod conversation;
 mod learning;
 mod persistence;
 mod providers;
+mod setup;
 
 use tauri::Manager;
 
@@ -34,6 +35,26 @@ async fn transcribe_audio(
                 "Local transcription task failed. Please retry.",
             )
         })?
+}
+
+#[tauri::command]
+async fn get_setup_diagnostics(
+    app: tauri::AppHandle,
+) -> Result<setup::SetupDiagnostics, providers::ProviderError> {
+    let app_data = app.path().app_data_dir().map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "Cannot locate application data directory.",
+        )
+    })?;
+    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data))
+        .await
+        .map_err(|_| {
+            providers::ProviderError::new(
+                providers::ProviderErrorCode::ProcessFailed,
+                "Setup diagnostics task failed.",
+            )
+        })
 }
 
 #[tauri::command]
@@ -317,6 +338,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             transcribe_audio,
+            get_setup_diagnostics,
             generate_follow_up,
             get_turn_feedback,
             save_practice_feedback,

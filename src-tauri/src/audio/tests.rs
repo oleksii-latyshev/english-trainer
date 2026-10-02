@@ -73,3 +73,62 @@ fn serializes_error_code_for_ipc_recovery() {
         serde_json::json!({"code": "model_missing", "message": "Install the model."})
     );
 }
+
+#[test]
+fn whisper_resolver_honors_explicit_path_without_fallback() {
+    let configured = std::ffi::OsString::from("/configured/whisper-cli");
+    let path = std::ffi::OsString::from("/unused");
+    assert_eq!(
+        resolve_whisper_binary_from(Some(configured), Some(path)),
+        Some(PathBuf::from("/configured/whisper-cli"))
+    );
+}
+
+#[test]
+fn model_path_uses_injected_override_or_runtime_default() {
+    assert_eq!(
+        model_path_from(Path::new("/app-data"), None),
+        PathBuf::from("/app-data/models/ggml-base.en.bin")
+    );
+    assert_eq!(
+        model_path_from(
+            Path::new("/app-data"),
+            Some(std::ffi::OsString::from("/custom/model.bin"))
+        ),
+        PathBuf::from("/custom/model.bin")
+    );
+}
+
+#[test]
+fn whisper_resolver_finds_executable_from_injected_path() {
+    use std::{
+        fs,
+        sync::atomic::{AtomicU64, Ordering},
+        time::{SystemTime, UNIX_EPOCH},
+    };
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let directory = std::env::temp_dir().join(format!(
+        "whisper-resolver-{}-{stamp}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    fs::create_dir(&directory).unwrap();
+    let binary = directory.join("whisper-cli");
+    fs::write(&binary, b"#!/bin/sh\n").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&binary, fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    let search_path = std::env::join_paths([&directory]).unwrap();
+    assert_eq!(
+        resolve_whisper_binary_from(None, Some(search_path)),
+        Some(binary)
+    );
+    let _ = fs::remove_dir_all(directory);
+}

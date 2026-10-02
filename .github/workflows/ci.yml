@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -52,3 +53,43 @@ jobs:
 
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
+
+  macos-build:
+    name: Installable macOS alpha (Apple Silicon)
+    needs: [frontend, rust]
+    if: github.event_name != 'pull_request'
+    runs-on: macos-14
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build app and DMG
+        run: bun run build:desktop
+
+      - name: Archive app preserving its bundle metadata
+        run: ditto -c -k --sequesterRsrc --keepParent "src-tauri/target/release/bundle/macos/English Trainer.app" "src-tauri/target/release/bundle/English-Trainer-macos-arm64.app.zip"
+
+      - name: Upload installer and app
+        uses: actions/upload-artifact@v4
+        with:
+          name: English-Trainer-macos-arm64-${{ github.sha }}
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/English-Trainer-macos-arm64.app.zip
+          if-no-files-found: error
+          retention-days: 14

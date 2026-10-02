@@ -1,398 +1,300 @@
-import { Button, Card, Chip } from '@heroui/react';
-import { CheckCircle2, Download, Mic, Play, RotateCw } from 'lucide-react';
-import { useState } from 'react';
+import { Button, Card } from '@heroui/react';
+import { invoke } from '@tauri-apps/api/core';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTrainer } from '@/context/TrainerContext';
+import { isSetupDiagnostics } from '@/lib/setupTypes';
+import { isConversationTurn, isProviderError, type SetupDiagnostics } from '@/lib/types';
 
-type SettingsTab = 'audio' | 'whisper' | 'ai' | 'privacy';
+type DiagnosticsState =
+  | { tag: 'loading' }
+  | { tag: 'ready'; data: SetupDiagnostics }
+  | { tag: 'error'; message: string };
+
+type TestState =
+  | { tag: 'idle' }
+  | { tag: 'checking' }
+  | { tag: 'reply'; text: string }
+  | { tag: 'error'; message: string };
+
+function readableError(error: unknown, fallback: string): string {
+  if (isProviderError(error)) return error.message;
+  return fallback;
+}
+
+function providerResultState(result: unknown): TestState {
+  if (!isConversationTurn(result)) {
+    return {
+      tag: 'error',
+      message:
+        'The provider returned a response the app could not read. Check setup and try again.',
+    };
+  }
+  return {
+    tag: 'reply',
+    text: result.question ? `${result.spoken_reply}\n\n${result.question}` : result.spoken_reply,
+  };
+}
+
+function DiagnosticRow({ label, check }: { label: string; check: SetupDiagnostics['agy_cli'] }) {
+  const statusLabel = {
+    available: 'Found',
+    missing: 'Missing',
+    unreadable: 'Cannot read',
+  }[check.status];
+  const color = check.status === 'available' ? 'text-emerald-300' : 'text-amber-300';
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-zinc-100">{label}</h3>
+        <span className={`text-xs font-medium ${color}`}>{statusLabel}</span>
+      </div>
+      <p className="mt-1 break-all font-mono text-xs text-zinc-400">
+        {check.path ?? 'Path not found'}
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-300">{check.message}</p>
+    </div>
+  );
+}
+
+async function readDiagnostics(): Promise<SetupDiagnostics> {
+  const result: unknown = await invoke<unknown>('get_setup_diagnostics');
+  if (!isSetupDiagnostics(result)) throw new Error('invalid-diagnostics');
+  return result;
+}
 
 export function SettingsHardwareView() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('audio');
-  const [retainAudio, setRetainAudio] = useState(false);
-  const [autoSpeakTurns, setAutoSpeakTurns] = useState(true);
-  const [speechRate, setSpeechRate] = useState(1.0);
-  const [isTestingMic, setIsTestingMic] = useState(false);
-  const [micLevel] = useState(42);
-  const [testingAgy, setTestingAgy] = useState(false);
-  const [agyStatus, setAgyStatus] = useState<'connected' | 'checking'>('connected');
+  const { speech } = useTrainer();
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsState>({ tag: 'loading' });
+  const [testState, setTestState] = useState<TestState>({ tag: 'idle' });
+  const requestGeneration = useRef(0);
+  const testGeneration = useRef(0);
+  const testInFlight = useRef(false);
 
-  function handleTestMic() {
-    setIsTestingMic((prev) => !prev);
-  }
+  const loadDiagnostics = useCallback(async () => {
+    const request = ++requestGeneration.current;
+    setDiagnostics({ tag: 'loading' });
+    try {
+      const data = await readDiagnostics();
+      if (request === requestGeneration.current) setDiagnostics({ tag: 'ready', data });
+    } catch {
+      if (request === requestGeneration.current) {
+        setDiagnostics({
+          tag: 'error',
+          message: 'Setup details could not be read. Check the app installation and try again.',
+        });
+      }
+    }
+  }, []);
 
-  function handleTestAgy() {
-    setTestingAgy(true);
-    setAgyStatus('checking');
-    setTimeout(() => {
-      setTestingAgy(false);
-      setAgyStatus('connected');
-    }, 800);
-  }
+  useEffect(() => {
+    void loadDiagnostics();
+    return () => {
+      requestGeneration.current += 1;
+      testGeneration.current += 1;
+    };
+  }, [loadDiagnostics]);
 
-  function handleTestVoice() {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(
-        'Hello! This is your current speech synthesis voice for English Trainer.',
-      );
-      utterance.rate = speechRate;
-      utterance.lang = 'en-US';
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+  async function handleTestProvider() {
+    if (testInFlight.current) return;
+    testInFlight.current = true;
+    const request = ++testGeneration.current;
+    setTestState({ tag: 'checking' });
+    try {
+      const result: unknown = await invoke<unknown>('generate_follow_up', {
+        transcript: 'I am testing my English practice setup.',
+      });
+      if (request !== testGeneration.current) return;
+      setTestState(providerResultState(result));
+    } catch (error) {
+      if (request === testGeneration.current) {
+        setTestState({
+          tag: 'error',
+          message: readableError(
+            error,
+            'The provider test failed. Check the agy setup and try again.',
+          ),
+        });
+      }
+    } finally {
+      if (request === testGeneration.current) testInFlight.current = false;
     }
   }
 
+  const selectedVoice = speech.voices.find(
+    (option) => option.voice.voiceURI === speech.selectedVoiceURI,
+  );
+  const voiceUnavailable = speech.voices.length === 0;
+
   return (
-    <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-6">
-      {/* Header Context */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
-            SYSTEM & PREFERENCES
-          </span>
-          <Chip color="default" size="sm" variant="soft">
-            macOS Local Hardware
-          </Chip>
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-100 md:text-3xl">
-          Hardware & App Settings
-        </h1>
-        <p className="text-sm text-zinc-400">
-          Complete local control over audio devices, local Whisper speech models, Antigravity AI
-          bridge, and privacy guarantees.
+    <div className="mx-auto flex w-full max-w-[900px] flex-col gap-6">
+      <header>
+        <p className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">SETTINGS</p>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-100">Setup and voice</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+          Review the files this app detected and choose how questions are spoken. Microphone access
+          is checked by the system when you make your first recording.
         </p>
-      </div>
+      </header>
 
-      {/* Settings Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.08] pb-3">
-        <button
-          className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
-            activeTab === 'audio'
-              ? 'border border-white/20 bg-white/10 text-white shadow-sm'
-              : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
-          }`}
-          onClick={() => setActiveTab('audio')}
-          type="button"
-        >
-          <span>🎙️</span> Audio & Voice
-        </button>
-        <button
-          className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
-            activeTab === 'whisper'
-              ? 'border border-white/20 bg-white/10 text-white shadow-sm'
-              : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
-          }`}
-          onClick={() => setActiveTab('whisper')}
-          type="button"
-        >
-          <span>⚡</span> Whisper STT Engine
-        </button>
-        <button
-          className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
-            activeTab === 'ai'
-              ? 'border border-white/20 bg-white/10 text-white shadow-sm'
-              : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
-          }`}
-          onClick={() => setActiveTab('ai')}
-          type="button"
-        >
-          <span>🤖</span> AI Bridge (agy)
-        </button>
-        <button
-          className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
-            activeTab === 'privacy'
-              ? 'border border-white/20 bg-white/10 text-white shadow-sm'
-              : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
-          }`}
-          onClick={() => setActiveTab('privacy')}
-          type="button"
-        >
-          <span>🔒</span> Privacy & Data
-        </button>
-      </div>
-
-      {/* Tab: Audio & Voice */}
-      {activeTab === 'audio' && (
-        <div className="flex flex-col gap-5">
-          {/* Microphone Card */}
-          <Card className="border border-white/[0.08] bg-[#161619] p-5 shadow-lg">
-            <h3 className="text-base font-semibold text-zinc-100">Microphone Input</h3>
-            <p className="text-xs text-zinc-400">
-              Select your microphone and verify audio levels before practicing.
-            </p>
-
-            <div className="mt-4 flex flex-col gap-4">
-              <div>
-                <span className="text-xs font-medium text-zinc-300">Input Device</span>
-                <div className="mt-1 flex items-center justify-between rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-xs text-zinc-200">
-                  <span className="flex items-center gap-2">
-                    <Mic className="h-4 w-4 text-emerald-400" />
-                    MacBook Pro Microphone (Built-in)
-                  </span>
-                  <span className="text-[11px] text-zinc-500">16 kHz Mono PCM</span>
-                </div>
-              </div>
-
-              {/* Mic Level Tester */}
-              <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4">
-                <div className="flex items-center justify-between pb-2">
-                  <span className="text-xs font-medium text-zinc-300">Live Input Level</span>
-                  <span className="text-xs font-mono text-emerald-400">
-                    {isTestingMic ? '-14 dB (Optimal)' : 'Idle'}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
-                  <div
-                    className={`h-full transition-all duration-150 ${
-                      isTestingMic ? 'bg-emerald-500' : 'bg-zinc-700'
-                    }`}
-                    style={{ width: isTestingMic ? `${micLevel}%` : '0%' }}
-                  />
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <Button
-                    className={`text-xs ${
-                      isTestingMic
-                        ? 'border border-rose-500/30 bg-rose-500/20 text-rose-300'
-                        : 'border border-white/10 bg-white/[0.06] text-zinc-300'
-                    }`}
-                    onPress={handleTestMic}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    {isTestingMic ? 'Stop Test' : 'Test Microphone'}
-                  </Button>
-                  <span className="text-[11px] text-zinc-500">Normalizes to 16 kHz mono</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* TTS Card */}
-          <Card className="border border-white/[0.08] bg-[#161619] p-5 shadow-lg">
-            <h3 className="text-base font-semibold text-zinc-100">Speech Synthesis (TTS)</h3>
-            <p className="text-xs text-zinc-400">
-              Configure system voice playback for conversation and questions.
-            </p>
-
-            <div className="mt-4 flex flex-col gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium text-zinc-300">
-                    Voice: Samantha / System English
-                  </span>
-                  <span className="text-[11px] text-zinc-500">
-                    Default macOS High-Fidelity English Voice
-                  </span>
-                </div>
-                <Button
-                  className="border border-white/10 bg-white/[0.06] text-xs text-zinc-300 hover:bg-white/10"
-                  onPress={handleTestVoice}
-                  size="sm"
-                  variant="secondary"
-                >
-                  <Play className="h-3.5 w-3.5" />
-                  <span>Test Voice</span>
-                </Button>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between text-xs text-zinc-300">
-                  <span>Playback Speed: {speechRate.toFixed(2)}x</span>
-                  <span className="text-zinc-500">Recommended: 1.00x for B1/B2 training</span>
-                </div>
-                <div className="mt-2 flex items-center gap-3">
-                  <input
-                    className="w-full accent-white"
-                    max="1.3"
-                    min="0.8"
-                    onChange={(e) => setSpeechRate(Number.parseFloat(e.target.value))}
-                    step="0.05"
-                    type="range"
-                    value={speechRate}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/20 p-3.5">
-                <div>
-                  <span className="text-xs font-semibold text-zinc-200">
-                    Automatically Speak AI Turns
-                  </span>
-                  <p className="mt-0.5 text-[11px] text-zinc-400">
-                    Play spoken voice audio as soon as AI response arrives.
-                  </p>
-                </div>
-                <input
-                  checked={autoSpeakTurns}
-                  className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-white accent-white"
-                  onChange={(e) => setAutoSpeakTurns(e.target.checked)}
-                  type="checkbox"
-                />
-              </div>
-            </div>
-          </Card>
+      <Card className="border border-white/[0.08] bg-[#161619] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">Local setup</h2>
+            <p className="mt-1 text-xs text-zinc-400">Detected paths and messages from this app.</p>
+          </div>
+          <Button onPress={() => void loadDiagnostics()} size="sm" variant="secondary">
+            Recheck files
+          </Button>
         </div>
-      )}
-
-      {/* Tab: Whisper STT Engine */}
-      {activeTab === 'whisper' && (
-        <Card className="border border-white/[0.08] bg-[#161619] p-5 shadow-lg">
-          <div className="flex items-center justify-between pb-3">
-            <div>
-              <h3 className="text-base font-semibold text-zinc-100">
-                Local Whisper Speech-to-Text
-              </h3>
-              <p className="text-xs text-zinc-400">
-                100% on-device speech transcription powered by Apple Silicon Metal GPU acceleration.
-              </p>
-            </div>
-            <Chip color="success" size="sm" variant="soft">
-              Metal GPU ⚡ Active
-            </Chip>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/[0.05] p-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-zinc-100">Whisper Base.en</span>
-                  <span className="rounded-full bg-emerald-950 px-2 py-0.5 text-[10px] text-emerald-300">
-                    Active & Installed
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-400">
-                  142 MB · Ultra-fast ~14ms latency · Perfect for conversational flow
-                </p>
-              </div>
-              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/20 p-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-zinc-300">Whisper Small.en</span>
-                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400">
-                    Optional
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-500">
-                  466 MB · Higher accuracy for heavy technical jargon & complex accents
-                </p>
-              </div>
-              <Button
-                className="border border-white/10 bg-white/[0.05] text-xs text-zinc-300 hover:bg-white/10"
-                size="sm"
-                variant="secondary"
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span>Download (466 MB)</span>
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Tab: AI Bridge */}
-      {activeTab === 'ai' && (
-        <Card className="border border-white/[0.08] bg-[#161619] p-5 shadow-lg">
-          <div className="flex items-center justify-between pb-3">
-            <div>
-              <h3 className="text-base font-semibold text-zinc-100">
-                Antigravity CLI (agy) Runtime Bridge
-              </h3>
-              <p className="text-xs text-zinc-400">
-                Local CLI adapter for conversational reasoning, coaching rewrites, and B2 phrasing.
-              </p>
-            </div>
-            <Chip
-              color={agyStatus === 'connected' ? 'success' : 'warning'}
-              size="sm"
-              variant="soft"
-            >
-              {agyStatus === 'connected' ? 'Connected (CLI v2.4)' : 'Testing...'}
-            </Chip>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-4">
-            <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">CLI Binary Path:</span>
-                <span className="font-mono text-zinc-200">/opt/homebrew/bin/agy</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-zinc-400">Execution Sandbox:</span>
-                <span className="font-mono text-zinc-200">/tmp/eng-trainer-agy-*</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-zinc-400">Timeout Policy:</span>
-                <span className="font-mono text-zinc-200">12,000ms bounded timeout</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-400">
-                Test CLI bridge connection and JSON output validation.
-              </span>
-              <Button
-                className="border border-white/10 bg-white/[0.06] text-xs text-zinc-200 hover:bg-white/10"
-                isDisabled={testingAgy}
-                onPress={handleTestAgy}
-                size="sm"
-                variant="secondary"
-              >
-                <RotateCw className={`h-3.5 w-3.5 ${testingAgy ? 'animate-spin' : ''}`} />
-                <span>Test Provider Health</span>
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Tab: Privacy & Data */}
-      {activeTab === 'privacy' && (
-        <Card className="border border-white/[0.08] bg-[#161619] p-5 shadow-lg">
-          <h3 className="text-base font-semibold text-zinc-100">Privacy & Data Storage</h3>
-          <p className="text-xs text-zinc-400">
-            English Trainer is local-first. Raw audio is discarded by default immediately after
-            transcription.
+        {diagnostics.tag === 'loading' && (
+          <p className="mt-4 text-sm text-zinc-400" role="status">
+            Checking setup…
           </p>
-
-          <div className="mt-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/20 p-4">
-              <div>
-                <span className="text-xs font-semibold text-zinc-200">
-                  Retain Raw Audio Recordings
-                </span>
-                <p className="mt-1 text-[11px] text-zinc-400">
-                  When disabled, raw audio PCM bytes are immediately wiped from memory after Whisper
-                  outputs the transcript.
-                </p>
-              </div>
-              <input
-                checked={retainAudio}
-                className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-white accent-white"
-                onChange={(e) => setRetainAudio(e.target.checked)}
-                type="checkbox"
-              />
+        )}
+        {diagnostics.tag === 'error' && (
+          <p className="mt-4 text-sm text-rose-300" role="alert">
+            {diagnostics.message}
+          </p>
+        )}
+        {diagnostics.tag === 'ready' && (
+          <div className="mt-4 flex flex-col gap-3">
+            <DiagnosticRow check={diagnostics.data.whisper_cli} label="Whisper command" />
+            <DiagnosticRow check={diagnostics.data.whisper_model} label="Whisper model" />
+            <DiagnosticRow check={diagnostics.data.agy_cli} label="agy command" />
+            <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+              <h3 className="text-sm font-semibold text-zinc-100">Local database</h3>
+              <p className="mt-1 break-all font-mono text-xs text-zinc-400">
+                {diagnostics.data.database_path}
+              </p>
             </div>
+          </div>
+        )}
+        {diagnostics.tag === 'ready' && diagnostics.data.whisper_cli.status !== 'available' && (
+          <p className="mt-4 text-xs leading-relaxed text-zinc-400">
+            Install the missing Whisper command with <code>brew install whisper.cpp</code>, then
+            recheck files.
+          </p>
+        )}
+        {diagnostics.tag === 'ready' && diagnostics.data.whisper_model.status !== 'available' && (
+          <p className="mt-4 text-xs leading-relaxed text-zinc-400">
+            Follow the README’s Local transcription setup instructions to install the English model
+            at the path shown above, then recheck files.
+          </p>
+        )}
+        {diagnostics.tag === 'ready' && diagnostics.data.agy_cli.status !== 'available' && (
+          <p className="mt-4 text-xs leading-relaxed text-zinc-400">
+            To use AI replies, install Antigravity CLI and complete its sign-in flow. See README →
+            Personal Alpha setup, then recheck files.
+          </p>
+        )}
+      </Card>
 
-            <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/20 p-4">
-              <div>
-                <span className="text-xs font-semibold text-zinc-200">Local SQLite Storage</span>
-                <p className="mt-1 text-[11px] text-zinc-400">
-                  Transcripts, mistake vault, and spaced repetition schedules stored in local app
-                  data directory.
-                </p>
-              </div>
+      <Card className="border border-white/[0.08] bg-[#161619] p-5">
+        <div>
+          <h2 className="text-base font-semibold text-zinc-100">Question voice</h2>
+          <p className="mt-1 text-xs text-zinc-400">
+            Uses voices provided by your system. No voice is assumed to be installed.
+          </p>
+        </div>
+        {voiceUnavailable ? (
+          <p className="mt-4 text-sm text-amber-200">
+            No system speech voices are currently available.
+          </p>
+        ) : (
+          <div className="mt-4 flex flex-col gap-4">
+            <label className="flex flex-col gap-2 text-xs text-zinc-300">
+              Voice
+              <select
+                className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
+                onChange={(event) => {
+                  const value = event.target.value;
+                  speech.selectVoice(value);
+                }}
+                value={speech.selectedVoiceURI ?? ''}
+              >
+                {speech.voices.map(({ voice, isEnglish }) => (
+                  <option key={voice.voiceURI} value={voice.voiceURI}>
+                    {voice.name} ({voice.lang}){isEnglish ? ' · English' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-xs text-zinc-300">
+              Playback speed: {speech.rate.toFixed(2)}×
+              <input
+                max="1.2"
+                min="0.85"
+                onChange={(event) => {
+                  const value = Number.parseFloat(event.target.value);
+                  speech.setRate(value);
+                }}
+                step="0.05"
+                type="range"
+                value={speech.rate}
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
               <Button
-                className="border border-white/10 bg-white/[0.06] text-xs text-zinc-300 hover:bg-white/10"
+                isDisabled={
+                  !selectedVoice ||
+                  speech.state.tag === 'starting' ||
+                  speech.state.tag === 'speaking'
+                }
+                onPress={() => speech.play('This is a test of the selected system voice.')}
                 size="sm"
                 variant="secondary"
               >
-                Export JSON
+                Test voice
               </Button>
+              {speech.state.tag === 'error' && (
+                <span className="text-xs text-rose-300" role="alert">
+                  Voice playback is unavailable.
+                </span>
+              )}
             </div>
           </div>
-        </Card>
-      )}
+        )}
+      </Card>
+
+      <Card className="border border-white/[0.08] bg-[#161619] p-5">
+        <h2 className="text-base font-semibold text-zinc-100">Test AI response</h2>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+          This sends the sample sentence “I am testing my English practice setup.” to your
+          configured AI provider. A detected agy command only confirms that a file exists; it does
+          not confirm account authentication. If the test fails, install Antigravity CLI and sign in
+          using its setup flow; see README → Personal Alpha setup.
+        </p>
+        <div className="mt-4 flex flex-col gap-3">
+          <Button
+            isDisabled={testState.tag === 'checking'}
+            onPress={() => void handleTestProvider()}
+            size="sm"
+            variant="secondary"
+          >
+            {testState.tag === 'checking' ? 'Waiting for provider…' : 'Test AI response'}
+          </Button>
+          {testState.tag === 'reply' && (
+            <p className="rounded-lg bg-black/30 p-3 text-sm text-zinc-200" aria-live="polite">
+              {testState.text}
+            </p>
+          )}
+          {testState.tag === 'error' && (
+            <p className="text-sm text-rose-300" role="alert">
+              {testState.message}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <Card className="border border-white/[0.08] bg-[#161619] p-5">
+        <h2 className="text-base font-semibold text-zinc-100">Privacy</h2>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+          Speech is transcribed locally and learning data is stored in local SQLite. When you
+          request an AI reply, the app sends the transcript and prompt context needed for that
+          request to your configured provider. Raw audio is held temporarily and discarded after
+          successful transcription. Microphone access is requested when you start recording.
+        </p>
+      </Card>
     </div>
   );
 }

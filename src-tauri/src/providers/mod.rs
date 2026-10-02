@@ -3,6 +3,10 @@ mod agy;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
+pub(crate) fn resolve_agy_binary() -> Option<std::path::PathBuf> {
+    agy::resolve_binary()
+}
+
 pub fn generate_follow_up(transcript: String) -> Result<ConversationTurn, ProviderError> {
     generate_conversation_turn(&ConversationContext {
         opening_question: String::new(),

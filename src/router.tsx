@@ -7,14 +7,28 @@ import {
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
 import { DailyPracticeDashboard } from '@/features/dashboard/DailyPracticeDashboard';
-import { SkillBuildersView } from '@/features/drills/SkillBuildersView';
-import { HotSeatInterviewView } from '@/features/interview/HotSeatInterviewView';
 import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
-import { ProgressBenchmarksView } from '@/features/progress/ProgressBenchmarksView';
 import { SettingsHardwareView } from '@/features/settings/SettingsHardwareView';
+
+function UnavailableFeature({ title }: { title: string }) {
+  return (
+    <section className="dashboard-card mx-auto max-w-2xl" aria-labelledby="unavailable-title">
+      <p className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
+        NOT AVAILABLE YET
+      </p>
+      <h1 className="mt-2 text-xl font-semibold text-zinc-100" id="unavailable-title">
+        {title}
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+        This area is still a prototype. Use Daily Practice for conversation and re-speaking, or open
+        Learning Memory to review saved phrases.
+      </p>
+    </section>
+  );
+}
 
 // 1. Root route
 export const rootRoute = createRootRoute({
@@ -152,18 +166,13 @@ export const coachRoute = createRoute({
 export const interviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/interview',
-  component: function InterviewComponent() {
-    const { startPractice } = useTrainer();
-    return <HotSeatInterviewView onStartPractice={startPractice} />;
-  },
+  component: () => <UnavailableFeature title="Interview practice" />,
 });
 
 export const drillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/drills',
-  component: function DrillsComponent() {
-    return <SkillBuildersView />;
-  },
+  component: () => <UnavailableFeature title="Skill drills" />,
 });
 
 export const memoryRoute = createRoute({
@@ -186,9 +195,7 @@ export const memoryRoute = createRoute({
 export const progressRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/progress',
-  component: function ProgressComponent() {
-    return <ProgressBenchmarksView />;
-  },
+  component: () => <UnavailableFeature title="Progress tracking" />,
 });
 
 export const settingsRoute = createRoute({

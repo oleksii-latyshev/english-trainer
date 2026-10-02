@@ -8,6 +8,7 @@
     "dev:web": "vite",
     "dev:browser": "vite --open",
     "build": "tsc && vite build",
+    "build:desktop": "sh ./scripts/build-macos.sh",
     "preview": "vite preview",
     "tauri": "tauri",
     "check": "biome check .",

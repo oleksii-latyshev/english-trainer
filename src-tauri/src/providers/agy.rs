@@ -30,3 +30,7 @@ pub(super) fn review_turn_usage(
 ) -> Result<UsageReviewResponse, ProviderError> {
     usage::review_turn_usage(request)
 }
+
+pub(super) fn resolve_binary() -> Option<PathBuf> {
+    runner::resolve_binary()
+}
