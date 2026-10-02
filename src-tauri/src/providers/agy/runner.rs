@@ -10,7 +10,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-pub(super) const TIMEOUT: Duration = Duration::from_secs(45);
+pub(crate) const TIMEOUT: Duration = Duration::from_secs(45);
 const MAX_OUTPUT_BYTES: u64 = 64 * 1024;
 static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
@@ -42,38 +42,63 @@ pub(super) fn resolve_binary() -> Option<PathBuf> {
         .or_else(|| candidates.into_iter().find(|path| path.is_file()))
 }
 
+pub(super) struct CliOptions {
+    pub timeout: Duration,
+    pub model: Option<&'static str>,
+}
+
+impl From<Duration> for CliOptions {
+    fn from(timeout: Duration) -> Self {
+        Self {
+            timeout,
+            model: None,
+        }
+    }
+}
+
 pub(super) fn run_cli(
     binary: &Path,
     working_directory: &Path,
     schema_path: &Path,
     log_path: &Path,
     prompt: &str,
+    options: impl Into<CliOptions>,
+) -> Result<String, ProviderError> {
+    let options = options.into();
+    let mut command = Command::new(binary);
+    command.current_dir(working_directory).args([
+        "--print",
+        prompt,
+        "--json-schema",
+        schema_path.to_string_lossy().as_ref(),
+        "--output-format",
+        "json",
+        "--disable-slash-commands",
+        "--sandbox",
+        "--print-timeout",
+        "40s",
+        "--log-file",
+        log_path.to_string_lossy().as_ref(),
+    ]);
+    if let Some(model) = options.model {
+        command.args(["--model", model, "--effort", "low"]);
+    }
+    run_process(&mut command, working_directory, options.timeout)
+}
+
+pub(crate) fn run_process(
+    command: &mut Command,
+    working_directory: &Path,
     timeout: Duration,
 ) -> Result<String, ProviderError> {
-    let stdout_path = working_directory.join("agy-output.json");
+    let stdout_path = working_directory.join("provider-output.json");
     let stdout_file = fs::File::create(&stdout_path).map_err(|_| {
         ProviderError::new(
             ProviderErrorCode::ProcessFailed,
-            "Could not prepare Antigravity CLI output storage.",
+            "Could not prepare provider output storage.",
         )
     })?;
-    let mut child = Command::new(binary)
-        .current_dir(working_directory)
-        .args([
-            "--print",
-            prompt,
-            "--json-schema",
-            schema_path.to_string_lossy().as_ref(),
-            "--output-format",
-            "json",
-            "--disable-slash-commands",
-            "--sandbox",
-            "--print-timeout",
-            "40s",
-            "--log-file",
-            log_path.to_string_lossy().as_ref(),
-        ])
-        .stdout(Stdio::from(stdout_file))
+    let mut child = command.stdout(Stdio::from(stdout_file))
         .stderr(Stdio::null())
         .spawn()
         .map_err(|error| {
@@ -84,7 +109,7 @@ pub(super) fn run_cli(
             };
             ProviderError::new(
                 code,
-                "Could not start Antigravity CLI. Check its installation and permissions.",
+                "Could not start the conversation provider. Check its installation and permissions.",
             )
         })?;
     let deadline = Instant::now() + timeout;
@@ -97,7 +122,7 @@ pub(super) fn run_cli(
                 let _ = child.wait();
                 return Err(ProviderError::new(
                     ProviderErrorCode::Timeout,
-                    "Antigravity CLI timed out. Please retry.",
+                    "The conversation provider timed out. Please retry.",
                 ));
             }
             Err(_) => {
@@ -105,7 +130,7 @@ pub(super) fn run_cli(
                 let _ = child.wait();
                 return Err(ProviderError::new(
                     ProviderErrorCode::ProcessFailed,
-                    "Could not wait for Antigravity CLI. Please retry.",
+                    "Could not wait for the conversation provider. Please retry.",
                 ));
             }
         }
@@ -113,7 +138,7 @@ pub(super) fn run_cli(
     if !status.success() {
         return Err(ProviderError::new(
             ProviderErrorCode::ProcessFailed,
-            "Antigravity CLI failed to generate a response.",
+            "The conversation provider failed to generate a response.",
         ));
     }
     let output_size = fs::metadata(&stdout_path)
@@ -121,33 +146,33 @@ pub(super) fn run_cli(
         .map_err(|_| {
             ProviderError::new(
                 ProviderErrorCode::ProcessFailed,
-                "Could not read Antigravity CLI output.",
+                "Could not read provider output.",
             )
         })?;
     if output_size > MAX_OUTPUT_BYTES {
         return Err(ProviderError::new(
             ProviderErrorCode::InvalidOutput,
-            "Antigravity CLI returned an oversized response.",
+            "The conversation provider returned an oversized response.",
         ));
     }
     let output = fs::read(stdout_path).map_err(|_| {
         ProviderError::new(
             ProviderErrorCode::ProcessFailed,
-            "Could not read Antigravity CLI output.",
+            "Could not read provider output.",
         )
     })?;
     String::from_utf8(output).map_err(|_| {
         ProviderError::new(
             ProviderErrorCode::InvalidOutput,
-            "Antigravity CLI returned output that was not valid UTF-8.",
+            "The conversation provider returned output that was not valid UTF-8.",
         )
     })
 }
 
-pub(super) struct ScratchDirectory(PathBuf);
+pub(crate) struct ScratchDirectory(PathBuf);
 
 impl ScratchDirectory {
-    pub(super) fn new() -> io::Result<Self> {
+    pub(crate) fn new() -> io::Result<Self> {
         for _ in 0..10 {
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -179,7 +204,7 @@ impl ScratchDirectory {
         ))
     }
 
-    pub(super) fn path(&self) -> &Path {
+    pub(crate) fn path(&self) -> &Path {
         &self.0
     }
 }

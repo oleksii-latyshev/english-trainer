@@ -23,3 +23,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Compiled locally by the Rust build script; bundled with the app.
+src-tauri/binaries/apple-conversation

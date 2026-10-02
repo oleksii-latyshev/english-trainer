@@ -111,7 +111,7 @@ fn migrates_existing_version_three_database_to_recall_storage() {
     let path = test_database_path();
     let db = SessionDatabase::open(&path).unwrap();
     db.connection
-        .execute_batch("DROP TABLE memory_review_items; DROP TABLE memory_review_runs; DROP TABLE session_phrase_recalls; DROP TABLE learning_usage_counter_baselines; DROP TABLE session_cue_exposures; DROP TABLE learning_usage_events; DROP TABLE turn_usage_assessments; PRAGMA user_version = 3;")
+        .execute_batch("DROP TABLE ai_settings; DROP TABLE memory_review_items; DROP TABLE memory_review_runs; DROP TABLE session_phrase_recalls; DROP TABLE learning_usage_counter_baselines; DROP TABLE session_cue_exposures; DROP TABLE learning_usage_events; DROP TABLE turn_usage_assessments; PRAGMA user_version = 3;")
         .unwrap();
     drop(db);
     let db = SessionDatabase::open(&path).unwrap();

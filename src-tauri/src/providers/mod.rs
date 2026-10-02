@@ -1,4 +1,7 @@
-mod agy;
+pub(crate) mod agy;
+mod apple;
+mod settings;
+pub use settings::{AgyModel, AiSettings, ConversationProvider};
 
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -7,19 +10,17 @@ pub(crate) fn resolve_agy_binary() -> Option<std::path::PathBuf> {
     agy::resolve_binary()
 }
 
-pub fn generate_follow_up(transcript: String) -> Result<ConversationTurn, ProviderError> {
-    generate_conversation_turn(&ConversationContext {
-        opening_question: String::new(),
-        recent_turns: Vec::new(),
-        latest_transcript: transcript,
-        learning_targets: Vec::new(),
-    })
-}
-
-pub fn generate_conversation_turn(
+pub fn generate_configured_turn(
     context: &ConversationContext,
+    settings: &AiSettings,
+    apple_binary: &std::path::Path,
 ) -> Result<ConversationTurn, ProviderError> {
-    measure_turn(|| agy::generate_turn(context))
+    measure_turn(|| match settings.provider {
+        ConversationProvider::Agy => {
+            agy::conversation::generate_turn_with_model(context, settings.agy_model)
+        }
+        ConversationProvider::Apple => apple::generate_turn(context, apple_binary),
+    })
 }
 
 pub fn evaluate_turn_feedback(request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError> {
@@ -209,7 +210,7 @@ pub struct ConversationTurn {
     pub provider_latency_ms: Option<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderErrorCode {
     Unavailable,
@@ -222,7 +223,7 @@ pub enum ProviderErrorCode {
     DatabaseError,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProviderError {
     pub code: ProviderErrorCode,
     pub message: String,

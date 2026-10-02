@@ -53,7 +53,7 @@ fn migrates_a_real_version_four_database_to_current_version() {
         .connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 6);
+    assert_eq!(version, crate::persistence::SCHEMA_VERSION);
     let preserved: String = db
         .connection
         .query_row("SELECT phrase FROM phrase_cards", [], |row| row.get(0))

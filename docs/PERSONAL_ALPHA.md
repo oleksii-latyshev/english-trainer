@@ -105,3 +105,33 @@ Scenario: Explicit provider test
   Then only a synthetic setup sentence is sent
   And the result or recoverable error is shown without saving a learning session
 ```
+
+## Conversation provider selection
+
+In Settings → Conversation AI choose Antigravity CLI or Apple (on-device), then Save settings.
+The choice and the selected Agy model are persisted in local SQLite and apply to the next dialogue
+request in Conversation, Daily Practice, Coach Continue, and Test AI response. A request already
+running keeps its original provider. Default retains Agy's current CLI model; the explicit Flash
+Low and Flash High choices use the verified `gemini-3.8-flash-low` and
+`gemini-3.8-flash-high` IDs with low CLI effort for short dialogue. Model access still depends on
+your Antigravity account. Settings does not generate a reply automatically.
+
+Apple uses the fixed system Foundation Models model. It needs a supported Mac, macOS 26+, Apple
+Intelligence enabled, matching supported Mac/Siri languages, and the downloaded local model.
+The Swift helper is compiled and signed at build time and bundled with the app; the installed app
+does not invoke Swift, Xcode, or a compiler. Its framework link is weak and the helper reports
+unavailability on macOS 14/15. Builds made with an older SDK have an explicit unavailable stub.
+CI's Rust and installer jobs now use the macOS 26 runner so they include the real Apple adapter.
+Apple generation failures are recoverable and never silently send the transcript to Agy.
+
+Detailed coaching feedback and learning-memory AI checks still use Antigravity. Choosing Apple
+for conversation does not make those explicitly requested checks offline. Both dialogue adapters
+share the same beginner-oriented instruction, context limits and reply validator: simple everyday
+English, a short statement and one simple follow-up question, no grammar analysis or invented
+learner facts. Instructions reduce risk; they do not guarantee correct interpretation or eliminate
+provider failures. AI response tests display full-response latency, excluding STT and voice playback.
+
+Codex CLI was tested separately using synthetic dialogue only. GPT-6 Luna was rejected by the
+installed CLI/account; GPT-5.6 Luna with low reasoning returned three usable structured replies
+in 6.20 / 7.90 / 5.88 seconds (median 6.20 s). This does not establish a speed advantage over Agy
+and it is not an application provider. No HTTP API adapter or API key was added.

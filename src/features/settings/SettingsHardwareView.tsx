@@ -3,37 +3,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
-import { isConversationTurn, isProviderError, type SetupDiagnostics } from '@/lib/types';
+import type { ConversationProviderId, SetupDiagnostics } from '@/lib/types';
+import { ConversationProviderSettings } from './ConversationProviderSettings';
+import { ProviderResponseTest } from './ProviderResponseTest';
 
 type DiagnosticsState =
   | { tag: 'loading' }
   | { tag: 'ready'; data: SetupDiagnostics }
   | { tag: 'error'; message: string };
-
-type TestState =
-  | { tag: 'idle' }
-  | { tag: 'checking' }
-  | { tag: 'reply'; text: string }
-  | { tag: 'error'; message: string };
-
-function readableError(error: unknown, fallback: string): string {
-  if (isProviderError(error)) return error.message;
-  return fallback;
-}
-
-function providerResultState(result: unknown): TestState {
-  if (!isConversationTurn(result)) {
-    return {
-      tag: 'error',
-      message:
-        'The provider returned a response the app could not read. Check setup and try again.',
-    };
-  }
-  return {
-    tag: 'reply',
-    text: result.question ? `${result.spoken_reply}\n\n${result.question}` : result.spoken_reply,
-  };
-}
 
 function DiagnosticRow({ label, check }: { label: string; check: SetupDiagnostics['agy_cli'] }) {
   const statusLabel = {
@@ -65,10 +42,11 @@ async function readDiagnostics(): Promise<SetupDiagnostics> {
 export function SettingsHardwareView() {
   const { speech } = useTrainer();
   const [diagnostics, setDiagnostics] = useState<DiagnosticsState>({ tag: 'loading' });
-  const [testState, setTestState] = useState<TestState>({ tag: 'idle' });
+  const [savedProvider, setSavedProvider] = useState<ConversationProviderId | null>(null);
   const requestGeneration = useRef(0);
-  const testGeneration = useRef(0);
-  const testInFlight = useRef(false);
+  const handleSavedProviderChange = useCallback((provider: ConversationProviderId) => {
+    setSavedProvider(provider);
+  }, []);
 
   const loadDiagnostics = useCallback(async () => {
     const request = ++requestGeneration.current;
@@ -90,41 +68,13 @@ export function SettingsHardwareView() {
     void loadDiagnostics();
     return () => {
       requestGeneration.current += 1;
-      testGeneration.current += 1;
     };
   }, [loadDiagnostics]);
-
-  async function handleTestProvider() {
-    if (testInFlight.current) return;
-    testInFlight.current = true;
-    const request = ++testGeneration.current;
-    setTestState({ tag: 'checking' });
-    try {
-      const result: unknown = await invoke<unknown>('generate_follow_up', {
-        transcript: 'I am testing my English practice setup.',
-      });
-      if (request !== testGeneration.current) return;
-      setTestState(providerResultState(result));
-    } catch (error) {
-      if (request === testGeneration.current) {
-        setTestState({
-          tag: 'error',
-          message: readableError(
-            error,
-            'The provider test failed. Check the agy setup and try again.',
-          ),
-        });
-      }
-    } finally {
-      if (request === testGeneration.current) testInFlight.current = false;
-    }
-  }
 
   const selectedVoice = speech.voices.find(
     (option) => option.voice.voiceURI === speech.selectedVoiceURI,
   );
   const voiceUnavailable = speech.voices.length === 0;
-
   return (
     <div className="mx-auto flex w-full max-w-[900px] flex-col gap-6">
       <header>
@@ -188,6 +138,8 @@ export function SettingsHardwareView() {
           </p>
         )}
       </Card>
+
+      <ConversationProviderSettings onSavedProviderChange={handleSavedProviderChange} />
 
       <Card className="border border-white/[0.08] bg-[#161619] p-5">
         <div>
@@ -256,35 +208,7 @@ export function SettingsHardwareView() {
         )}
       </Card>
 
-      <Card className="border border-white/[0.08] bg-[#161619] p-5">
-        <h2 className="text-base font-semibold text-zinc-100">Test AI response</h2>
-        <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-          This sends the sample sentence “I am testing my English practice setup.” to your
-          configured AI provider. A detected agy command only confirms that a file exists; it does
-          not confirm account authentication. If the test fails, install Antigravity CLI and sign in
-          using its setup flow; see README → Personal Alpha setup.
-        </p>
-        <div className="mt-4 flex flex-col gap-3">
-          <Button
-            isDisabled={testState.tag === 'checking'}
-            onPress={() => void handleTestProvider()}
-            size="sm"
-            variant="secondary"
-          >
-            {testState.tag === 'checking' ? 'Waiting for provider…' : 'Test AI response'}
-          </Button>
-          {testState.tag === 'reply' && (
-            <p className="rounded-lg bg-black/30 p-3 text-sm text-zinc-200" aria-live="polite">
-              {testState.text}
-            </p>
-          )}
-          {testState.tag === 'error' && (
-            <p className="text-sm text-rose-300" role="alert">
-              {testState.message}
-            </p>
-          )}
-        </div>
-      </Card>
+      <ProviderResponseTest provider={savedProvider} />
 
       <Card className="border border-white/[0.08] bg-[#161619] p-5">
         <h2 className="text-base font-semibold text-zinc-100">Privacy</h2>

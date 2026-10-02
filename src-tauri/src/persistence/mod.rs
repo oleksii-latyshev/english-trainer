@@ -6,6 +6,7 @@ use crate::providers::FocusCategory;
 use crate::providers::{AttemptComparison, TurnFeedback};
 use rusqlite::{params, Connection, OptionalExtension};
 
+mod ai_settings;
 mod daily_recall;
 mod learning_reviews;
 mod learning_targets;
@@ -16,7 +17,7 @@ mod schema;
 mod session_summary;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 6;
+const SCHEMA_VERSION: i64 = 7;
 
 pub struct SessionDatabase {
     connection: Connection,

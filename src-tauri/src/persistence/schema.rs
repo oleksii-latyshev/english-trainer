@@ -210,6 +210,13 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             );
             CREATE INDEX idx_session_cue_exposures_session ON session_cue_exposures(session_id);",
         )?;
+        transaction.pragma_update(None, "user_version", 6)?;
+        transaction.commit()?;
+        version = 6;
+    }
+    if version < 7 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch("CREATE TABLE ai_settings (id INTEGER PRIMARY KEY CHECK(id = 1), settings_json TEXT NOT NULL);")?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

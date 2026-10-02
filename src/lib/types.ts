@@ -178,6 +178,16 @@ export type ProviderError = {
   message: string;
 };
 
+export {
+  type AgyModelId,
+  type AiSettings,
+  type ConversationProviderId,
+  DEFAULT_AI_SETTINGS,
+  isAgyModelId,
+  isAiSettings,
+  isConversationProviderId,
+} from './aiSettings';
+
 export function isTranscript(value: unknown): value is Transcript {
   if (typeof value !== 'object' || value === null) return false;
   return (

@@ -16,7 +16,7 @@ fn migration_preserves_v5_open_recall_run_and_data() {
         [],
     ).unwrap();
     db.connection.execute_batch(
-        "DROP TABLE learning_usage_counter_baselines; DROP TABLE session_cue_exposures; DROP TABLE learning_usage_events; DROP TABLE turn_usage_assessments;
+        "DROP TABLE learning_usage_counter_baselines; DROP TABLE session_cue_exposures; DROP TABLE learning_usage_events; DROP TABLE ai_settings; DROP TABLE turn_usage_assessments;
          PRAGMA user_version = 5;",
     ).unwrap();
     drop(db);
@@ -26,7 +26,7 @@ fn migration_preserves_v5_open_recall_run_and_data() {
         .connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 6);
+    assert_eq!(version, crate::persistence::SCHEMA_VERSION);
     let preserved: (i64, String) = db
         .connection
         .query_row(

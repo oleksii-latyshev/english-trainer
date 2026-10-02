@@ -6,6 +6,7 @@ use crate::providers::{
 use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+mod ai_settings;
 pub(crate) mod coach;
 pub(crate) mod memory_recall;
 pub(crate) mod recall;

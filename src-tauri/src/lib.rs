@@ -7,6 +7,33 @@ mod setup;
 
 use tauri::Manager;
 
+fn apple_binary(app: &tauri::AppHandle) -> Result<std::path::PathBuf, providers::ProviderError> {
+    app.path()
+        .resource_dir()
+        .map(|path| path.join("binaries/apple-conversation"))
+        .map_err(|_| {
+            providers::ProviderError::new(
+                providers::ProviderErrorCode::Unavailable,
+                "Cannot locate the bundled conversation provider.",
+            )
+        })
+}
+
+#[tauri::command]
+fn get_ai_settings(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<providers::AiSettings, providers::ProviderError> {
+    sessions.ai_settings()
+}
+
+#[tauri::command]
+fn save_ai_settings(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    settings: providers::AiSettings,
+) -> Result<providers::AiSettings, providers::ProviderError> {
+    sessions.save_ai_settings(settings)
+}
+
 #[tauri::command]
 async fn transcribe_audio(
     app: tauri::AppHandle,
@@ -59,16 +86,31 @@ async fn get_setup_diagnostics(
 
 #[tauri::command]
 async fn generate_follow_up(
+    app: tauri::AppHandle,
+    sessions: tauri::State<'_, conversation::SessionStore>,
     transcript: String,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
-    tauri::async_runtime::spawn_blocking(move || providers::generate_follow_up(transcript))
-        .await
-        .map_err(|_| {
-            providers::ProviderError::new(
-                providers::ProviderErrorCode::ProcessFailed,
-                "The conversation task failed. Please try again.",
-            )
-        })?
+    let settings = sessions.ai_settings()?;
+    let binary = apple_binary(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        providers::generate_configured_turn(
+            &providers::ConversationContext {
+                opening_question: String::new(),
+                recent_turns: Vec::new(),
+                latest_transcript: transcript,
+                learning_targets: Vec::new(),
+            },
+            &settings,
+            &binary,
+        )
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "The conversation task failed. Please try again.",
+        )
+    })?
 }
 
 #[tauri::command]
@@ -131,13 +173,18 @@ fn save_coach_answer(
 
 #[tauri::command]
 async fn continue_coach_turn(
+    app: tauri::AppHandle,
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
     sequence: usize,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
+    let settings = sessions.ai_settings()?;
+    let binary = apple_binary(&app)?;
     let sessions = sessions.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        sessions.continue_turn(session_id, sequence, providers::generate_conversation_turn)
+        sessions.continue_turn(session_id, sequence, |context| {
+            providers::generate_configured_turn(context, &settings, &binary)
+        })
     })
     .await
     .map_err(|_| {
@@ -150,17 +197,18 @@ async fn continue_coach_turn(
 
 #[tauri::command]
 async fn send_practice_turn(
+    app: tauri::AppHandle,
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
     transcript: String,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
+    let settings = sessions.ai_settings()?;
+    let binary = apple_binary(&app)?;
     let sessions = sessions.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        sessions.send_turn(
-            session_id,
-            transcript,
-            providers::generate_conversation_turn,
-        )
+        sessions.send_turn(session_id, transcript, |context| {
+            providers::generate_configured_turn(context, &settings, &binary)
+        })
     })
     .await
     .map_err(|_| {
@@ -339,6 +387,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             transcribe_audio,
             get_setup_diagnostics,
+            get_ai_settings,
+            save_ai_settings,
             generate_follow_up,
             get_turn_feedback,
             save_practice_feedback,
