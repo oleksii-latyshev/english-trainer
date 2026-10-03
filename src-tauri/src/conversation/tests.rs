@@ -1196,3 +1196,95 @@ fn typed_ipc_guards_and_state_transitions() {
         .unwrap_err();
     assert_eq!(coach_cont_err.code, ProviderErrorCode::InvalidRequest);
 }
+
+#[test]
+fn dialogue_restores_all_saved_turns_and_rejects_finished_or_other_sessions() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "First answer".into(), |_| {
+            Ok(turn("First reply", "Second question"))
+        })
+        .unwrap();
+    store
+        .send_turn(session.session_id, "Second answer".into(), |_| {
+            Ok(turn("Second reply", "Third question"))
+        })
+        .unwrap();
+    let dialogue = store.dialogue(session.session_id).unwrap();
+    assert_eq!(dialogue.opening_question, session.opening_question);
+    assert_eq!(dialogue.turns.len(), 2);
+    assert_eq!(dialogue.turns[0].learner, "First answer");
+    assert_eq!(dialogue.turns[1].assistant_question, "Third question");
+    assert!(store.dialogue(session.session_id + 1).is_err());
+    drop(store);
+    let reopened = SessionStore::open(&path).unwrap();
+    assert_eq!(reopened.dialogue(session.session_id).unwrap(), dialogue);
+    reopened.finish(session.session_id).unwrap();
+    assert!(reopened.dialogue(session.session_id).is_err());
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn coach_dialogue_shows_saved_answer_before_explicit_continue() {
+    let store = SessionStore::default();
+    let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+    store
+        .save_coach_answer_with_source(session.session_id, "My answer".into(), InputSource::Text)
+        .unwrap();
+    let dialogue = store.dialogue(session.session_id).unwrap();
+    assert_eq!(dialogue.turns.len(), 1);
+    assert_eq!(dialogue.input_sources, vec!["text"]);
+    assert_eq!(dialogue.turns[0].learner, "My answer");
+    assert!(dialogue.turns[0].assistant_reply.is_empty());
+    assert!(dialogue.turns[0].assistant_question.is_empty());
+}
+
+#[test]
+fn text_and_edited_answers_cannot_be_reviewed_as_independent_spoken_evidence() {
+    for source in [InputSource::Text, InputSource::Edited] {
+        let store = SessionStore::default();
+        let session = store.start().unwrap();
+        store
+            .send_turn_with_source(session.session_id, "Written answer".into(), source, |_| {
+                Ok(turn("Thanks", "Next?"))
+            })
+            .unwrap();
+        let error = store
+            .review_memory_usage(session.session_id, 1, |_| {
+                panic!("Non-voice answers must never reach the assessor")
+            })
+            .unwrap_err();
+        assert_eq!(error.code, ProviderErrorCode::InvalidRequest);
+        assert_eq!(
+            store.dialogue(session.session_id).unwrap().turns[0].learner,
+            "Written answer"
+        );
+    }
+}
+
+#[test]
+fn failed_text_send_preserves_session_and_saves_no_provenance_or_turn() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    assert!(store
+        .send_turn_with_source(
+            session.session_id,
+            "Written answer".into(),
+            InputSource::Text,
+            |_| Err(ProviderError::new(ProviderErrorCode::Timeout, "Retry"))
+        )
+        .is_err());
+    assert!(store.dialogue(session.session_id).unwrap().turns.is_empty());
+    store
+        .send_turn(session.session_id, "Spoken retry".into(), |_| {
+            Ok(turn("Thanks", "Next?"))
+        })
+        .unwrap();
+    assert!(store
+        .lock()
+        .database
+        .is_voice_turn(session.session_id, 1)
+        .unwrap());
+}

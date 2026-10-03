@@ -1005,3 +1005,12 @@ A milestone is technically complete when relevant requirements are met:
 10. proactive notifications respect explicit opt-in and quiet hours;
 11. gamification cannot mutate language scores;
 12. benchmark scores retain evidence and version information.
+
+
+## Chat interaction contracts (2026-10-03)
+
+- `get_practice_dialogue({ sessionId })` returns `{ session_id, opening_question, turns, input_sources }` for the active session only. Each saved turn has `learner`, `assistant_reply`, and `assistant_question`; a pending Coach answer has empty assistant fields. This read does not expose hints or change learning state.
+- `send_practice_turn` and `save_coach_answer` accept optional `inputSource` (`voice`, `edited`, `text`). Omission is conservatively treated as `text`. Source is saved atomically with the successful answer in `turn_input_sources`; failed provider calls save neither. Existing pre-migration speech turns retain their earlier voice interpretation.
+- Typed and edited first-pass answers remain valid conversation input and coaching material but cannot enter the independent spoken memory assessor or create a spoken-mastery relapse from written corrections. Source describes how input was captured, not proof of pronunciation or a CEFR level.
+- A stopped recording may trigger local transcription once. Preview/correction is the default; automatic submission requires the learner to enable it and applies only to a new successful voice transcript. Recall and Try Again keep their separate submission rules.
+- UI drafts remain in memory only. Raw recording data follows the existing local transcription/discard lifecycle; no browser persistence or new audio retention is introduced.

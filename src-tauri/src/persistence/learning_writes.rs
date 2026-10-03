@@ -17,6 +17,7 @@ impl SessionDatabase {
             .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))?;
         let now = now_ms();
 
+        let is_voice = self.is_voice_turn(session_id, sequence)?;
         let transaction = self.connection.transaction()?;
         let prior_feedback: Option<TurnFeedback> = transaction
             .query_row(
@@ -125,6 +126,7 @@ impl SessionDatabase {
                 let grounded_original =
                     !focus.original.trim().is_empty() && transcript.contains(&focus.original);
                 if session_mode == "conversation"
+                    && is_voice
                     && status_str != "archived"
                     && (status_str == "stable" || prior_feedback_relapse)
                     && grounded_original

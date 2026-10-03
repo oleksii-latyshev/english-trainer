@@ -1,6 +1,7 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { Brain, LayoutDashboard, MessageSquare, Settings, Target } from 'lucide-react';
 import type React from 'react';
+import { useTrainer } from '@/context/TrainerContext';
 
 function pathToTitle(pathname: string): string {
   switch (pathname) {
@@ -44,14 +45,17 @@ function NavButton({
   item,
   active,
   onNavigate,
+  navigationLocked,
 }: {
   item: NavEntry;
   active: boolean;
   onNavigate: (to: string) => void;
+  navigationLocked: boolean;
 }) {
   const Icon = item.icon;
   return (
     <button
+      disabled={navigationLocked}
       aria-current={active ? 'page' : undefined}
       aria-label={item.label}
       className={`nav-item ${active ? 'nav-item--active' : ''}`}
@@ -71,9 +75,11 @@ function NavButton({
 function AppHeader({
   currentPath,
   onNavigate,
+  navigationLocked,
 }: {
   currentPath: string;
   onNavigate: (to: string) => void;
+  navigationLocked: boolean;
 }) {
   return (
     <header className="app-header">
@@ -87,6 +93,7 @@ function AppHeader({
       </div>
       <div className="header-right">
         <button
+          disabled={navigationLocked}
           aria-label="Open settings"
           className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100"
           onClick={() => onNavigate('/settings')}
@@ -102,9 +109,11 @@ function AppHeader({
 function AppSidebar({
   currentPath,
   onNavigate,
+  navigationLocked,
 }: {
   currentPath: string;
   onNavigate: (to: string) => void;
+  navigationLocked: boolean;
 }) {
   return (
     <nav aria-label="Main navigation" className="app-sidebar">
@@ -116,6 +125,7 @@ function AppSidebar({
             item={item}
             key={item.path}
             onNavigate={onNavigate}
+            navigationLocked={navigationLocked}
           />
         ))}
       </div>
@@ -124,26 +134,38 @@ function AppSidebar({
         active={currentPath === '/settings'}
         item={{ path: '/settings', label: 'Setup and voice', icon: Settings }}
         onNavigate={onNavigate}
+        navigationLocked={navigationLocked}
       />
     </nav>
   );
 }
 
 export function AppShell() {
+  const { capture, practice } = useTrainer();
+  const navigationLocked =
+    !capture.canChangeSession || practice.state.tag === 'waiting' || practice.isBusy;
   const routerState = useRouterState();
   const navigate = useNavigate();
   const currentPath = routerState.location.pathname;
 
   function handleNavigate(to: string) {
-    void navigate({ to });
+    if (!navigationLocked) void navigate({ to });
   }
 
   return (
     <div className="app-shell">
       <div className="app-frame">
-        <AppHeader currentPath={currentPath} onNavigate={handleNavigate} />
+        <AppHeader
+          currentPath={currentPath}
+          onNavigate={handleNavigate}
+          navigationLocked={navigationLocked}
+        />
         <div className="app-layout">
-          <AppSidebar currentPath={currentPath} onNavigate={handleNavigate} />
+          <AppSidebar
+            currentPath={currentPath}
+            onNavigate={handleNavigate}
+            navigationLocked={navigationLocked}
+          />
           <main className="screen-content">
             <Outlet />
           </main>

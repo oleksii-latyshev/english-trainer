@@ -685,3 +685,42 @@ fn session_mode_persists_and_turn_can_be_updated_in_place() {
         "What architecture did you use?"
     );
 }
+
+#[test]
+fn typed_and_edited_feedback_does_not_create_spoken_mastery_relapse() {
+    for source in ["text", "edited"] {
+        let mut db = SessionDatabase::open_in_memory().unwrap();
+        let first = db.create_session("Opening?").unwrap();
+        let turn = StoredTurn {
+            learner: "Original text".into(),
+            assistant_reply: "Thanks".into(),
+            assistant_question: "Next?".into(),
+        };
+        let feedback = sample_turn_feedback(FocusCategory::Grammar, "Improved text");
+        db.save_turn(first, 1, &turn).unwrap();
+        db.save_turn_feedback(first, 1, &feedback).unwrap();
+        db.finish_session(first).unwrap();
+        db.connection
+            .execute("UPDATE mistakes SET status = 'stable'", [])
+            .unwrap();
+        let second = db.create_session("Another opening?").unwrap();
+        db.save_turn_with_source(second, 1, &turn, source).unwrap();
+        db.save_turn_feedback(second, 1, &feedback).unwrap();
+        assert_eq!(
+            db.mistake_by_key("grammar:improved text")
+                .unwrap()
+                .unwrap()
+                .status,
+            LearningStatus::Stable
+        );
+        let events: i64 = db
+            .connection
+            .query_row(
+                "SELECT COUNT(*) FROM learning_usage_events WHERE origin = 'feedback'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(events, 0);
+    }
+}

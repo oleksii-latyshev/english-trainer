@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { isPracticeDialogue, type PracticeDialogue } from '@/lib/dialogueTypes';
 import {
   type ConversationTurn,
   type DailyRecallPlan,
@@ -16,6 +17,7 @@ import {
   type SpokenRecallResult,
   type TurnFeedback,
 } from '@/lib/types';
+import type { InputSource } from './lib/inputSource';
 
 export async function startPracticeSession(mode?: SessionMode): Promise<PracticeSession> {
   const result = await invoke<unknown>('start_practice_session', { mode });
@@ -26,8 +28,9 @@ export async function startPracticeSession(mode?: SessionMode): Promise<Practice
 export async function saveCoachAnswer(
   sessionId: number,
   transcript: string,
+  inputSource: InputSource = 'text',
 ): Promise<SavedCoachState> {
-  const result = await invoke<unknown>('save_coach_answer', { sessionId, transcript });
+  const result = await invoke<unknown>('save_coach_answer', { sessionId, transcript, inputSource });
   if (!isSavedCoachState(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected coach answer response.');
   }
@@ -99,5 +102,13 @@ export async function retryPracticeTurn(sessionId: number, sequence: number, tra
     transcript,
   });
   if (!isAttemptComparison(result)) throw new Error('Unexpected retry comparison response.');
+  return result;
+}
+
+export async function getPracticeDialogue(sessionId: number): Promise<PracticeDialogue> {
+  const result = await invoke<unknown>('get_practice_dialogue', { sessionId });
+  if (!isPracticeDialogue(result) || result.session_id !== sessionId) {
+    throw new Error('Unexpected practice dialogue response.');
+  }
   return result;
 }

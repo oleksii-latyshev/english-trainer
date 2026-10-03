@@ -1,5 +1,6 @@
 import type { CaptureView } from '@/features/speech/useSpeechCapture';
 import type { AttemptComparison, ConversationTurn, SessionMode, TurnFeedback } from '@/lib/types';
+import type { InputSource } from './lib/inputSource';
 import type { PracticeState } from './lib/practiceState';
 
 export type PracticeViewModel = CaptureView & {
@@ -17,7 +18,11 @@ export type PracticeActions = {
   startPractice: (mode?: SessionMode) => void;
   finishPractice: () => void;
   handlePracticeTurn: (sessionId: number, transcript: string, turn: ConversationTurn) => void;
-  saveCoachAnswer: (sessionId: number, transcript: string) => Promise<unknown>;
+  saveCoachAnswer: (
+    sessionId: number,
+    transcript: string,
+    inputSource?: InputSource,
+  ) => Promise<unknown>;
   continueCoachTurn: (sessionId: number, sequence: number) => Promise<ConversationTurn>;
   saveFeedback: (
     sessionId: number,

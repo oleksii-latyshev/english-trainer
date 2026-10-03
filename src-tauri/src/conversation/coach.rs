@@ -77,10 +77,20 @@ pub fn stale_sequence_error() -> ProviderError {
 }
 
 impl super::SessionStore {
+    #[cfg(test)]
     pub fn save_coach_answer(
         &self,
         session_id: u64,
         transcript: String,
+    ) -> Result<SavedCoachState, ProviderError> {
+        self.save_coach_answer_with_source(session_id, transcript, super::InputSource::Voice)
+    }
+
+    pub fn save_coach_answer_with_source(
+        &self,
+        session_id: u64,
+        transcript: String,
+        input_source: super::InputSource,
     ) -> Result<SavedCoachState, ProviderError> {
         super::rules::validate_transcript(&transcript)?;
         let mut state = self.lock();
@@ -108,7 +118,7 @@ impl super::SessionStore {
         };
         state
             .database
-            .save_turn(session_id, sequence, &stored)
+            .save_turn_with_source(session_id, sequence, &stored, input_source.as_str())
             .map_err(super::database_error)?;
         state
             .active

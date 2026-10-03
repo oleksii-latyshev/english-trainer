@@ -149,6 +149,13 @@
   overflow-y: auto;
 }
 
+.screen-content:has(.practice-screen) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .app-footer {
   height: 34px;
   min-height: 34px;
@@ -185,7 +192,7 @@
   font-size: 0.68rem;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 900px) {
   .app-layout {
     grid-template-columns: 64px minmax(0, 1fr);
   }

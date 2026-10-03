@@ -1,0 +1,61 @@
+export type InputSource = 'voice' | 'edited' | 'text';
+
+export type InputSourceParams = {
+  draft: string;
+  recognizedText?: string;
+  isNewVoice: boolean;
+};
+
+export type PracticeSendState = {
+  busy: boolean;
+  isRecording: boolean;
+  transcribing: boolean;
+  disabled: boolean;
+  isRetrying: boolean;
+  recallActive: boolean;
+  isSending: boolean;
+};
+
+export function canSendPracticeInput(state: PracticeSendState): boolean {
+  return !(
+    state.busy ||
+    state.isRecording ||
+    state.transcribing ||
+    state.disabled ||
+    state.isRetrying ||
+    state.recallActive ||
+    state.isSending
+  );
+}
+
+export function shouldAutoSendVoiceTranscript(params: {
+  transcript: string;
+  requestId: number;
+  initialRequestId: number;
+  hadTranscriptAtMount: boolean;
+  processedRequestId?: number;
+  autoSendVoice: boolean;
+  canSend: boolean;
+}): boolean {
+  return (
+    Boolean(params.transcript.trim()) &&
+    (!params.hadTranscriptAtMount || params.requestId !== params.initialRequestId) &&
+    params.requestId !== params.processedRequestId &&
+    params.autoSendVoice &&
+    params.canSend
+  );
+}
+
+export function resolveInputSource({
+  draft,
+  recognizedText,
+  isNewVoice,
+}: InputSourceParams): InputSource {
+  const trimmedDraft = draft.trim();
+  const trimmedVoice = recognizedText?.trim();
+
+  if (isNewVoice && trimmedVoice) {
+    return trimmedDraft === trimmedVoice ? 'voice' : 'edited';
+  }
+  return 'text';
+}

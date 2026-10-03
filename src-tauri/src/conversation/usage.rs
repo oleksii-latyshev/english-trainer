@@ -47,6 +47,16 @@ impl SessionStore {
 
         let (request, turn_time) = {
             let mut state = self.lock();
+            if !state
+                .database
+                .is_voice_turn(session_id, sequence)
+                .map_err(database_error)?
+            {
+                return Err(ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "Typed or edited answers cannot count as independent spoken memory evidence.",
+                ));
+            }
             if let Some(saved) = state
                 .database
                 .get_turn_usage_assessment(session_id, sequence)

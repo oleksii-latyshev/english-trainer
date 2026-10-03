@@ -17,7 +17,7 @@ mod schema;
 mod session_summary;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 7;
+const SCHEMA_VERSION: i64 = 8;
 
 pub struct SessionDatabase {
     connection: Connection,
@@ -91,18 +91,49 @@ impl SessionDatabase {
         Ok(self.connection.last_insert_rowid() as u64)
     }
 
+    #[cfg(test)]
     pub fn save_turn(
         &mut self,
         session_id: u64,
         sequence: usize,
         turn: &StoredTurn,
     ) -> rusqlite::Result<()> {
+        self.save_turn_with_source(session_id, sequence, turn, "voice")
+    }
+
+    pub fn save_turn_with_source(
+        &mut self,
+        session_id: u64,
+        sequence: usize,
+        turn: &StoredTurn,
+        input_source: &str,
+    ) -> rusqlite::Result<()> {
         let transaction = self.connection.transaction()?;
         transaction.execute(
             "INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![i64::try_from(session_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?, i64::try_from(sequence).unwrap_or(i64::MAX), turn.learner, turn.assistant_reply, turn.assistant_question, now_ms()],
         )?;
+        transaction.execute(
+            "INSERT INTO turn_input_sources (session_id, sequence, input_source) VALUES (?1, ?2, ?3)",
+            params![to_sql_id(session_id)?, to_sql_sequence(sequence)?, input_source],
+        )?;
         transaction.commit()
+    }
+
+    pub fn turn_input_sources(&self, session_id: u64) -> rusqlite::Result<Vec<String>> {
+        let mut statement = self.connection.prepare(
+            "SELECT COALESCE(s.input_source, 'voice') FROM turns t LEFT JOIN turn_input_sources s ON s.session_id = t.session_id AND s.sequence = t.sequence WHERE t.session_id = ?1 ORDER BY t.sequence",
+        )?;
+        let rows = statement.query_map([to_sql_id(session_id)?], |row| row.get(0))?;
+        rows.collect()
+    }
+
+    pub fn is_voice_turn(&self, session_id: u64, sequence: usize) -> rusqlite::Result<bool> {
+        self.connection.query_row(
+            "SELECT COALESCE(s.input_source, 'voice') = 'voice' FROM turns t LEFT JOIN turn_input_sources s ON s.session_id = t.session_id AND s.sequence = t.sequence WHERE t.session_id = ?1 AND t.sequence = ?2",
+            params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
+            |row| row.get(0),
+        ).optional().map(|value| value.unwrap_or(false))
     }
 
     pub fn update_turn(

@@ -7,6 +7,7 @@ import {
   type SessionMode,
   type TurnFeedback,
 } from '@/lib/types';
+import type { InputSource } from './lib/inputSource';
 import {
   advanceCoachTurn,
   advancePractice,
@@ -130,10 +131,10 @@ export function usePracticeSession(dependencies: Dependencies) {
       setState((current) => (current.tag === 'completed' ? { tag: 'idle' } : current)),
     acceptTurn: (sessionId: number, transcript: string, turn: ConversationTurn) =>
       setState((current) => advancePractice(current, sessionId, transcript, turn)),
-    saveCoachAnswer: async (sessionId: number, transcript: string) => {
+    saveCoachAnswer: async (sessionId: number, transcript: string, inputSource?: InputSource) => {
       setState((current) => setTurnPending(current, true));
       try {
-        const saved = await saveCoachAnswer(sessionId, transcript);
+        const saved = await saveCoachAnswer(sessionId, transcript, inputSource);
         setState((current) => recordCoachAnswer(current, sessionId, saved));
         return saved;
       } catch (cause) {

@@ -37,6 +37,12 @@ flowchart LR
 
 The personal alpha adds filesystem-based setup diagnostics, shared system voice controls, an explicit synthetic AI response test, and installable Apple Silicon macOS packaging. Prototype Interview, Drills, and Progress destinations are unavailable in the alpha so sample results cannot appear as personal learning data. CLI/model detection does not certify authentication, transcription accuracy, GPU use, or microphone readiness. See [Personal Alpha setup](PERSONAL_ALPHA.md). The first real-session feedback now prioritizes guided entry, chat ergonomics, microphone selection, and provider reliability before new learning or ambient features. The alpha also supports a saved conversation-provider choice (Agy default/Flash Low/Flash High or local Apple Foundation Models), concise beginner dialogue rules, and explicit latency tests. Detailed coaching and memory evaluation remain on Agy; guided answer examples and chat ergonomics are still open.
 
+### Chat ergonomics pass (2026-10-03)
+
+Conversation and Coach now use a saved message stream with a compact task header and a bottom voice/text composer. Stopping a new recording starts local transcription; the recognized answer can be corrected before submission. Voice auto-send is optional and off by default. Coach still saves the first answer for review and advances only on explicit Continue. The learner transcript is no longer read aloud automatically. History comes from the active SQLite session rather than browser storage.
+
+Typed and edited conversation answers have persisted input provenance and are excluded from independent spoken memory assessment. This pass does not add guided model examples, microphone device selection, provider reliability fixes, or certify the physical-Mac spoken loop. Those priorities and the MVP acceptance pass remain open.
+
 ### What is working so far
 
 | Area | Current evidence | Still missing |

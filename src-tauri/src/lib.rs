@@ -167,8 +167,9 @@ fn save_coach_answer(
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
     transcript: String,
+    input_source: Option<conversation::InputSource>,
 ) -> Result<conversation::SavedCoachState, providers::ProviderError> {
-    sessions.save_coach_answer(session_id, transcript)
+    sessions.save_coach_answer_with_source(session_id, transcript, input_source.unwrap_or_default())
 }
 
 #[tauri::command]
@@ -201,14 +202,18 @@ async fn send_practice_turn(
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
     transcript: String,
+    input_source: Option<conversation::InputSource>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
     let settings = sessions.ai_settings()?;
     let binary = apple_binary(&app)?;
     let sessions = sessions.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        sessions.send_turn(session_id, transcript, |context| {
-            providers::generate_configured_turn(context, &settings, &binary)
-        })
+        sessions.send_turn_with_source(
+            session_id,
+            transcript,
+            input_source.unwrap_or_default(),
+            |context| providers::generate_configured_turn(context, &settings, &binary),
+        )
     })
     .await
     .map_err(|_| {
@@ -217,6 +222,14 @@ async fn send_practice_turn(
             "The conversation task failed. Please retry.",
         )
     })?
+}
+
+#[tauri::command]
+fn get_practice_dialogue(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+) -> Result<conversation::PracticeDialogue, providers::ProviderError> {
+    sessions.dialogue(session_id)
 }
 
 #[tauri::command]
@@ -395,6 +408,7 @@ pub fn run() {
             retry_practice_turn,
             start_practice_session,
             send_practice_turn,
+            get_practice_dialogue,
             save_coach_answer,
             continue_coach_turn,
             finish_practice_session,

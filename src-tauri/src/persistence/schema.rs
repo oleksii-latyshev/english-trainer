@@ -217,6 +217,18 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
     if version < 7 {
         let transaction = connection.unchecked_transaction()?;
         transaction.execute_batch("CREATE TABLE ai_settings (id INTEGER PRIMARY KEY CHECK(id = 1), settings_json TEXT NOT NULL);")?;
+        transaction.pragma_update(None, "user_version", 7)?;
+        transaction.commit()?;
+    }
+    if version < 8 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch("CREATE TABLE IF NOT EXISTS turn_input_sources (
+            session_id INTEGER NOT NULL,
+            sequence INTEGER NOT NULL,
+            input_source TEXT NOT NULL CHECK(input_source IN ('voice', 'edited', 'text')),
+            PRIMARY KEY(session_id, sequence),
+            FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+        );")?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

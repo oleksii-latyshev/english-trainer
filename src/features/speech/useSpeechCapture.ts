@@ -174,11 +174,47 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       const playbackUrl = URL.createObjectURL(result.wav);
       recordedWavRef.current = result.wav;
       playbackUrlRef.current = playbackUrl;
-      setState({ tag: 'ready', playbackUrl, durationMs: result.durationMs, speechStoppedAtMs });
+      const recording: Recording = {
+        playbackUrl,
+        durationMs: result.durationMs,
+        speechStoppedAtMs,
+      };
+
+      if (!isTauri()) {
+        setState({
+          ...recording,
+          tag: 'ready',
+          failure: {
+            kind: 'setup',
+            message: 'Open the desktop app with bun run dev to use local transcription.',
+          },
+        });
+        return;
+      }
+
+      await runTranscription(requestId, recording, result.wav);
     } catch (cause) {
       if (requestId === requestIdRef.current) {
         setState({ tag: 'error', message: microphoneError(cause) });
       }
+    }
+  }
+
+  async function runTranscription(requestId: number, recording: Recording, wav: Blob) {
+    transcribingRef.current = true;
+    setState({
+      tag: 'transcribing',
+      playbackUrl: recording.playbackUrl,
+      durationMs: recording.durationMs,
+      speechStoppedAtMs: recording.speechStoppedAtMs,
+    });
+    try {
+      const { text, sttMs } = await transcribeWav(wav);
+      handleTranscript(requestId, recording, text, sttMs);
+    } catch (cause) {
+      handleTranscriptionError(requestId, recording, cause);
+    } finally {
+      transcribingRef.current = false;
     }
   }
 
@@ -203,11 +239,6 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       text,
       durationMs: recording.durationMs,
       speechStoppedAtMs: recording.speechStoppedAtMs,
-    });
-    speech.play(text, (ttsStartMs) => {
-      if (requestId === requestIdRef.current) {
-        setTiming((current) => ({ ...current, ttsStartMs }));
-      }
     });
   }
 
@@ -234,24 +265,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       });
       return;
     }
-    const recording = state;
-    const wav = recordedWavRef.current;
-    const requestId = requestIdRef.current;
-    transcribingRef.current = true;
-    setState({
-      tag: 'transcribing',
-      playbackUrl: recording.playbackUrl,
-      durationMs: recording.durationMs,
-      speechStoppedAtMs: recording.speechStoppedAtMs,
-    });
-    try {
-      const { text, sttMs } = await transcribeWav(wav);
-      handleTranscript(requestId, recording, text, sttMs);
-    } catch (cause) {
-      handleTranscriptionError(requestId, recording, cause);
-    } finally {
-      transcribingRef.current = false;
-    }
+    await runTranscription(requestIdRef.current, state, recordedWavRef.current);
   }
 
   const view = viewFor(state, timing, requestIdRef.current);

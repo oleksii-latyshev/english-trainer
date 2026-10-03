@@ -63,11 +63,18 @@ export function actionLabel(
   }
 }
 
-export function requestTurn(sessionId: number | undefined, transcript: string): Promise<unknown> {
+export type InputSource = 'voice' | 'edited' | 'text';
+
+export function requestTurn(
+  sessionId: number | undefined,
+  transcript: string,
+  inputSource: InputSource = 'text',
+): Promise<unknown> {
   if (sessionId === undefined) return invoke<unknown>('generate_follow_up', { transcript });
   return invoke<unknown>('send_practice_turn', {
     sessionId,
     transcript,
+    inputSource,
   });
 }
 

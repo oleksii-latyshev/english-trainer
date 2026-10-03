@@ -269,3 +269,9 @@ export function isProviderError(value: unknown): value is ProviderError {
     typeof value.message === 'string'
   );
 }
+
+export {
+  isPracticeDialogue,
+  type PracticeDialogue,
+  type PracticeDialogueTurn,
+} from './dialogueTypes';

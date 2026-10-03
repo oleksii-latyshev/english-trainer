@@ -1,34 +1,22 @@
 import { Button } from '@heroui/react';
-import type { ReactNode } from 'react';
+import { DialogueStream } from '@/features/practice/DialogueStream';
+import type { InputSource } from '@/features/practice/lib/inputSource';
 import type { SessionDetails } from '@/features/practice/lib/practiceState';
-import {
-  coachPromptQuestion,
-  practicePromptSequence,
-} from '@/features/practice/lib/practiceViewState';
+import { coachPromptQuestion } from '@/features/practice/lib/practiceViewState';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
+import { PracticeChatComposer } from '@/features/practice/PracticeChatComposer';
 import { PracticeControls } from '@/features/practice/PracticeControls';
 import { PracticeFeedbackArea } from '@/features/practice/PracticeFeedbackArea';
 import type { PracticeActions, PracticeViewModel } from '@/features/practice/practiceViewModel';
 import { retryPracticeTurn } from '@/features/practice/sessionApi';
-import { TranscriptPanel } from '@/features/practice/TranscriptPanel';
-
-function CurrentAnswerTranscript({
-  transcript,
-  savedTranscript,
-  isRetrying,
-}: {
-  transcript?: string;
-  savedTranscript?: string;
-  isRetrying: boolean;
-}) {
-  if (isRetrying || !transcript || transcript === savedTranscript) return null;
-  return <TranscriptPanel transcript={transcript} />;
-}
-
+import { SpeechPanel } from '@/features/speech/SpeechPanel';
+import { TimingPanel } from '@/features/speech/TimingPanel';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { TurnFeedback } from '@/lib/types';
 import { deriveCoachStep } from './lib/coachState';
 import { RetryComparisonPanel } from './RetryComparisonPanel';
+import { SavedRetryEvidence } from './SavedRetryEvidence';
 
 type Props = {
   model: PracticeViewModel;
@@ -39,7 +27,11 @@ type Props = {
   retryAnchor: (SentAnswer & { feedback: TurnFeedback }) | null;
   isRetrying: boolean;
   isCurrent: () => boolean;
-  followUpPanel?: ReactNode;
+  sendError: string;
+  historyError: string;
+  retryHistory: () => void;
+  dialogue: PracticeDialogue | null;
+  onSend: (text: string, source: InputSource) => Promise<void>;
   onRetryAnchor: (answer: SentAnswer & { feedback: TurnFeedback }) => void;
   onTryAgain: () => void;
   onCancelRetry: () => void;
@@ -81,7 +73,11 @@ export function CoachWorkspace({
   retryAnchor,
   isRetrying,
   isCurrent,
-  followUpPanel,
+  dialogue,
+  sendError,
+  historyError,
+  retryHistory,
+  onSend,
   onRetryAnchor,
   onTryAgain,
   onCancelRetry,
@@ -102,45 +98,73 @@ export function CoachWorkspace({
       false,
   });
   const currentQuestion = coachPromptQuestion(retryAnchor, savedAnswer, session, isRetrying);
-  const promptSequence = practicePromptSequence(session);
+  const isCoachPending = session?.mode === 'coach' && session.coachState?.is_pending === true;
 
   return (
-    <div className="coach-workspace">
-      <header className="coach-header">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-300">
-            COACH GYM · DELIBERATE RE-SPEAKING
-          </span>
+    <div className="practice-chat-layout">
+      <header className="practice-compact-header">
+        <div className="practice-compact-header-left">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
+              Coach · Focused practice
+            </span>
+          </div>
+          <h1 className="practice-compact-title">
+            {currentQuestion ?? 'Focused feedback & Try Again'}
+          </h1>
+          <div className="coach-stepper mt-1">
+            <StepPill currentStep={currentStep} stepNumber={1} title="Speak" />
+            <span aria-hidden="true" className="stepper-arrow">
+              →
+            </span>
+            <StepPill currentStep={currentStep} stepNumber={2} title="Save" />
+            <span aria-hidden="true" className="stepper-arrow">
+              →
+            </span>
+            <StepPill currentStep={currentStep} stepNumber={3} title="Feedback" />
+            <span aria-hidden="true" className="stepper-arrow">
+              →
+            </span>
+            <StepPill currentStep={currentStep} stepNumber={4} title="Try Again" />
+            <span aria-hidden="true" className="stepper-arrow">
+              →
+            </span>
+            <StepPill currentStep={currentStep} stepNumber={5} title="Compare" />
+          </div>
         </div>
-        <h1>Focused feedback &amp; Try Again</h1>
-        <p className="intro">
-          Review focused feedback on your saved answer, hear a stronger B2 phrasing, and speak it
-          again to build active fluency.
-        </p>
 
-        <div className="coach-stepper mt-2">
-          <StepPill currentStep={currentStep} stepNumber={1} title="Speak" />
-          <span aria-hidden="true" className="stepper-arrow">
-            →
-          </span>
-          <StepPill currentStep={currentStep} stepNumber={2} title="Save answer" />
-          <span aria-hidden="true" className="stepper-arrow">
-            →
-          </span>
-          <StepPill currentStep={currentStep} stepNumber={3} title="Focused feedback" />
-          <span aria-hidden="true" className="stepper-arrow">
-            →
-          </span>
-          <StepPill currentStep={currentStep} stepNumber={4} title="Try Again" />
-          <span aria-hidden="true" className="stepper-arrow">
-            →
-          </span>
-          <StepPill currentStep={currentStep} stepNumber={5} title="Compare" />
+        <div className="practice-compact-header-right">
+          {session ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
+                {session.turnCount} / {session.targetTurns} answers
+              </span>
+              <Button
+                className="secondary-action text-xs"
+                isDisabled={
+                  model.busy || !model.canChangeSession || model.practice.tag !== 'active'
+                }
+                onPress={actions.finishPractice}
+                size="sm"
+              >
+                {model.practice.tag === 'finishing' ? 'Finishing…' : 'Finish'}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="primary-action text-xs"
+              isDisabled={model.busy}
+              onPress={() => actions.startPractice('coach')}
+              size="sm"
+            >
+              Start Coach
+            </Button>
+          )}
         </div>
       </header>
 
       {session === undefined && (
-        <div className="coach-card">
+        <div className="coach-card m-4">
           <div className="flex flex-col gap-2">
             <p className="section-kicker">COACH PRACTICE</p>
             <h2 className="text-xl font-bold text-zinc-100">No conversation in progress</h2>
@@ -149,11 +173,6 @@ export function CoachWorkspace({
               before Eva asks the next question.
             </p>
           </div>
-          {model.practiceError && (
-            <p className="error-message" role="alert">
-              {model.practiceError}
-            </p>
-          )}
           <div className="pt-2">
             <Button
               className="primary-action"
@@ -167,54 +186,15 @@ export function CoachWorkspace({
       )}
 
       {session !== undefined && (
-        <div className="flex flex-col gap-6">
-          <div className="coach-card">
-            <div className="prompt-card-header">
-              <div>
-                <p className="section-kicker">
-                  {isRetrying
-                    ? 'RE-SPEAKING PROMPT'
-                    : `COACH PROMPT · TURN ${promptSequence ?? session.turnCount + 1}`}
-                </p>
-                <h2 className="prompt-title">{currentQuestion}</h2>
-              </div>
-              <Button
-                className="secondary-action text-xs"
-                onPress={() => speech.play(currentQuestion)}
-              >
-                Hear question ◖)
-              </Button>
-            </div>
-          </div>
-
-          {savedAnswer && (
-            <div className="coach-card">
-              <div>
-                <p className="section-kicker">FIRST ATTEMPT · TURN {savedAnswer.sequence}</p>
-                <h3 className="text-base font-semibold text-zinc-100">Your original answer</h3>
-              </div>
-              <p className="transcript-quote">“{savedAnswer.originalTranscript}”</p>
-            </div>
-          )}
-
-          <CurrentAnswerTranscript
-            isRetrying={isRetrying}
-            savedTranscript={savedAnswer?.originalTranscript}
-            transcript={transcript}
-          />
-
-          {followUpPanel}
-
-          <PracticeControls
-            actions={actions}
-            isRetrying={isRetrying}
-            model={model}
-            retryPrompt={retryAnchor?.feedback.b2_rewrite}
-            surface="coach"
-          />
-
-          {session.mode === 'coach' && session.coachState?.is_pending && (
-            <div className="coach-card">
+        <DialogueStream
+          currentQuestion={currentQuestion}
+          dialogue={dialogue}
+          historyError={historyError}
+          retryHistory={retryHistory}
+          onPlaySpeech={speech.play}
+        >
+          {isCoachPending && (
+            <div className="coach-card my-3">
               <p className="m-0 text-sm text-zinc-300">
                 Your answer is saved. Review the feedback, try again if you want, or continue when
                 you are ready. Coach comparisons use transcript wording only.
@@ -232,18 +212,6 @@ export function CoachWorkspace({
                 >
                   {isContinuingCoach ? 'Getting next prompt…' : 'Continue to next prompt'}
                 </Button>
-                <Button
-                  className="secondary-action"
-                  isDisabled={
-                    isContinuingCoach ||
-                    model.busy ||
-                    !model.canChangeSession ||
-                    model.practice.tag !== 'active'
-                  }
-                  onPress={onContinueCoach}
-                >
-                  Skip review and continue
-                </Button>
               </div>
               {continueError && (
                 <p className="error-message" role="alert">
@@ -252,19 +220,14 @@ export function CoachWorkspace({
               )}
             </div>
           )}
-          {session.mode === 'coach' && session.turnCount >= session.targetTurns && (
-            <p className="coach-card m-0 text-sm text-zinc-300">
-              You reached the four answer Coach goal. You can finish now or keep practicing.
-            </p>
-          )}
 
           <PracticeFeedbackArea
             isCurrent={isCurrent}
             isRetrying={isRetrying}
-            onRetryAnchor={onRetryAnchor}
-            onTryAgain={onTryAgain}
             onPersistFeedback={actions.saveFeedback}
+            onRetryAnchor={onRetryAnchor}
             onSpeakRewrite={speech.play}
+            onTryAgain={onTryAgain}
             recallActive={false}
             requestId={currentRequestId}
             retryAnchor={retryAnchor}
@@ -274,7 +237,14 @@ export function CoachWorkspace({
           />
 
           {isRetrying && retryAnchor && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 my-3">
+              <PracticeControls
+                actions={actions}
+                isRetrying={isRetrying}
+                model={model}
+                retryPrompt={retryAnchor.feedback.b2_rewrite}
+                surface="coach"
+              />
               <RetryComparisonPanel
                 attemptId={currentRequestId}
                 key={`retry-${retryAnchor.requestId}`}
@@ -294,29 +264,48 @@ export function CoachWorkspace({
             </div>
           )}
 
-          {session.retryEvidence.map((evidence) => (
-            <article className="coach-card" key={`saved-retry-${evidence.turn_sequence}`}>
-              <div className="flex items-center justify-between">
-                <p className="section-kicker">SAVED TRY AGAIN · TURN {evidence.turn_sequence}</p>
-                <span className="metric-pill metric-pill--highlight">
-                  Target Evidence: {evidence.target_evidence.replace(/_/g, ' ')}
-                </span>
-              </div>
-              <div className="comparison-grid">
-                <div className="comparison-column">
-                  <span className="comparison-label">Attempt 1</span>
-                  <p className="comparison-text">“{evidence.original_transcript}”</p>
-                </div>
-                <div className="comparison-column comparison-column--retry">
-                  <span className="comparison-label">Attempt 2 (Retry)</span>
-                  <p className="comparison-text">“{evidence.retry_transcript}”</p>
-                </div>
-              </div>
-              <p className="m-0 text-xs text-zinc-500">Hesitation: {evidence.hesitation}</p>
-            </article>
-          ))}
-        </div>
+          <SavedRetryEvidence evidence={session.retryEvidence} />
+
+          {session.mode === 'coach' && session.turnCount >= session.targetTurns && (
+            <p className="coach-card my-3 text-sm text-zinc-300">
+              You reached the four answer Coach goal. You can finish now or keep practicing.
+            </p>
+          )}
+
+          <details className="chat-collapsible-diagnostics my-3">
+            <summary className="chat-collapsible-summary">Audio &amp; Voice Settings</summary>
+            <div className="flex flex-col gap-4 p-4 border border-white/8 rounded-xl bg-black/30 mt-2">
+              <SpeechPanel speech={speech} transcript={model.transcript} />
+              <TimingPanel timing={model.timing} />
+            </div>
+          </details>
+        </DialogueStream>
       )}
+
+      <PracticeChatComposer
+        busy={model.busy || model.practice.tag !== 'active'}
+        currentRequestId={model.currentRequestId}
+        disabled={session === undefined || isCoachPending || isRetrying}
+        disabledReason={
+          session === undefined
+            ? 'Start a Coach session above to begin.'
+            : isRetrying
+              ? 'Re-speaking in progress. Record your retry above.'
+              : isCoachPending
+                ? 'Your answer is saved. Review feedback above, or click Continue to get the next prompt.'
+                : undefined
+        }
+        errorMessage={sendError || model.error || model.transcriptionFailure?.message}
+        isRecording={model.status === 'recording'}
+        isRetrying={isRetrying}
+        onSend={onSend}
+        onStartRecording={actions.startRecording}
+        onStopRecording={actions.stopRecording}
+        question={currentQuestion}
+        sessionId={session?.sessionId}
+        transcript={model.transcript}
+        transcribing={model.transcribing}
+      />
     </div>
   );
 }

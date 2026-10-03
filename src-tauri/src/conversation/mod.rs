@@ -3,7 +3,7 @@ use crate::providers::{
     compare_attempts, AttemptComparison, ContextTurn, ConversationContext, ConversationTurn,
     ProviderError, ProviderErrorCode, TurnFeedback,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod ai_settings;
@@ -33,6 +33,33 @@ pub struct PracticeSession {
     pub target_turns: usize,
     pub retry_evidence: Vec<AttemptComparison>,
     pub coach_state: Option<SavedCoachState>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum InputSource {
+    Voice,
+    Edited,
+    #[default]
+    Text,
+}
+
+impl InputSource {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Voice => "voice",
+            Self::Edited => "edited",
+            Self::Text => "text",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct PracticeDialogue {
+    pub session_id: u64,
+    pub opening_question: String,
+    pub turns: Vec<StoredTurn>,
+    pub input_sources: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -74,7 +101,7 @@ struct State {
     active: Option<ActiveSession>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct StoredTurn {
     pub learner: String,
     pub assistant_reply: String,
@@ -172,10 +199,42 @@ impl SessionStore {
             .transpose()
     }
 
+    pub fn dialogue(&self, session_id: u64) -> Result<PracticeDialogue, ProviderError> {
+        let state = self.lock();
+        let session = state
+            .active
+            .as_ref()
+            .filter(|session| session.id == session_id)
+            .ok_or_else(invalid_session_error)?;
+        Ok(PracticeDialogue {
+            session_id,
+            opening_question: session.opening_question.clone(),
+            turns: session.turns.clone(),
+            input_sources: state
+                .database
+                .turn_input_sources(session_id)
+                .map_err(database_error)?,
+        })
+    }
+
+    #[cfg(test)]
     pub fn send_turn<F>(
         &self,
         session_id: u64,
         transcript: String,
+        generate: F,
+    ) -> Result<ConversationTurn, ProviderError>
+    where
+        F: FnOnce(&ConversationContext) -> Result<ConversationTurn, ProviderError>,
+    {
+        self.send_turn_with_source(session_id, transcript, InputSource::Voice, generate)
+    }
+
+    pub fn send_turn_with_source<F>(
+        &self,
+        session_id: u64,
+        transcript: String,
+        input_source: InputSource,
         generate: F,
     ) -> Result<ConversationTurn, ProviderError>
     where
@@ -266,7 +325,7 @@ impl SessionStore {
         };
         state
             .database
-            .save_turn(session_id, sequence, &stored)
+            .save_turn_with_source(session_id, sequence, &stored, input_source.as_str())
             .map_err(database_error)?;
         state
             .active
