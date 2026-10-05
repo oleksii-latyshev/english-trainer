@@ -81,7 +81,8 @@ pub(super) fn run_cli(
         log_path.to_string_lossy().as_ref(),
     ]);
     if let Some(model) = options.model {
-        command.args(["--model", model, "--effort", "low"]);
+        // These verified model IDs already encode effort. An extra low override conflicts with Flash High.
+        command.args(["--model", model]);
     }
     run_process(&mut command, working_directory, options.timeout)
 }
@@ -138,7 +139,7 @@ pub(crate) fn run_process(
     if !status.success() {
         return Err(ProviderError::new(
             ProviderErrorCode::ProcessFailed,
-            "The conversation provider failed to generate a response.",
+            "The AI provider could not respond. Check the selected model and Antigravity sign-in in Settings, then retry.",
         ));
     }
     let output_size = fs::metadata(&stdout_path)

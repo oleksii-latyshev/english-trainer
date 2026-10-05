@@ -1014,3 +1014,35 @@ A milestone is technically complete when relevant requirements are met:
 - Typed and edited first-pass answers remain valid conversation input and coaching material but cannot enter the independent spoken memory assessor or create a spoken-mastery relapse from written corrections. Source describes how input was captured, not proof of pronunciation or a CEFR level.
 - A stopped recording may trigger local transcription once. Preview/correction is the default; automatic submission requires the learner to enable it and applies only to a new successful voice transcript. Recall and Try Again keep their separate submission rules.
 - UI drafts remain in memory only. Raw recording data follows the existing local transcription/discard lifecycle; no browser persistence or new audio retention is introduced.
+
+## Comfort pass contracts (2026-10-05)
+
+- `get_guided_answer({ sessionId, sequence, question })` returns `{ model_answer, adaptation }` for
+  the active unanswered prompt only. Rust checks session, sequence, exact question and pending Coach
+  review. Cue exposure is saved before provider generation; stale generation cannot supply another
+  turn's help. Requested examples conservatively exclude later session answers from spontaneous
+  mastery; exposure survives restart. Failure does not advance or remove the session.
+- Agy model IDs encode effort; explicit Flash Low/High requests must not also pass `--effort low`.
+  Conversation attempts share a 45-second outer budget. Invalid output adds optional `reply_stage`
+  (`envelope`, `schema`, `content`) to the existing typed provider error. No provider content is retained
+  in diagnostics. Rust validation stays authoritative even when the schema declares matching limits.
+- Microphone selection is UI hardware state stored only as a local device ID. Explicit selection uses
+  `deviceId: { exact: id }`; missing devices never cause silent default fallback. The actual input is
+  read from the acquired audio track. Settings device enumeration does not request capture.
+- The explicit microphone test uses the same PCM recorder, auto-stops after ten seconds and supports
+  local playback/discard only. It never transcribes, calls a provider or saves audio. Cancelling,
+  disconnecting or leaving the view cancels capture and releases playback URLs. Device changes and
+  tests are blocked during active practice capture. Real hardware checks remain manual acceptance.
+- Setup diagnostics may expose optional `agy_default_model` from the local CLI settings file.
+  Read only a bounded settings file and return only a bounded plain-text model name; never expose
+  other settings. The UI labels the implicit provider option as following Antigravity and displays
+  the detected name. Explicit Flash Low/High selections override that setting.
+- Push-to-talk capture requests `echoCancellation`, `noiseSuppression` and `autoGainControl` as
+  `false` to avoid browser voice filtering. These are best-effort browser preferences,
+  not a guarantee about device DSP or macOS microphone modes. Playback/TTS stops before capture.
+- Recording readiness requires the actual input to deliver three seconds of audio frames, including silence.
+  Until then the UI remains Starting, and the Settings timer has not begun. Startup times out after
+  eight seconds and releases capture. Warmup samples are not part of the user's Recording interval.
+- Settings signal diagnostics use captured PCM samples without modifying, gating or amplifying them.
+  They display one-second amplitude windows, captured/elapsed durations and reported processing flags.
+  Measurements remain ephemeral and are never persisted, transcribed or sent to a provider.

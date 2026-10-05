@@ -1,12 +1,13 @@
 use super::super::{
     ConversationContext, ConversationEngine, ConversationTurn, ProviderError, ProviderErrorCode,
+    ReplyStage,
 };
 use super::{
     runner::{self, run_cli, AgyEnvelope, CliOptions, ScratchDirectory, TIMEOUT},
     AgyEngine,
 };
 use serde::Deserialize;
-use std::fs;
+use std::{fs, time::Instant};
 
 const MAX_TRANSCRIPT_CHARS: usize = 8_000;
 
@@ -49,6 +50,7 @@ fn generate_using_model(
         )
     })?;
 
+    let deadline = Instant::now() + TIMEOUT;
     for attempt in 0..2 {
         let prompt = make_prompt(context, attempt == 1);
         let output = run_cli(
@@ -58,7 +60,7 @@ fn generate_using_model(
             &log_path,
             &prompt,
             CliOptions {
-                timeout: TIMEOUT,
+                timeout: deadline.saturating_duration_since(Instant::now()),
                 model,
             },
         )?;
@@ -66,12 +68,7 @@ fn generate_using_model(
         match parsed {
             Ok(turn) => return Ok(turn),
             Err(_) if attempt == 0 => continue,
-            Err(_) => {
-                return Err(ProviderError::new(
-                    ProviderErrorCode::InvalidOutput,
-                    "The conversation provider returned an invalid reply twice. Please retry.",
-                ));
-            }
+            Err(stage) => return Err(invalid_reply(stage)),
         }
     }
     Err(ProviderError::new(
@@ -144,33 +141,35 @@ pub(crate) fn make_prompt(context: &ConversationContext, retry: bool) -> String 
 }
 
 fn response_schema() -> &'static str {
-    r#"{"type":"object","additionalProperties":false,"required":["spoken_reply","question","session_phase","is_complete"],"properties":{"spoken_reply":{"type":"string","minLength":1,"maxLength":180},"question":{"type":"string","minLength":1,"maxLength":140},"session_phase":{"type":"string","enum":["active"]},"is_complete":{"type":"boolean","const":false}}}"#
+    r#"{"type":"object","additionalProperties":false,"required":["spoken_reply","question","session_phase","is_complete"],"properties":{"spoken_reply":{"type":"string","minLength":1,"maxLength":180,"description":"One plain statement, no question or markdown, at most 30 words.","allOf":[{"pattern":"^[^>\\-\u0000-\u001f\u007f`#*_{}\\[\\]?][^\u0000-\u001f\u007f`#*_{}\\[\\]?]*$"},{"pattern":"^\\s*\\S+(?:\\s+\\S+){0,29}\\s*$"}]},"question":{"type":"string","minLength":1,"maxLength":140,"description":"One plain question, at most 20 words, exactly one ? at the end.","allOf":[{"pattern":"^[^>\\-\u0000-\u001f\u007f`#*_{}\\[\\]?][^\u0000-\u001f\u007f`#*_{}\\[\\]?]*\\?$"},{"pattern":"^\\s*\\S+(?:\\s+\\S+){0,19}\\s*$"}]},"session_phase":{"type":"string","enum":["active"]},"is_complete":{"type":"boolean","const":false}}}"#
 }
 
-fn parse_envelope(output: &str) -> Result<RawTurn, ()> {
-    let envelope: AgyEnvelope = serde_json::from_str(output).map_err(|_| ())?;
+fn parse_envelope(output: &str) -> Result<RawTurn, ReplyStage> {
+    let envelope: AgyEnvelope = serde_json::from_str(output).map_err(|_| ReplyStage::Envelope)?;
     if envelope.status != "SUCCESS" {
-        return Err(());
+        return Err(ReplyStage::Envelope);
     }
-    serde_json::from_value(envelope.structured_output).map_err(|_| ())
+    serde_json::from_value(envelope.structured_output).map_err(|_| ReplyStage::Schema)
 }
 
 pub(crate) fn parse_structured_turn(output: &str) -> Result<ConversationTurn, ProviderError> {
     serde_json::from_str(output)
-        .map_err(|_| ())
+        .map_err(|_| ReplyStage::Schema)
         .and_then(validate_turn)
-        .map_err(|_| {
-            ProviderError::new(
-                ProviderErrorCode::InvalidOutput,
-                "The conversation provider returned an invalid reply. Please retry.",
-            )
-        })
+        .map_err(invalid_reply)
 }
 
-fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ()> {
+fn invalid_reply(stage: ReplyStage) -> ProviderError {
+    let mut error = ProviderError::new(ProviderErrorCode::InvalidOutput,
+        "The AI reply could not be used. Your answer is kept; send it again or choose another conversation model in Settings.");
+    error.reply_stage = Some(stage);
+    error
+}
+
+fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ReplyStage> {
     let spoken_reply = validate_plain_text(&raw.spoken_reply, 30)?;
     if spoken_reply.contains('?') {
-        return Err(());
+        return Err(ReplyStage::Content);
     }
     let question = match raw.question {
         Some(value) => {
@@ -178,14 +177,14 @@ fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ()> {
             if value.chars().count() > 140
                 || (!value.ends_with('?') || value.matches('?').count() != 1)
             {
-                return Err(());
+                return Err(ReplyStage::Content);
             }
             Some(value)
         }
-        None => return Err(()),
+        None => return Err(ReplyStage::Content),
     };
     if raw.session_phase != "active" || raw.is_complete {
-        return Err(());
+        return Err(ReplyStage::Content);
     }
     Ok(ConversationTurn {
         spoken_reply,
@@ -196,7 +195,7 @@ fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ()> {
     })
 }
 
-fn validate_plain_text(value: &str, max_words: usize) -> Result<String, ()> {
+fn validate_plain_text(value: &str, max_words: usize) -> Result<String, ReplyStage> {
     let value = value.trim();
     if value.is_empty()
         || value.chars().count() > 180
@@ -206,7 +205,7 @@ fn validate_plain_text(value: &str, max_words: usize) -> Result<String, ()> {
         || value.starts_with('>')
         || value.starts_with('-')
     {
-        return Err(());
+        return Err(ReplyStage::Content);
     }
     Ok(value.to_string())
 }
@@ -214,3 +213,7 @@ fn validate_plain_text(value: &str, max_words: usize) -> Result<String, ()> {
 #[cfg(test)]
 #[path = "conversation_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "conversation_live_tests.rs"]
+mod live_tests;

@@ -35,13 +35,29 @@ flowchart LR
 
 **MVP status: not ready for daily use.** The app has an app shell with Home, Conversation, Coach, and Learning Memory navigation. Home starts or resumes a saved session and shows a Learning Memory snapshot. Daily Practice guides an eight-answer conversation goal, optional Try Again, and up to three due-phrase spoken recall attempts after the goal. Dedicated Coach mode now persists its own four-answer sessions, saves each first answer before review, and asks the next question only after explicit Continue. Coach feedback and transcript-only retry evidence can be restored with the saved answer. The 10–15 minute duration is a suggestion, not a timer. Spoken wording matching is transcript evidence only; it does not change mastery. A broader language progress assessment is still missing. The user has confirmed real microphone capture and useful local transcription (2026-10-02); basic microphone acceptance is closed. Provider reliability, transcript accuracy, device selection, and full end-to-end validation of the spoken loops remain open. The HTML and Markdown examples in `docs/ui/` remain design references, not exact implementation requirements.
 
-The personal alpha adds filesystem-based setup diagnostics, shared system voice controls, an explicit synthetic AI response test, and installable Apple Silicon macOS packaging. Prototype Interview, Drills, and Progress destinations are unavailable in the alpha so sample results cannot appear as personal learning data. CLI/model detection does not certify authentication, transcription accuracy, GPU use, or microphone readiness. See [Personal Alpha setup](PERSONAL_ALPHA.md). The first real-session feedback now prioritizes guided entry, chat ergonomics, microphone selection, and provider reliability before new learning or ambient features. The alpha also supports a saved conversation-provider choice (Agy default/Flash Low/Flash High or local Apple Foundation Models), concise beginner dialogue rules, and explicit latency tests. Detailed coaching and memory evaluation remain on Agy; guided answer examples and chat ergonomics are still open.
+The personal alpha adds filesystem-based setup diagnostics, shared system voice controls, an explicit synthetic AI response test, and installable Apple Silicon macOS packaging. Prototype Interview, Drills, and Progress destinations are unavailable in the alpha so sample results cannot appear as personal learning data. CLI/model detection does not certify authentication, transcription accuracy, GPU use, or microphone readiness. See [Personal Alpha setup](PERSONAL_ALPHA.md). The first real-session feedback now prioritizes guided entry, chat ergonomics, microphone selection, and provider reliability before new learning or ambient features. The alpha also supports a saved conversation-provider choice (Agy default/Flash Low/Flash High or local Apple Foundation Models), concise beginner dialogue rules, and explicit latency tests. Detailed coaching and memory evaluation remain on Agy; guided examples and chat ergonomics are implemented in the dated passes below; physical-Mac acceptance remains open.
 
 ### Chat ergonomics pass (2026-10-03)
 
 Conversation and Coach now use a saved message stream with a compact task header and a bottom voice/text composer. Stopping a new recording starts local transcription; the recognized answer can be corrected before submission. Voice auto-send is optional and off by default. Coach still saves the first answer for review and advances only on explicit Continue. The learner transcript is no longer read aloud automatically. History comes from the active SQLite session rather than browser storage.
 
-Typed and edited conversation answers have persisted input provenance and are excluded from independent spoken memory assessment. This pass does not add guided model examples, microphone device selection, provider reliability fixes, or certify the physical-Mac spoken loop. Those priorities and the MVP acceptance pass remain open.
+Typed and edited conversation answers have persisted input provenance and are excluded from independent spoken memory assessment. This pass does not add guided model examples, microphone device selection, provider reliability fixes, or certify the physical-Mac spoken loop. The dated comfort pass below addresses those implementation priorities; physical-Mac acceptance and the MVP acceptance pass remain open.
+
+### Comfort pass (2026-10-05)
+
+The first-feedback implementation is now present for the next personal-alpha test: complete
+prompt-specific guided answers with editable details and optional playback; persistent cue-exposure
+safeguards; explicit microphone selection and a five-second local playback check; and corrected Agy
+model invocation. Flash High no longer receives a conflicting low-effort override. The response schema
+now declares word/plain-text restrictions and typed errors identify the invalid response stage.
+Conversation retries share one 45-second budget and failed sends retain the editable draft.
+
+Nine synthetic conversation requests passed after the invocation fix. Default had a 6.65-second
+median, Flash Low 23.67 seconds, Flash High 15.84 seconds in this small sample. This is provider-only
+full-response timing, not proof of the speech latency target or future reliability. Default is
+recommended for the next test. The remaining immediate priority is physical-Mac acceptance of the
+updated Conversation, Coach and Memory loops. Ambient entry and the full MVP acceptance pass remain
+open. See the dated follow-up in [personal-alpha feedback](PERSONAL_ALPHA_FEEDBACK.md).
 
 ### What is working so far
 
@@ -63,12 +79,12 @@ Typed and edited conversation answers have persisted input provenance and are ex
 | [Interview](ui/04_THE_HOT_SEAT_INTERVIEW.md), [Drills](ui/05_SKILL_BUILDERS_DRILLS.md), [Progress](ui/07_PROGRESS_AND_BENCHMARKS.md) | Prototypes retained in source but unavailable in the personal alpha; no demo scores are shown as personal results. | After the core MVP loop |
 | Session summary in the [navigation map](ui/NAVIGATION_MAP.md) | Finishing shows saved counts, a newly observed Try Again target when supported, the latest saved correction, and up to three phrase cards saved in that session. It makes no fluency or mastery claim. | Expand after real-session validation |
 
-### Next implementation order
+### Delivery order and next acceptance step
 
-1. **Fix provider reliability and measure latency:** reproduce invalid structured replies using synthetic input, distinguish envelope/schema/content errors, align the declared schema with validation, and benchmark a fast conversation model. Do not hide failures, loosen trust-boundary validation indiscriminately, or fabricate a partner reply. Preserve the learner answer on failure. Local Apple Foundation Models is a candidate only after its runtime availability and actual latency have been checked.
-2. **Make Conversation and Coach usable as a chat:** topic/task at the top, saved dialogue in the middle, fixed bottom composer with voice/text entry and help directly above it. A stopped voice answer should move through local transcription into submission without requiring scrolling to another button. Show the recognized text and allow correction/retry when STT changes the meaning. Keep Coach feedback and Try Again separate from automatically advancing to another question; retain explicit Continue for the pedagogical review step.
-3. **Add guided speaking by example:** do not label the user's written ability as beginner CEFR. Offer an optional guided mode with a short model dialogue, a complete simple answer, editable slots, and an invitation to adapt one or two details before speaking. Progress from reading → replacing details → short personal answer → independent answer. Track exposed examples so copied/cued wording cannot count as spontaneous mastery.
-4. **Make microphone choice explicit:** show the actual selected input, allow choosing another device, and provide an explicit short record/playback check. Never start capture or retain diagnostic audio automatically. Reuse existing recording/playback instead of a second audio pipeline.
+1. **Fix provider reliability and measure latency (implemented comfort pass; monitor in real use):** reproduce invalid structured replies using synthetic input, distinguish envelope/schema/content errors, align the declared schema with validation, and benchmark a fast conversation model. Do not hide failures, loosen trust-boundary validation indiscriminately, or fabricate a partner reply. Preserve the learner answer on failure. Local Apple Foundation Models is a candidate only after its runtime availability and actual latency have been checked.
+2. **Make Conversation and Coach usable as a chat (implemented):** topic/task at the top, saved dialogue in the middle, fixed bottom composer with voice/text entry and help directly above it. A stopped voice answer should move through local transcription into submission without requiring scrolling to another button. Show the recognized text and allow correction/retry when STT changes the meaning. Keep Coach feedback and Try Again separate from automatically advancing to another question; retain explicit Continue for the pedagogical review step.
+3. **Add guided speaking by example (implemented; user acceptance next):** do not label the user's written ability as beginner CEFR. Offer an optional guided mode with a short model dialogue, a complete simple answer, editable slots, and an invitation to adapt one or two details before speaking. Progress from reading → replacing details → short personal answer → independent answer. Track exposed examples so copied/cued wording cannot count as spontaneous mastery.
+4. **Make microphone choice explicit (implemented; physical device acceptance next):** show the actual selected input, allow choosing another device, and provide an explicit short record/playback check. Never start capture or retain diagnostic audio automatically. Reuse existing recording/playback instead of a second audio pipeline.
 5. **Validate the revised spoken loops:** on a physical Mac, check provider error recovery, correct input selection, transcript correction, daily recall/interruption/resume/finish, Coach review/Continue/restart, and Learning Memory recall. Basic microphone capture is already accepted; this is broader user-flow acceptance.
 6. **Review real-session evidence before expanding adaptation or ambient entry:** retain current first-two-answer limits until cue exposure and assessor calibration are verified. Then consider menu-bar quick launch and opt-in notifications with quiet hours. Interview, benchmarks, drills, and gamification remain later work.
 7. **Run the MVP acceptance pass:** check every item in Section 14 through the built app before marking phases or MVP complete.
@@ -496,3 +512,8 @@ Useful questions:
 - Which metrics correlate with the user feeling more fluent?
 
 The roadmap should be adjusted using these observations rather than treating every later phase as mandatory.
+
+The benchmark's Default entry used the CLI setting on this Mac: Claude Sonnet 4.6 (Thinking),
+not another Gemini tier. Settings labels this option “Use Antigravity setting” and shows the model
+read from the local CLI settings file. Changing the CLI model changes this option's behavior;
+Recheck files refreshes the displayed setting. Explicit Flash Low/High selections override it.

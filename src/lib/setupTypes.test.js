@@ -11,6 +11,10 @@ const diagnostics = {
 describe('setup diagnostics payload', () => {
   it('accepts the complete diagnostics DTO', () => {
     expect(isSetupDiagnostics(diagnostics)).toBe(true);
+    expect(
+      isSetupDiagnostics({ ...diagnostics, agy_default_model: 'Claude Sonnet 4.6 (Thinking)' }),
+    ).toBe(true);
+    expect(isSetupDiagnostics({ ...diagnostics, agy_default_model: 7 })).toBe(false);
   });
 
   it('rejects missing fields and malformed component checks', () => {

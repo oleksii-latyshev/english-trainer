@@ -11,6 +11,7 @@ export type SetupDiagnostics = {
   whisper_model: ComponentCheck;
   agy_cli: ComponentCheck;
   database_path: string;
+  agy_default_model?: string;
 };
 
 function isComponentCheck(value: unknown): value is ComponentCheck {
@@ -35,6 +36,10 @@ export function isSetupDiagnostics(value: unknown): value is SetupDiagnostics {
     'agy_cli' in value &&
     isComponentCheck(value.agy_cli) &&
     'database_path' in value &&
-    typeof value.database_path === 'string'
+    typeof value.database_path === 'string' &&
+    (!('agy_default_model' in value) ||
+      (typeof value.agy_default_model === 'string' &&
+        value.agy_default_model.trim().length > 0 &&
+        Array.from(value.agy_default_model).length <= 120))
   );
 }

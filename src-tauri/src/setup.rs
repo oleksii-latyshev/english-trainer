@@ -7,6 +7,8 @@ pub(crate) struct SetupDiagnostics {
     pub whisper_model: ComponentCheck,
     pub agy_cli: ComponentCheck,
     pub database_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agy_default_model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -32,11 +34,35 @@ pub(crate) fn collect(app_data: &Path) -> SetupDiagnostics {
         whisper_cli,
         whisper_model,
         agy_cli,
+        agy_default_model: std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .and_then(|home| {
+                read_agy_default_model(&home.join(".gemini/antigravity-cli/settings.json"))
+            }),
         database_path: app_data
             .join("english-trainer.sqlite3")
             .to_string_lossy()
             .into_owned(),
     }
+}
+
+fn read_agy_default_model(path: &Path) -> Option<String> {
+    use std::io::Read;
+    let mut bytes = Vec::new();
+    fs::File::open(path)
+        .ok()?
+        .take(65_537)
+        .read_to_end(&mut bytes)
+        .ok()?;
+    if bytes.len() > 65_536 {
+        return None;
+    }
+    let settings: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    let model = settings.get("model")?.as_str()?.trim();
+    if model.is_empty() || model.chars().count() > 120 || model.chars().any(char::is_control) {
+        return None;
+    }
+    Some(model.to_string())
 }
 
 fn check_cli(path: Option<PathBuf>) -> ComponentCheck {

@@ -19,6 +19,7 @@ type SaveState =
   | { tag: 'error'; message: string };
 
 type ConversationProviderSettingsProps = {
+  defaultModel?: string;
   onSavedProviderChange?: (provider: ConversationProviderId) => void;
 };
 
@@ -30,6 +31,7 @@ function actionableError(error: unknown, fallback: string): string {
 
 export function ConversationProviderSettings({
   onSavedProviderChange,
+  defaultModel,
 }: ConversationProviderSettingsProps) {
   const [loadState, setLoadState] = useState<LoadState>({ tag: 'loading' });
   const [saveState, setSaveState] = useState<SaveState>({ tag: 'idle' });
@@ -157,10 +159,17 @@ export function ConversationProviderSettings({
                 onChange={handleModelChange}
                 value={draftSettings.agy_model}
               >
-                <option value="default">Default</option>
+                <option value="default">Use Antigravity setting (recommended)</option>
                 <option value="gemini-3.8-flash-low">Gemini 3.8 Flash Low</option>
                 <option value="gemini-3.8-flash-high">Gemini 3.8 Flash High</option>
               </select>
+              {draftSettings.agy_model === 'default' && (
+                <span className="text-xs text-zinc-400">
+                  CLI setting: {defaultModel ?? 'not specified in the local settings file'}. This
+                  follows Antigravity and may change when you change its model. Use Recheck files
+                  above to refresh.
+                </span>
+              )}
             </label>
           )}
 
@@ -172,7 +181,7 @@ export function ConversationProviderSettings({
           )}
 
           <div className="rounded-xl border border-white/[0.06] bg-black/20 p-3 text-xs leading-relaxed text-zinc-400">
-            <p>Detailed coaching feedback and memory checks still use Antigravity.</p>
+            <p>Detailed coaching, answer examples and memory checks still use Antigravity.</p>
             <p className="mt-1 text-zinc-500">
               Replies use simple English and ask one short question.
             </p>

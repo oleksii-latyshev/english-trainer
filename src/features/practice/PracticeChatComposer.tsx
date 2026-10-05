@@ -1,5 +1,6 @@
 import { Button } from '@heroui/react';
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { clearSessionDraft, getSessionDraft, setSessionDraft } from './lib/draftStore';
 import {
   canSendPracticeInput,
@@ -12,6 +13,7 @@ import { ScaffoldingPanel } from './ScaffoldingPanel';
 type Props = {
   sessionId?: number;
   currentRequestId: number;
+  answerSequence?: number;
   question?: string;
   transcript?: string;
   isRecording: boolean;
@@ -30,6 +32,7 @@ type Props = {
 export function PracticeChatComposer({
   sessionId,
   currentRequestId,
+  answerSequence,
   question,
   transcript,
   isRecording,
@@ -44,6 +47,7 @@ export function PracticeChatComposer({
   onStopRecording,
   onSend,
 }: Props) {
+  const { actualInput } = usePreferredMicrophone();
   const [draft, setDraft] = useState('');
   const [lastRecognizedVoice, setLastRecognizedVoice] = useState<string | undefined>(undefined);
   const [isNewVoice, setIsNewVoice] = useState(false);
@@ -172,42 +176,11 @@ export function PracticeChatComposer({
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
-      if (
-        draft.trim() &&
-        canSendPracticeInput({
-          busy,
-          isRecording,
-          transcribing,
-          disabled,
-          isRetrying,
-          recallActive,
-          isSending,
-        })
-      ) {
-        const source = resolveInputSource({
-          draft,
-          recognizedText: lastRecognizedVoice,
-          isNewVoice,
-        });
-        void handleTriggerSend(draft, source);
-      }
+      handleSendClick();
     }
   }
 
   function handleSendClick() {
-    if (
-      !draft.trim() ||
-      !canSendPracticeInput({
-        busy,
-        isRecording,
-        transcribing,
-        disabled,
-        isRetrying,
-        recallActive,
-        isSending,
-      })
-    )
-      return;
     const source = resolveInputSource({ draft, recognizedText: lastRecognizedVoice, isNewVoice });
     void handleTriggerSend(draft, source);
   }
@@ -225,7 +198,13 @@ export function PracticeChatComposer({
               </span>
             </summary>
             <div className="pt-2">
-              <ScaffoldingPanel question={question} />
+              <ScaffoldingPanel
+                key={`${sessionId}:${answerSequence}:${question}`}
+                question={question}
+                sessionId={sessionId}
+                sequence={answerSequence}
+                disabled={busy || isSending || isRecording || transcribing || isComposerBlocked}
+              />
             </div>
           </details>
         )}
@@ -290,7 +269,15 @@ export function PracticeChatComposer({
           </div>
         </div>
 
+        {isNewVoice && !isSending && (
+          <p className="m-0 text-xs text-zinc-400">
+            Check the recognized text, especially names and technical words, before sending.
+          </p>
+        )}
         <div className="composer-footer">
+          {actualInput && (
+            <span className="text-xs text-zinc-400">Last input: {actualInput.label}</span>
+          )}
           <div className="flex items-center gap-3">
             <label className="composer-checkbox-label">
               <input

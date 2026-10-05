@@ -1,6 +1,7 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
 import { isQuestionScaffold, type QuestionScaffold } from '@/lib/types';
+import { GuidedAnswerPanel } from './GuidedAnswerPanel';
 
 type Mode = 'full' | 'partial' | 'off';
 const MODES: Mode[] = ['full', 'partial', 'off'];
@@ -9,9 +10,9 @@ type HintState =
   | { tag: 'ready'; question: string; hints: QuestionScaffold }
   | { tag: 'error'; question: string };
 
-type Props = { question: string };
+type Props = { question: string; sessionId?: number; sequence?: number; disabled?: boolean };
 
-export function ScaffoldingPanel({ question }: Props) {
+export function ScaffoldingPanel({ question, sessionId, sequence, disabled = false }: Props) {
   const [mode, setMode] = useState<Mode>('partial');
   const [revealedQuestion, setRevealedQuestion] = useState<string | null>(null);
   const [hintState, setHintState] = useState<HintState>({ tag: 'loading' });
@@ -47,7 +48,7 @@ export function ScaffoldingPanel({ question }: Props) {
     <section aria-label="Answer help" className="scaffold-card">
       <div className="scaffold-toggle-row">
         <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          Answer Scaffolding
+          Answer help
         </span>
         <div className="flex items-center gap-1 rounded-lg border border-white/8 bg-black/30 p-1 text-xs">
           {MODES.map((option) => (
@@ -67,6 +68,14 @@ export function ScaffoldingPanel({ question }: Props) {
         </div>
       </div>
 
+      {mode === 'full' && (
+        <GuidedAnswerPanel
+          question={question}
+          sessionId={sessionId}
+          sequence={sequence}
+          disabled={disabled}
+        />
+      )}
       {mode !== 'off' && !isTauri() && (
         <p className="m-0 text-xs text-zinc-400">Answer help is available in the desktop app.</p>
       )}
@@ -115,7 +124,7 @@ export function ScaffoldingPanel({ question }: Props) {
           )}
           {(mode === 'full' || showExpressions) && (
             <div>
-              <p className="mb-1.5 font-semibold text-zinc-200">Useful B2 collocations:</p>
+              <p className="mb-1.5 font-semibold text-zinc-200">Useful expressions:</p>
               <div className="scaffold-pills">
                 {hints.useful_expressions.map((expr) => (
                   <span className="scaffold-pill !border-purple-500/20 !text-purple-300" key={expr}>

@@ -173,9 +173,12 @@ export type ProviderErrorCode =
   | 'busy'
   | 'database_error';
 
+export type ReplyStage = 'envelope' | 'schema' | 'content';
+
 export type ProviderError = {
   code: ProviderErrorCode;
   message: string;
+  reply_stage?: ReplyStage;
 };
 
 export {
@@ -266,7 +269,12 @@ export function isProviderError(value: unknown): value is ProviderError {
     'code' in value &&
     isProviderErrorCode(value.code) &&
     'message' in value &&
-    typeof value.message === 'string'
+    typeof value.message === 'string' &&
+    (!('reply_stage' in value) ||
+      value.reply_stage === undefined ||
+      value.reply_stage === 'envelope' ||
+      value.reply_stage === 'schema' ||
+      value.reply_stage === 'content')
   );
 }
 

@@ -1,5 +1,6 @@
 pub(crate) mod conversation;
 mod feedback;
+pub(crate) mod guided;
 pub(crate) mod runner;
 mod usage;
 

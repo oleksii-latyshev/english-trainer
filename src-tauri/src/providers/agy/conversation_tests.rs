@@ -225,7 +225,8 @@ fn selected_model_is_passed_as_arguments_and_dialogue_rules_are_in_prompt() {
         &dir,
         r#"
 case "$*" in
-  *"--model gemini-3.8-flash-low --effort low"*) ;;
+  *"--effort"*) exit 2 ;;
+  *"--model gemini-3.8-flash-low"*|*"--model gemini-3.8-flash-high"*) ;;
   *) exit 2 ;;
 esac
 printf '%s' '{"status":"SUCCESS","structured_output":{"spoken_reply":"Hello.","question":"How are you?","session_phase":"active","is_complete":false}}'
@@ -234,9 +235,30 @@ printf '%s' '{"status":"SUCCESS","structured_output":{"spoken_reply":"Hello.","q
     let engine = AgyEngine { binary };
     let request = context("Hello");
     assert!(generate_using_model(&engine, &request, Some("gemini-3.8-flash-low")).is_ok());
+    assert!(generate_using_model(&engine, &request, Some("gemini-3.8-flash-high")).is_ok());
     let prompt = make_prompt(&request, false);
     assert!(prompt.contains("Do not invent facts"));
     assert!(prompt.contains("exactly one simple question"));
     assert!(parse_structured_turn(r#"{"spoken_reply":"How are you?","question":"What happened?","session_phase":"active","is_complete":false}"#).is_err());
     assert!(parse_structured_turn(r#"{"spoken_reply":"Hello.","question":"How? Why?","session_phase":"active","is_complete":false}"#).is_err());
+}
+
+#[test]
+fn failures_distinguish_envelope_shape_and_content_without_accepting_partial_replies() {
+    assert!(matches!(
+        parse_envelope("not JSON"),
+        Err(ReplyStage::Envelope)
+    ));
+    assert!(matches!(
+        parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":7}}"#),
+        Err(ReplyStage::Schema)
+    ));
+    let raw = parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":"What?","question":"How are you?","session_phase":"active","is_complete":false}}"#).unwrap();
+    assert!(matches!(validate_turn(raw), Err(ReplyStage::Content)));
+    let error = parse_structured_turn(r#"{"spoken_reply":"Hello.","question":"Missing punctuation","session_phase":"active","is_complete":false}"#).unwrap_err();
+    assert_eq!(error.reply_stage, Some(ReplyStage::Content));
+    assert_eq!(
+        serde_json::to_value(error).unwrap()["reply_stage"],
+        "content"
+    );
 }

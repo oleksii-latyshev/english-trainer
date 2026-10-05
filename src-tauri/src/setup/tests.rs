@@ -105,6 +105,7 @@ fn serializes_diagnostics_with_snake_case_statuses() {
     let temp = TempDir::new();
     let data = temp.path().join("data");
     let diagnostics = SetupDiagnostics {
+        agy_default_model: None,
         whisper_cli: check_cli(None),
         whisper_model: check_model(&data.join("model.bin")),
         agy_cli: check_cli(None),
@@ -122,4 +123,23 @@ fn serializes_diagnostics_with_snake_case_statuses() {
             .to_string_lossy()
             .as_ref()
     );
+}
+
+#[test]
+fn cli_default_model_metadata_is_bounded_and_never_returns_other_settings() {
+    let dir = crate::providers::agy::runner::ScratchDirectory::new().unwrap();
+    let path = dir.path().join("settings.json");
+    fs::write(
+        &path,
+        r#"{"model":"Claude Sonnet 4.6 (Thinking)","other":"not exposed"}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        read_agy_default_model(&path).as_deref(),
+        Some("Claude Sonnet 4.6 (Thinking)")
+    );
+    fs::write(&path, r#"{"model":7}"#).unwrap();
+    assert!(read_agy_default_model(&path).is_none());
+    fs::write(&path, "x".repeat(65_537)).unwrap();
+    assert!(read_agy_default_model(&path).is_none());
 }

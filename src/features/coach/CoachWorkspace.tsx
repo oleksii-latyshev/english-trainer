@@ -283,6 +283,7 @@ export function CoachWorkspace({
       )}
 
       <PracticeChatComposer
+        answerSequence={session ? session.turnCount + 1 : undefined}
         busy={model.busy || model.practice.tag !== 'active'}
         currentRequestId={model.currentRequestId}
         disabled={session === undefined || isCoachPending || isRetrying}

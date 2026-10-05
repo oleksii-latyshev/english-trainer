@@ -5,6 +5,7 @@ import { useTrainer } from '@/context/TrainerContext';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import type { ConversationProviderId, SetupDiagnostics } from '@/lib/types';
 import { ConversationProviderSettings } from './ConversationProviderSettings';
+import { MicrophoneSettings } from './MicrophoneSettings';
 import { ProviderResponseTest } from './ProviderResponseTest';
 
 type DiagnosticsState =
@@ -139,7 +140,12 @@ export function SettingsHardwareView() {
         )}
       </Card>
 
-      <ConversationProviderSettings onSavedProviderChange={handleSavedProviderChange} />
+      <ConversationProviderSettings
+        onSavedProviderChange={handleSavedProviderChange}
+        defaultModel={diagnostics.tag === 'ready' ? diagnostics.data.agy_default_model : undefined}
+      />
+
+      <MicrophoneSettings />
 
       <Card className="border border-white/[0.08] bg-[#161619] p-5">
         <div>

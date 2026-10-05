@@ -8,6 +8,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod ai_settings;
 pub(crate) mod coach;
+mod guided;
 pub(crate) mod memory_recall;
 pub(crate) mod recall;
 mod rules;

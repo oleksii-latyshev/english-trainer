@@ -1,63 +1,15 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
+import type { ActualAudioInput } from '@/audio/types';
+import { type CaptureState, type Recording, viewFor } from './captureView';
 import { microphoneError } from './microphoneError';
 import type { SpeechTiming } from './TimingPanel';
 import { transcribeWav } from './transcribeWav';
-import { type TranscriptionRecovery, transcriptionRecovery } from './transcriptionRecovery';
+import { transcriptionRecovery } from './transcriptionRecovery';
 import type { useSystemSpeech } from './useSystemSpeech';
 
-export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
-
-type Recording = { playbackUrl: string; durationMs: number; speechStoppedAtMs: number };
-
-type CaptureState =
-  | { tag: 'idle' | 'requesting' }
-  | { tag: 'recording' | 'stopping'; elapsedMs: number }
-  | ({ tag: 'ready'; failure?: TranscriptionRecovery } & Recording)
-  | ({ tag: 'transcribing' } & Recording)
-  | { tag: 'transcript'; text: string; durationMs: number; speechStoppedAtMs: number }
-  | { tag: 'error'; message: string; failure?: TranscriptionRecovery };
-
-export type CaptureView = {
-  status: RecordingStatus;
-  error: string;
-  elapsedMs: number;
-  durationMs: number;
-  playbackUrl?: string;
-  transcript?: string;
-  transcriptionFailure?: TranscriptionRecovery;
-  transcribing: boolean;
-  timing: SpeechTiming;
-  currentRequestId: number;
-  speechStoppedAtMs?: number;
-};
-
-function recordingStatus(state: CaptureState): RecordingStatus {
-  if (state.tag === 'transcribing' || state.tag === 'transcript') return 'ready';
-  return state.tag;
-}
-
-function viewFor(state: CaptureState, timing: SpeechTiming, currentRequestId: number): CaptureView {
-  return {
-    status: recordingStatus(state),
-    error: state.tag === 'error' && !state.failure ? state.message : '',
-    elapsedMs: state.tag === 'recording' || state.tag === 'stopping' ? state.elapsedMs : 0,
-    durationMs:
-      state.tag === 'ready' || state.tag === 'transcribing' || state.tag === 'transcript'
-        ? state.durationMs
-        : 0,
-    playbackUrl:
-      state.tag === 'ready' || state.tag === 'transcribing' ? state.playbackUrl : undefined,
-    transcript: state.tag === 'transcript' ? state.text : undefined,
-    transcriptionFailure:
-      state.tag === 'ready' || state.tag === 'error' ? state.failure : undefined,
-    transcribing: state.tag === 'transcribing',
-    timing,
-    currentRequestId,
-    speechStoppedAtMs: state.tag === 'transcript' ? state.speechStoppedAtMs : undefined,
-  };
-}
+export type { CaptureView, RecordingStatus } from './captureView';
 
 export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
   const [state, setState] = useState<CaptureState>({ tag: 'idle' });
@@ -73,7 +25,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
   useEffect(() => {
     return () => {
       requestIdRef.current += 1;
-      // Cleanup errors cannot be shown after unmount and do not affect saved data.
+      // Cleanup errors cannot be shown after unmount; no data is persisted.
       void recorderRef.current?.cancel().catch(() => {});
       recorderRef.current = null;
       recordedWavRef.current = null;
@@ -136,15 +88,16 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
         return;
       }
       recorderRef.current = recorder;
+      const actualInput = recorder.actualInput;
       const startedAt = performance.now();
       timerRef.current = setInterval(() => {
         setState((current) =>
           current.tag === 'recording'
-            ? { tag: 'recording', elapsedMs: performance.now() - startedAt }
+            ? { ...current, elapsedMs: performance.now() - startedAt }
             : current,
         );
       }, 100);
-      setState({ tag: 'recording', elapsedMs: 0 });
+      setState({ tag: 'recording', elapsedMs: 0, actualInput });
     } catch (cause) {
       if (requestId === requestIdRef.current) {
         setState({ tag: 'error', message: microphoneError(cause) });
@@ -159,10 +112,11 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
     if (!recorder || state.tag !== 'recording') return;
     const requestId = requestIdRef.current;
     const speechStoppedAtMs = performance.now();
+    const actualInput = state.actualInput;
     recorderRef.current = null;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
-    setState({ tag: 'stopping', elapsedMs: state.elapsedMs });
+    setState({ tag: 'stopping', elapsedMs: state.elapsedMs, actualInput });
     try {
       const startedAt = performance.now();
       const result = await recorder.stop();
@@ -184,6 +138,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
         setState({
           ...recording,
           tag: 'ready',
+          actualInput,
           failure: {
             kind: 'setup',
             message: 'Open the desktop app with bun run dev to use local transcription.',
@@ -192,33 +147,45 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
         return;
       }
 
-      await runTranscription(requestId, recording, result.wav);
+      await runTranscription(requestId, recording, result.wav, actualInput);
     } catch (cause) {
       if (requestId === requestIdRef.current) {
-        setState({ tag: 'error', message: microphoneError(cause) });
+        setState({ tag: 'error', message: microphoneError(cause), actualInput });
       }
     }
   }
 
-  async function runTranscription(requestId: number, recording: Recording, wav: Blob) {
+  async function runTranscription(
+    requestId: number,
+    recording: Recording,
+    wav: Blob,
+    actualInput?: ActualAudioInput,
+  ) {
     transcribingRef.current = true;
     setState({
       tag: 'transcribing',
       playbackUrl: recording.playbackUrl,
       durationMs: recording.durationMs,
       speechStoppedAtMs: recording.speechStoppedAtMs,
+      actualInput,
     });
     try {
       const { text, sttMs } = await transcribeWav(wav);
-      handleTranscript(requestId, recording, text, sttMs);
+      handleTranscript(requestId, recording, text, sttMs, actualInput);
     } catch (cause) {
-      handleTranscriptionError(requestId, recording, cause);
+      handleTranscriptionError(requestId, recording, cause, actualInput);
     } finally {
       transcribingRef.current = false;
     }
   }
 
-  function handleTranscript(requestId: number, recording: Recording, text: string, sttMs: number) {
+  function handleTranscript(
+    requestId: number,
+    recording: Recording,
+    text: string,
+    sttMs: number,
+    actualInput?: ActualAudioInput,
+  ) {
     if (requestId !== requestIdRef.current) return;
     setTiming((current) => ({ ...current, sttMs }));
     if (!text.trim()) {
@@ -226,6 +193,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       setState({
         tag: 'error',
         message: '',
+        actualInput,
         failure: {
           kind: 'record_again',
           message: 'No speech was detected. Try speaking closer to the microphone.',
@@ -239,17 +207,23 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       text,
       durationMs: recording.durationMs,
       speechStoppedAtMs: recording.speechStoppedAtMs,
+      actualInput,
     });
   }
 
-  function handleTranscriptionError(requestId: number, recording: Recording, cause: unknown) {
+  function handleTranscriptionError(
+    requestId: number,
+    recording: Recording,
+    cause: unknown,
+    actualInput?: ActualAudioInput,
+  ) {
     if (requestId !== requestIdRef.current) return;
     const failure = transcriptionRecovery(cause);
     if (failure.kind === 'record_again') {
       discardRecording();
-      setState({ tag: 'error', message: '', failure });
+      setState({ tag: 'error', message: '', failure, actualInput });
     } else {
-      setState({ ...recording, tag: 'ready', failure });
+      setState({ ...recording, tag: 'ready', failure, actualInput });
     }
   }
 
@@ -265,7 +239,7 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
       });
       return;
     }
-    await runTranscription(requestIdRef.current, state, recordedWavRef.current);
+    await runTranscription(requestIdRef.current, state, recordedWavRef.current, state.actualInput);
   }
 
   const view = viewFor(state, timing, requestIdRef.current);

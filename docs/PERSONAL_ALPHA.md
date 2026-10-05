@@ -113,7 +113,7 @@ The choice and the selected Agy model are persisted in local SQLite and apply to
 request in Conversation, Daily Practice, Coach Continue, and Test AI response. A request already
 running keeps its original provider. Default retains Agy's current CLI model; the explicit Flash
 Low and Flash High choices use the verified `gemini-3.8-flash-low` and
-`gemini-3.8-flash-high` IDs with low CLI effort for short dialogue. Model access still depends on
+`gemini-3.8-flash-high` IDs without an additional effort override because those model IDs already encode effort. Model access still depends on
 your Antigravity account. Settings does not generate a reply automatically.
 
 Apple uses the fixed system Foundation Models model. It needs a supported Mac, macOS 26+, Apple
@@ -135,3 +135,35 @@ Codex CLI was tested separately using synthetic dialogue only. GPT-6 Luna was re
 installed CLI/account; GPT-5.6 Luna with low reasoning returned three usable structured replies
 in 6.20 / 7.90 / 5.88 seconds (median 6.20 s). This does not establish a speed advantage over Agy
 and it is not an application provider. No HTTP API adapter or API key was added.
+
+## October 5 practice update
+
+Settings → Microphone lets you choose an input and explicitly record a ten-second playback check.
+Nothing records when Settings opens or when devices refresh. The check is local and is not transcribed,
+sent to AI or saved; Discard or leaving Settings releases it. If a selected device disappears,
+reconnect it or choose another input. The app does not silently switch to the system default.
+The selected device ID is saved as a local WebView hardware preference; if storage is unavailable,
+selection remains usable for the current app run and a message explains the limitation.
+
+Conversation / Coach → Answer help & flow → Full Help → Show complete example prepares a short,
+fictional model answer to the current question. Listen, replace details in the bracketed template,
+then hide help and speak your version. Examples use Antigravity independently of the conversation
+provider. Requesting an example marks subsequent answers in this session as cued for mastery
+tracking; hiding the example does not erase that history. Start a later session for fresh independent
+phrase evidence. A failed example can be retried without losing the conversation.
+
+Default is the recommended conversation model based on the October 5 synthetic sample (median
+6.65 seconds); explicit Flash Low and Flash High were slower in that sample. Use Test AI response
+to measure your current setup. Provider failure keeps the editable answer ready to resend. Check
+names and technical vocabulary in the recognized text before sending.
+
+The benchmark's Default entry used the CLI setting on this Mac: Claude Sonnet 4.6 (Thinking),
+not another Gemini tier. Settings labels this option “Use Antigravity setting” and shows the model
+read from the local CLI settings file. Changing the CLI model changes this option's behavior;
+Recheck files refreshes the displayed setting. Explicit Flash Low/High selections override it.
+
+For microphone troubleshooting, wait until Recording appears before speaking. Startup waits for input
+frames and a three-second input warmup (never for detected speech), with an eight-second readiness timeout.
+The live level meter and Recording check details show captured amplitude by second, captured duration
+versus elapsed recording time, and browser-reported processing settings. These measurements do not
+prove speech presence; they stay in memory and are discarded with the test.

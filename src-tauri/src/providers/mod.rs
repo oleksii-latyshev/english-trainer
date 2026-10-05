@@ -1,6 +1,7 @@
 pub(crate) mod agy;
 mod apple;
 mod settings;
+pub use agy::guided::{generate_guided_answer, GuidedAnswer};
 pub use settings::{AgyModel, AiSettings, ConversationProvider};
 
 use serde::{Deserialize, Serialize};
@@ -223,10 +224,20 @@ pub enum ProviderErrorCode {
     DatabaseError,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReplyStage {
+    Envelope,
+    Schema,
+    Content,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProviderError {
     pub code: ProviderErrorCode,
     pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reply_stage: Option<ReplyStage>,
 }
 
 impl ProviderError {
@@ -234,6 +245,7 @@ impl ProviderError {
         Self {
             code,
             message: message.into(),
+            reply_stage: None,
         }
     }
 }

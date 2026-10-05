@@ -30,6 +30,12 @@ describe('conversation IPC payloads', () => {
 
   it('accepts known provider errors only', () => {
     expect(isProviderError({ code: 'timeout', message: 'Try again.' })).toBe(true);
+    expect(
+      isProviderError({ code: 'invalid_output', message: 'Retry.', reply_stage: 'schema' }),
+    ).toBe(true);
+    expect(
+      isProviderError({ code: 'invalid_output', message: 'Retry.', reply_stage: 'unknown' }),
+    ).toBe(false);
     expect(isProviderError({ code: 'invalid_session', message: 'Start a new session.' })).toBe(
       true,
     );
