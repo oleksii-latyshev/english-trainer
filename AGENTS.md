@@ -5,15 +5,16 @@
   Follow `CODE_REQUIREMENTS.md` for implementation conventions.
 - This is a macOS-first Tauri v2 app. React/TypeScript owns the UI and audio controls; Rust
   owns sessions, providers, persistence, metrics, and learning decisions. Keep Tauri IPC typed.
-- Preserve the core loop: speak → focused feedback → stronger phrasing → speak again → remember
-  and review. Keep conversation responsive if deeper feedback fails.
+- Preserve the core loop: speak → fast AI reply → inline rephrasing → speak again → remember and
+  review. The conversation never waits for coaching or help. Practice content is English only.
 - Local STT and local SQLite are defaults. Discard raw audio after transcription unless the
   user explicitly enables retention. Ambient prompts and notifications are opt-in.
-- In the app itself, use Antigravity CLI (`agy`) as the initial LLM adapter. This is an app runtime
-  provider, not an instruction to use `agy` as a coding worker. Keep it replaceable and verify its
-  actual command behavior before implementation.
-- The repository is still a starter. Build one useful vertical slice at a time and do not mark
-  roadmap items complete merely because a shell or interface exists.
+- In the app itself, the real-time AI providers are Apple Foundation Models (bundled helper) and the
+  Gemini API; Antigravity CLI (`agy`) is a legacy adapter being moved out of the real-time path.
+  These are app runtime providers, not coding workers. Keep them behind engine traits and verify
+  actual API/CLI behavior and latency before relying on it.
+- One roadmap feature = one commit of meaningful size. Do not mark a feature accepted because code
+  or an interface exists; acceptance is checked in the built app on a physical Mac.
 - Run checks relevant to changed files; report what was verified manually versus automatically.
 - This repository refreshes its Codebase Memory index after Git checkout and merge via Lefthook.
   Before relying on graph results after ordinary file edits, check index freshness and run

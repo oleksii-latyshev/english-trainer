@@ -1,6 +1,11 @@
-# First Personal Alpha Feedback — 2026-10-02
+# Personal Alpha Feedback Log
 
-## Observed by the user
+Dated observations from real use and the investigations that followed. Current priorities are in
+[ROADMAP.md](ROADMAP.md); this file is history.
+
+## First session — 2026-10-02
+
+### Observed by the user
 
 - Written English is stronger than spontaneous speaking. Full Help does not provide enough support to construct a spoken answer.
 - Real recording and local transcription work: basic microphone acceptance can be closed. The selected microphone was not the intended device; input selection and an explicit playback check are needed.
@@ -8,7 +13,7 @@
 - AI replies intermittently fail with `The conversation provider returned an invalid reply twice. Please retry.` Successful replies can feel too slow.
 - Coach requires scrolling back to submit an answer. The desired interaction is a chat with a fixed bottom voice/text composer, help above it, and topic/task at the top.
 
-## Investigation
+### Investigation
 
 - Current Full Help is a deterministic set of sentence starters, structure, and expressions. It has no complete model answer or model dialogue.
 - Current audio flow is record → stop → manually transcribe → manually send. Transcription is read back with TTS before the partner response; a smoother chat should avoid adding that playback delay to every answer.
@@ -19,7 +24,7 @@
 
 Sources: [Apple Foundation Models overview](https://developer.apple.com/videos/play/wwdc2025/286/), [generation and availability](https://developer.apple.com/documentation/FoundationModels/generating-content-and-performing-tasks-with-foundation-models).
 
-## Guided speaking example
+### Guided speaking example
 
 Task: say what you are working on. A complete answer is more useful than an isolated starter.
 
@@ -31,7 +36,7 @@ Adaptation: I am working on [a project]. It helps [someone] do [something]. Toda
 
 First read the example, then replace one or two details, then speak the adapted answer. Reading/copying is guided practice and must not be counted as independent phrase mastery. Reduce support only when the learner chooses it or demonstrates repeated success.
 
-## Acceptance criteria for implementation
+### Acceptance criteria for implementation
 
 - Provider failures keep the answer recoverable and distinguish unavailable/timeout/invalid output. Synthetic benchmarks record time and error categories, not personal transcripts or provider logs.
 - Topic/task is visible at the top; dialogue remains readable; recording, text editing, and send are reachable without scrolling back. Duplicate/stale submissions cannot save or advance another turn.
@@ -141,3 +146,31 @@ The three-second preparation build passed all 116 frontend tests, type checking 
 checks. It was built and installed successfully with matching executable hashes and verified signature,
 then reopened at Settings / System default. No recording was started by the agent; physical acceptance
 of the first recorded second remains pending.
+
+## Refocus review — 2026-10-06
+
+### Observed by the user
+
+- The core problem is structuring a spoken answer in real time, not knowing what to say.
+- AI replies are still too slow, and technical terms are still sometimes misrecognised.
+- Apple Intelligence now works on the user's Mac.
+- Practice stays English-only; the interface may later be Russian. The standard system voice is
+  acceptable.
+
+### Investigation
+
+- Code review found the main latency sources: an `agy` process per turn (agent CLI, schema,
+  sandbox, no streaming), whole-reply generation before speech, strict reply validation, a
+  `whisper-cli` process with `base.en` and no initial prompt per answer, and a three-second
+  microphone warm-up per recording.
+- Apple helper, synthetic input, three runs: 4,644 ms cold, then 1,598 and 1,663 ms for a whole
+  non-streamed structured reply. One reply described the assistant instead of acknowledging the
+  learner, so on-device quality must be checked in real sessions.
+- Gemini API free-tier limits are shown per project in Google AI Studio; free-tier content may be
+  used to improve Google products and read by human reviewers.
+
+### Decisions
+
+Recorded in [ROADMAP.md](ROADMAP.md#decisions-2026-10-06): streaming Apple and Gemini API
+providers, `agy` out of the real-time path, English-only practice, frozen usage-review subsystem,
+system voices until an avatar needs neural TTS. The documentation set was reduced to the MVP.

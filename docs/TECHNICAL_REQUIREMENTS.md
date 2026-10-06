@@ -1,1048 +1,242 @@
-# Technical Requirements & Engineering Standards
-
-This document defines the technical stack, engineering standards, provider boundaries, IPC contracts, local persistence model, macOS integration, and performance requirements for English Trainer.
-
----
-
-## 1. System Requirements & Toolchain
-
-| Component | Target / Version | Notes |
-| :--- | :--- | :--- |
-| **OS** | macOS 14.0+ | Apple Silicon first |
-| **CPU** | Apple Silicon | M1 and newer |
-| **Package Manager** | `bun` >= 1.1 | Frontend scripts and dependencies |
-| **Rust Toolchain** | stable Rust >= 1.80 | `aarch64-apple-darwin` |
-| **Tauri** | Tauri v2.x | Desktop runtime, IPC, tray, windows |
-| **Xcode Tools** | Current compatible Xcode CLI tools | Metal / native build requirements |
-| **Local DB** | SQLite | Application state and learning history |
-| **Initial LLM Access** | Antigravity CLI (`agy`) | Adapter behind provider interfaces |
-
-The application is macOS-first. Cross-platform support is not an MVP requirement.
-
----
-
-## 2. Frontend Technology Stack
-
-### 2.1 Core Stack
-
-- React 19;
-- TypeScript with strict mode;
-- Vite;
-- Bun;
-- Tailwind CSS v4;
-- Shadcn/ui + Radix primitives;
-- Lucide React;
-- TanStack Router;
-- TanStack Query for async command state;
-- Zustand or a small explicit state machine for audio/session UI state.
-
-### 2.2 Main Frontend Routes
-
-```text
-/                 Dashboard / Daily Practice
-/conversation     Fluency-oriented conversation
-/rehearsal        Coach mode / re-speaking
-/interview        Interview packs
-/drills           Focused skill builders
-/memory           Learning Memory
-/progress         Benchmarks and trends
-/settings         Audio, providers, ambient mode, privacy
-```
-
-### 2.3 Secondary Window
-
-A compact window is required for Ambient Practice.
-
-Suggested states:
-
-```text
-idle
-prompt
-recording
-transcribing
-thinking
-speaking
-feedback
-complete
-error
-```
-
-It should be possible to open this window without showing the full dashboard.
-
----
-
-## 3. Audio Capture
-
-### 3.1 Input
-
-MVP recording model:
-
-- Push-to-Talk;
-- Web Audio API;
-- mono input;
-- 16-bit PCM;
-- target sample rate appropriate for the selected STT engine, with 16 kHz as the default normalization rate;
-- in-memory buffer by default.
-
-The implementation must not rely on `MediaRecorder` producing a specific PCM/WAV format across WebKit versions. Prefer explicit PCM capture/encoding through Web Audio / AudioWorklet when deterministic input is required.
-
-### 3.2 Raw Audio Retention
-
-Default:
-
-```text
-record → transcribe → extract local metrics → discard raw audio
-```
-
-Optional future setting:
-
-```text
-Retain recordings for pronunciation / manual review
-```
-
-The setting is off by default.
-
-### 3.3 VAD
-
-VAD is not required for the first working speaking loop.
-
-Later VAD requirements:
-
-- tolerate B1 thinking pauses;
-- expose configurable endpoint thresholds;
-- allow manual override / Push-to-Talk fallback;
-- never automatically submit on every short hesitation.
-
----
-
-## 4. Speech-to-Text Provider
-
-### 4.1 Provider Interface
-
-Rust core should depend on an abstraction similar to:
-
-```rust
-#[async_trait]
-pub trait SpeechToTextProvider: Send + Sync {
-    async fn transcribe(&self, request: TranscriptionRequest)
-        -> anyhow::Result<Transcript>;
-}
-```
-
-Suggested response:
-
-```rust
-pub struct Transcript {
-    pub text: String,
-    pub language: String,
-    pub duration_ms: u64,
-    pub segments: Vec<TranscriptSegment>,
-}
-```
-
-### 4.2 Initial Local Provider
-
-Initial implementation:
-
-```text
-LocalWhisperProvider
-```
-
-Candidate model for the first prototype:
-
-```text
-English-only base-class Whisper model
-```
-
-Exact model and quantization are benchmark decisions, not permanent product contracts.
-
-### 4.3 Metal / CoreML Validation Spike
-
-Do not hardcode an assumption that `whisper-rs` exposes a `coreml` Cargo feature.
-
-Required engineering spike:
-
-1. build the selected current whisper-rs / whisper.cpp integration on the target macOS version;
-2. verify Metal inference;
-3. verify whether CoreML / ANE encoder acceleration is available through the selected binding/build path;
-4. benchmark 2 s, 5 s, 15 s, and 30 s speech samples;
-5. record memory usage and model-load time;
-6. choose the production build configuration from measured results.
-
-Metal support is the safe baseline. CoreML/ANE acceleration is an optimization to validate.
-
-### 4.4 Model Provisioning
-
-Models are stored under the app support directory, for example:
-
-```text
-~/Library/Application Support/com.englishtrainer.app/models/
-```
-
-Requirements:
-
-- first-run model check;
-- explicit download progress;
-- checksum validation;
-- retry / resume strategy where practical;
-- model selection in advanced settings;
-- no application crash when model files are missing.
-
----
-
-## 5. Text-to-Speech
-
-### 5.1 MVP Provider
-
-Use system speech synthesis exposed through the macOS WebView where reliable.
-
-Requirements:
-
-- discover available voices at runtime;
-- prefer English voices;
-- do not assume a named voice always exists;
-- configurable speech rate;
-- pause / stop / replay;
-- interrupt previous speech when a new turn begins if required.
-
-Suggested speech rate range:
-
-```text
-0.85x – 1.20x
-```
-
-### 5.2 Provider Boundary
-
-```rust
-pub trait TextToSpeechProvider {
-    // Frontend-backed implementation may use an IPC/event boundary.
-}
-```
-
-The domain model should refer to a TTS capability rather than to specific voice names.
-
----
-
-## 6. LLM Provider Architecture
-
-### 6.1 Rule
-
-No domain or learning module may call `agy` directly.
-
-All model access goes through provider interfaces.
-
-### 6.2 Conversation Engine
-
-Purpose:
-
-- keep dialogue natural;
-- ask follow-up questions;
-- follow scenario constraints;
-- produce short text intended for TTS;
-- maintain low latency.
-
-Suggested contract:
-
-```rust
-#[async_trait]
-pub trait ConversationEngine: Send + Sync {
-    async fn start_session(&self, request: StartSessionRequest)
-        -> anyhow::Result<ConversationTurn>;
-
-    async fn next_turn(&self, request: ConversationRequest)
-        -> anyhow::Result<ConversationTurn>;
-}
-```
-
-### 6.3 Feedback Engine
-
-Purpose:
-
-- grammar analysis;
-- B1 → B2 upgrades;
-- collocations;
-- coherence evidence;
-- learning-target extraction;
-- benchmark evaluation;
-- first-attempt vs re-speaking comparison.
-
-```rust
-#[async_trait]
-pub trait FeedbackEngine: Send + Sync {
-    async fn evaluate_turn(&self, request: FeedbackRequest)
-        -> anyhow::Result<TurnFeedback>;
-
-    async fn compare_attempts(&self, request: AttemptComparisonRequest)
-        -> anyhow::Result<AttemptComparison>;
-
-    async fn evaluate_benchmark(&self, request: BenchmarkRequest)
-        -> anyhow::Result<BenchmarkEvaluation>;
-}
-```
-
-### 6.4 Initial Antigravity Adapters
-
-```text
-AntigravityConversationProvider
-AntigravityFeedbackProvider
-```
-
-Both may share low-level execution infrastructure.
-
-Model names are configuration values, not types embedded throughout the codebase.
-
-Suggested settings:
-
-```text
-conversation_model
-feedback_model
-benchmark_model
-```
-
-The same model may initially be used for all three.
-
----
-
-## 7. Antigravity CLI Execution Contract
-
-### 7.1 Isolation
-
-Each invocation runs in a dedicated temporary directory:
-
-```text
-/tmp/eng-trainer-agy-{uuid}/
-```
-
-The execution wrapper should:
-
-1. create scratch directory;
-2. write required schema/input files;
-3. execute `agy` non-interactively;
-4. capture stdout/stderr;
-5. parse the final valid structured payload;
-6. map it into typed Rust structs;
-7. delete temporary files.
-
-### 7.2 Binary Resolution
-
-Resolution order:
-
-1. explicit application setting;
-2. `ENG_TRAINER_AGY_BIN` environment variable;
-3. system `PATH`;
-4. common local paths such as `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`.
-
-### 7.3 Resilience
-
-Required:
-
-- timeout;
-- cancellation where practical;
-- provider health check;
-- typed error categories;
-- one bounded retry for transient parse/process failure when safe;
-- preserve conversation session if feedback evaluation fails.
-
-### 7.4 Structured Output
-
-All machine-consumed responses use JSON schema or equivalent strict structured output.
-
-Never parse prose with fragile string matching when a typed field can be required.
-
----
-
-## 8. Structured Schemas
-
-### 8.1 Conversation Turn
-
-Keep the fast conversation schema intentionally small:
-
-```json
-{
-  "spoken_reply": "string",
-  "question": "string | null",
-  "session_phase": "string",
-  "is_complete": false
-}
-```
-
-Scaffolding may be generated separately or as a small optional object when the active mode requires it.
-
-### 8.2 Turn Feedback
-
-Suggested shape:
-
-```json
-{
-  "focus_feedback": [
-    {
-      "category": "grammar | vocabulary | coherence | interaction",
-      "original": "string",
-      "improved": "string",
-      "explanation": "string",
-      "priority": "low | medium | high",
-      "confidence": 0.0
-    }
-  ],
-  "b2_upgrades": [],
-  "useful_phrases": [],
-  "mistake_candidates": [],
-  "dimension_evidence": {
-    "accuracy": [],
-    "range": [],
-    "coherence": [],
-    "interaction": []
-  }
-}
-```
-
-Fluency should incorporate locally measured speech timing rather than relying only on the LLM.
-
-### 8.3 Attempt Comparison
-
-```json
-{
-  "target_fixed": true,
-  "improvements": [],
-  "remaining_issue": "string | null",
-  "recommended_next_action": "accept | retry | save_phrase"
-}
-```
-
-### 8.4 Benchmark Evaluation
-
-The benchmark schema must return:
-
-- evidence per speaking dimension;
-- strengths;
-- weaknesses;
-- uncertainty / confidence;
-- examples from the transcript;
-- no unsupported claim that the result is an official CEFR certification.
-
----
-
-## 9. Local Speech Metrics
-
-The app should compute as much as possible deterministically on-device.
-
-Candidate metrics:
-
-```text
-recording_duration_ms
-speech_duration_ms
-silence_duration_ms
-speech_pause_ratio
-response_start_latency_ms
-long_pause_count
-long_pause_duration_ms
-words_per_minute
-filler_count
-filler_rate_per_minute
-```
-
-Definitions must be versioned once benchmarks are introduced so historical trends remain comparable.
-
-### 9.1 Fluency Aggregation
-
-Do not infer Fluency from words-per-minute alone.
-
-A fluent B2 response may intentionally contain pauses.
-
-Use a combination of:
-
-- response-start behavior;
-- disruptive long pauses;
-- filler density;
-- continuity;
-- successful turn completion;
-- benchmark evidence.
-
----
-
-## 10. Learning Engine
-
-### 10.1 Responsibilities
-
-The Rust learning module owns:
-
-- mistake normalization;
-- duplicate detection;
-- phrase cards;
-- spaced review scheduling;
-- mastery state transitions;
-- session target selection;
-- benchmark trend aggregation;
-- Mini Eva XP events derived from real learning events.
-
-### 10.2 Learning Status
-
-Suggested statuses:
-
-```text
-new
-learning
-improving
-stable
-archived
-```
-
-### 10.3 Scheduling
-
-A simplified SM-2-like algorithm can be used initially for phrase/mistake recall.
-
-Do not use the same scheduling model for every signal. For example, a fluency issue such as long pauses should be trained through speaking sessions rather than flashcard review.
-
-### 10.4 Spontaneous Usage & Mastery Rules (Vertical Slice)
-
-1. **Eligibility Limits**:
-   - Limited to saved first-pass `conversation` turns 1 and 2 (`sequence <= 2`). Later turns are excluded because due-memory cues may enter AI prompts after turn 2. Dedicated Coach mode, retries, and cued drills are strictly excluded.
-   - Candidates: at most 3 non-archived items created before session `started_at` (mistakes with occurrences in earlier sessions before session start; phrases created before session start with provenance outside current session).
-   - Target length: 2+ words, <= 300 characters.
-   - Source rejection: target rejected if full wording was in opening question, preceding turn AI reply/question, earlier saved feedback (`original`, `improved`, `b2_rewrite`), or `question_scaffold(answered_question)` starters/expressions.
-   - Cue exposure check: targets with a session cue exposure timestamp `<= turn.created_at` are excluded during candidate preparation, so neither positive nor negative evidence is credited from an exposed target.
-   - No eligible candidates: persists honest empty assessment without calling LLM provider.
-
-2. **Semantic Review Engine**:
-   - `UsageReviewEngine` provider interface, isolated from fast dialogue turns.
-   - Prompt treats data as strict JSON, requires outcome (`correct`, `incorrect`, `uncertain`), confidence (0.0–1.0), and contiguous transcript excerpt (<= 500 chars).
-   - Backend independently revalidates findings: require confidence >= 0.9 for positive/negative credit; excerpt must be an exact contiguous transcript substring and contain normalized target words for correct use. Incorrect use must quote the full target, or for a mistake item the full original mistake wording; a phrase meaning or note is not evidence of phrase use.
-   - In-flight isolation: per-turn in-flight guard prevents duplicate provider requests without blocking `send_turn` or `finish`.
-
-3. **Mastery Progression & Relapse Rules**:
-   - `times_correct_afterwards`: cumulative count of distinct sessions with accepted correct evidence (lifetime, preserved across relapses).
-   - Mastery streak: count of accepted correct sessions on separate calendar days occurring strictly after latest relapse (excluding the relapse's whole session).
-   - `New -> Learning`: on first qualified success.
-   - `Learning -> Improving`: after >= 2 distinct qualifying sessions on separate days.
-   - `Improving -> Stable`: requires >= 3 distinct qualifying sessions on separate days, >= 3 distinct weekly buckets (7-day intervals from first success), and first-to-last >= 21 full days.
-   - `Stable persists on success`; `Archived` is never altered.
-   - Relapse: qualified incorrect use resets status to `Learning`, `interval_days = 1`, `next_review_at = original_turn_time` (due), and resets streak to 0.
-   - Repeated known correction in saved conversation feedback demotes `Stable` to `Learning` in the same transaction with an idempotent feedback-origin relapse event. If that feedback is detached, the relapse event is removed and projection is recomputed without fictitious evidence.
-
-The implemented slice is an explicit user action on saved first-pass conversation answers 1 and 2; opening Conversation never calls the semantic reviewer. It uses the stored transcript and the saved turn time, so reviewing an older answer later cannot create a new practice week. The database stores assessments, typed evidence events, and cue exposure timestamps separately. Assessment commit rechecks the saved answer and target identity/content/status/provenance and commits the assessment, evidence, counter, mastery projection, and returned-target exposure atomically. Duplicate reviews return the first saved assessment. Positive evidence preserves the existing SRS interval and due time; a relapse resets the interval and due time to the original answer time, including when older events are inserted later.
-
-`times_correct_afterwards` retains its pre-migration value as a fixed counter baseline and adds the count of distinct sessions with accepted correct evidence. No historical events are fabricated from the old counter. The displayed usage evidence describes transcript wording, not pronunciation or certified proficiency. The semantic evaluator has strict structural and quote checks but has not been calibrated against real learner sessions; physical-microphone acceptance remains open.
-
----
-
-## 11. SQLite Data Model
-
-Recommended tables:
-
-### 11.1 `sessions`
-
-```text
-id
-mode
-scenario
-started_at
-ended_at
-conversation_provider
-feedback_provider
-speaking_seconds
-metadata_json
-```
-
-### 11.2 `turns`
-
-```text
-id
-session_id
-sequence
-user_transcript
-assistant_reply
-created_at
-attempt_group_id
-is_retry
-```
-
-### 11.3 `speech_metrics`
-
-```text
-turn_id
-recording_duration_ms
-speech_duration_ms
-silence_duration_ms
-response_start_latency_ms
-long_pause_count
-filler_count
-words_per_minute
-metrics_version
-```
-
-### 11.4 `mistakes`
-
-```text
-id
-normalized_key
-category
-original_example
-corrected_example
-severity
-confidence
-times_seen
-times_correct_afterwards
-last_seen_at
-next_review_at
-status
-```
-
-### 11.5 `phrase_cards`
-
-```text
-id
-phrase
-meaning_or_note
-source_turn_id
-created_at
-next_review_at
-stability
-status
-```
-
-### 11.6 `review_events`
-
-```text
-id
-item_type
-item_id
-result
-created_at
-```
-
-### 11.7 `benchmarks`
-
-```text
-id
-started_at
-completed_at
-benchmark_version
-```
-
-### 11.8 `benchmark_dimension_results`
-
-```text
-benchmark_id
-dimension
-internal_score
-confidence
-evidence_json
-```
-
-### 11.9 `ambient_quests`
-
-```text
-id
-type
-prompt
-learning_target_id
-scheduled_for
-status
-created_at
-```
-
-### 11.10 `quest_events`
-
-```text
-quest_id
-event_type
-created_at
-metadata_json
-```
-
-### 11.11 `companion_state`
-
-```text
-singleton_id
-level
-xp
-expression
-active_theme
-last_interaction_at
-state_json
-```
-
-### 11.12 `settings`
-
-Key/value or typed settings store containing:
-
-- audio preferences;
-- provider configuration;
-- retention preferences;
-- ambient frequency;
-- quiet hours;
-- autostart;
-- notification preferences.
-
----
-
-## 12. macOS Ambient Integration
-
-### 12.1 Tauri Plugins / Capabilities
-
-Expected desktop capabilities:
-
-- tray icon;
-- `tauri-plugin-notification`;
-- `tauri-plugin-autostart`;
-- optional global shortcut plugin;
-- optional positioner/window positioning support;
-- single-instance handling.
-
-### 12.2 Menu Bar / Tray
-
-The tray icon provides low-friction access while the main window is hidden.
-
-MVP actions:
-
-```text
-Speak now
-Give me a quest
-Review one phrase
-Pause prompts today
-Open English Trainer
-Quit
-```
-
-A rich Mini Eva UI should open in a compact Tauri window rather than depend on a native Swift menu implementation.
-
-### 12.3 Autostart
-
-Autostart is optional.
-
-Requirements:
-
-- disabled until explicitly enabled by the user;
-- visible toggle in Settings;
-- app can start with main window hidden and tray active;
-- user can disable it at any time.
-
-### 12.4 Local Notifications
-
-Requirements:
-
-- permission requested only when Ambient Mode is enabled;
-- configurable daily maximum;
-- quiet hours;
-- no aggressive repeating prompt after dismissal;
-- clicking a quest should open an appropriate compact/main app route.
-
-Local notification scheduling should be used for reminders that must still be delivered when the app is not actively open.
-
-### 12.5 WidgetKit — Future Native Extension
-
-A future WidgetKit target can show glanceable state on macOS.
-
-Implementation expectations:
-
-- separate native Swift extension target;
-- shared read-only app-group-compatible state or exported snapshot;
-- deep links back into English Trainer;
-- no dependency on the widget for core learning flows.
-
-WidgetKit is explicitly outside the MVP critical path.
-
----
-
-## 13. Mini Eva / Gamification Requirements
-
-### 13.1 Rule
-
-Game state is downstream from learning events.
-
-Example:
-
-```text
-Successful phrase recall
-  → Learning Engine records review success
-  → GamificationService awards XP
-  → Companion state updates
-```
-
-Never:
-
-```text
-Companion level increased
-  → language score increases
-```
-
-### 13.2 XP Sources
-
-Good XP sources:
-
-- completed speaking answer;
-- successful re-speaking improvement;
-- phrase recall;
-- finished benchmark;
-- mistake moved to `stable`;
-- optional micro-quest.
-
-Avoid awarding meaningful progress merely for opening the app.
-
-### 13.3 No Punitive Decay
-
-No pet death, lost levels, or deleted streak progress because the user missed a day.
-
----
-
-## 14. IPC API
-
-Suggested Tauri command surface:
-
-| Command | Input | Return | Purpose |
-| :--- | :--- | :--- | :--- |
-| `transcribe_audio` | audio payload | `Transcript` | Local STT |
-| `start_session` | mode + scenario | `SessionState` | Create speaking session |
-| `send_turn` | session + audio/transcript | `ConversationTurn` | Fast conversation path |
-| `get_turn_feedback` | turn id | `TurnFeedback` | Fetch/evaluate coaching data |
-| `retry_turn` | turn id + audio | `AttemptComparison` | Re-speaking comparison |
-| `finish_session` | session id | `SessionSummary` | Close and aggregate session |
-| `get_daily_practice` | optional goal | `PracticePlan` | Build short daily session |
-| `get_learning_memory` | filters | records | Mistakes and phrase cards |
-| `submit_review` | item + response | result | SRS review event |
-| `start_benchmark` | version | benchmark session | Progress assessment |
-| `get_progress` | range | trend data | Dashboard metrics |
-| `get_next_micro_quest` | optional category | quest | Ambient practice |
-| `complete_micro_quest` | quest + result | completion | Save quest result |
-| `get_companion_state` | none | state | Mini Eva UI |
-| `get_system_voices` | none | voices | TTS settings |
-| `get_provider_health` | none | health report | Diagnostics |
-
-Exact API names may evolve, but responsibilities should stay separated.
-
----
-
-## 15. Latency Requirements
-
-The most important metric is:
-
-```text
-end_of_user_speech → beginning_of_ai_audio
-```
-
-Development target:
-
-```text
-p50 < 1.5 s
-p95 < 3.0 s
-```
-
-Measure components independently:
-
-```text
-capture finalization
-STT
-conversation provider
-IPC/render
-TTS start
-```
-
-The targets must be validated on target M1-class hardware.
-
-Deep feedback is not included in the critical conversation latency budget.
-
----
-
-## 16. Benchmark & Score Requirements
-
-### 16.1 CEFR-Inspired, Not CEFR-Certified
-
-The application can maintain internal trend scores for:
-
-- Fluency;
-- Accuracy;
-- Range;
-- Coherence;
-- Interaction.
-
-UI copy must not imply official certification.
-
-### 16.2 Evidence Requirement
-
-Every benchmark dimension result should contain supporting evidence.
-
-The UI should be able to answer:
-
-> Why did this dimension improve or decline?
-
-Examples:
-
-- fewer disruptive pauses;
-- successful use of target collocations;
-- recurring preposition error still present;
-- stronger answer structure;
-- improved handling of follow-ups.
-
-### 16.3 Versioning
-
-Store:
-
-```text
-benchmark_version
-metrics_version
-prompt_version
-```
-
-when necessary to avoid comparing incompatible historical measurements silently.
-
----
-
-## 17. Privacy & Permissions
-
-### 17.1 Required / Expected
-
-- microphone permission.
-
-### 17.2 Optional
-
-- notifications, only for Ambient Mode;
-- launch-at-login, only when enabled by user.
-
-### 17.3 Not Required for MVP
-
-- Screen Recording;
-- Accessibility access;
-- active-application monitoring;
-- contacts/calendar access;
-- privileged daemon installation.
-
-The prompt “What are you working on?” does not imply that the application knows what is on screen.
-
----
-
-## 18. Error Handling
-
-Use typed errors internally.
-
-Suggested categories:
-
-```text
-AudioCaptureError
-TranscriptionError
-ProviderUnavailable
-ProviderTimeout
-InvalidStructuredResponse
-DatabaseError
-PermissionDenied
-ModelMissing
-NotificationUnavailable
-```
-
-Requirements:
-
-- never panic on model/provider output;
-- user-readable errors must include a recovery action where possible;
-- feedback failure must not destroy a conversation session;
-- local history writes should be transactional around critical state changes.
-
----
-
-## 19. Code Quality Standards
-
-1. **Strict TypeScript:** no unbounded `any` in application code.
-2. **Typed Rust domain models:** provider output maps to typed structs.
-3. **Small modules:** target <= 300 lines per code file; split by responsibility when complexity grows.
-4. **Provider boundaries:** model-specific code stays inside adapters.
-5. **No UI business logic:** learning/mastery rules live in Rust/domain modules.
-6. **No silent fallback that changes learning semantics:** surface provider degradation explicitly.
-7. **Test deterministic logic first:** Learning Engine, scheduling, DB repositories, schema parsing, metrics, state transitions.
-8. **Do not block feature delivery on exhaustive UI tests:** test depth can scale with product maturity.
-
----
-
-## 20. Test Strategy
-
-### 20.1 Required Early Tests
-
-Prioritize tests for logic that is cheap to test and expensive to debug manually:
-
-- schema parsing;
-- DB migrations;
-- mistake deduplication;
-- phrase review scheduling;
-- mastery state transitions;
-- ambient scheduler quiet-hour rules;
-- companion XP rules;
-- prompt selection constraints;
-- provider timeout/error mapping.
-
-### 20.2 Integration Tests
-
-Add targeted integration tests for:
-
-```text
-audio fixture → STT
-structured fixture → Feedback Engine parsing
-turn → Learning Memory update
-retry attempt → mastery update
-micro-quest → completion → XP event
-```
-
-### 20.3 Manual Product Benchmarks
-
-Maintain a small local fixture set of real B1-style recordings to compare:
-
-- transcription quality;
-- inference time;
-- long-pause metrics;
-- model build changes.
-
----
-
-## 21. Definition of Done — Technical
-
-A milestone is technically complete when relevant requirements are met:
-
-1. main speaking flow works without cloud STT;
-2. Push-to-Talk is reliable;
-3. conversation can continue even if feedback analysis fails;
-4. provider responses deserialize without application crashes;
-5. Learning Memory persists and can be queried;
-6. re-speaking updates mastery evidence;
-7. raw audio is not persisted by default;
-8. latency metrics are observable;
-9. menu-bar quick launch works before Ambient Mode is considered complete;
-10. proactive notifications respect explicit opt-in and quiet hours;
-11. gamification cannot mutate language scores;
-12. benchmark scores retain evidence and version information.
-
-
-## Chat interaction contracts (2026-10-03)
-
-- `get_practice_dialogue({ sessionId })` returns `{ session_id, opening_question, turns, input_sources }` for the active session only. Each saved turn has `learner`, `assistant_reply`, and `assistant_question`; a pending Coach answer has empty assistant fields. This read does not expose hints or change learning state.
-- `send_practice_turn` and `save_coach_answer` accept optional `inputSource` (`voice`, `edited`, `text`). Omission is conservatively treated as `text`. Source is saved atomically with the successful answer in `turn_input_sources`; failed provider calls save neither. Existing pre-migration speech turns retain their earlier voice interpretation.
-- Typed and edited first-pass answers remain valid conversation input and coaching material but cannot enter the independent spoken memory assessor or create a spoken-mastery relapse from written corrections. Source describes how input was captured, not proof of pronunciation or a CEFR level.
-- A stopped recording may trigger local transcription once. Preview/correction is the default; automatic submission requires the learner to enable it and applies only to a new successful voice transcript. Recall and Try Again keep their separate submission rules.
-- UI drafts remain in memory only. Raw recording data follows the existing local transcription/discard lifecycle; no browser persistence or new audio retention is introduced.
-
-## Comfort pass contracts (2026-10-05)
-
-- `get_guided_answer({ sessionId, sequence, question })` returns `{ model_answer, adaptation }` for
-  the active unanswered prompt only. Rust checks session, sequence, exact question and pending Coach
-  review. Cue exposure is saved before provider generation; stale generation cannot supply another
-  turn's help. Requested examples conservatively exclude later session answers from spontaneous
-  mastery; exposure survives restart. Failure does not advance or remove the session.
-- Agy model IDs encode effort; explicit Flash Low/High requests must not also pass `--effort low`.
-  Conversation attempts share a 45-second outer budget. Invalid output adds optional `reply_stage`
-  (`envelope`, `schema`, `content`) to the existing typed provider error. No provider content is retained
-  in diagnostics. Rust validation stays authoritative even when the schema declares matching limits.
-- Microphone selection is UI hardware state stored only as a local device ID. Explicit selection uses
-  `deviceId: { exact: id }`; missing devices never cause silent default fallback. The actual input is
-  read from the acquired audio track. Settings device enumeration does not request capture.
-- The explicit microphone test uses the same PCM recorder, auto-stops after ten seconds and supports
-  local playback/discard only. It never transcribes, calls a provider or saves audio. Cancelling,
-  disconnecting or leaving the view cancels capture and releases playback URLs. Device changes and
-  tests are blocked during active practice capture. Real hardware checks remain manual acceptance.
-- Setup diagnostics may expose optional `agy_default_model` from the local CLI settings file.
-  Read only a bounded settings file and return only a bounded plain-text model name; never expose
-  other settings. The UI labels the implicit provider option as following Antigravity and displays
-  the detected name. Explicit Flash Low/High selections override that setting.
-- Push-to-talk capture requests `echoCancellation`, `noiseSuppression` and `autoGainControl` as
-  `false` to avoid browser voice filtering. These are best-effort browser preferences,
-  not a guarantee about device DSP or macOS microphone modes. Playback/TTS stops before capture.
-- Recording readiness requires the actual input to deliver three seconds of audio frames, including silence.
-  Until then the UI remains Starting, and the Settings timer has not begun. Startup times out after
-  eight seconds and releases capture. Warmup samples are not part of the user's Recording interval.
-- Settings signal diagnostics use captured PCM samples without modifying, gating or amplifying them.
-  They display one-second amplitude windows, captured/elapsed durations and reported processing flags.
-  Measurements remain ephemeral and are never persisted, transcribed or sent to a provider.
+# Technical Requirements
+
+Contracts the code must keep. Product behaviour is in [PRODUCT_SPEC.md](PRODUCT_SPEC.md), structure
+in [ARCHITECTURE.md](ARCHITECTURE.md), coding conventions in
+[CODE_REQUIREMENTS.md](../CODE_REQUIREMENTS.md). Sections marked **Target** describe the agreed
+contract of a roadmap feature that is not implemented yet.
+
+## 1. Platform and stack
+
+| Area | Choice |
+| :--- | :--- |
+| OS | macOS 14+, Apple Silicon. Apple Foundation Models needs macOS 26+ with Apple Intelligence enabled. |
+| Desktop | Tauri v2, Rust stable, SQLite via `rusqlite` (bundled). |
+| Frontend | React 19, TypeScript (strict), Vite, Bun, Tailwind CSS v4, HeroUI v3, TanStack Router, Lucide. |
+| Quality | Biome, `tsc --noEmit`, `bun test`, rustfmt, Clippy with warnings as errors, `cargo test`; run by Lefthook pre-commit and GitHub Actions CI. |
+| Packaging | `bun run build:desktop` → ad-hoc signed `.app` and DMG; the Apple helper is compiled at build time and bundled. |
+
+## 2. Audio capture
+
+- Push-to-talk through Web Audio / AudioWorklet: mono, 16-bit PCM, normalised to 16 kHz, WAV in
+  memory. Never rely on `MediaRecorder` formats.
+- Capture requests `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`
+  (best-effort; device DSP and macOS microphone modes are outside the app's control). Playback and
+  TTS stop before capture.
+- An explicit device uses `deviceId: { exact: id }`; a missing device is a recoverable error, never
+  a silent fallback to the default. The device ID is a local WebView preference. The actual input
+  label is read from the acquired track. Enumerating devices never starts capture.
+- Readiness: Recording begins only after the input delivered three seconds of frames (including
+  silence); startup times out after eight seconds and releases capture. Warm-up samples are not part
+  of the answer. **Target [F3]:** one warm stream per session replaces the per-answer warm-up.
+- The Settings microphone check uses the same recorder, stops after ten seconds, offers local
+  playback and discard only, and shows per-second amplitude, captured vs elapsed duration and
+  reported processing flags. It never transcribes, calls a provider or saves audio. Device changes
+  and checks are blocked while practice capture is active.
+- **Target [F4]:** optional voice activity detection with a configurable end-of-turn pause
+  (default ~1.5 s) and a "keep listening" control; push-to-talk remains available.
+
+## 3. Speech recognition
+
+Current:
+
+- `transcribe_audio` receives raw WAV bytes; Rust validates RIFF/WAVE, mono, 16-bit, 16 kHz, at most
+  60 MB.
+- `whisper-cli` is resolved from `ENG_TRAINER_WHISPER_BIN`, `PATH`, then Homebrew paths. The model
+  defaults to `<app data>/models/ggml-base.en.bin` (override `ENG_TRAINER_WHISPER_MODEL`).
+- Each call runs in a private temporary directory, has a 120 s timeout and maps failures to typed
+  `TranscriptionError` codes (`model_missing`, `engine_missing`, `engine_failed`, `timeout`,
+  `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`).
+
+**Target [F3]:**
+
+- A long-lived worker keeps the model loaded (Metal). Model choice (English-only) is made from a
+  measured comparison on the learner's recordings; record word accuracy on a fixed list of
+  technical terms and latency for 5 s and 15 s answers.
+- The request carries an initial prompt built from the current question, the last turns and the
+  personal glossary, bounded to Whisper's prompt length.
+- Recognition uncertainty is never presented as a pronunciation or knowledge error.
+
+## 4. Speech output
+
+- System voices through `speechSynthesis`; voices are discovered at runtime, English voices are
+  preferred, no named voice is assumed. Rate is adjustable; pause, resume, stop and replay exist.
+- A new recording or a new AI turn cancels current speech.
+- **Target [F2]:** the reply is spoken sentence by sentence as it streams in.
+
+## 5. Conversation providers
+
+### 5.1 Current contract
+
+- `ConversationContext`: `opening_question`, up to 8 `recent_turns` (learner, assistant reply,
+  assistant question), `latest_transcript` (1–4,000 characters), up to 2 `learning_targets`.
+  Total context at most 8,000 characters; the oldest turns are dropped first.
+- `ConversationTurn`: `spoken_reply` (one statement, ≤ 30 words), `question` (one question ending
+  in `?`, ≤ 20 words), `provider_latency_ms`.
+- Settings (`ai_settings` table): provider `agy | apple`; `agy_model`
+  `default | gemini-3.8-flash-low | gemini-3.8-flash-high`. Model IDs already encode effort; never
+  also pass `--effort`.
+- `agy` runs with `--print`, `--json-schema`, `--sandbox`, `--disable-slash-commands`, a log file,
+  in a private temporary directory. Both attempts share one 45 s budget. Invalid output returns a
+  typed error with `reply_stage` (`envelope`, `schema`, `content`); provider output is never stored.
+- Apple runs the bundled helper with the prompt on stdin; unavailability reasons map to typed
+  `unavailable` errors. Apple failures never fall back to sending the transcript to `agy`.
+
+### 5.2 Target [F1]
+
+- Engine output is a stream of text chunks delivered to the UI through a Tauri `Channel`, followed
+  by a final event with the complete reply, `first_token_ms` and `total_ms`.
+- The reply is plain text: one or two short sentences and one question. Rust trims to a length cap,
+  strips markdown and rejects only empty output.
+- Apple adapter: one helper process per app run speaking JSON lines; `prewarm()` when a session
+  opens; `streamResponse`; restart once if the process exits.
+- Gemini API adapter: `streamGenerateContent` over HTTPS with a request timeout; the key is read
+  from the OS credential store (`keyring` crate; service `com.user.english-trainer`, account
+  `gemini-api-key`), with `ENG_TRAINER_GEMINI_API_KEY` as a developer override; the key is sent only
+  in the `x-goog-api-key` header, never in a URL; errors map to `unavailable`, `unauthorized`, `rate_limited`, `timeout`,
+  `invalid_output`.
+- Tiers, not model IDs, at call sites: `conversation` (fast) and `coaching` (quality).
+- The learner's answer is saved only after a complete reply; on failure it stays editable.
+
+## 6. Coaching, help and review providers
+
+- `get_turn_feedback(question, transcript)` → `TurnFeedback { focus_feedback[], b2_rewrite }`
+  parsed with `deny_unknown_fields`.
+- `retry_practice_turn` saves a second attempt and returns a local `AttemptComparison`
+  (`target_evidence`: `already_present_in_both | newly_observed_in_retry | partially_observed |
+  not_observed | uncertain`, word-count change).
+- `get_guided_answer(session_id, sequence, question)` → `{ model_answer, adaptation }` for the
+  active unanswered prompt only. Rust checks session, sequence, exact question and pending Coach
+  review. The cue exposure is saved **before** generation; a stale result cannot supply help for
+  another turn. Failure does not change the session.
+- **Target [F5]:** feedback runs automatically after each saved answer, in parallel with the reply,
+  and returns a natural rephrasing plus at most one focus point.
+- **Target [F6]:** a help bundle `{ frame[3], phrases[3..5], model_answer, adaptation }` is
+  prefetched when a question appears. Opening any level records a cue exposure.
+- **Target [F7]:** rescue requests carry the partial transcript and return one suggestion; they
+  record a cue exposure.
+
+## 7. Sessions and input provenance
+
+- Modes: `conversation` (eight-answer goal; target [F8] is time-based) and `coach` (four answers,
+  explicit Continue). Target [F5] retires `coach` as a separate mode; saved sessions stay readable.
+- `get_practice_dialogue(session_id)` returns `{ session_id, opening_question, turns,
+  input_sources }` for the active session only; a pending Coach answer has empty assistant fields.
+- `send_practice_turn` and `save_coach_answer` take an optional `input_source`
+  (`voice | edited | text`; omitted means `text`), saved atomically with the answer in
+  `turn_input_sources`. Failed provider calls save nothing.
+- Voice auto-send applies only to a new successful transcription and only when enabled. Drafts stay
+  in memory; no browser persistence of answers.
+- A session has at most one in-flight provider request; duplicate or stale submissions are rejected.
+
+## 8. Persistence
+
+SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
+
+| Group | Tables |
+| :--- | :--- |
+| Sessions | `sessions`, `turns`, `turn_input_sources`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
+| Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
+| Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
+| Settings | `ai_settings` |
+
+- Migrations are additive and idempotent; tests cover upgrade from older schemas.
+- Writes that change learning state (answer + source, review + schedule, assessment + evidence +
+  projection) are single transactions.
+- Raw audio is never stored. API keys are never stored in SQLite.
+
+## 9. Learning rules
+
+### 9.1 Scheduling
+
+- Self-reported review: "need practice" → interval 1 day, status `learning`; "remembered" →
+  interval 2 → 4 → previous × ease (4–365 days), ease +0.1 up to 3.0. `new → learning`;
+  `learning → improving` once the interval reaches 4 days; self-report never sets `stable`.
+- Spoken recall (daily recall, Memory review) saves transcript wording evidence and the schedule
+  change atomically. Wording match is transcript evidence, not mastery.
+
+### 9.2 Usage review and mastery (frozen subsystem)
+
+1. **Eligibility:** saved first-pass `conversation` answers 1 and 2 only; Coach answers, retries and
+   drills are excluded. Typed or edited answers are excluded. At most 3 non-archived candidates
+   created before the session start (mistakes with earlier occurrences, phrases with provenance
+   outside the session), 2+ words, ≤ 300 characters.
+2. **Source rejection:** a target is rejected if its wording appeared in the opening question, the
+   preceding AI reply/question, earlier saved feedback, or the question scaffold. Targets with a cue
+   exposure at or before the answer time are excluded. No eligible candidates → an empty assessment
+   is saved without calling a provider.
+3. **Review:** `UsageReviewEngine` returns per target `correct | incorrect | uncertain`, confidence
+   and a contiguous transcript excerpt (≤ 500 characters). Rust re-validates: confidence ≥ 0.9; the
+   excerpt is an exact transcript substring containing the normalised target words; incorrect use
+   must quote the full target (or full original mistake wording). One in-flight review per turn.
+4. **Progression:** `times_correct_afterwards` counts distinct sessions with accepted correct
+   evidence (plus a fixed pre-migration baseline). Streak = accepted correct sessions on separate
+   days after the latest relapse. `new → learning` on first success; `learning → improving` after
+   2 sessions on separate days; `improving → stable` after 3 sessions on separate days, in 3
+   distinct weekly buckets, spanning at least 21 days. `archived` never changes.
+5. **Relapse:** accepted incorrect use, or a repeated known correction in saved conversation
+   feedback, resets status to `learning`, interval to 1 day, due at the original answer time, and
+   the streak to 0. Feedback-origin relapse events are idempotent and are removed if the feedback
+   is detached.
+6. Commit re-checks the answer and target identity/status/provenance and saves assessment, events,
+   counters, projection and cue exposure atomically. Duplicate reviews return the first assessment.
+   Evidence describes transcript wording, not pronunciation or certified proficiency.
+
+## 10. IPC
+
+- Every Rust type crossing `invoke()` has a TypeScript counterpart in `src/lib/` updated in the same
+  commit; fields stay `snake_case`.
+- Errors cross IPC as typed values with a `code`; the UI branches on codes, never on messages.
+  Current `ProviderErrorCode` also carries session and database failures (`busy`,
+  `invalid_session`, `database_error`); separating them into their own error types is planned with
+  [F5].
+- Current commands: `transcribe_audio`, `get_setup_diagnostics`, `get_ai_settings`,
+  `save_ai_settings`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
+  `send_practice_turn`, `save_coach_answer`, `continue_coach_turn`, `get_practice_dialogue`,
+  `finish_practice_session`, `get_turn_feedback`, `save_practice_feedback`, `retry_practice_turn`,
+  `get_question_scaffold`, `get_guided_answer`, `get_daily_recall_plan`, `submit_daily_recall`,
+  `save_phrase_card`, `get_learning_memory`, `view_learning_memory`, `submit_learning_review`,
+  `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `finish_memory_review`,
+  `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.
+- Long-running commands are `async` and run blocking work with `spawn_blocking`.
+
+## 11. Setup diagnostics
+
+`get_setup_diagnostics` reports paths and readability of `whisper-cli`, the Whisper model and
+`agy`, the database path, and the bounded, plain-text default model name read from the local `agy`
+settings file (no other settings exposed). **Target [F1]:** Apple model availability and Gemini
+key presence (never the key itself). Detection never proves authentication, transcription quality or
+microphone permission, and never starts capture or a provider request.
+
+## 12. Latency
+
+Primary metric: end of learner speech → first AI audio.
+
+| Stage | Budget (p50) |
+| :--- | :--- |
+| End of turn (button or VAD) | ≤ 0.2 s (button) / pause setting (VAD) |
+| Transcription of a 15 s answer | ≤ 1.5 s |
+| Provider first token | ≤ 1.0 s |
+| First sentence to audio start | ≤ 0.3 s |
+| **Total** | **≤ 2.5 s p50, ≤ 4 s p95** |
+
+Each stage is measured in the app and shown in a debug panel; deep feedback is outside the budget.
+Synthetic benchmarks record timings and error categories only, never personal transcripts.
+
+## 13. Privacy and permissions
+
+- Required: microphone. Not required: Screen Recording, Accessibility, notifications, autostart.
+- Audio is transcribed locally and discarded; failed transient attempts stay in memory for retry
+  until reset or close.
+- Only the transcript and minimal context go to the selected provider. The Gemini free tier allows
+  Google to use prompts for product improvement and human review; Settings shows this notice.
+- Local data: sessions, transcripts, Learning Memory and settings in SQLite; device ID in WebView
+  storage; API key in the OS credential store (Keychain on macOS).
+
+## 14. Testing
+
+- Rust unit tests beside the code for parsers, validation, scheduling, migrations and transactions.
+- Fake providers at the edge: `ENG_TRAINER_AGY_BIN` for `agy`; **target [F1]** a fake streaming
+  engine for a pipeline test in `src-tauri/tests/`.
+- Live provider checks are `#[ignore]` and run explicitly with synthetic input only.
+- Manual checks on a physical Mac are required for microphone, STT quality, TTS and perceived
+  latency; a green unit test does not prove them.

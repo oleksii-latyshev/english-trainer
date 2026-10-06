@@ -11,21 +11,28 @@ Everything in the repository is English.
 
 ```
 src/
-  App.tsx               main view switch, route shell, and window layout
-  components/           shared by more than one feature; ui/ is vendored shadcn/radix
-  lib/                  shared and DOM-free: audio, api, types, preferences, storage
-  features/<feature>/   one user-facing area: practice, conversation, coach, memory, drills, progress, companion, settings
+  App.tsx               app providers and window layout
+  router.tsx            TanStack Router route tree
+  components/           shared by more than one feature (HeroUI-based)
+  context/              app-wide React context; may import feature hook *types* only
+  audio/                shared microphone capture, device preference, signal diagnostics (Web Audio)
+  lib/                  shared and DOM-free: IPC types (`*Types.ts`), settings, formatting
+  features/<feature>/   one user-facing area: practice, conversation, coach, memory, speech,
+                        dashboard, settings; drills, interview, progress are unavailable prototypes
     components/         that feature's components
     lib/                that feature's pure logic, tests beside it
 src-tauri/src/          session orchestrator, local STT, providers, learning engine, SQLite
-src-tauri/tests/        pipeline integration tests against a temp database and fake agy
-e2e/                    Playwright against Vite / Tauri, command layer faked
+src-tauri/apple/        Swift helper for Apple Foundation Models, compiled at build time
+src-tauri/tests/        pipeline integration tests against a temp database and a fake provider (added with F1)
+e2e/                    Playwright against Vite / Tauri, command layer faked (added after F5)
 ```
 
 - Code starts in the feature that uses it and moves to `components/` or `lib/` when a second
   feature needs it — not before.
-- Features depend one way: `practice → conversation, coach, memory`; features are leaves
-  otherwise. No cycles, and `components/` / `lib/` never import a feature. When two features
+- Features depend one way: `practice → conversation, coach, memory, speech`,
+  `coach → speech`, `memory → speech`, `dashboard → memory`; features are leaves otherwise. No
+  cycles, and `components/`, `audio/` and `lib/` never import a feature. (The current
+  `coach → practice` imports are a known violation, removed in F5.) When two features
   need each other, the shared part belongs in `components/` or `lib/`.
 - Import through `@/…`; only files in the same folder import each other relatively. No barrels.
 - Split growing modules and components by responsibility or job (`orchestrator/session.rs`),
@@ -59,14 +66,15 @@ e2e/                    Playwright against Vite / Tauri, command layer faked
 
 - `strict`; no `any`, no non-null `!`, no `as` to silence the compiler. Narrow or validate.
 - Tauri IPC is a versioned contract: when a Rust struct crosses `invoke()`, update its TypeScript
-  type in `src/lib/types.ts` in the same commit.
+  type in `src/lib/` (`types.ts` or the matching `*Types.ts`) in the same commit.
 - Fields that cross `invoke()` stay `snake_case` on both sides; do not rename them to camelCase in TS.
 - Units explicit in names: `durationMs`, `sampleRateHz`, `wordsPerMinute`, `dueAt`.
 - Never swallow an error. An empty `catch` is only for failures that are harmless by design
   (storage unavailable), and says so.
-- Rust: `anyhow` with `.context()` naming what was being done internally; typed error categories
-  across IPC (`AudioCaptureError`, `TranscriptionError`, `ProviderUnavailable`, etc.). TS branches
-  on typed error kinds, NEVER matches on error message strings.
+- Rust: typed error values with a `code` across IPC (`TranscriptionError`, `ProviderError`, and
+  dedicated session/persistence errors as they are split out). Each error message says what was
+  being done and how to recover. TS branches on typed error codes, NEVER matches on message
+  strings.
 - Parse model output into typed Rust structures. Invalid output is a recoverable provider error,
   never a panic or a partially accepted learning result.
 
@@ -76,8 +84,10 @@ e2e/                    Playwright against Vite / Tauri, command layer faked
   never assume `MediaRecorder` emits a specific format in WebKit.
 - Transcribe locally with Whisper and discard raw PCM by default. Storing audio requires an explicit
   user setting. Send the configured LLM provider only the transcript and prompt context needed.
-- Antigravity CLI (`agy`) runs in isolated scratch directories (`/tmp/eng-trainer-agy-{uuid}/`) with
-  bounded timeouts and structured responses. Never pass the repository as working directory.
+- LLM providers: Apple Foundation Models (bundled helper) and the Gemini API are the target
+  real-time providers; API keys live in the OS credential store (Keychain on macOS), never in SQLite, logs or the
+  repository. The legacy Antigravity CLI (`agy`) runs only in private scratch directories with
+  bounded timeouts; never pass the repository as its working directory.
 - macOS companion: Ambient prompts, notifications, and autostart are opt-in and respect quiet
   hours. Normal practice never requires Accessibility or Screen Recording permissions.
 - Honest metrics: Internal scores are CEFR-inspired trend indicators, never presented as official
@@ -116,13 +126,14 @@ e2e/                    Playwright against Vite / Tauri, command layer faked
 |---|---|---|
 | Pure TS logic | `*.test.ts` beside it in a `lib/`, no DOM | `bun test` |
 | Rust logic | `#[cfg(test)] mod tests` beside the code | `bun run test:rust` |
-| End-to-end pipeline | `src-tauri/tests/pipeline.rs` | `bun run test:rust` |
-| User flows | `e2e/*.e2e.ts` | `bun run test:e2e` |
+| End-to-end pipeline (from F1) | `src-tauri/tests/pipeline.rs` | `bun run test:rust` |
+| User flows (after F5) | `e2e/*.e2e.ts` | `bun run test:e2e` |
 
 - To test logic, move it out of the component into a `lib/` or Rust. Needing a DOM for a unit
   test means the logic is in the wrong place.
-- No mocks of code we own. Two seams are faked, both at the edge: `agy` (through
-  `ENG_TRAINER_AGY_BIN`) and, in E2E only, `invoke()`, whose fixtures are typed against `types.ts`.
+- No mocks of code we own. Seams are faked only at the edge: providers (`agy` through
+  `ENG_TRAINER_AGY_BIN`, a fake engine for streaming providers) and, in E2E only, `invoke()`, whose
+  fixtures are typed against `src/lib/` types.
 - E2E covers flows, not details. Select by role and visible English text, never by class name.
 - Every bug fix starts with a test that reproduces it.
 - No snapshot tests of rendered output.
