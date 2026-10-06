@@ -40,18 +40,23 @@ microphone permission.
      Homebrew locations and `~/.local/bin/agy`. "Use Antigravity setting" follows the model in the
      CLI's settings file; Flash Low / Flash High override it. Slow for live conversation (6–30 s
      measured).
-   - **Gemini API** *(planned, F1)*: create a key in [Google AI Studio](https://aistudio.google.com/apikey).
-     Only the API key is needed. Until Settings has a key field you can store it in the Keychain
-     yourself: `security add-generic-password -s com.user.english-trainer -a gemini-api-key -w`
-     (prompts for the value, so it does not enter shell history).
-   - Coaching, guided examples and the usage review currently always use `agy`. Apple failures are
+   - **Gemini API (recommended, default):** create a key in
+     [Google AI Studio](https://aistudio.google.com/apikey) and paste it into Settings → Conversation
+     AI → Save key. It is saved encrypted in the app data folder
+     (`~/Library/Application Support/com.user.english-trainer/gemini-api-key.enc`) and only decrypts on this
+     computer; `ENG_TRAINER_GEMINI_API_KEY` overrides it for development. No system permission
+     prompt is involved. When Gemini stalls or is overloaded, the on-device Apple model answers
+     instead if it is available. The free tier may use prompts to improve Google products and let human reviewers read
+     them; only practice transcripts are sent.
+   - Coaching, guided examples and the usage review still always use `agy`. Apple failures are
      never silently retried through another provider.
 3. **Voice:** choose a system voice and rate in Settings. The standard English voice is
    recommended.
 4. **Microphone:** choose the input in Settings and run the ten-second record/playback check. Wait
    for **Recording** before speaking (the app waits three seconds for the input to warm up). The
    check is local: it is not transcribed, sent or saved.
-5. Use **Test AI response** to send a synthetic sentence and see the provider latency.
+5. Use **Test AI response** to send a synthetic sentence and see the time to first words and the
+   full reply.
 
 Shell overrides (`ENG_TRAINER_WHISPER_BIN`, `ENG_TRAINER_WHISPER_MODEL`, `ENG_TRAINER_AGY_BIN`) apply
 only when the app inherits that environment; a Finder launch does not.

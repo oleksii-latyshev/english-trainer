@@ -109,6 +109,17 @@ pub struct StoredTurn {
     pub assistant_question: String,
 }
 
+impl StoredTurn {
+    /// What the learner answers next. Replies without a question are the prompt themselves.
+    pub(crate) fn prompt(&self) -> &str {
+        if self.assistant_question.is_empty() {
+            &self.assistant_reply
+        } else {
+            &self.assistant_question
+        }
+    }
+}
+
 struct ActiveSession {
     id: u64,
     mode: SessionMode,

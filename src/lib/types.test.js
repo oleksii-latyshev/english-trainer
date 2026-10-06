@@ -24,12 +24,17 @@ describe('conversation IPC payloads', () => {
     expect(isConversationTurn(turn)).toBe(true);
     expect(isConversationTurn({ ...turn, provider_latency_ms: 1200 })).toBe(true);
     expect(isConversationTurn({ ...turn, provider_latency_ms: -1 })).toBe(false);
+    expect(isConversationTurn({ ...turn, first_token_ms: 800 })).toBe(true);
+    expect(isConversationTurn({ ...turn, first_token_ms: 'fast' })).toBe(false);
+    expect(isConversationTurn({ ...turn, question: null })).toBe(true);
     expect(isConversationTurn({ status: 'SUCCESS', structured_output: turn })).toBe(false);
     expect(isConversationTurn({ ...turn, question: 3 })).toBe(false);
   });
 
   it('accepts known provider errors only', () => {
     expect(isProviderError({ code: 'timeout', message: 'Try again.' })).toBe(true);
+    expect(isProviderError({ code: 'unauthorized', message: 'Check the key.' })).toBe(true);
+    expect(isProviderError({ code: 'rate_limited', message: 'Wait.' })).toBe(true);
     expect(
       isProviderError({ code: 'invalid_output', message: 'Retry.', reply_stage: 'schema' }),
     ).toBe(true);

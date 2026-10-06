@@ -1,17 +1,21 @@
 import { Button, Card } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
+import { createReplyChannel } from '@/lib/replyStream';
 import { type ConversationProviderId, isConversationTurn, isProviderError } from '@/lib/types';
 
 type TestState =
   | { tag: 'idle' }
-  | { tag: 'checking' }
-  | { tag: 'reply'; text: string; latencyMs?: number }
+  | { tag: 'checking'; streamed: string }
+  | { tag: 'reply'; text: string; firstTokenMs?: number; latencyMs?: number }
   | { tag: 'error'; message: string };
 
 function providerInstructions(provider: ConversationProviderId | null): string {
   if (provider === 'apple') {
     return 'This sends the sample sentence “I am testing my English practice setup.” to your configured Apple (on-device) conversation provider. Apple Intelligence requires macOS 26+, Apple Intelligence enabled in System Settings, and on-device models downloaded.';
+  }
+  if (provider === 'gemini') {
+    return 'This sends the sample sentence “I am testing my English practice setup.” to the Gemini API using your saved API key.';
   }
   if (provider === 'agy') {
     return 'This sends the sample sentence “I am testing my English practice setup.” to your configured Antigravity CLI provider. A detected agy command only confirms that a file exists; it does not confirm account authentication. If the test fails, install Antigravity CLI and sign in using its setup flow; see README → Personal Alpha setup.';
@@ -21,6 +25,9 @@ function providerInstructions(provider: ConversationProviderId | null): string {
 
 function providerError(error: unknown, provider: ConversationProviderId | null): string {
   if (isProviderError(error)) return error.message;
+  if (provider === 'gemini') {
+    return 'The Gemini test failed. Check the API key and your internet connection, then try again.';
+  }
   if (provider === 'apple') {
     return 'The Apple provider test failed. Check Apple Intelligence setup and try again.';
   }
@@ -39,6 +46,7 @@ function responseState(result: unknown): TestState {
   return {
     tag: 'reply',
     text: result.question ? `${result.spoken_reply}\n\n${result.question}` : result.spoken_reply,
+    firstTokenMs: result.first_token_ms,
     latencyMs: result.provider_latency_ms,
   };
 }
@@ -59,10 +67,19 @@ export function ProviderResponseTest({ provider }: { provider: ConversationProvi
     if (inFlight.current) return;
     inFlight.current = true;
     const request = ++generation.current;
-    setState({ tag: 'checking' });
+    setState({ tag: 'checking', streamed: '' });
     try {
+      const onReply = createReplyChannel((text) => {
+        if (request !== generation.current) return;
+        setState((current) =>
+          current.tag === 'checking'
+            ? { tag: 'checking', streamed: current.streamed + text }
+            : current,
+        );
+      });
       const result: unknown = await invoke<unknown>('generate_follow_up', {
         transcript: 'I am testing my English practice setup.',
+        onReply,
       });
       if (request === generation.current) setState(responseState(result));
     } catch (error) {
@@ -87,11 +104,19 @@ export function ProviderResponseTest({ provider }: { provider: ConversationProvi
         >
           {state.tag === 'checking' ? 'Waiting for provider…' : 'Test AI response'}
         </Button>
+        {state.tag === 'checking' && state.streamed && (
+          <div className="rounded-lg bg-black/30 p-3" aria-live="polite">
+            <p className="text-sm text-zinc-200">{state.streamed}</p>
+          </div>
+        )}
         {state.tag === 'reply' && (
           <div className="rounded-lg bg-black/30 p-3" aria-live="polite">
-            <p className="text-sm text-zinc-200">{state.text}</p>
+            <p className="whitespace-pre-line text-sm text-zinc-200">{state.text}</p>
             {typeof state.latencyMs === 'number' && (
-              <p className="mt-2 font-mono text-xs text-zinc-400">Latency: {state.latencyMs} ms</p>
+              <p className="mt-2 font-mono text-xs text-zinc-400">
+                First words: {state.firstTokenMs ?? state.latencyMs} ms · Full reply:{' '}
+                {state.latencyMs} ms
+              </p>
             )}
           </div>
         )}

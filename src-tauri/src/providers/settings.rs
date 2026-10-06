@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum ConversationProvider {
     #[default]
-    Agy,
+    Gemini,
     Apple,
+    Agy,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]

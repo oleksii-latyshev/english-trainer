@@ -12,6 +12,7 @@ import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { isConversationTurn, type SessionMode, type TurnFeedback } from '@/lib/types';
 import type { InputSource } from './lib/inputSource';
 import {
+  canSendAnswer,
   matchingSentAnswer,
   recallSessionId,
   restoredCoachAnswer,
@@ -19,8 +20,11 @@ import {
 } from './lib/practiceViewState';
 import { PracticeConversationWorkspace } from './PracticeConversationWorkspace';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { useCoachContinue } from './useCoachContinue';
 import { useDailyRecall } from './useDailyRecall';
 import { usePracticeDialogue } from './usePracticeDialogue';
+import { usePrewarmProvider } from './usePrewarmProvider';
+import { useStreamingReply } from './useStreamingReply';
 
 type Screen = 'home' | 'practice' | 'coach' | 'memory' | 'summary';
 
@@ -46,8 +50,6 @@ export function PracticeView({
     null,
   );
   const [isRetrying, setIsRetrying] = useState(false);
-  const [isContinuingCoach, setIsContinuingCoach] = useState(false);
-  const [coachContinueError, setCoachContinueError] = useState('');
   const [followUpRecord, setFollowUpRecord] = useState<{
     requestId: number;
     state: FollowUpState;
@@ -83,6 +85,22 @@ export function PracticeView({
     };
   }, []);
 
+  const activeSessionId = session?.sessionId;
+  const streamingReply = useStreamingReply(activeSessionId, dialogue?.turns.length ?? 0);
+  usePrewarmProvider(activeSessionId);
+  const coachContinue = useCoachContinue({
+    session,
+    practiceTag: practice.tag,
+    isBusy: model.busy,
+    canChangeSession: model.canChangeSession,
+    continueCoachTurn: actions.continueCoachTurn,
+    streamingReply,
+    onContinued: () => {
+      resetTurnState();
+      setFollowUpRecord({ requestId: currentRequestId, state: IDLE_FOLLOW_UP });
+    },
+  });
+
   const followUpState: FollowUpState =
     followUpRecord.requestId === currentRequestId ? followUpRecord.state : IDLE_FOLLOW_UP;
 
@@ -102,6 +120,7 @@ export function PracticeView({
 
   function failSend(requestId: number, cause: unknown) {
     if (isLatestSend(requestId)) {
+      streamingReply.clear();
       setFollowUpRecord({ requestId: currentRequestId, state: followUpError(cause) });
     }
   }
@@ -112,19 +131,25 @@ export function PracticeView({
   }
 
   function resetTurnState() {
+    streamingReply.clear();
     setSentAnswer(null);
     setRetryAnchor(null);
     setIsRetrying(false);
   }
 
   async function handleSendTurn(customText?: string, source?: InputSource) {
+    const gate = {
+      practiceTag: practice.tag,
+      isBusy: model.busy,
+      canChangeSession: model.canChangeSession,
+    };
     if (
-      pending.current ||
-      isRetrying ||
-      recall.active ||
-      practice.tag !== 'active' ||
-      model.busy ||
-      !model.canChangeSession
+      !canSendAnswer({
+        ...gate,
+        isPending: pending.current,
+        isRetrying,
+        isRecalling: recall.active,
+      })
     ) {
       throw new Error('The current answer cannot be sent yet.');
     }
@@ -154,9 +179,17 @@ export function PracticeView({
     pending.current = true;
     onTurnPendingChange(true);
     setFollowUpRecord({ requestId: currentRequestId, state: { tag: 'thinking' } });
+    if (session) {
+      streamingReply.begin({
+        sessionId: session.sessionId,
+        savedTurnCount: session.turnCount + 1,
+      });
+    }
     const sentAtMs = performance.now();
     try {
-      const result = await requestTurn(session?.sessionId, textToSend, source ?? 'text');
+      const result = await requestTurn(session?.sessionId, textToSend, source ?? 'text', (text) => {
+        if (session && isLatestSend(reqId)) streamingReply.append(session.sessionId, text);
+      });
       const replyAtMs = performance.now();
       if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
       if (session) {
@@ -189,33 +222,6 @@ export function PracticeView({
     startRecording();
   }
 
-  async function continueCoach() {
-    if (
-      session?.mode !== 'coach' ||
-      !session.coachState?.is_pending ||
-      isContinuingCoach ||
-      practice.tag !== 'active' ||
-      !model.canChangeSession ||
-      model.busy
-    )
-      return;
-    setIsContinuingCoach(true);
-    setCoachContinueError('');
-    try {
-      await actions.continueCoachTurn(session.sessionId, session.coachState.sequence);
-      setSentAnswer(null);
-      setRetryAnchor(null);
-      setIsRetrying(false);
-      setFollowUpRecord({ requestId: currentRequestId, state: IDLE_FOLLOW_UP });
-    } catch {
-      setCoachContinueError(
-        'Could not get the next Coach prompt. Your saved answer is still here; retry Continue when ready.',
-      );
-    } finally {
-      setIsContinuingCoach(false);
-    }
-  }
-
   const controlActions = {
     ...actions,
     startRecording: isRetrying
@@ -242,6 +248,7 @@ export function PracticeView({
           sendError={followUpState.tag === 'error' ? followUpState.message : ''}
           historyError={historyError}
           retryHistory={retryHistory}
+          pendingReply={streamingReply.pendingReply}
           isRetrying={isRetrying}
           model={model}
           onNavigate={onNavigate}
@@ -261,12 +268,13 @@ export function PracticeView({
         >
           <CoachWorkspace
             actions={controlActions}
-            continueError={coachContinueError}
+            continueError={coachContinue.error}
             dialogue={dialogue}
             sendError={followUpState.tag === 'error' ? followUpState.message : ''}
             historyError={historyError}
             retryHistory={retryHistory}
-            isContinuingCoach={isContinuingCoach}
+            pendingReply={streamingReply.pendingReply}
+            isContinuingCoach={coachContinue.isContinuing}
             isCurrent={isCurrent}
             isRetrying={isRetrying}
             model={model}
@@ -274,7 +282,7 @@ export function PracticeView({
               actions.resetCapture();
               setIsRetrying(false);
             }}
-            onContinueCoach={() => void continueCoach()}
+            onContinueCoach={() => void coachContinue.continueCoach()}
             onContinueFromRetry={() => {
               resetTurnState();
               actions.resetCapture();

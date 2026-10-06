@@ -7,16 +7,63 @@ mod setup;
 
 use tauri::Manager;
 
-fn apple_binary(app: &tauri::AppHandle) -> Result<std::path::PathBuf, providers::ProviderError> {
+fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
     app.path()
         .resource_dir()
+        .ok()
         .map(|path| path.join("binaries/apple-conversation"))
-        .map_err(|_| {
-            providers::ProviderError::new(
-                providers::ProviderErrorCode::Unavailable,
-                "Cannot locate the bundled conversation provider.",
-            )
-        })
+}
+
+/// Delivers streamed reply text to the UI; a closed channel must not fail the turn.
+fn forward_deltas(channel: tauri::ipc::Channel<providers::ReplyStreamEvent>) -> impl FnMut(&str) {
+    move |text| {
+        let _ = channel.send(providers::ReplyStreamEvent::Delta { text: text.into() });
+    }
+}
+
+fn conversation_task_failed(
+    message: &'static str,
+) -> impl FnOnce(tauri::Error) -> providers::ProviderError {
+    move |_| providers::ProviderError::new(providers::ProviderErrorCode::ProcessFailed, message)
+}
+
+#[tauri::command]
+async fn prewarm_conversation_provider(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    apple: tauri::State<'_, providers::AppleHelper>,
+) -> Result<(), providers::ProviderError> {
+    let settings = sessions.ai_settings()?;
+    let apple = apple.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || providers::prewarm_provider(&settings, &apple))
+        .await
+        .map_err(conversation_task_failed("Provider warm-up failed."))?
+}
+
+#[tauri::command]
+async fn get_gemini_key_status() -> Result<providers::GeminiKeyStatus, providers::ProviderError> {
+    tauri::async_runtime::spawn_blocking(providers::key_status)
+        .await
+        .map_err(conversation_task_failed(
+            "Could not read the Gemini key status.",
+        ))?
+}
+
+#[tauri::command]
+async fn save_gemini_api_key(key: String) -> Result<(), providers::ProviderError> {
+    tauri::async_runtime::spawn_blocking(move || providers::save_api_key(&key))
+        .await
+        .map_err(conversation_task_failed(
+            "Could not save the Gemini API key.",
+        ))?
+}
+
+#[tauri::command]
+async fn delete_gemini_api_key() -> Result<(), providers::ProviderError> {
+    tauri::async_runtime::spawn_blocking(providers::delete_api_key)
+        .await
+        .map_err(conversation_task_failed(
+            "Could not remove the Gemini API key.",
+        ))?
 }
 
 #[tauri::command]
@@ -86,12 +133,13 @@ async fn get_setup_diagnostics(
 
 #[tauri::command]
 async fn generate_follow_up(
-    app: tauri::AppHandle,
     sessions: tauri::State<'_, conversation::SessionStore>,
+    apple: tauri::State<'_, providers::AppleHelper>,
     transcript: String,
+    on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
     let settings = sessions.ai_settings()?;
-    let binary = apple_binary(&app)?;
+    let apple = apple.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         providers::generate_configured_turn(
             &providers::ConversationContext {
@@ -101,16 +149,14 @@ async fn generate_follow_up(
                 learning_targets: Vec::new(),
             },
             &settings,
-            &binary,
+            &apple,
+            &mut forward_deltas(on_reply),
         )
     })
     .await
-    .map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "The conversation task failed. Please try again.",
-        )
-    })?
+    .map_err(conversation_task_failed(
+        "The conversation task failed. Please try again.",
+    ))?
 }
 
 #[tauri::command]
@@ -174,54 +220,52 @@ fn save_coach_answer(
 
 #[tauri::command]
 async fn continue_coach_turn(
-    app: tauri::AppHandle,
     sessions: tauri::State<'_, conversation::SessionStore>,
+    apple: tauri::State<'_, providers::AppleHelper>,
     session_id: u64,
     sequence: usize,
+    on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
     let settings = sessions.ai_settings()?;
-    let binary = apple_binary(&app)?;
+    let apple = apple.inner().clone();
     let sessions = sessions.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
+        let mut forward = forward_deltas(on_reply);
         sessions.continue_turn(session_id, sequence, |context| {
-            providers::generate_configured_turn(context, &settings, &binary)
+            providers::generate_configured_turn(context, &settings, &apple, &mut forward)
         })
     })
     .await
-    .map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "The conversation task failed. Please retry.",
-        )
-    })?
+    .map_err(conversation_task_failed(
+        "The conversation task failed. Please retry.",
+    ))?
 }
 
 #[tauri::command]
 async fn send_practice_turn(
-    app: tauri::AppHandle,
     sessions: tauri::State<'_, conversation::SessionStore>,
+    apple: tauri::State<'_, providers::AppleHelper>,
     session_id: u64,
     transcript: String,
     input_source: Option<conversation::InputSource>,
+    on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
     let settings = sessions.ai_settings()?;
-    let binary = apple_binary(&app)?;
+    let apple = apple.inner().clone();
     let sessions = sessions.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
+        let mut forward = forward_deltas(on_reply);
         sessions.send_turn_with_source(
             session_id,
             transcript,
             input_source.unwrap_or_default(),
-            |context| providers::generate_configured_turn(context, &settings, &binary),
+            |context| providers::generate_configured_turn(context, &settings, &apple, &mut forward),
         )
     })
     .await
-    .map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "The conversation task failed. Please retry.",
-        )
-    })?
+    .map_err(conversation_task_failed(
+        "The conversation task failed. Please retry.",
+    ))?
 }
 
 #[tauri::command]
@@ -411,6 +455,7 @@ pub fn run() {
         .setup(|app| {
             let app_data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_data)?;
+            providers::configure_key_store(&app_data);
             let database_path = app_data.join("english-trainer.sqlite3");
             let sessions = conversation::SessionStore::open(&database_path).map_err(|error| {
                 std::io::Error::other(format!(
@@ -419,6 +464,7 @@ pub fn run() {
                 ))
             })?;
             app.manage(sessions);
+            app.manage(providers::AppleHelper::new(apple_binary(app)));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
@@ -427,6 +473,10 @@ pub fn run() {
             get_setup_diagnostics,
             get_ai_settings,
             save_ai_settings,
+            prewarm_conversation_provider,
+            get_gemini_key_status,
+            save_gemini_api_key,
+            delete_gemini_api_key,
             generate_follow_up,
             get_turn_feedback,
             save_practice_feedback,

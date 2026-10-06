@@ -152,6 +152,7 @@ fn parse_envelope(output: &str) -> Result<RawTurn, ReplyStage> {
     serde_json::from_value(envelope.structured_output).map_err(|_| ReplyStage::Schema)
 }
 
+#[cfg(test)]
 pub(crate) fn parse_structured_turn(output: &str) -> Result<ConversationTurn, ProviderError> {
     serde_json::from_str(output)
         .map_err(|_| ReplyStage::Schema)
@@ -192,6 +193,7 @@ fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ReplyStage> {
         session_phase: "active".into(),
         is_complete: false,
         provider_latency_ms: None,
+        first_token_ms: None,
     })
 }
 

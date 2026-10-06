@@ -142,13 +142,17 @@ export function usePracticeSession(dependencies: Dependencies) {
         throw cause;
       }
     },
-    continueCoachTurn: async (sessionId: number, sequence: number) => {
+    continueCoachTurn: async (
+      sessionId: number,
+      sequence: number,
+      onDelta?: (text: string) => void,
+    ) => {
       setState((current) => setTurnPending(current, true));
       try {
-        const turn = await continueCoachTurn(sessionId, sequence);
+        const turn = await continueCoachTurn(sessionId, sequence, onDelta);
         setState((current) => advanceCoachTurn(current, sessionId, turn));
         dependencies.resetCapture();
-        dependencies.playQuestion(turn.question ?? '');
+        dependencies.playQuestion(turn.question ?? turn.spoken_reply);
         return turn;
       } catch (cause) {
         setState((current) => setTurnPending(current, false));

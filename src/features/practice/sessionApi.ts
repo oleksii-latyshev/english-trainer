@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { isPracticeDialogue, type PracticeDialogue } from '@/lib/dialogueTypes';
+import { createReplyChannel } from '@/lib/replyStream';
 import {
   type ConversationTurn,
   type DailyRecallPlan,
@@ -40,8 +41,13 @@ export async function saveCoachAnswer(
 export async function continueCoachTurn(
   sessionId: number,
   sequence: number,
+  onDelta: (text: string) => void = () => {},
 ): Promise<ConversationTurn> {
-  const result = await invoke<unknown>('continue_coach_turn', { sessionId, sequence });
+  const result = await invoke<unknown>('continue_coach_turn', {
+    sessionId,
+    sequence,
+    onReply: createReplyChannel(onDelta),
+  });
   if (!isConversationTurn(result)) {
     throw new Error('Unexpected coach continue response.');
   }

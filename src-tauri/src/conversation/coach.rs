@@ -270,13 +270,13 @@ impl super::SessionStore {
             if sequence == 1 {
                 active.opening_question.clone()
             } else {
-                active.turns[sequence - 2].assistant_question.clone()
+                active.turns[sequence - 2].prompt().to_string()
             }
         } else {
             active
                 .turns
                 .last()
-                .map(|turn| turn.assistant_question.clone())
+                .map(|turn| turn.prompt().to_string())
                 .unwrap_or_else(|| active.opening_question.clone())
         };
         let coach_state = if sequence == 0 {
@@ -286,7 +286,7 @@ impl super::SessionStore {
             let answered_question = if sequence == 1 {
                 active.opening_question.clone()
             } else {
-                active.turns[sequence - 2].assistant_question.clone()
+                active.turns[sequence - 2].prompt().to_string()
             };
             Some(SavedCoachState {
                 session_id: active.id,

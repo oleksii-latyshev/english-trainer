@@ -100,7 +100,7 @@ parallel coaching, [F6] prefetched help.
 
 | Engine | Purpose | Current adapters | Target |
 | :--- | :--- | :--- | :--- |
-| `ConversationEngine` | Short spoken reply + one question | `agy` (process per turn, JSON schema, two attempts in 45 s); Apple helper (process per turn, structured output) | Streaming trait; Apple helper as a long-lived process with `prewarm()`; Gemini API over HTTPS streaming [F1] |
+| `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level speech from the stream [F2] |
 | `FeedbackEngine` | Rephrasing and focus points | `agy` | Gemini API [F5] |
 | Guided answer | Model answer for the current question | `agy` | Gemini API, prefetched [F6] |
 | `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |
@@ -109,8 +109,8 @@ Rules:
 
 - Call sites choose a **tier** (conversation, coaching), not a model ID.
 - Provider output is parsed into typed Rust values; invalid output is a recoverable typed error.
-- Only transcript and the minimum prompt context leave the Mac. API keys live in the OS
-  credential store (Keychain on macOS).
+- Only transcript and the minimum prompt context leave the Mac. API keys live in
+  an encrypted, owner-only file in the app data folder, never in SQLite or logs.
 - `agy` runs only in a private temporary directory, never in the repository.
 
 ## 7. Learning engine

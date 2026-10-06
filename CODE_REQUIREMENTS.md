@@ -85,8 +85,8 @@ e2e/                    Playwright against Vite / Tauri, command layer faked (ad
 - Transcribe locally with Whisper and discard raw PCM by default. Storing audio requires an explicit
   user setting. Send the configured LLM provider only the transcript and prompt context needed.
 - LLM providers: Apple Foundation Models (bundled helper) and the Gemini API are the target
-  real-time providers; API keys live in the OS credential store (Keychain on macOS), never in SQLite, logs or the
-  repository. The legacy Antigravity CLI (`agy`) runs only in private scratch directories with
+  real-time providers; API keys live in an encrypted, owner-only file in the app data folder, never in SQLite,
+  logs or the repository. The legacy Antigravity CLI (`agy`) runs only in private scratch directories with
   bounded timeouts; never pass the repository as its working directory.
 - macOS companion: Ambient prompts, notifications, and autostart are opt-in and respect quiet
   hours. Normal practice never requires Accessibility or Screen Recording permissions.

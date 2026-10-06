@@ -25,7 +25,7 @@ impl SessionStore {
             let expected = active
                 .turns
                 .last()
-                .map(|turn| turn.assistant_question.as_str())
+                .map(|turn| turn.prompt())
                 .unwrap_or(&active.opening_question);
             if sequence != active.turns.len() + 1 || question != expected {
                 return Err(stale_example());
@@ -130,6 +130,7 @@ mod tests {
                         session_phase: "active".into(),
                         is_complete: false,
                         provider_latency_ms: None,
+                        first_token_ms: None,
                     })
                 })
                 .unwrap();

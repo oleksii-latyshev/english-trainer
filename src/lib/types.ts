@@ -25,6 +25,7 @@ export type ConversationTurn = {
   session_phase: string;
   is_complete: boolean;
   provider_latency_ms?: number;
+  first_token_ms?: number;
 };
 
 export type FeedbackCategory = 'grammar' | 'vocabulary' | 'coherence' | 'interaction';
@@ -165,6 +166,8 @@ export type { ComponentCheck, ComponentStatus, SetupDiagnostics } from './setupT
 
 export type ProviderErrorCode =
   | 'unavailable'
+  | 'unauthorized'
+  | 'rate_limited'
   | 'timeout'
   | 'invalid_output'
   | 'process_failed'
@@ -243,13 +246,19 @@ export function isConversationTurn(value: unknown): value is ConversationTurn {
     (!('provider_latency_ms' in value) ||
       (typeof value.provider_latency_ms === 'number' &&
         Number.isSafeInteger(value.provider_latency_ms) &&
-        value.provider_latency_ms >= 0))
+        value.provider_latency_ms >= 0)) &&
+    (!('first_token_ms' in value) ||
+      (typeof value.first_token_ms === 'number' &&
+        Number.isSafeInteger(value.first_token_ms) &&
+        value.first_token_ms >= 0))
   );
 }
 
 function isProviderErrorCode(value: unknown): value is ProviderErrorCode {
   switch (value) {
     case 'unavailable':
+    case 'unauthorized':
+    case 'rate_limited':
     case 'timeout':
     case 'invalid_output':
     case 'process_failed':

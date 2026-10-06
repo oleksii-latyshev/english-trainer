@@ -1,27 +1,71 @@
 pub(crate) mod agy;
 mod apple;
+mod gemini;
+mod plain_prompt;
+mod race;
+mod reply_text;
 mod settings;
 pub use agy::guided::{generate_guided_answer, GuidedAnswer};
+pub use apple::AppleHelper;
+pub use gemini::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
 pub use settings::{AgyModel, AiSettings, ConversationProvider};
 
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+// Gemini's measured first word is ~0.8 s median, ~1 s p90 when healthy. With no word by this
+// point the free tier is usually overloaded, so the on-device model starts answering in parallel.
+const APPLE_BACKUP_AFTER: Duration = Duration::from_millis(1_200);
 
 pub(crate) fn resolve_agy_binary() -> Option<std::path::PathBuf> {
     agy::resolve_binary()
 }
 
+/// Reply text delivered to the UI while a turn is still being generated.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ReplyStreamEvent {
+    Delta { text: String },
+}
+
 pub fn generate_configured_turn(
     context: &ConversationContext,
     settings: &AiSettings,
-    apple_binary: &std::path::Path,
+    apple: &AppleHelper,
+    on_delta: &mut dyn FnMut(&str),
 ) -> Result<ConversationTurn, ProviderError> {
-    measure_turn(|| match settings.provider {
+    measure_turn(on_delta, |forward| match settings.provider {
         ConversationProvider::Agy => {
-            agy::conversation::generate_turn_with_model(context, settings.agy_model)
+            let turn = agy::conversation::generate_turn_with_model(context, settings.agy_model)?;
+            forward(&format!(
+                "{} {}",
+                turn.spoken_reply,
+                turn.question.as_deref().unwrap_or_default()
+            ));
+            Ok(turn)
         }
-        ConversationProvider::Apple => apple::generate_turn(context, apple_binary),
+        ConversationProvider::Apple => apple.generate_turn(context, forward),
+        ConversationProvider::Gemini => {
+            let backup = race::Backup {
+                leg: apple.backup_leg(context.clone()),
+                after: APPLE_BACKUP_AFTER,
+            };
+            gemini::generate_turn(context, Some(backup), forward)
+        }
     })
+}
+
+/// Starts slow-to-start providers (helper process, key decryption) before the first answer.
+pub fn prewarm_provider(settings: &AiSettings, apple: &AppleHelper) -> Result<(), ProviderError> {
+    match settings.provider {
+        ConversationProvider::Apple => apple.prewarm(),
+        ConversationProvider::Gemini => {
+            // The on-device backup is optional; Gemini still works when it is unavailable.
+            let _ = apple.prewarm();
+            gemini::prewarm()
+        }
+        ConversationProvider::Agy => Ok(()),
+    }
 }
 
 pub fn evaluate_turn_feedback(request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError> {
@@ -35,13 +79,25 @@ pub fn review_turn_usage(
 }
 
 fn measure_turn(
-    generate: impl FnOnce() -> Result<ConversationTurn, ProviderError>,
+    on_delta: &mut dyn FnMut(&str),
+    generate: impl FnOnce(&mut dyn FnMut(&str)) -> Result<ConversationTurn, ProviderError>,
 ) -> Result<ConversationTurn, ProviderError> {
     let started_at = Instant::now();
-    let mut turn = generate()?;
-    turn.provider_latency_ms =
-        Some(u64::try_from(started_at.elapsed().as_millis()).unwrap_or(u64::MAX));
+    let mut first_token_ms = None;
+    let mut forward = |text: &str| {
+        if first_token_ms.is_none() {
+            first_token_ms = Some(elapsed_ms(started_at));
+        }
+        on_delta(text);
+    };
+    let mut turn = generate(&mut forward)?;
+    turn.provider_latency_ms = Some(elapsed_ms(started_at));
+    turn.first_token_ms = first_token_ms;
     Ok(turn)
+}
+
+fn elapsed_ms(started_at: Instant) -> u64 {
+    u64::try_from(started_at.elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
 pub trait ConversationEngine: Send + Sync {
@@ -209,12 +265,16 @@ pub struct ConversationTurn {
     pub is_complete: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider_latency_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first_token_ms: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderErrorCode {
     Unavailable,
+    Unauthorized,
+    RateLimited,
     Timeout,
     InvalidOutput,
     ProcessFailed,
@@ -255,19 +315,24 @@ mod timing_tests {
     use super::*;
 
     #[test]
-    fn provider_boundary_adds_latency_to_the_returned_turn() {
-        let turn = measure_turn(|| {
+    fn provider_boundary_adds_latency_and_first_token_time_to_the_returned_turn() {
+        let mut forwarded = Vec::new();
+        let turn = measure_turn(&mut |text| forwarded.push(text.to_string()), |forward| {
+            forward("I see.");
             Ok(ConversationTurn {
                 spoken_reply: "I see.".into(),
                 question: Some("Why?".into()),
                 session_phase: "active".into(),
                 is_complete: false,
                 provider_latency_ms: None,
+                first_token_ms: None,
             })
         })
         .unwrap();
 
+        assert_eq!(forwarded, ["I see."]);
         assert!(turn.provider_latency_ms.is_some());
+        assert!(turn.first_token_ms.is_some());
         assert!(serde_json::to_value(&turn)
             .unwrap()
             .get("provider_latency_ms")

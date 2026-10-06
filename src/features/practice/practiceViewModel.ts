@@ -23,7 +23,11 @@ export type PracticeActions = {
     transcript: string,
     inputSource?: InputSource,
   ) => Promise<unknown>;
-  continueCoachTurn: (sessionId: number, sequence: number) => Promise<ConversationTurn>;
+  continueCoachTurn: (
+    sessionId: number,
+    sequence: number,
+    onDelta?: (text: string) => void,
+  ) => Promise<ConversationTurn>;
   saveFeedback: (
     sessionId: number,
     sequence: number,

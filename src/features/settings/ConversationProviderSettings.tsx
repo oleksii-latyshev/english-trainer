@@ -9,6 +9,7 @@ import {
   isConversationProviderId,
   isProviderError,
 } from '@/lib/types';
+import { GeminiKeyField } from './GeminiKeyField';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; message: string };
 
@@ -144,8 +145,9 @@ export function ConversationProviderSettings({
               onChange={handleProviderChange}
               value={draftSettings.provider}
             >
-              <option value="agy">Antigravity CLI</option>
+              <option value="gemini">Gemini API (recommended)</option>
               <option value="apple">Apple (on-device)</option>
+              <option value="agy">Antigravity CLI (legacy, slow)</option>
             </select>
           </label>
 
@@ -173,15 +175,20 @@ export function ConversationProviderSettings({
             </label>
           )}
 
+          {draftSettings.provider === 'gemini' && <GeminiKeyField />}
+
           {draftSettings.provider === 'apple' && (
             <div className="rounded-xl border border-white/[0.06] bg-black/20 p-3 text-xs leading-relaxed text-zinc-300">
               Apple requires macOS 26+, Apple Intelligence enabled, and models downloaded. Uses one
-              fixed system model.
+              fixed system model and starts when a practice session opens.
             </div>
           )}
 
           <div className="rounded-xl border border-white/[0.06] bg-black/20 p-3 text-xs leading-relaxed text-zinc-400">
-            <p>Detailed coaching, answer examples and memory checks still use Antigravity.</p>
+            <p>
+              Detailed coaching, answer examples and memory checks still use Antigravity, which is
+              slower, whichever conversation provider you choose.
+            </p>
             <p className="mt-1 text-zinc-500">
               Replies use simple English and ask one short question.
             </p>

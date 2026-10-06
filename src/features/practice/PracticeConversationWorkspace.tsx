@@ -26,6 +26,7 @@ type Props = {
   sendError: string;
   historyError: string;
   retryHistory: () => void;
+  pendingReply?: string;
   savedAnswer: SentAnswer | null;
   dialogue: PracticeDialogue | null;
   onSend: (text: string, source: InputSource) => Promise<void>;
@@ -46,6 +47,7 @@ export function PracticeConversationWorkspace({
   sendError,
   historyError,
   retryHistory,
+  pendingReply,
   onSend,
   onNavigate,
 }: Props) {
@@ -110,6 +112,7 @@ export function PracticeConversationWorkspace({
         dialogue={dialogue}
         historyError={historyError}
         retryHistory={retryHistory}
+        pendingReply={pendingReply}
         onPlaySpeech={speech.play}
       >
         {canUseRecall && recall.active && (

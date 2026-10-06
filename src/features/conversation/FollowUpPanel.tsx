@@ -1,6 +1,7 @@
 import { Button } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
 import { formatTiming } from '@/lib/formatTiming';
+import { createReplyChannel } from '@/lib/replyStream';
 import { type ConversationTurn, isProviderError, type ProviderErrorCode } from '@/lib/types';
 import { turnTiming } from './lib/turnTiming';
 
@@ -56,7 +57,7 @@ export function actionLabel(
     case 'ready':
       return 'Try another follow-up';
     case 'error':
-      if (state.code === 'unavailable') return 'Retry after setup';
+      if (state.code === 'unavailable' || state.code === 'unauthorized') return 'Retry after setup';
       return surface === 'coach' ? 'Retry send' : 'Retry follow-up';
     default:
       return isSession ? 'Send answer to Eva' : 'Ask a follow-up';
@@ -69,12 +70,16 @@ export function requestTurn(
   sessionId: number | undefined,
   transcript: string,
   inputSource: InputSource = 'text',
+  onDelta: (text: string) => void = () => {},
 ): Promise<unknown> {
-  if (sessionId === undefined) return invoke<unknown>('generate_follow_up', { transcript });
+  const onReply = createReplyChannel(onDelta);
+  if (sessionId === undefined)
+    return invoke<unknown>('generate_follow_up', { transcript, onReply });
   return invoke<unknown>('send_practice_turn', {
     sessionId,
     transcript,
     inputSource,
+    onReply,
   });
 }
 

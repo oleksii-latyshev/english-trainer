@@ -30,6 +30,7 @@ type Props = {
   sendError: string;
   historyError: string;
   retryHistory: () => void;
+  pendingReply?: string;
   dialogue: PracticeDialogue | null;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onRetryAnchor: (answer: SentAnswer & { feedback: TurnFeedback }) => void;
@@ -77,6 +78,7 @@ export function CoachWorkspace({
   sendError,
   historyError,
   retryHistory,
+  pendingReply,
   onSend,
   onRetryAnchor,
   onTryAgain,
@@ -191,6 +193,7 @@ export function CoachWorkspace({
           dialogue={dialogue}
           historyError={historyError}
           retryHistory={retryHistory}
+          pendingReply={pendingReply}
           onPlaySpeech={speech.play}
         >
           {isCoachPending && (

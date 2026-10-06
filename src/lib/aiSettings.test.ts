@@ -12,3 +12,8 @@ it('rejects invalid provider and model types at the IPC boundary', () => {
   expect(isAiSettings({ provider: 'agy', agy_model: 42 })).toBe(false);
   expect(isAiSettings(null)).toBe(false);
 });
+
+it('accepts Gemini and defaults fresh installs to it', () => {
+  expect(DEFAULT_AI_SETTINGS.provider).toBe('gemini');
+  expect(isAiSettings({ provider: 'gemini', agy_model: 'default' })).toBe(true);
+});

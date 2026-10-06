@@ -10,6 +10,7 @@ fn turn(reply: &str, question: &str) -> ConversationTurn {
         session_phase: "active".into(),
         is_complete: false,
         provider_latency_ms: None,
+        first_token_ms: None,
     }
 }
 
@@ -1287,4 +1288,71 @@ fn failed_text_send_preserves_session_and_saves_no_provenance_or_turn() {
         .database
         .is_voice_turn(session.session_id, 1)
         .unwrap());
+}
+
+#[test]
+fn streamed_deltas_reach_the_listener_and_the_complete_turn_is_saved_once() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    let mut deltas = Vec::new();
+    let returned = store
+        .send_turn(session.session_id, "I walked a lot.".into(), |_| {
+            for piece in ["That sounds ", "healthy. ", "Where did you walk?"] {
+                deltas.push(piece.to_string());
+                assert_eq!(store.get_active().unwrap().unwrap().turn_count, 0);
+            }
+            Ok(turn("That sounds healthy.", "Where did you walk?"))
+        })
+        .unwrap();
+    assert_eq!(deltas.concat(), "That sounds healthy. Where did you walk?");
+    assert_eq!(returned.question.as_deref(), Some("Where did you walk?"));
+    let active = store.get_active().unwrap().unwrap();
+    assert_eq!(active.turn_count, 1);
+    assert_eq!(active.opening_question, "Where did you walk?");
+}
+
+#[test]
+fn failure_after_partial_deltas_saves_nothing_and_keeps_the_answer_retryable() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    let error = store
+        .send_turn(session.session_id, "I walked a lot.".into(), |_| {
+            assert!(store.lock().active.as_ref().unwrap().turns.is_empty());
+            Err(ProviderError::new(ProviderErrorCode::Timeout, "cut off"))
+        })
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::Timeout);
+    assert_eq!(store.get_active().unwrap().unwrap().turn_count, 0);
+    store
+        .send_turn(session.session_id, "I walked a lot.".into(), |_| {
+            Ok(turn("Nice.", "Why?"))
+        })
+        .unwrap();
+}
+
+#[test]
+fn a_reply_without_a_question_becomes_the_prompt_the_learner_answers() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "I like tea.".into(), |_| {
+            Ok(ConversationTurn {
+                question: None,
+                ..turn("Tea is lovely. Tell me more.", "")
+            })
+        })
+        .unwrap();
+    let active = store.get_active().unwrap().unwrap();
+    assert_eq!(active.opening_question, "Tea is lovely. Tell me more.");
+    let dialogue = store.dialogue(session.session_id).unwrap();
+    assert_eq!(dialogue.turns[0].assistant_question, "");
+    assert!(store
+        .send_turn(session.session_id, "It is calming.".into(), |context| {
+            assert_eq!(
+                context.recent_turns[0].assistant_reply,
+                "Tea is lovely. Tell me more."
+            );
+            Ok(turn("Good.", "Why?"))
+        })
+        .is_ok());
 }

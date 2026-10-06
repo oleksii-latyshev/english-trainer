@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-export type ConversationProviderId = 'agy' | 'apple';
+export type ConversationProviderId = 'gemini' | 'apple' | 'agy';
 
 export type AgyModelId = 'default' | 'gemini-3.8-flash-low' | 'gemini-3.8-flash-high';
 
@@ -10,12 +10,12 @@ export type AiSettings = {
 };
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
-  provider: 'agy',
+  provider: 'gemini',
   agy_model: 'default',
 };
 
 export function isConversationProviderId(value: unknown): value is ConversationProviderId {
-  return value === 'agy' || value === 'apple';
+  return value === 'gemini' || value === 'apple' || value === 'agy';
 }
 
 export function isAgyModelId(value: unknown): value is AgyModelId {
@@ -50,4 +50,9 @@ export async function saveAiSettings(settings: AiSettings): Promise<AiSettings> 
     throw new Error('Unexpected save AI settings response from backend.');
   }
   return result;
+}
+
+/** Starts the saved provider ahead of the first answer; a no-op for Antigravity. */
+export async function prewarmConversationProvider(): Promise<void> {
+  await invoke<void>('prewarm_conversation_provider');
 }

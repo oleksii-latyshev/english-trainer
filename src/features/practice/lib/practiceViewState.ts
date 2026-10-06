@@ -68,3 +68,36 @@ export function restoredRetryAnchor(
 ) {
   return answer && feedback ? { ...answer, feedback } : null;
 }
+
+type SessionGate = {
+  practiceTag: string;
+  isBusy: boolean;
+  canChangeSession: boolean;
+};
+
+export function canSendAnswer(
+  gate: SessionGate & { isPending: boolean; isRetrying: boolean; isRecalling: boolean },
+): boolean {
+  return (
+    !gate.isPending &&
+    !gate.isRetrying &&
+    !gate.isRecalling &&
+    gate.practiceTag === 'active' &&
+    !gate.isBusy &&
+    gate.canChangeSession
+  );
+}
+
+export function canContinueCoach(
+  session: SessionDetails | undefined,
+  gate: SessionGate & { isContinuing: boolean },
+): boolean {
+  return (
+    session?.mode === 'coach' &&
+    session.coachState?.is_pending === true &&
+    !gate.isContinuing &&
+    gate.practiceTag === 'active' &&
+    gate.canChangeSession &&
+    !gate.isBusy
+  );
+}

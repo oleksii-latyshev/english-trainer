@@ -10,14 +10,17 @@ type Props = {
   children?: ReactNode;
   historyError?: string;
   retryHistory?: () => void;
+  pendingReply?: string;
 };
 
 function MessageBubble({
   message,
   onPlaySpeech,
+  isStreaming = false,
 }: {
   message: DialogueMessage;
   onPlaySpeech?: (text: string) => void;
+  isStreaming?: boolean;
 }) {
   const isEva = message.sender === 'assistant';
   const fullText = message.question ? `${message.text} ${message.question}` : message.text;
@@ -35,6 +38,7 @@ function MessageBubble({
               aria-hidden="true"
             />
             <span className="chat-bubble-author">{isEva ? 'Eva' : 'You'}</span>
+            {isStreaming && <span className="text-xs text-zinc-400">is replying…</span>}
             {message.inputSource === 'text' && (
               <span className="text-xs text-zinc-400">Typed answer</span>
             )}
@@ -42,7 +46,7 @@ function MessageBubble({
               <span className="text-xs text-zinc-400">Edited transcript</span>
             )}
           </div>
-          {isEva && onPlaySpeech && (
+          {isEva && onPlaySpeech && !isStreaming && (
             <Button
               aria-label="Hear Eva speak this message"
               className="chat-voice-btn"
@@ -70,6 +74,7 @@ export function DialogueStream({
   children,
   historyError,
   retryHistory,
+  pendingReply,
 }: Props) {
   const messages = buildDialogueMessages(dialogue, currentQuestion);
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
@@ -77,7 +82,7 @@ export function DialogueStream({
   // biome-ignore lint/correctness/useExhaustiveDependencies: A new message scrolls the external viewport to the latest turn.
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+  }, [messages.length, pendingReply]);
 
   return (
     <div
@@ -99,6 +104,12 @@ export function DialogueStream({
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} onPlaySpeech={onPlaySpeech} />
         ))}
+        {pendingReply !== undefined && (
+          <MessageBubble
+            isStreaming
+            message={{ id: 'msg-streaming', sender: 'assistant', text: pendingReply }}
+          />
+        )}
         {children}
         <div ref={scrollEndRef} aria-hidden="true" />
       </div>

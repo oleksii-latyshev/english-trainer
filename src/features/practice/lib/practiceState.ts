@@ -46,7 +46,7 @@ export function advancePractice(
   const newTurnCount = current.turnCount + 1;
   return {
     ...current,
-    question: turn.question ?? current.question,
+    question: turn.question ?? turn.spoken_reply,
     turnCount: newTurnCount,
     coachState: {
       session_id: current.sessionId,
@@ -84,7 +84,7 @@ export function advanceCoachTurn(
   return {
     ...current,
     tag: 'active',
-    question: turn.question ?? current.question,
+    question: turn.question ?? turn.spoken_reply,
     coachState: current.coachState
       ? {
           ...current.coachState,

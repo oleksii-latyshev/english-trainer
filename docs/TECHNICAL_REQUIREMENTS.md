@@ -65,37 +65,62 @@ Current:
 
 ## 5. Conversation providers
 
-### 5.1 Current contract
+### 5.1 Contract (F1)
 
 - `ConversationContext`: `opening_question`, up to 8 `recent_turns` (learner, assistant reply,
   assistant question), `latest_transcript` (1–4,000 characters), up to 2 `learning_targets`.
   Total context at most 8,000 characters; the oldest turns are dropped first.
-- `ConversationTurn`: `spoken_reply` (one statement, ≤ 30 words), `question` (one question ending
-  in `?`, ≤ 20 words), `provider_latency_ms`.
-- Settings (`ai_settings` table): provider `agy | apple`; `agy_model`
+- `ConversationTurn`: `spoken_reply`, `question` (nullable), `provider_latency_ms`,
+  `first_token_ms`. `agy` still returns the schema-validated pair (reply ≤ 30 words, one question
+  ≤ 20 words); Gemini and Apple return plain text.
+- Settings (`ai_settings` table): provider `gemini | apple | agy` (default `gemini`); `agy_model`
   `default | gemini-3.8-flash-low | gemini-3.8-flash-high`. Model IDs already encode effort; never
   also pass `--effort`.
+- Streaming: `send_practice_turn`, `continue_coach_turn` and `generate_follow_up` take a Tauri
+  `Channel` that receives `{ kind: "delta", text }` chunks while the reply is generated; the command
+  still returns the final `ConversationTurn`. `agy` sends its whole reply as one delta at the end.
+- Plain-text shaping (`providers/reply_text.rs`, shared by Gemini and Apple): strip markdown,
+  collapse whitespace, cap at about 350 characters at a sentence boundary, then split off the final
+  sentence ending in `?` as `question`. Without a question the whole text is `spoken_reply`,
+  `question` is `null`, and that reply is the prompt the learner answers next. Only empty output is
+  an error.
+- The learner's answer is saved only after a complete reply; on failure nothing is saved, the
+  session leaves `in_flight`, and the answer stays editable. Generation runs outside the session
+  mutex.
 - `agy` runs with `--print`, `--json-schema`, `--sandbox`, `--disable-slash-commands`, a log file,
   in a private temporary directory. Both attempts share one 45 s budget. Invalid output returns a
   typed error with `reply_stage` (`envelope`, `schema`, `content`); provider output is never stored.
-- Apple runs the bundled helper with the prompt on stdin; unavailability reasons map to typed
-  `unavailable` errors. Apple failures never fall back to sending the transcript to `agy`.
-
-### 5.2 Target [F1]
-
-- Engine output is a stream of text chunks delivered to the UI through a Tauri `Channel`, followed
-  by a final event with the complete reply, `first_token_ms` and `total_ms`.
-- The reply is plain text: one or two short sentences and one question. Rust trims to a length cap,
-  strips markdown and rejects only empty output.
-- Apple adapter: one helper process per app run speaking JSON lines; `prewarm()` when a session
-  opens; `streamResponse`; restart once if the process exits.
-- Gemini API adapter: `streamGenerateContent` over HTTPS with a request timeout; the key is read
-  from the OS credential store (`keyring` crate; service `com.user.english-trainer`, account
-  `gemini-api-key`), with `ENG_TRAINER_GEMINI_API_KEY` as a developer override; the key is sent only
-  in the `x-goog-api-key` header, never in a URL; errors map to `unavailable`, `unauthorized`, `rate_limited`, `timeout`,
-  `invalid_output`.
-- Tiers, not model IDs, at call sites: `conversation` (fast) and `coaching` (quality).
-- The learner's answer is saved only after a complete reply; on failure it stays editable.
+- Apple: one bundled helper process per app run, started lazily or by
+  `prewarm_conversation_provider` when a session opens, speaking JSON lines (`{id, instructions,
+  prompt}` in; `delta`, `done`, `error` events out) and streaming with `streamResponse`. One request
+  at a time, 20 s timeout, restarted once if the process died before replying. Unavailability
+  reasons map to typed `unavailable` errors. Apple failures never fall back to another provider.
+  The same helper is the backup leg for Gemini (below) and is prewarmed with it.
+- Gemini API: `streamGenerateContent?alt=sse` over HTTPS (blocking `reqwest` in `spawn_blocking`),
+  5 s connect and 20 s total timeout. Model IDs are tier constants inside the adapter:
+  conversation `gemini-3.5-flash-lite`. The Apple on-device model is raced as a backup
+  (`providers/race.rs`): it starts when Gemini fails with 429, 5xx or a network error, ends with no
+  text, or has produced no text after 1.2 s (the free tier can accept a request and stall for
+  10–15 s). The first stream that produces text wins and the other is dropped; when both fail, the
+  Gemini error is reported. Configuration errors (`unauthorized`, invalid request) are reported
+  without a backup reply. `gemini-3.5-flash` is not used as a fallback: its free tier allows 20
+  requests a day.
+  The HTTP client is shared per app run to keep the connection alive. Thinking level `minimal`,
+  about 150 output tokens. Errors map to `unauthorized` (401, 403, 400
+  `API_KEY_INVALID`), `rate_limited` (429), `unavailable` (5xx, network), `timeout`,
+  `invalid_output` (empty text, blocked prompt).
+- Gemini key: pasted in Settings and stored in `<app data>/gemini-api-key.enc` (mode 0600, written
+  via a temporary file and rename). Format: version byte, 12-byte nonce, ChaCha20-Poly1305
+  ciphertext; the encryption key is SHA-256 of a fixed context string and the OS machine ID
+  (`machine-uid`). This keeps the key unreadable in backups, synced folders or a copied data folder;
+  it does not protect against software already running as the user. No OS credential prompt is
+  shown. A file that does not decrypt is reported as `unauthorized` with a request to paste the key
+  again. `ENG_TRAINER_GEMINI_API_KEY` overrides it. The key is read once per run and kept in memory, sent only in the `x-goog-api-key` header, and
+  never returned to the UI, logged, put in a URL or in an error message. Commands:
+  `get_gemini_key_status` (`{ configured, source: settings | environment | null }`),
+  `save_gemini_api_key`, `delete_gemini_api_key`.
+- Tiers, not model IDs, at call sites: `conversation` (fast) and `coaching` (quality, not yet on
+  Gemini).
 
 ## 6. Coaching, help and review providers
 
@@ -190,7 +215,8 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `invalid_session`, `database_error`); separating them into their own error types is planned with
   [F5].
 - Current commands: `transcribe_audio`, `get_setup_diagnostics`, `get_ai_settings`,
-  `save_ai_settings`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
+  `save_ai_settings`, `prewarm_conversation_provider`, `get_gemini_key_status`,
+  `save_gemini_api_key`, `delete_gemini_api_key`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
   `send_practice_turn`, `save_coach_answer`, `continue_coach_turn`, `get_practice_dialogue`,
   `finish_practice_session`, `get_turn_feedback`, `save_practice_feedback`, `retry_practice_turn`,
   `get_question_scaffold`, `get_guided_answer`, `get_daily_recall_plan`, `submit_daily_recall`,
@@ -230,7 +256,7 @@ Synthetic benchmarks record timings and error categories only, never personal tr
 - Only the transcript and minimal context go to the selected provider. The Gemini free tier allows
   Google to use prompts for product improvement and human review; Settings shows this notice.
 - Local data: sessions, transcripts, Learning Memory and settings in SQLite; device ID in WebView
-  storage; API key in the OS credential store (Keychain on macOS).
+  storage; Gemini API key in an encrypted, owner-only file in the app data folder.
 
 ## 14. Testing
 

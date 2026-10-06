@@ -26,8 +26,8 @@ Everything not needed for these five outcomes is deferred.
 | Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured) and cannot stream. Kept only as an optional slow-tier fallback until the Gemini API adapter covers coaching; then removed. |
 | TTS | macOS system voices (the standard voice is acceptable). Neural TTS only together with the avatar. |
 | Usage-review / mastery-streak subsystem | Frozen: keeps working, is not extended. F10 reuses its data; simplifying it is reconsidered after the MVP with real usage data. |
-| Gemini API key | Only the API key is needed (no client secret). Stored in the OS credential store: service `com.user.english-trainer`, account `gemini-api-key` (macOS Keychain). Developer override: environment variable `ENG_TRAINER_GEMINI_API_KEY` (not inherited by a Finder launch). Never in SQLite, logs or the repository. |
-| Portability | macOS stays the only MVP target, but new core code must not block a later Windows build: providers behind traits, cross-platform credential storage (`keyring` crate), no macOS-only APIs outside adapters. |
+| Gemini API key | Only the API key is needed (no client secret). Pasted in Settings and stored in an encrypted, owner-only file in the app data folder, bound to this computer (no system Keychain prompt, which looked alarming in the alpha). Developer override: environment variable `ENG_TRAINER_GEMINI_API_KEY` (not inherited by a Finder launch). Never in SQLite, logs or the repository. |
+| Portability | macOS stays the only MVP target, but new core code must not block a later Windows build: providers behind traits, cross-platform key file, no macOS-only APIs outside adapters. |
 | Gemini free tier | Prompts and responses on the free tier may be used by Google to improve products and may be read by human reviewers. Only practice transcripts are sent; Settings states this next to the key field. Billing can be enabled later to opt out. |
 
 ## Delivery rules
@@ -55,13 +55,14 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 
 ### Stage 1 — Fast voice conversation
 
-**F1. Streaming conversation providers** `[ ]`
+**F1. Streaming conversation providers** `[~]`
 - Make `ConversationEngine` streaming: the reply is plain text delivered in chunks to the UI over a
   Tauri `Channel` and rendered as it arrives.
 - Apple adapter: one long-lived helper process per app run (JSON lines over stdin/stdout),
   `prewarm()` when a session opens, `streamResponse` for output.
 - Gemini API adapter: HTTPS streaming (`streamGenerateContent`); key entered in Settings and stored
-  in the OS credential store (see Decisions), never in SQLite or logs.
+  encrypted (see Decisions), never in SQLite or logs. When Gemini stalls for 1.2 s or is
+  overloaded, the on-device Apple model answers instead.
 - Replace the regex-heavy JSON schema with plain text plus light Rust checks (length cap, strip
   markdown). A long or imperfect reply is trimmed, not rejected.
 - Settings: provider choice, key field with the data-use notice, "Test AI response" reporting
@@ -179,8 +180,8 @@ Ordered by expected value; revisit with real usage data before starting any of t
 4. **Progress view.** Weekly trends of speaking time, words per minute, pauses and saved phrases,
    with examples from real answers.
 5. **Quick practice from the menu bar** and opt-in reminders with quiet hours.
-6. **Windows build.** Tauri, whisper.cpp, WebView2 speech synthesis, Gemini API and `keyring`
-   (Windows Credential Manager) all work on Windows; Apple Foundation Models does not, so Gemini is
+6. **Windows build.** Tauri, whisper.cpp, WebView2 speech synthesis, the Gemini API and the encrypted
+   key file all work on Windows; Apple Foundation Models does not, so Gemini is
    the conversation provider there. Needs a Windows CI job and installer.
 7. **Pronunciation.** Shadowing feedback and, later, phoneme-level scoring. WidgetKit and
    gamification only if they increase how often the user speaks.
