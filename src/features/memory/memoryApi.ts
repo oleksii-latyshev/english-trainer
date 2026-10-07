@@ -2,12 +2,9 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import {
   isLearningMemoryView,
   isPhraseCardRecord,
-  isReviewResult,
   type LearningItemType,
   type LearningMemoryView,
   type PhraseCardRecord,
-  type ReviewResponse,
-  type ReviewResult,
 } from '@/lib/learningTypes';
 import {
   isMemoryUsageEvidence,
@@ -124,21 +121,33 @@ export async function deletePhraseCard(phraseId: number): Promise<boolean> {
   return result;
 }
 
-export async function submitLearningReview(
+/** Removes a mistake and the evidence kept about it. False when it was already gone. */
+export async function deleteMistake(mistakeId: number): Promise<boolean> {
+  if (!isTauri()) {
+    throw new Error('Desktop app required to remove mistakes.');
+  }
+  const result = await invoke<unknown>('delete_mistake', { mistake_id: mistakeId });
+  if (typeof result !== 'boolean') {
+    throw new Error('Unexpected mistake removal response.');
+  }
+  window.dispatchEvent(new Event('learning-memory-changed'));
+  return result;
+}
+
+/** Hides a phrase or mistake from Memory and review. False when it was already archived or gone. */
+export async function archiveLearningItem(
   itemType: LearningItemType,
   itemId: number,
-  response: ReviewResponse,
-): Promise<ReviewResult> {
+): Promise<boolean> {
   if (!isTauri()) {
-    throw new Error('Desktop app required to submit reviews.');
+    throw new Error('Desktop app required to archive items.');
   }
-  const result = await invoke<unknown>('submit_learning_review', {
+  const result = await invoke<unknown>('archive_learning_item', {
     item_type: itemType,
     item_id: itemId,
-    response,
   });
-  if (!isReviewResult(result)) {
-    throw new Error('Unexpected review response.');
+  if (typeof result !== 'boolean') {
+    throw new Error('Unexpected archive response.');
   }
   window.dispatchEvent(new Event('learning-memory-changed'));
   return result;

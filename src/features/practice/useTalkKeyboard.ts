@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { keyTarget } from '@/components/keyTarget';
 import type { HelpLevel } from './lib/helpLevels';
-import { decideKeyDown, decideKeyUp, type KeyTarget, shouldKeepTurnOpen } from './lib/talkKeys';
+import { decideKeyDown, decideKeyUp, shouldKeepTurnOpen } from './lib/talkKeys';
 import type { TurnState } from './lib/turnState';
 
 type Options = {
@@ -17,34 +18,6 @@ type Options = {
   onHoldListening: (isHeld: boolean) => void;
   onStopEva: () => void;
 };
-
-const CONTROL_ROLES = [
-  'button',
-  'switch',
-  'checkbox',
-  'radio',
-  'tab',
-  'menuitem',
-  'option',
-  'link',
-];
-const BUTTON_LIKE_INPUTS = ['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'file'];
-
-/** Typing fields keep every key; buttons, switches and links keep Space; the rest is free. */
-function keyTarget(target: EventTarget | null): KeyTarget {
-  if (!(target instanceof HTMLElement)) return 'other';
-  if (target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-    return 'text';
-  }
-  if (target instanceof HTMLInputElement) {
-    return BUTTON_LIKE_INPUTS.includes(target.type) ? 'control' : 'text';
-  }
-  const role = target.getAttribute('role');
-  const isControl =
-    ['BUTTON', 'A', 'SUMMARY'].includes(target.tagName) ||
-    (role !== null && CONTROL_ROLES.includes(role));
-  return isControl ? 'control' : 'other';
-}
 
 /**
  * Talk's keyboard: hold Space to talk, Esc to cancel or stop Eva, H / 2 / 3 for help. What each key

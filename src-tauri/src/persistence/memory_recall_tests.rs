@@ -419,3 +419,99 @@ fn saved_progress_and_pending_queue_survive_database_reopen_and_early_finish() {
     drop(reopened);
     let _ = std::fs::remove_file(file);
 }
+
+#[test]
+fn skipping_closes_an_item_without_scoring_it_and_lets_the_next_one_be_answered() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = phrase(&mut db, "phrase one", "cue one");
+    let second = phrase(&mut db, "phrase two", "cue two");
+    let run = db.start_memory_review_run().unwrap().unwrap();
+    assert!(run.items.iter().all(|item| !item.is_skipped));
+
+    // Only the next unanswered item can be skipped, and skipping twice changes nothing.
+    assert!(db
+        .skip_memory_review_item(run.run_id, LearningItemType::Phrase, second)
+        .is_err());
+    db.skip_memory_review_item(run.run_id, LearningItemType::Phrase, first)
+        .unwrap();
+    db.skip_memory_review_item(run.run_id, LearningItemType::Phrase, first)
+        .unwrap();
+
+    let skipped = db.active_memory_review_run().unwrap().unwrap();
+    assert!(skipped.items[0].is_skipped);
+    assert_eq!(skipped.items[0].target, None);
+    assert_eq!(skipped.items[0].saved_response, None);
+    assert!(!skipped.items[1].is_skipped);
+    // A skipped item is not scored later either.
+    assert!(db
+        .record_memory_recall(run.run_id, LearningItemType::Phrase, first, "phrase one")
+        .is_err());
+    db.record_memory_recall(run.run_id, LearningItemType::Phrase, second, "phrase two")
+        .unwrap();
+
+    let events: i64 = db
+        .connection
+        .query_row("SELECT COUNT(*) FROM review_events", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(events, 1);
+    let (interval, next_review_at): (i64, i64) = db
+        .connection
+        .query_row(
+            "SELECT interval_days, next_review_at FROM phrase_cards WHERE id = ?1",
+            [first as i64],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!((interval, next_review_at), (1, 0));
+
+    let finished = db.active_memory_review_run().unwrap().unwrap();
+    assert!(finished.items[0].is_skipped);
+    assert!(finished.items[1].saved_response.is_some());
+    assert!(db.finish_memory_review_run(run.run_id).unwrap());
+    assert!(db
+        .skip_memory_review_item(run.run_id, LearningItemType::Phrase, first)
+        .is_err());
+}
+
+#[test]
+fn a_skipped_item_survives_reopen_and_stays_due_for_the_next_review() {
+    let file = path();
+    let mut db = SessionDatabase::open(&file).unwrap();
+    let first = phrase(&mut db, "phrase one", "cue one");
+    let run = db.start_memory_review_run().unwrap().unwrap();
+    db.skip_memory_review_item(run.run_id, LearningItemType::Phrase, first)
+        .unwrap();
+    drop(db);
+    let mut reopened = SessionDatabase::open(&file).unwrap();
+    let resumed = reopened.active_memory_review_run().unwrap().unwrap();
+    assert!(resumed.items[0].is_skipped);
+    assert!(reopened.finish_memory_review_run(run.run_id).unwrap());
+    let next = reopened.start_memory_review_run().unwrap().unwrap();
+    assert_ne!(next.run_id, run.run_id);
+    assert_eq!(next.items[0].item_id, first);
+    assert!(!next.items[0].is_skipped);
+    drop(reopened);
+    let _ = std::fs::remove_file(file);
+}
+
+#[test]
+fn saving_an_archived_phrase_again_brings_it_back_for_tomorrow() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let card = db
+        .save_phrase_card("for two weeks", "note", None, None)
+        .unwrap();
+    assert!(db
+        .archive_learning_item(LearningItemType::Phrase, card.id)
+        .unwrap());
+
+    let again = db
+        .save_phrase_card("For two weeks", "", None, None)
+        .unwrap();
+    assert_eq!(again.id, card.id);
+    assert_eq!(again.status, LearningStatus::Learning);
+    assert_eq!(again.created_at, card.created_at);
+    let stored = db.get_learning_memory().unwrap().phrase_cards;
+    assert_eq!(stored.len(), 1);
+    assert_eq!(stored[0].status, LearningStatus::Learning);
+    assert!(!stored[0].is_due);
+}

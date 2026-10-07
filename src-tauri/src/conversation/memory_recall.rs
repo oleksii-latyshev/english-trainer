@@ -34,6 +34,31 @@ impl SessionStore {
             .record_memory_recall(run_id, item_type, item_id, &transcript)
     }
 
+    /// Passes on the next unanswered item without scoring it and returns the run as it stands.
+    pub fn skip_memory_review_item(
+        &self,
+        run_id: u64,
+        item_type: LearningItemType,
+        item_id: u64,
+    ) -> Result<MemoryReviewRun, ProviderError> {
+        validate_memory_id(run_id)?;
+        validate_memory_id(item_id)?;
+        let mut state = self.lock();
+        state
+            .database
+            .skip_memory_review_item(run_id, item_type, item_id)?;
+        state
+            .database
+            .active_memory_review_run()
+            .map_err(database_error)?
+            .ok_or_else(|| {
+                ProviderError::new(
+                    ProviderErrorCode::InvalidSession,
+                    "This review run no longer exists.",
+                )
+            })
+    }
+
     pub fn finish_memory_review(&self, run_id: u64) -> Result<bool, ProviderError> {
         validate_memory_id(run_id)?;
         let mut state = self.lock();
@@ -64,5 +89,32 @@ mod tests {
         let started = store.start_memory_review().unwrap();
         assert_eq!(started, None);
         assert_eq!(store.get_memory_review().unwrap(), None);
+    }
+
+    #[test]
+    fn learning_item_commands_reject_invalid_ids_and_report_missing_items() {
+        let store = SessionStore::default();
+        assert!(!store.delete_mistake(7).unwrap());
+        assert!(!store
+            .archive_learning_item(LearningItemType::Phrase, 7)
+            .unwrap());
+        assert_eq!(
+            store.delete_mistake(0).unwrap_err().code,
+            ProviderErrorCode::InvalidRequest
+        );
+        assert_eq!(
+            store
+                .archive_learning_item(LearningItemType::Mistake, 0)
+                .unwrap_err()
+                .code,
+            ProviderErrorCode::InvalidRequest
+        );
+        assert_eq!(
+            store
+                .skip_memory_review_item(1, LearningItemType::Phrase, 0)
+                .unwrap_err()
+                .code,
+            ProviderErrorCode::InvalidRequest
+        );
     }
 }

@@ -1,7 +1,7 @@
 use super::*;
 use crate::learning::{
     calculate_next_review, LearningItemType, LearningMemoryView, LearningStatus, MistakeRecord,
-    PhraseCardRecord, ReviewResponse, ReviewResult,
+    PhraseCardRecord, ReviewResponse,
 };
 use crate::providers::FocusCategory;
 
@@ -137,28 +137,6 @@ impl SessionDatabase {
             mistakes,
             phrase_cards,
             due_count,
-        })
-    }
-
-    pub fn record_review(
-        &mut self,
-        item_type: LearningItemType,
-        item_id: u64,
-        response: ReviewResponse,
-    ) -> rusqlite::Result<ReviewResult> {
-        let now = now_ms();
-        let transaction = self.connection.transaction()?;
-        let scheduled = record_review_schedule(&transaction, item_type, item_id, response, now)?;
-
-        transaction.commit()?;
-
-        Ok(ReviewResult {
-            item_type,
-            item_id,
-            status: scheduled.status,
-            next_review_at: scheduled.next_review_at,
-            interval_days: scheduled.interval_days,
-            response,
         })
     }
 }

@@ -1,0 +1,162 @@
+/* An open Memory row: schedule facts, conversation evidence, and the status chip. */
+.memory-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 18px 18px;
+}
+
+.memory-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.memory-facts div {
+  display: flex;
+  gap: 6px;
+}
+
+.memory-facts dt {
+  color: var(--et-faint);
+}
+
+.memory-facts dd {
+  margin: 0;
+  color: var(--et-fg);
+}
+
+.memory-explanation {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--et-line);
+  border-radius: 14px;
+  background: var(--et-bg);
+  font-size: 13px;
+}
+
+.evidence-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  color: var(--et-muted);
+}
+
+.evidence-head strong {
+  color: var(--et-fg);
+  font-weight: 600;
+}
+
+.evidence-title {
+  margin-right: auto;
+  color: var(--et-faint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evidence-event {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--et-line);
+  border-radius: 10px;
+  background: var(--et-surface);
+}
+
+.evidence-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--et-faint);
+  font-size: 12px;
+}
+
+.evidence-outcome {
+  color: var(--et-ok);
+  font-weight: 600;
+}
+
+.evidence-outcome[data-outcome="incorrect"] {
+  color: var(--et-warn);
+}
+
+.evidence-excerpt {
+  margin: 0;
+  color: var(--et-eva-text);
+}
+
+.evidence-note,
+.evidence-empty {
+  margin: 0;
+  color: var(--et-faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.evidence-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--et-warn);
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  padding: 3px 10px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-chip i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--et-faint);
+}
+
+.status-chip[data-status="new"] i {
+  background: var(--et-accent);
+}
+
+.status-chip[data-status="learning"] i {
+  background: var(--et-warn);
+}
+
+.status-chip[data-status="improving"] i {
+  background: var(--et-me);
+}
+
+.status-chip[data-status="stable"] i {
+  background: var(--et-ok);
+}

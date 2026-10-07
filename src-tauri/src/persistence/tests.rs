@@ -1,5 +1,5 @@
 use super::*;
-use crate::learning::{LearningItemType, LearningStatus, ReviewResponse};
+use crate::learning::LearningStatus;
 use crate::providers::{FocusCategory, FocusFeedback};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -593,38 +593,6 @@ fn spoken_recall_excludes_cues_that_reveal_the_phrase() {
         .record_daily_recall(second, leaked.id, "bottleneck")
         .unwrap()
         .is_none());
-}
-
-#[test]
-fn review_event_updates_schedule_and_persists_event() {
-    let mut db = SessionDatabase::open_in_memory().unwrap();
-    let card = db
-        .save_phrase_card("I work there", "Work note", None, None)
-        .unwrap();
-    assert_eq!(card.status, LearningStatus::Learning);
-
-    // Record review: Remembered
-    let result = db
-        .record_review(
-            LearningItemType::Phrase,
-            card.id,
-            ReviewResponse::Remembered,
-        )
-        .unwrap();
-    assert_eq!(result.status, LearningStatus::Learning);
-    assert_eq!(result.interval_days, 2);
-
-    // Verify review event was stored
-    let count: i64 = db
-        .connection
-        .query_row("SELECT COUNT(*) FROM review_events", [], |row| row.get(0))
-        .unwrap();
-    assert_eq!(count, 1);
-
-    // Verify updated state in database
-    let memory = db.get_learning_memory().unwrap();
-    assert_eq!(memory.phrase_cards[0].interval_days, 2);
-    assert!(memory.phrase_cards[0].last_reviewed_at.is_some());
 }
 
 #[test]

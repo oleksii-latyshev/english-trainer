@@ -210,11 +210,18 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 
 ### 9.1 Scheduling
 
-- Self-reported review: "need practice" → interval 1 day, status `learning`; "remembered" →
+- Schedule rule (applied to a spoken recall: a miss is "need practice", a wording match "remembered"; there is no self-reported review any more): "need practice" → interval 1 day, status `learning`; "remembered" →
   interval 2 → 4 → previous × ease (4–365 days), ease +0.1 up to 3.0. `new → learning`;
-  `learning → improving` once the interval reaches 4 days; self-report never sets `stable`.
+  `learning → improving` once the interval reaches 4 days; a review never sets `stable`.
 - Spoken recall (daily recall, Memory review) saves transcript wording evidence and the schedule
   change atomically. Wording match is transcript evidence, not mastery.
+- A Memory review run holds up to three due items, answered in order. An item the learner skips is
+  closed without a score: it keeps its schedule and stays due, and its wording stays hidden. The
+  first answer to an item is the one that is saved; a later try on screen is practice only.
+- Archive hides a phrase or mistake from Memory and from every review queue (status `archived`,
+  never due) and keeps its history. Saving an archived phrase again, or Eva's notes catching an
+  archived mistake again, brings it back (`learning` / `new`). Delete removes the item and its
+  evidence for good; the UI asks first.
 
 ### 9.2 Usage review and mastery (frozen subsystem)
 
@@ -257,8 +264,10 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `send_practice_turn`, `save_coach_answer`, `continue_coach_turn`, `get_practice_dialogue`,
   `finish_practice_session`, `get_turn_feedback`, `save_practice_feedback`, `retry_practice_turn`,
   `get_question_scaffold`, `get_guided_answer`, `record_answer_help_used`, `get_daily_recall_plan`, `submit_daily_recall`,
-  `save_phrase_card`, `get_learning_memory`, `view_learning_memory`, `submit_learning_review`,
-  `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `finish_memory_review`,
+  `save_phrase_card`, `delete_phrase_card`, `delete_mistake`, `archive_learning_item`,
+  `get_learning_memory`, `view_learning_memory`,
+  `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `skip_memory_review_item`,
+  `finish_memory_review`,
   `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.
 - Long-running commands are `async` and run blocking work with `spawn_blocking`.
 

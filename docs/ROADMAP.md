@@ -96,7 +96,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Pass an initial prompt built from the current question, recent turns, and a personal glossary
   (editable in Settings: employer stack, tools, names).
 - Design: a live transcript bubble (dashed, with a caret, "Live transcript") grows while the learner
-  speaks; needs partial results from the loaded model.
+  speaks; needs partial results from the loaded model. The spoken Memory review has the same bubble
+  while the learner answers a situation; today it shows the result only after the answer.
 - Acceptance: a fixed list of 30 of the user's technical terms is recognised in at least 90% of
   readings; transcription of a 15 s answer finishes in under 1.5 s.
 
@@ -164,6 +165,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   question types: describe, explain, compare, give an opinion, tell a story, disagree politely.
 - An unfinished session can be continued from the start screen ("Continue: Work & technology,
   4 min left").
+- Design: Memory rows name where a phrase came from with the topic and when ("Work & technology ·
+  Today"); today the source line is the saved note, or "From a conversation", and when.
 - Design: start screen heading "What shall we talk about?", topic grid, length segment, the summary
   line under Start ("Work & technology · 10 min · warm-up first"), and a Continue card naming the
   topic, when it was paused and the minutes left; the Talk header shows the topic and "6:12 of
@@ -186,6 +189,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   answer; F9 generates phrases and recurring mistakes in the background for every session, with
   a short note per phrase ("The word you were looking for: normalise.") instead of the quoted
   original, and may offer the recurring mistakes themselves as savable items.
+- Design: the Memory footer reads "Mistakes that come up twice are added for you". Today every
+  mistake Eva's notes point out is added on first sight; "twice" needs the recurring detection above.
 
 **F10. Spoken phrase review** `[ ]`
 - Due phrases return as short spoken tasks: the AI gives a situation, the user answers using the
@@ -197,6 +202,19 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   until the core loop is fast and used daily.
 - Design: the start-screen review card offers "A 2-minute spoken warm-up before you start" with a
   Before session / Skip today toggle.
+- Design (spoken review, built on the existing recall run): Eva reads the situation and the learner
+  answers by voice; the result shows "Used it" or "Not yet" with the wording marked in the answer,
+  Try again, Skip, Next and Finish, progress pips and the end summary with each new status. What it
+  still lacks for F10: (1) a situation written for the phrase: the cue is the saved note (a
+  mistake's cue is the sentence as first said), so Eva reads that; (2) the banner "Use this phrase
+  X" shows the wording before the answer: the run keeps the wording hidden until the answer is
+  saved, so it is recall, and showing it would make the answer cued; F10 decides whether a cued
+  mode exists, and it must not count as independent use; (3) a model answer for "With the phrase":
+  today it is the wording itself (for a mistake, the corrected sentence), not a sentence written
+  around it; (4) a retry that is scored: the first answer is the saved one, a later try is practice
+  only; (5) runs of six items ("N of 6", "about 3 minutes"): a run holds three; (6) phrases saved
+  with "…" gaps ("I'd rather … than …") need a gap-aware wording check: the check reads them as one
+  unbroken sequence, so they rarely match.
 
 ### MVP acceptance
 

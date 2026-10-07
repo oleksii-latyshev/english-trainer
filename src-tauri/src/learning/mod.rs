@@ -11,7 +11,7 @@ pub use memory_recall::{
 };
 pub use models::{
     LearningItemType, LearningMemoryView, LearningStatus, MistakeRecord, PhraseCardRecord,
-    ReviewResponse, ReviewResult,
+    ReviewResponse,
 };
 pub use normalization::{mistake_normalized_key, normalize_phrase};
 pub use scheduling::{calculate_next_review, MS_PER_DAY};

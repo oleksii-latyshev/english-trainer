@@ -118,7 +118,7 @@
   background-color: var(--et-bg);
 }
 
-.screen-content:has(.practice-screen) {
+.screen-content:has(.practice-screen, .review-screen) {
   display: flex;
   flex-direction: column;
   padding: 0;

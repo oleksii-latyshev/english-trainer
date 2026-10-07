@@ -170,31 +170,3 @@ export function isLearningMemoryView(value: unknown): value is LearningMemoryVie
     isNonNegativeInteger(value.due_count)
   );
 }
-
-export type ReviewResult = {
-  item_type: LearningItemType;
-  item_id: number;
-  status: LearningStatus;
-  next_review_at: number;
-  interval_days: number;
-  response: ReviewResponse;
-};
-
-export function isReviewResult(value: unknown): value is ReviewResult {
-  if (typeof value !== 'object' || value === null) return false;
-  return (
-    'item_type' in value &&
-    isLearningItemType(value.item_type) &&
-    'item_id' in value &&
-    isPositiveInteger(value.item_id) &&
-    'status' in value &&
-    isLearningStatus(value.status) &&
-    'next_review_at' in value &&
-    isNonNegativeInteger(value.next_review_at) &&
-    'interval_days' in value &&
-    isPositiveInteger(value.interval_days) &&
-    value.interval_days <= 365 &&
-    'response' in value &&
-    isReviewResponse(value.response)
-  );
-}

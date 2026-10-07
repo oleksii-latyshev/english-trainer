@@ -20,7 +20,7 @@ const NAVIGATION: NavEntry[] = [
     icon: MessageCircle,
     matches: ['/', '/conversation', '/coach', '/summary'],
   },
-  { path: '/memory', label: 'Memory', icon: Bookmark, matches: ['/memory'] },
+  { path: '/memory', label: 'Memory', icon: Bookmark, matches: ['/memory', '/memory/review'] },
   { path: '/settings', label: 'Settings', icon: Settings, matches: ['/settings'] },
 ];
 

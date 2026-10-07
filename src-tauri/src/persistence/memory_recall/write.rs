@@ -61,6 +61,11 @@ impl SessionDatabase {
             .find(|row| row.item_type == item_type && row.item_id == item_id)
             .ok_or_else(|| invalid_request("This item is not in the review queue."))?;
         if item.saved_at.is_some() {
+            if item.saved_response.is_none() {
+                return Err(invalid_request(
+                    "This item was skipped. Start a new review to answer it.",
+                ));
+            }
             return Ok(result_from_saved(run_id, item));
         }
         let next_pending = queue
@@ -144,6 +149,61 @@ impl SessionDatabase {
             interval_days: scheduled.interval_days,
             status: scheduled.status,
         })
+    }
+
+    /// Closes the next unanswered item without scoring it: it stays due and is not rescheduled.
+    /// Skipping an item that is already answered or skipped changes nothing.
+    pub fn skip_memory_review_item(
+        &mut self,
+        run_id: u64,
+        item_type: LearningItemType,
+        item_id: u64,
+    ) -> Result<(), ProviderError> {
+        validate_safe_id(run_id).map_err(invalid_request)?;
+        validate_safe_id(item_id).map_err(invalid_request)?;
+        let transaction = self.connection.transaction().map_err(database_error)?;
+        let sql_run_id = to_sql_id(run_id).map_err(database_error)?;
+        let completed_at: Option<Option<i64>> = transaction
+            .query_row(
+                "SELECT completed_at FROM memory_review_runs WHERE id = ?1",
+                [sql_run_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(database_error)?;
+        match completed_at {
+            None => return Err(invalid_session("This review run no longer exists.")),
+            Some(Some(_)) => return Err(invalid_session("This review run is already finished.")),
+            Some(None) => {}
+        }
+        let queue = load_queue(&transaction, sql_run_id).map_err(database_error)?;
+        let item = queue
+            .iter()
+            .find(|row| row.item_type == item_type && row.item_id == item_id)
+            .ok_or_else(|| invalid_request("This item is not in the review queue."))?;
+        if item.saved_at.is_some() {
+            return Ok(());
+        }
+        let next_pending = queue
+            .iter()
+            .find(|row| row.saved_at.is_none())
+            .map(|row| row.position);
+        if next_pending != Some(item.position) {
+            return Err(invalid_request("Items must be answered in order."));
+        }
+        transaction
+            .execute(
+                "UPDATE memory_review_items SET saved_at = ?1
+                 WHERE run_id = ?2 AND position = ?3 AND saved_at IS NULL",
+                params![
+                    now_ms(),
+                    sql_run_id,
+                    to_sql_sequence(item.position).map_err(database_error)?
+                ],
+            )
+            .map_err(database_error)?;
+        transaction.commit().map_err(database_error)?;
+        Ok(())
     }
 
     pub fn finish_memory_review_run(&mut self, run_id: u64) -> Result<bool, ProviderError> {

@@ -13,6 +13,7 @@ const pending = {
   next_review_at: null,
   interval_days: null,
   status: null,
+  is_skipped: false,
 };
 
 const saved = {
@@ -24,6 +25,7 @@ const saved = {
   next_review_at: 1727784000000,
   interval_days: 2,
   status: 'learning',
+  is_skipped: false,
 };
 
 const result = {
@@ -53,6 +55,38 @@ describe('memory recall IPC guards', () => {
     expect(isMemoryReviewItem({ ...saved, target: null })).toBe(false);
     expect(isMemoryReviewItem({ ...saved, interval_days: null })).toBe(false);
     expect(isMemoryReviewItem({ ...saved, saved_response: 'need_practice' })).toBe(false);
+  });
+
+  it('accepts a skipped item only without a target or a score, and requires the flag', () => {
+    const skipped = { ...pending, is_skipped: true };
+    expect(isMemoryReviewItem(skipped)).toBe(true);
+    expect(isMemoryReviewItem({ ...skipped, target: 'trade-off' })).toBe(false);
+    expect(isMemoryReviewItem({ ...saved, is_skipped: true })).toBe(false);
+    const withoutFlag = { ...pending };
+    delete withoutFlag.is_skipped;
+    expect(isMemoryReviewItem(withoutFlag)).toBe(false);
+  });
+
+  it('lets items close in order and refuses an answer after an unanswered item', () => {
+    const skipped = { ...pending, is_skipped: true };
+    expect(
+      isMemoryReviewRun({
+        run_id: 10,
+        items: [
+          skipped,
+          { ...saved, position: 2, item_id: 43 },
+          { ...pending, position: 3, item_id: 44 },
+        ],
+        completed: false,
+      }),
+    ).toBe(true);
+    expect(
+      isMemoryReviewRun({
+        run_id: 10,
+        items: [pending, { ...skipped, position: 2, item_id: 43 }],
+        completed: false,
+      }),
+    ).toBe(false);
   });
 
   it('rejects malformed IDs, missing null fields, unsafe positions, and inconsistent queues', () => {

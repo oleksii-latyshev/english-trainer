@@ -1,8 +1,8 @@
 import { Button } from '@heroui/react';
+import { MicButton } from '@/components/MicControl';
 import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
 import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
 import { sessionDetails } from './lib/practiceState';
-import { MicButton } from './MicControl';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { TurnNotice } from './TurnNotice';
 

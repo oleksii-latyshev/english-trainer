@@ -99,13 +99,3 @@ pub struct LearningMemoryView {
     pub phrase_cards: Vec<PhraseCardRecord>,
     pub due_count: usize,
 }
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ReviewResult {
-    pub item_type: LearningItemType,
-    pub item_id: u64,
-    pub status: LearningStatus,
-    pub next_review_at: i64,
-    pub interval_days: u32,
-    pub response: ReviewResponse,
-}

@@ -24,21 +24,24 @@ impl SessionDatabase {
         )?;
         let items = statement
             .query_map([sql_run_id], |row| {
-                let saved = row.get::<_, Option<i64>>(11)?.is_some();
+                let saved_at = row.get::<_, Option<i64>>(11)?;
+                let saved_response = row
+                    .get::<_, Option<String>>(7)?
+                    .as_deref()
+                    .map(parse_review_response)
+                    .transpose()?;
+                // A skipped item is closed without a score, so it never reveals its target.
+                let is_scored = saved_response.is_some();
                 Ok(MemoryReviewItem {
                     position: usize::try_from(row.get::<_, i64>(0)?)
                         .map_err(|_| rusqlite::Error::InvalidQuery)?,
                     item_type: parse_item_type(row.get::<_, String>(1)?.as_str())?,
                     item_id: to_safe_u64_id(row.get(2)?)?,
                     cue: row.get(3)?,
-                    target: if saved { Some(row.get(4)?) } else { None },
+                    target: if is_scored { Some(row.get(4)?) } else { None },
                     transcript: row.get(5)?,
                     wording_observed: row.get::<_, Option<i64>>(6)?.map(|value| value == 1),
-                    saved_response: row
-                        .get::<_, Option<String>>(7)?
-                        .as_deref()
-                        .map(parse_review_response)
-                        .transpose()?,
+                    saved_response,
                     next_review_at: row.get(8)?,
                     interval_days: row.get::<_, Option<i64>>(9)?.map(|value| value as u32),
                     status: row
@@ -46,6 +49,7 @@ impl SessionDatabase {
                         .as_deref()
                         .map(parse_learning_status)
                         .transpose()?,
+                    is_skipped: saved_at.is_some() && !is_scored,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;

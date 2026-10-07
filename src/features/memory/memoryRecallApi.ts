@@ -8,7 +8,6 @@ import {
 } from '@/lib/memoryRecallTypes';
 
 export async function startMemoryReview(): Promise<MemoryReviewRun | null> {
-  if (!isTauri()) throw new Error('Open the desktop app to start a spoken recall review.');
   const result = await invoke<unknown>('start_memory_review');
   if (result === null) return null;
   if (!isMemoryReviewRun(result)) {
@@ -18,7 +17,6 @@ export async function startMemoryReview(): Promise<MemoryReviewRun | null> {
 }
 
 export async function getMemoryReview(): Promise<MemoryReviewRun | null> {
-  if (!isTauri()) throw new Error('Open the desktop app to load a spoken recall review.');
   const result = await invoke<unknown>('get_memory_review');
   if (result === null) return null;
   if (!isMemoryReviewRun(result)) {
@@ -52,8 +50,25 @@ export async function submitMemoryRecall(
   return result;
 }
 
+/** Passes on the next unanswered item; it stays due. Returns the run as it stands. */
+export async function skipMemoryReviewItem(
+  runId: number,
+  itemType: LearningItemType,
+  itemId: number,
+): Promise<MemoryReviewRun> {
+  const result = await invoke<unknown>('skip_memory_review_item', {
+    run_id: runId,
+    item_type: itemType,
+    item_id: itemId,
+  });
+  if (!isMemoryReviewRun(result) || result.run_id !== runId) {
+    throw new Error('Unexpected skip response from local database.');
+  }
+  window.dispatchEvent(new Event('learning-memory-changed'));
+  return result;
+}
+
 export async function finishMemoryReview(runId: number): Promise<boolean> {
-  if (!isTauri()) throw new Error('Open the desktop app to finish a spoken recall review.');
   const result = await invoke<unknown>('finish_memory_review', { run_id: runId });
   if (typeof result !== 'boolean') {
     throw new Error('Unexpected finish review response.');

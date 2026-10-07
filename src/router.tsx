@@ -7,6 +7,7 @@ import {
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
 import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
+import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
@@ -147,13 +148,28 @@ export const memoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory',
   component: function MemoryComponent() {
-    const { capture, speech, practice } = useTrainer();
+    const { capture, practice } = useTrainer();
     const navigate = memoryRoute.useNavigate();
     return (
       <LearningMemoryPanel
-        capture={capture}
-        onClose={() => void navigate({ to: '/' })}
-        practiceBusy={practice.isBusy}
+        isAudioBusy={practice.isBusy || !capture.canChangeSession}
+        onStartReview={() => void navigate({ to: '/memory/review' })}
+      />
+    );
+  },
+});
+
+export const memoryReviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/memory/review',
+  component: function MemoryReviewComponent() {
+    const { speech } = useTrainer();
+    const navigate = memoryReviewRoute.useNavigate();
+    return (
+      <SpokenReview
+        onBackToMemory={() => void navigate({ to: '/memory' })}
+        onOpenSettings={() => void navigate({ to: '/settings' })}
+        onStartTalk={() => void navigate({ to: '/' })}
         speech={speech}
       />
     );
@@ -198,6 +214,7 @@ export const routeTree = rootRoute.addChildren([
   conversationRoute,
   coachRoute,
   memoryRoute,
+  memoryReviewRoute,
   settingsRoute,
   summaryRoute,
 ]);

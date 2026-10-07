@@ -75,6 +75,7 @@ impl SessionDatabase {
                 next_review_at: None,
                 interval_days: None,
                 status: None,
+                is_skipped: false,
             });
         }
         transaction.commit()?;

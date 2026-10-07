@@ -1,0 +1,66 @@
+/* The microphone card at the bottom of the spoken review. */
+.review-composer-zone {
+  flex: none;
+  padding: 0 40px 24px;
+}
+
+.review-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: 1px solid var(--et-line);
+  border-radius: 24px;
+  background: var(--et-surface);
+}
+
+.review-composer[data-live="true"] {
+  border-color: color-mix(in oklab, var(--et-me) 45%, transparent);
+}
+
+.review-composer-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.review-mic-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.review-mic-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.review-mic-hint {
+  color: var(--et-muted);
+  font-size: 13px;
+}
+
+.review-issue {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--et-warn-line);
+  border-radius: 14px;
+  background: var(--et-warn-bg);
+  font-size: 14px;
+}
+
+.review-issue span {
+  flex: 1;
+}
+
+@media (max-width: 1100px) {
+  .review-composer-zone {
+    padding: 0 20px 16px;
+  }
+}

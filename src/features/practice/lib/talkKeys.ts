@@ -1,8 +1,6 @@
+import type { KeyTarget } from '@/components/keyTarget';
 import { type HelpLevel, helpLevelForKey } from './helpLevels';
 import type { TurnState } from './turnState';
-
-/** What has keyboard focus: typing keys belong to text fields, Space belongs to buttons and switches. */
-export type KeyTarget = 'text' | 'control' | 'other';
 
 export type KeyPress = {
   key: string;

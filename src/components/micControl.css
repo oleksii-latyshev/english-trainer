@@ -1,0 +1,80 @@
+/* The round microphone button and the level bars, shared by Talk and the spoken review. */
+.mic-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--et-accent);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--et-accent) 16%, transparent);
+  color: var(--et-on-accent);
+  cursor: pointer;
+}
+
+.mic-button[data-variant="live"] {
+  background: var(--et-me);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--et-me) 22%, transparent);
+  color: var(--et-on-me);
+  animation: mic-halo 1.4s ease-in-out infinite;
+}
+
+.mic-button[data-variant="quiet"] {
+  background: var(--et-surface3);
+  box-shadow: none;
+  color: var(--et-fg);
+}
+
+.mic-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.mic-button:focus-visible {
+  outline: 2px solid var(--et-accent);
+  outline-offset: 3px;
+}
+
+@keyframes mic-halo {
+  50% {
+    box-shadow: 0 0 0 12px color-mix(in oklab, var(--et-me) 10%, transparent);
+  }
+}
+
+.mic-meter {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+}
+
+.mic-meter i {
+  display: block;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--et-me);
+  transition: height 0.08s linear;
+}
+
+.mic-meter[data-active="false"] i {
+  background: var(--et-surface3);
+}
+
+@media (max-width: 1100px) {
+  .mic-button {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-button[data-variant="live"] {
+    animation: none;
+  }
+
+  .mic-meter i {
+    transition: none;
+  }
+}

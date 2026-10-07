@@ -1,0 +1,31 @@
+/* HeroUI's tabs and search field, shaped like the design's pills. */
+.memory-tabs-bar .tabs__list {
+  padding: 3px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  background: var(--et-surface);
+}
+
+.memory-tabs-bar .tabs__tab {
+  height: 32px;
+  padding: 0 18px;
+  border-radius: 999px;
+  color: var(--et-muted);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.memory-tabs-bar .tabs__tab[aria-selected="true"] {
+  color: var(--et-fg);
+}
+
+.memory-tabs-bar .tabs__tab-indicator {
+  border-radius: 999px;
+  background: var(--et-surface3);
+}
+
+.memory-search .search-field__group {
+  height: 36px;
+  border-radius: 999px;
+}

@@ -1,0 +1,101 @@
+/* The end of a spoken review, and its notices. */
+.review-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 24px;
+}
+
+.review-summary h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.review-summary-headline {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 15px;
+}
+
+.review-summary-list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--et-line);
+  border-radius: var(--et-radius-card);
+  background: var(--et-surface);
+  list-style: none;
+}
+
+.review-summary-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--et-line);
+}
+
+.review-summary-list li:first-child {
+  border-top: 0;
+}
+
+.review-summary-phrase {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.review-summary-list li[data-outcome="skipped"] .review-summary-phrase {
+  color: var(--et-muted);
+  font-weight: 400;
+}
+
+.review-summary-outcome {
+  flex: none;
+  color: var(--et-muted);
+  font-size: 13px;
+}
+
+.review-summary-list li[data-outcome="used"] .review-summary-outcome {
+  color: var(--et-ok);
+}
+
+.review-summary-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Nothing to review, or it could not start */
+.review-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 72px 24px;
+}
+
+.review-notice h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.review-notice p {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.review-notice-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}

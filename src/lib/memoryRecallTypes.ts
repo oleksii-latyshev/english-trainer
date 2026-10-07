@@ -38,6 +38,12 @@ export type PendingMemoryReviewItem = MemoryReviewItemBase & {
   next_review_at: null;
   interval_days: null;
   status: null;
+  is_skipped: false;
+};
+
+/** Passed on by the learner: closed without a score, so it stays due and keeps its target hidden. */
+export type SkippedMemoryReviewItem = Omit<PendingMemoryReviewItem, 'is_skipped'> & {
+  is_skipped: true;
 };
 
 export type SavedMemoryReviewItem = MemoryReviewItemBase & {
@@ -48,9 +54,13 @@ export type SavedMemoryReviewItem = MemoryReviewItemBase & {
   next_review_at: number;
   interval_days: number;
   status: LearningStatus;
+  is_skipped: false;
 };
 
-export type MemoryReviewItem = PendingMemoryReviewItem | SavedMemoryReviewItem;
+export type MemoryReviewItem =
+  | PendingMemoryReviewItem
+  | SkippedMemoryReviewItem
+  | SavedMemoryReviewItem;
 
 export type MemoryReviewRun = {
   run_id: number;
@@ -74,17 +84,19 @@ export type MemoryRecallResult = {
 };
 
 function isSavedItem(value: Record<string, unknown>): boolean {
-  const isPending = value.target === null && value.transcript === null;
-  if (isPending) {
+  const isUnscored = value.target === null && value.transcript === null;
+  if (isUnscored) {
     return (
       value.wording_observed === null &&
       value.saved_response === null &&
       value.next_review_at === null &&
       value.interval_days === null &&
-      value.status === null
+      value.status === null &&
+      typeof value.is_skipped === 'boolean'
     );
   }
   return (
+    value.is_skipped === false &&
     isBoundedText(value.target, 300) &&
     isBoundedText(value.transcript, 4000) &&
     typeof value.wording_observed === 'boolean' &&
@@ -95,6 +107,11 @@ function isSavedItem(value: Record<string, unknown>): boolean {
     value.interval_days <= 365 &&
     isLearningStatus(value.status)
   );
+}
+
+/** Neither answered nor skipped yet. */
+export function isUnresolved(item: MemoryReviewItem): item is PendingMemoryReviewItem {
+  return item.saved_response === null && !item.is_skipped;
 }
 
 export function isMemoryReviewItem(value: unknown): value is MemoryReviewItem {
@@ -113,6 +130,7 @@ export function isMemoryReviewItem(value: unknown): value is MemoryReviewItem {
     hasOwn(item, 'next_review_at') &&
     hasOwn(item, 'interval_days') &&
     hasOwn(item, 'status') &&
+    hasOwn(item, 'is_skipped') &&
     isSavedItem(item)
   );
 }
@@ -133,9 +151,8 @@ export function isMemoryReviewRun(value: unknown): value is MemoryReviewRun {
   const items = run.items;
   return items.every((item, index) => {
     if (item.position !== index + 1) return false;
-    if (index > 0 && items[index - 1].saved_response === null && item.saved_response !== null) {
-      return false;
-    }
+    // Items close in order: nothing after an unanswered item is answered or skipped.
+    if (index > 0 && isUnresolved(items[index - 1]) && !isUnresolved(item)) return false;
     return !items
       .slice(0, index)
       .some((prior) => prior.item_type === item.item_type && prior.item_id === item.item_id);

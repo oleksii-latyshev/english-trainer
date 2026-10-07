@@ -1,8 +1,9 @@
-import { Button, Chip } from '@heroui/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@heroui/react';
+import { useEffect, useState } from 'react';
 import { getMemoryUsageEvidence } from '@/features/memory/memoryApi';
 import type { LearningItemType } from '@/lib/learningTypes';
 import type { MemoryUsageEvidence } from '@/lib/usageTypes';
+import '@/features/memory/memoryDetail.css';
 
 type Props = {
   itemType: LearningItemType;
@@ -10,169 +11,94 @@ type Props = {
 };
 
 type EvidenceState =
-  | { tag: 'idle' }
-  | { tag: 'loading'; key: string }
-  | { tag: 'error'; key: string; message: string }
-  | { tag: 'loaded'; key: string; evidence: MemoryUsageEvidence };
+  | { tag: 'loading' }
+  | { tag: 'error' }
+  | { tag: 'loaded'; evidence: MemoryUsageEvidence };
 
+/**
+ * What conversations showed about one item (the usage-review subsystem's evidence). Read-only;
+ * it loads when the row opens and reloads when Memory changes.
+ */
 export function UsageEvidenceSection({ itemType, itemId }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [fetchState, setFetchState] = useState<EvidenceState>({ tag: 'idle' });
-  const requestIdRef = useRef(0);
-  const requestKey = `${itemType}:${itemId}`;
+  const [state, setState] = useState<EvidenceState>({ tag: 'loading' });
+  const [attempt, setAttempt] = useState(0);
 
-  useEffect(
-    () => () => {
-      requestIdRef.current += 1;
-    },
-    [],
-  );
-
-  const loadEvidence = useCallback(async () => {
-    const requestId = ++requestIdRef.current;
-    const key = `${itemType}:${itemId}`;
-    setFetchState({ tag: 'loading', key });
-    try {
-      const data = await getMemoryUsageEvidence(itemType, itemId);
-      if (requestIdRef.current !== requestId) return;
-      setFetchState({ tag: 'loaded', key, evidence: data });
-    } catch {
-      if (requestIdRef.current !== requestId) return;
-      setFetchState({
-        tag: 'error',
-        key,
-        message: 'Could not load usage evidence. Please retry.',
-      });
-    }
-  }, [itemType, itemId]);
-
+  // `attempt` is the retry: changing it runs the load again.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: retry trigger, not a value the effect reads.
   useEffect(() => {
-    requestIdRef.current += 1;
-    setFetchState((current) =>
-      'key' in current && current.key === requestKey ? current : { tag: 'idle' },
-    );
-  }, [requestKey]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const reload = () => void loadEvidence();
+    let generation = 0;
+    const load = async () => {
+      const request = ++generation;
+      try {
+        const evidence = await getMemoryUsageEvidence(itemType, itemId);
+        if (request === generation) setState({ tag: 'loaded', evidence });
+      } catch {
+        if (request === generation) setState({ tag: 'error' });
+      }
+    };
+    const reload = () => void load();
     reload();
     window.addEventListener('learning-memory-changed', reload);
     return () => {
+      generation += 1;
       window.removeEventListener('learning-memory-changed', reload);
-      requestIdRef.current += 1;
     };
-  }, [isOpen, loadEvidence]);
-
-  function handleToggle() {
-    if (isOpen) {
-      requestIdRef.current += 1;
-      setFetchState({ tag: 'idle' });
-    }
-    setIsOpen(!isOpen);
-  }
-
-  const stateMatchesRequest = 'key' in fetchState && fetchState.key === requestKey;
+  }, [itemType, itemId, attempt]);
 
   return (
-    <div className="mt-3 border-t border-white/[0.06] pt-2.5">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between text-left text-xs font-medium text-zinc-400 hover:text-zinc-200"
-        onClick={handleToggle}
-        aria-expanded={isOpen}
-      >
-        <span>Usage evidence</span>
-        <span className="text-[11px] text-zinc-500">{isOpen ? '▲ Hide' : '▼ Show'}</span>
-      </button>
-
-      {isOpen && (
-        <div className="mt-2.5 rounded-lg border border-white/[0.04] bg-black/30 p-3 text-xs">
-          {fetchState.tag === 'loading' && stateMatchesRequest && (
-            <p className="m-0 text-zinc-500">Loading conversational usage evidence…</p>
-          )}
-
-          {fetchState.tag === 'error' && stateMatchesRequest && (
-            <div className="flex items-center justify-between gap-2 text-rose-300">
-              <span>{fetchState.message}</span>
-              <Button
-                className="text-[11px] border border-rose-500/30 bg-rose-500/10"
-                size="sm"
-                onPress={() => void loadEvidence()}
-                variant="secondary"
-              >
-                Retry
-              </Button>
-            </div>
-          )}
-
-          {fetchState.tag === 'loaded' && stateMatchesRequest && (
-            <div>
-              <div className="mb-2 flex flex-wrap items-center gap-3 text-zinc-400">
-                <span>
-                  Distinct sessions:{' '}
-                  <strong className="text-zinc-200">
-                    {fetchState.evidence.distinct_session_count}
-                  </strong>
-                </span>
-                <span>·</span>
-                <span>
-                  Streak: <strong className="text-zinc-200">{fetchState.evidence.streak}</strong>
-                </span>
-              </div>
-
-              {fetchState.evidence.events.length === 0 ? (
-                <p className="m-0 text-zinc-500 italic">
-                  No conversational usage evidence recorded yet. Use this phrasing in your practice
-                  sessions to build mastery.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  <p className="m-0 text-[11px] font-medium text-zinc-400 uppercase">
-                    Recent conversational observations (last {fetchState.evidence.events.length}):
-                  </p>
-                  <div className="grid gap-1.5">
-                    {fetchState.evidence.events.map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="rounded border border-white/[0.04] bg-white/[0.02] p-2"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <Chip
-                            color={ev.outcome === 'correct' ? 'success' : 'danger'}
-                            size="sm"
-                            variant="soft"
-                          >
-                            {ev.outcome === 'correct' ? 'Correct use' : 'Incorrect / Relapse'}
-                          </Chip>
-                          <span className="text-[10px] text-zinc-500">
-                            Session #{ev.session_id} ·{' '}
-                            {new Date(ev.original_turn_time).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="mt-1 mb-0 text-[10px] text-zinc-500">
-                          Answer {ev.sequence} ·{' '}
-                          {ev.origin === 'feedback' ? 'Focused feedback' : 'AI usage review'}
-                        </p>
-                        {ev.exact_excerpt && (
-                          <p className="mt-1 mb-0 text-[11px] text-zinc-300">
-                            <span className="text-zinc-500">Excerpt:</span> "{ev.exact_excerpt}"
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <p className="mt-2.5 mb-0 text-[10px] text-zinc-500">
-                Supported transcript usage wording only. Does not imply phonetic pronunciation
-                grading or official CEFR certification.
-              </p>
-            </div>
-          )}
+    <section aria-label="Evidence from conversations" className="evidence">
+      {state.tag === 'loading' && <p className="evidence-empty">Loading evidence…</p>}
+      {state.tag === 'error' && (
+        <div className="evidence-error" role="alert">
+          <span>Could not load the evidence from conversations.</span>
+          <Button onPress={() => setAttempt((count) => count + 1)} size="sm" variant="secondary">
+            Retry
+          </Button>
         </div>
       )}
-    </div>
+      {state.tag === 'loaded' && <EvidenceBody evidence={state.evidence} />}
+    </section>
+  );
+}
+
+function EvidenceBody({ evidence }: { evidence: MemoryUsageEvidence }) {
+  return (
+    <>
+      <div className="evidence-head">
+        <span className="evidence-title">In conversations</span>
+        <span>
+          Sessions: <strong>{evidence.distinct_session_count}</strong>
+        </span>
+        <span>
+          Streak: <strong>{evidence.streak}</strong>
+        </span>
+      </div>
+      {evidence.events.length === 0 ? (
+        <p className="evidence-empty">
+          Nothing yet. Use this wording in a conversation and it shows up here.
+        </p>
+      ) : (
+        <ul className="evidence-list">
+          {evidence.events.map((event) => (
+            <li className="evidence-event" key={event.id}>
+              <div className="evidence-event-meta">
+                <span className="evidence-outcome" data-outcome={event.outcome}>
+                  {event.outcome === 'correct' ? 'Used correctly' : 'Slipped back'}
+                </span>
+                <span>
+                  Session {event.session_id} · answer {event.sequence} ·{' '}
+                  {event.origin === 'feedback' ? 'from Eva’s note' : 'from the usage review'}
+                </span>
+                <span>{new Date(event.original_turn_time).toLocaleString()}</span>
+              </div>
+              {event.exact_excerpt && <p className="evidence-excerpt">“{event.exact_excerpt}”</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="evidence-note">
+        Based on the words in your transcripts. It says nothing about pronunciation or a level.
+      </p>
+    </>
   );
 }

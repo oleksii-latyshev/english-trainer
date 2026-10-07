@@ -616,24 +616,6 @@ fn phrase_saved_in_one_session_persists_and_can_be_reviewed_in_later_session() {
     assert_eq!(memory.phrase_cards.len(), 1);
     assert_eq!(memory.phrase_cards[0].phrase, "I work there");
 
-    // Review action: Remembered
-    let review_result = store2
-        .submit_review(
-            crate::learning::LearningItemType::Phrase,
-            saved_card.id,
-            crate::learning::ReviewResponse::Remembered,
-        )
-        .unwrap();
-    assert_eq!(
-        review_result.status,
-        crate::learning::LearningStatus::Learning
-    );
-    assert_eq!(review_result.interval_days, 2);
-
-    let updated_memory = store2.get_learning_memory().unwrap();
-    assert_eq!(updated_memory.phrase_cards[0].interval_days, 2);
-    assert!(updated_memory.phrase_cards[0].last_reviewed_at.is_some());
-
     std::fs::remove_file(path).unwrap();
 }
 
@@ -740,16 +722,6 @@ fn failure_isolation_keeps_conversation_usable() {
         .save_phrase("".into(), "Note".into(), Some(session.session_id), Some(1))
         .unwrap_err();
     assert_eq!(error.code, ProviderErrorCode::InvalidRequest);
-
-    // Invalid review submission does not break session
-    let review_err = store
-        .submit_review(
-            crate::learning::LearningItemType::Mistake,
-            999999,
-            crate::learning::ReviewResponse::Remembered,
-        )
-        .unwrap_err();
-    assert_eq!(review_err.code, ProviderErrorCode::DatabaseError);
 
     // Conversation is still intact and can continue
     let next_turn = store

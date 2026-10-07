@@ -1,5 +1,7 @@
 import { Mic, Play, Square } from 'lucide-react';
-import type { MicVariant } from './lib/turnState';
+import './micControl.css';
+
+export type MicVariant = 'ready' | 'live' | 'quiet';
 
 const BAR_WEIGHTS = [
   0.45, 0.7, 0.9, 0.6, 1, 0.75, 0.5, 0.85, 0.65, 1, 0.55, 0.8, 0.95, 0.6, 0.7, 0.9, 0.5, 0.75,
@@ -13,7 +15,7 @@ export function LevelMeter({ level, isActive }: { level: number; isActive: boole
   // Speech levels are small; the square root lifts them so quiet talkers still see movement.
   const lift = Math.sqrt(clamped);
   return (
-    <div className="talk-meter" data-active={isActive}>
+    <div className="mic-meter" data-active={isActive}>
       <meter
         aria-label="Microphone level"
         className="sr-only"
@@ -47,7 +49,7 @@ export function MicButton({ variant, icon, name, isDisabled, onPress }: MicProps
   return (
     <button
       aria-label={name}
-      className="talk-mic"
+      className="mic-button"
       data-variant={variant}
       disabled={isDisabled}
       onClick={onPress}

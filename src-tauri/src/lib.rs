@@ -381,20 +381,27 @@ fn delete_phrase_card(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+fn delete_mistake(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    mistake_id: u64,
+) -> Result<bool, providers::ProviderError> {
+    sessions.delete_mistake(mistake_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn archive_learning_item(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    item_type: learning::LearningItemType,
+    item_id: u64,
+) -> Result<bool, providers::ProviderError> {
+    sessions.archive_learning_item(item_type, item_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 fn get_learning_memory(
     sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<learning::LearningMemoryView, providers::ProviderError> {
     sessions.get_learning_memory()
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn submit_learning_review(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    item_type: learning::LearningItemType,
-    item_id: u64,
-    response: learning::ReviewResponse,
-) -> Result<learning::ReviewResult, providers::ProviderError> {
-    sessions.submit_review(item_type, item_id, response)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -420,6 +427,16 @@ fn submit_memory_recall(
     transcript: String,
 ) -> Result<learning::MemoryRecallResult, providers::ProviderError> {
     sessions.submit_memory_recall(run_id, item_type, item_id, transcript)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn skip_memory_review_item(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    run_id: u64,
+    item_type: learning::LearningItemType,
+    item_id: u64,
+) -> Result<learning::MemoryReviewRun, providers::ProviderError> {
+    sessions.skip_memory_review_item(run_id, item_type, item_id)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -520,12 +537,14 @@ pub fn run() {
             record_answer_help_used,
             save_phrase_card,
             delete_phrase_card,
+            delete_mistake,
+            archive_learning_item,
             get_learning_memory,
             view_learning_memory,
-            submit_learning_review,
             start_memory_review,
             get_memory_review,
             submit_memory_recall,
+            skip_memory_review_item,
             finish_memory_review,
             review_practice_memory_usage,
             get_practice_memory_usage,

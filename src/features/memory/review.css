@@ -1,0 +1,177 @@
+/*
+ * The spoken review (docs/ui/DESIGN_BRIEF.md 6.7), built on the --et-* tokens. A focused screen
+ * like Talk: a header with the progress, a scrolling stage and the microphone card pinned below.
+ */
+.review-screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.review-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--et-line2);
+}
+
+.review-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.review-kicker {
+  color: var(--et-faint);
+  font-size: 12px;
+}
+
+.review-title h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.review-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 24px;
+}
+
+.review-pips {
+  display: flex;
+  gap: 4px;
+}
+
+.review-pips i {
+  display: block;
+  width: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--et-surface3);
+}
+
+.review-pips i[data-state="done"] {
+  background: var(--et-accent);
+}
+
+.review-pips i[data-state="current"] {
+  background: color-mix(in oklab, var(--et-accent) 45%, var(--et-surface3));
+}
+
+.review-count {
+  color: var(--et-muted);
+  font: 500 13px / 1 var(--font-mono);
+}
+
+.review-end {
+  margin-left: auto;
+}
+
+.review-body {
+  flex: 1;
+  min-height: 0;
+  padding: 40px 40px 24px;
+  overflow-y: auto;
+}
+
+.review-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.review-status {
+  margin: 0;
+  padding: 64px 24px;
+  color: var(--et-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* What is being practised */
+.review-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--et-line);
+  border-radius: 16px;
+  background: var(--et-surface);
+}
+
+.review-context > svg {
+  flex: none;
+  color: var(--et-accent);
+}
+
+.review-context-label {
+  color: var(--et-faint);
+  font-size: 13px;
+}
+
+.review-context-target {
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.review-context .status-chip {
+  margin-left: auto;
+}
+
+/* Eva and the situation */
+.review-situation {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.review-situation > .eva {
+  flex: none;
+}
+
+.review-situation-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-situation-label {
+  color: var(--et-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.review-situation-text {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.review-replay {
+  padding: 0 8px;
+}
+
+@media (max-width: 1100px) {
+  .review-body {
+    padding: 24px 20px 16px;
+  }
+}

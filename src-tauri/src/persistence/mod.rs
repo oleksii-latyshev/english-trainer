@@ -8,6 +8,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 
 mod ai_settings;
 mod daily_recall;
+mod learning_items;
 mod learning_reviews;
 mod learning_targets;
 pub(crate) mod learning_usage;

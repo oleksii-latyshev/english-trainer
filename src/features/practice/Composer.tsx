@@ -1,8 +1,8 @@
 import { Button, Kbd } from '@heroui/react';
 import { Keyboard } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { LevelMeter, MicButton } from '@/components/MicControl';
 import { canPressMic, type TurnPresentation, type TurnState } from './lib/turnState';
-import { LevelMeter, MicButton } from './MicControl';
 
 type Props = {
   state: TurnState;

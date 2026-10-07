@@ -1,5 +1,6 @@
 import type { MicrophoneStatus } from '@/audio/microphoneManager';
 import type { EvaMood } from '@/components/eva/Eva';
+import type { MicVariant } from '@/components/MicControl';
 import type { RecordingMode, RecordingStatus } from '@/features/speech/captureView';
 import type { TurnFix, TurnIssue } from './turnIssue';
 
@@ -67,8 +68,6 @@ export function deriveTurnState(signals: TurnSignals): TurnState {
   if (signals.hasTranscript) return { tag: 'review', sendingLabel: signals.sendingLabel };
   return { tag: 'idle' };
 }
-
-export type MicVariant = 'ready' | 'live' | 'quiet';
 
 export type TurnPresentation = {
   mood: EvaMood;

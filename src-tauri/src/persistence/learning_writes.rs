@@ -239,7 +239,21 @@ impl SessionDatabase {
             )
             .optional()?;
 
-        if let Some(card) = existing {
+        if let Some(mut card) = existing {
+            // Saving an archived phrase again is a deliberate return to it: it is not hidden any
+            // more and comes back for review tomorrow.
+            if card.status == LearningStatus::Archived {
+                let next_review = now + MS_PER_DAY;
+                self.connection.execute(
+                    "UPDATE phrase_cards SET status = 'learning', next_review_at = ?1,
+                            interval_days = 1 WHERE id = ?2",
+                    params![next_review, card.id as i64],
+                )?;
+                card.status = LearningStatus::Learning;
+                card.next_review_at = next_review;
+                card.interval_days = 1;
+                card.is_due = false;
+            }
             return Ok(card);
         }
 
