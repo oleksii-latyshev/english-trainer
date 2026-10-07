@@ -44,7 +44,7 @@ fn parse_output(json: &str, duration_ms: u64) -> Result<Transcript, Transcriptio
     let text = output
         .transcription
         .iter()
-        .map(|segment| segment.text.trim())
+        .map(|segment| without_annotations(&segment.text))
         .filter(|text| !text.is_empty())
         .collect::<Vec<_>>()
         .join(" ");
@@ -59,6 +59,23 @@ fn parse_output(json: &str, duration_ms: u64) -> Result<Transcript, Transcriptio
         language: "en".into(),
         duration_ms,
     })
+}
+
+/// Drops Whisper's non-speech annotations such as `[BLANK_AUDIO]`, `[ Silence ]` or `(music)`,
+/// so silence is reported as no speech instead of being sent as an answer.
+fn without_annotations(text: &str) -> String {
+    let mut kept = String::with_capacity(text.len());
+    let mut closing = None;
+    for character in text.chars() {
+        match (closing, character) {
+            (None, '[') => closing = Some(']'),
+            (None, '(') => closing = Some(')'),
+            (Some(end), _) if character == end => closing = None,
+            (Some(_), _) => {}
+            (None, _) => kept.push(character),
+        }
+    }
+    kept.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn validate_wav(wav: &[u8]) -> Result<u64, TranscriptionError> {

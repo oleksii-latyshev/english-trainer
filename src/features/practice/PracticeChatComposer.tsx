@@ -1,7 +1,7 @@
 import { Button } from '@heroui/react';
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
-import { useConversationFlow } from '@/lib/conversationFlowPreferences';
+import { effectiveAutoSendDelayMs, useConversationFlow } from '@/lib/conversationFlowPreferences';
 import { ComposerFooter } from './ComposerFooter';
 import { ListeningStatus } from './ListeningStatus';
 import type { ComposerVoice } from './lib/composerVoice';
@@ -148,7 +148,7 @@ export function PracticeChatComposer({
     });
     processedRequestIdRef.current = currentRequestId;
     if (!shouldAutoSend) return;
-    const delayMs = flowRef.current.autoSendDelayMs;
+    const delayMs = effectiveAutoSendDelayMs(flowRef.current);
     if (autoSendAction(delayMs) === 'send-now') sendRef.current(transcript, 'voice');
     else autoSend.start(transcript, delayMs);
   }, [currentRequestId, transcript, sessionId, autoSend.start]);

@@ -8,6 +8,7 @@ import {
   isCapturing,
   type Recording,
   type RecordingMode,
+  stopMeansCancel,
   viewFor,
 } from './captureView';
 import {
@@ -20,7 +21,7 @@ import {
 } from './listening';
 import { microphoneError } from './microphoneError';
 import type { SpeechTiming } from './TimingPanel';
-import { createTranscriptionRunner } from './transcriptionRunner';
+import { BROWSER_ONLY_FAILURE, createTranscriptionRunner } from './transcriptionRunner';
 import type { useSystemSpeech } from './useSystemSpeech';
 
 export type { CaptureView, RecordingStatus } from './captureView';
@@ -188,6 +189,8 @@ export function useSpeechCapture(
     const recorder = recorderRef.current;
     const current = stateRef.current;
     if (!recorder || current.tag !== 'recording') return;
+    if (stopMeansCancel(current.heardSpeech, turnWatchRef.current !== null))
+      return cancelRecording();
     const requestId = requestIdRef.current;
     const speechStoppedAtMs = performance.now();
     const actualInput = current.actualInput;
@@ -217,10 +220,7 @@ export function useSpeechCapture(
           ...recording,
           tag: 'ready',
           actualInput,
-          failure: {
-            kind: 'setup',
-            message: 'Open the desktop app with bun run dev to use local transcription.',
-          },
+          failure: BROWSER_ONLY_FAILURE,
         });
         return;
       }
@@ -270,10 +270,7 @@ export function useSpeechCapture(
     if (!isTauri()) {
       setState({
         ...state,
-        failure: {
-          kind: 'setup',
-          message: 'Open the desktop app with bun run dev to use local transcription.',
-        },
+        failure: BROWSER_ONLY_FAILURE,
       });
       return;
     }

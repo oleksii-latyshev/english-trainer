@@ -2,6 +2,7 @@ import { Card } from '@heroui/react';
 import {
   AUTO_SEND_DELAY_RANGE_MS,
   END_PAUSE_RANGE_MS,
+  isFullyHandsFree,
   useConversationFlow,
 } from '@/lib/conversationFlowPreferences';
 
@@ -74,9 +75,11 @@ export function ConversationFlowSettings() {
           onChange={(autoSendVoice) => update({ autoSendVoice })}
         />
         <label className="flex flex-col gap-2 text-xs text-zinc-300">
-          Edit window before sending: {(preferences.autoSendDelayMs / 1000).toFixed(1)} s
+          {isFullyHandsFree(preferences)
+            ? 'Hands-free with auto-listen: answers are sent as soon as they are transcribed.'
+            : `Edit window before sending: ${(preferences.autoSendDelayMs / 1000).toFixed(1)} s`}
           <input
-            disabled={!preferences.autoSendVoice}
+            disabled={!preferences.autoSendVoice || isFullyHandsFree(preferences)}
             max={AUTO_SEND_DELAY_RANGE_MS.max}
             min={AUTO_SEND_DELAY_RANGE_MS.min}
             onChange={(event) => update({ autoSendDelayMs: Number(event.target.value) })}

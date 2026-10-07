@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   DEFAULT_CONVERSATION_FLOW,
+  effectiveAutoSendDelayMs,
   getConversationFlow,
   parseConversationFlow,
   setConversationFlow,
@@ -57,5 +58,18 @@ describe('conversation flow preferences', () => {
     unsubscribe();
     setConversationFlow({ autoListen: true, endPauseMs: 1500 });
     expect(calls).toBe(1);
+  });
+});
+
+describe('effectiveAutoSendDelayMs', () => {
+  it('fully hands-free conversation sends at once', () => {
+    expect(effectiveAutoSendDelayMs(DEFAULT_CONVERSATION_FLOW)).toBe(0);
+  });
+
+  it('the edit window applies when auto-listen or hands-free is off', () => {
+    expect(effectiveAutoSendDelayMs({ ...DEFAULT_CONVERSATION_FLOW, autoListen: false })).toBe(
+      2000,
+    );
+    expect(effectiveAutoSendDelayMs({ ...DEFAULT_CONVERSATION_FLOW, handsFree: false })).toBe(2000);
   });
 });

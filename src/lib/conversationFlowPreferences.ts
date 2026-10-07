@@ -21,6 +21,15 @@ export const DEFAULT_CONVERSATION_FLOW: ConversationFlowPreferences = {
   autoSendDelayMs: 2000,
 };
 
+/** Fully hands-free conversation sends at once: the edit window applies only when a hand is on the controls anyway. */
+export function isFullyHandsFree(preferences: ConversationFlowPreferences): boolean {
+  return preferences.autoListen && preferences.handsFree;
+}
+
+export function effectiveAutoSendDelayMs(preferences: ConversationFlowPreferences): number {
+  return isFullyHandsFree(preferences) ? 0 : preferences.autoSendDelayMs;
+}
+
 function parseBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }

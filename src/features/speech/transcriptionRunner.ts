@@ -47,3 +47,9 @@ export function createTranscriptionRunner(deps: Deps) {
     }
   };
 }
+
+/** Shown when the UI runs in a plain browser, where local transcription is unavailable. */
+export const BROWSER_ONLY_FAILURE = {
+  kind: 'setup',
+  message: 'Open the desktop app with bun run dev to use local transcription.',
+} as const;

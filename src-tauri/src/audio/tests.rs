@@ -66,6 +66,25 @@ fn parses_segments_and_rejects_bad_output() {
 }
 
 #[test]
+fn non_speech_annotations_are_dropped_and_silence_is_no_speech() {
+    for silent in [
+        r#"{"transcription":[{"text":" [BLANK_AUDIO]"}]}"#,
+        r#"{"transcription":[{"text":" [ Silence ]"},{"text":" (music)"}]}"#,
+    ] {
+        assert_eq!(
+            parse_output(silent, 0).unwrap_err().code,
+            TranscriptionErrorCode::NoSpeech
+        );
+    }
+    let transcript = parse_output(
+        r#"{"transcription":[{"text":" [BLANK_AUDIO] I deploy"},{"text":" with Docker. (coughs)"}]}"#,
+        0,
+    )
+    .unwrap();
+    assert_eq!(transcript.text, "I deploy with Docker.");
+}
+
+#[test]
 fn serializes_error_code_for_ipc_recovery() {
     let error = TranscriptionError::new(TranscriptionErrorCode::ModelMissing, "Install the model.");
     assert_eq!(

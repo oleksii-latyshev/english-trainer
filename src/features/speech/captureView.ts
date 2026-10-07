@@ -124,3 +124,11 @@ export function viewFor(
     actualInput: state.actualInput,
   };
 }
+
+/**
+ * Stopping before any speech was heard means "stop listening", not "send an empty answer".
+ * Only the warm session can tell; without turn watching the recording is transcribed as before.
+ */
+export function stopMeansCancel(heardSpeech: boolean, isWatchingTurn: boolean): boolean {
+  return isWatchingTurn && !heardSpeech;
+}

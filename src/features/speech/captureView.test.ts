@@ -1,6 +1,6 @@
 // @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, it } from 'bun:test';
-import { isCapturing, PRE_ROLL_MS, preRollMsFor, viewFor } from './captureView';
+import { isCapturing, PRE_ROLL_MS, preRollMsFor, stopMeansCancel, viewFor } from './captureView';
 
 describe('capture view', () => {
   it('exposes listening details only while recording or stopping', () => {
@@ -60,5 +60,16 @@ describe('capture view', () => {
       false,
     );
     expect(isCapturing({ tag: 'idle' })).toBe(false);
+  });
+});
+
+describe('stopMeansCancel', () => {
+  it('cancels a warm recording in which no speech was heard', () => {
+    expect(stopMeansCancel(false, true)).toBe(true);
+    expect(stopMeansCancel(true, true)).toBe(false);
+  });
+
+  it('keeps transcribing when the turn is not watched', () => {
+    expect(stopMeansCancel(false, false)).toBe(false);
   });
 });
