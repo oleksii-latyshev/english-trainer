@@ -115,6 +115,7 @@ impl super::SessionStore {
             learner: normalized_transcript.clone(),
             assistant_reply: String::new(),
             assistant_question: String::new(),
+            answered_by: None,
         };
         state
             .database
@@ -221,10 +222,13 @@ impl super::SessionStore {
             }
         };
         let question = turn.question.clone().unwrap_or_default();
-        match state
-            .database
-            .update_turn(session_id, sequence, &turn.spoken_reply, &question)
-        {
+        match state.database.update_turn(
+            session_id,
+            sequence,
+            &turn.spoken_reply,
+            &question,
+            turn.answered_by.as_ref(),
+        ) {
             Ok(true) => {}
             Ok(false) => {
                 if let Some(active) = state.active.as_mut().filter(|item| item.id == session_id) {
@@ -244,6 +248,7 @@ impl super::SessionStore {
             if let Some(last) = active.turns.last_mut() {
                 last.assistant_reply = turn.spoken_reply.clone();
                 last.assistant_question = question;
+                last.answered_by = turn.answered_by.clone();
             }
         }
         Ok(turn)

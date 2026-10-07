@@ -13,6 +13,14 @@ describe('dialogueTypes', () => {
     ).toBe(true);
   });
 
+  it('accepts a null or valid origin and rejects a malformed one', () => {
+    const turn = { learner: 'Hello', assistant_reply: 'Hi', assistant_question: 'Why?' };
+    const answeredBy = { provider: 'gemini', model: 'gemini-3.5-flash-lite', is_backup: false };
+    expect(isPracticeDialogueTurn({ ...turn, answered_by: null })).toBe(true);
+    expect(isPracticeDialogueTurn({ ...turn, answered_by: answeredBy })).toBe(true);
+    expect(isPracticeDialogueTurn({ ...turn, answered_by: { provider: 'gemini' } })).toBe(false);
+  });
+
   it('rejects an invalid practice dialogue turn with missing fields', () => {
     expect(
       isPracticeDialogueTurn({

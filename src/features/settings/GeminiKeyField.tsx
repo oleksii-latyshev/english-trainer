@@ -23,7 +23,7 @@ function statusLabel(status: GeminiKeyStatus): string {
   if (!status.configured) return 'No API key saved.';
   return status.source === 'environment'
     ? 'Using the ENG_TRAINER_GEMINI_API_KEY environment variable.'
-    : 'API key saved in this app, encrypted for this computer.';
+    : 'Gemini API key saved — encrypted on this Mac.';
 }
 
 function currentStatus(state: KeyState): GeminiKeyStatus | null {
@@ -114,6 +114,12 @@ export function GeminiKeyField() {
           {state.message}
         </p>
       )}
+      <p className="text-xs leading-relaxed text-zinc-400">
+        On the free tier, requests cost nothing and are not billed unless billing is enabled for the
+        key&apos;s Google Cloud project in Google AI Studio. When a free daily or per-minute limit
+        is reached, Gemini refuses requests (rate limited) and the app answers with Apple on-device
+        instead. Limits and usage are shown in Google AI Studio.
+      </p>
       <p className="text-xs leading-relaxed text-zinc-400">
         Free-tier prompts may be used by Google to improve its products and may be read by human
         reviewers. Only your practice transcripts are sent. Get a key in Google AI Studio.

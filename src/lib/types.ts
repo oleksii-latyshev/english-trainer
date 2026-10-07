@@ -1,3 +1,5 @@
+import { type AnsweredBy, isAnsweredBy } from '@/lib/answeredBy';
+
 export type Transcript = {
   text: string;
   language: string;
@@ -26,6 +28,7 @@ export type ConversationTurn = {
   is_complete: boolean;
   provider_latency_ms?: number;
   first_token_ms?: number;
+  answered_by?: AnsweredBy;
 };
 
 export type FeedbackCategory = 'grammar' | 'vocabulary' | 'coherence' | 'interaction';
@@ -250,7 +253,8 @@ export function isConversationTurn(value: unknown): value is ConversationTurn {
     (!('first_token_ms' in value) ||
       (typeof value.first_token_ms === 'number' &&
         Number.isSafeInteger(value.first_token_ms) &&
-        value.first_token_ms >= 0))
+        value.first_token_ms >= 0)) &&
+    (!('answered_by' in value) || isAnsweredBy(value.answered_by))
   );
 }
 

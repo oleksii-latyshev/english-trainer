@@ -107,6 +107,56 @@ fn migrates_existing_version_two_database_to_current_version() {
 }
 
 #[test]
+fn migrates_version_eight_database_keeping_old_turns_without_an_origin() {
+    let path = test_database_path();
+    let mut db = SessionDatabase::open(&path).unwrap();
+    let session = db.create_session("Question?").unwrap();
+    db.save_turn(
+        session,
+        1,
+        &StoredTurn {
+            learner: "Original".into(),
+            assistant_reply: "Reply".into(),
+            assistant_question: "Next?".into(),
+            answered_by: None,
+        },
+    )
+    .unwrap();
+    // Rewind to the version 8 shape: a turns table without the origin columns.
+    db.connection
+        .execute_batch(
+            "ALTER TABLE turns DROP COLUMN answered_by_provider;
+            ALTER TABLE turns DROP COLUMN answered_by_model;
+            ALTER TABLE turns DROP COLUMN answered_by_backup;
+            PRAGMA user_version = 8;",
+        )
+        .unwrap();
+    drop(db);
+    let mut db = SessionDatabase::open(&path).unwrap();
+    let version: i64 = db
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    assert_eq!(db.turns(1).unwrap()[0].answered_by, None);
+    let answered_by = crate::providers::AnsweredBy::apple(true);
+    db.save_turn(
+        1,
+        2,
+        &StoredTurn {
+            learner: "Next".into(),
+            assistant_reply: "Fine.".into(),
+            assistant_question: "Why?".into(),
+            answered_by: Some(answered_by.clone()),
+        },
+    )
+    .unwrap();
+    assert_eq!(db.turns(1).unwrap()[1].answered_by, Some(answered_by));
+    drop(db);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
 fn migrates_existing_version_three_database_to_recall_storage() {
     let path = test_database_path();
     let db = SessionDatabase::open(&path).unwrap();
@@ -135,12 +185,14 @@ fn mistake_observation_is_idempotent_for_same_turn_and_increments_for_distinct_t
         learner: "I work in there".into(),
         assistant_reply: "Reply".into(),
         assistant_question: "Next?".into(),
+        answered_by: None,
     };
     db.save_turn(session_id, 1, &turn1).unwrap();
     let turn2 = StoredTurn {
         learner: "I worked in there".into(),
         assistant_reply: "Reply".into(),
         assistant_question: "Next?".into(),
+        answered_by: None,
     };
     db.save_turn(session_id, 2, &turn2).unwrap();
 
@@ -179,6 +231,7 @@ fn changing_feedback_for_a_turn_replaces_its_single_mistake_observation() {
             learner: "I work there".into(),
             assistant_reply: "Reply".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -235,6 +288,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             learner: "I said bad wording.".into(),
             assistant_reply: "Thanks.".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -267,6 +321,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             learner: "I used very bad wording again.".into(),
             assistant_reply: "I understand.".into(),
             assistant_question: "Why?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -388,6 +443,7 @@ fn removing_a_turn_correction_archives_its_observation_until_it_recurs() {
                 learner: "I work in there".into(),
                 assistant_reply: "Reply".into(),
                 assistant_question: "Next?".into(),
+                answered_by: None,
             },
         )
         .unwrap();
@@ -457,6 +513,7 @@ fn spoken_recall_queue_and_evidence_survive_without_changing_mastery() {
             learner: "A trade-off matters.".into(),
             assistant_reply: "Yes.".into(),
             assistant_question: "Why?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -518,6 +575,7 @@ fn spoken_recall_excludes_cues_that_reveal_the_phrase() {
             learner: "Answer".into(),
             assistant_reply: "Reply".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -582,6 +640,7 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
             learner: "I work in there".into(),
             assistant_reply: "Reply".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -611,6 +670,7 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
             learner: "Current answer".into(),
             assistant_reply: "Reply".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -662,6 +722,7 @@ fn session_mode_persists_and_turn_can_be_updated_in_place() {
         learner: "I built a service.".into(),
         assistant_reply: "".into(),
         assistant_question: "".into(),
+        answered_by: None,
     };
     db.save_turn(session_id, 1, &initial_turn).unwrap();
     let loaded = db.turn(session_id, 1).unwrap().unwrap();
@@ -674,6 +735,7 @@ fn session_mode_persists_and_turn_can_be_updated_in_place() {
             1,
             "Sounds interesting.",
             "What architecture did you use?",
+            None,
         )
         .unwrap();
     assert!(updated);
@@ -695,6 +757,7 @@ fn typed_and_edited_feedback_does_not_create_spoken_mastery_relapse() {
             learner: "Original text".into(),
             assistant_reply: "Thanks".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         };
         let feedback = sample_turn_feedback(FocusCategory::Grammar, "Improved text");
         db.save_turn(first, 1, &turn).unwrap();

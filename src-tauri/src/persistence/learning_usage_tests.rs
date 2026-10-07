@@ -50,6 +50,7 @@ fn saves_assessment_events_and_updates_mistake_counters_and_status() {
         learner: "I used good phrasing again.".into(),
         assistant_reply: "Thanks.".into(),
         assistant_question: "Why?".into(),
+        answered_by: None,
     };
     db.save_turn(sid3, 1, &turn3).unwrap();
     let turn3_time = turn_time + 7 * crate::learning::MS_PER_DAY;
@@ -127,6 +128,7 @@ fn saves_assessment_events_and_updates_mistake_counters_and_status() {
         learner: "That was bad wording again.".into(),
         assistant_reply: "I understand.".into(),
         assistant_question: "Next?".into(),
+        answered_by: None,
     };
     db.save_turn(sid4, 1, &turn4).unwrap();
     let turn4_time = turn_time + 8 * crate::learning::MS_PER_DAY;

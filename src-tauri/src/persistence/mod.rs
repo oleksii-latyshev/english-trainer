@@ -3,7 +3,7 @@ use crate::conversation::StoredTurn;
 use crate::learning::{LearningStatus, MistakeRecord};
 #[cfg(test)]
 use crate::providers::FocusCategory;
-use crate::providers::{AttemptComparison, TurnFeedback};
+use crate::providers::{AnswerProvider, AnsweredBy, AttemptComparison, TurnFeedback};
 use rusqlite::{params, Connection, OptionalExtension};
 
 mod ai_settings;
@@ -17,7 +17,27 @@ mod schema;
 mod session_summary;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 8;
+const SCHEMA_VERSION: i64 = 9;
+
+fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
+    let provider: Option<String> = row.get(3)?;
+    let model: Option<String> = row.get(4)?;
+    let is_backup: Option<bool> = row.get(5)?;
+    let answered_by = match (provider.as_deref().and_then(AnswerProvider::parse), model) {
+        (Some(provider), Some(model)) => Some(AnsweredBy {
+            provider,
+            model,
+            is_backup: is_backup.unwrap_or(false),
+        }),
+        _ => None,
+    };
+    Ok(StoredTurn {
+        learner: row.get(0)?,
+        assistant_reply: row.get(1)?,
+        assistant_question: row.get(2)?,
+        answered_by,
+    })
+}
 
 pub struct SessionDatabase {
     connection: Connection,
@@ -58,18 +78,12 @@ impl SessionDatabase {
 
     pub fn turns(&self, session_id: u64) -> rusqlite::Result<Vec<StoredTurn>> {
         let mut statement = self.connection.prepare(
-            "SELECT user_transcript, assistant_reply, assistant_question FROM turns WHERE session_id = ?1 ORDER BY sequence",
+            "SELECT user_transcript, assistant_reply, assistant_question, answered_by_provider, answered_by_model, answered_by_backup FROM turns WHERE session_id = ?1 ORDER BY sequence",
         )?;
         let rows = statement.query_map(
             [i64::try_from(session_id)
                 .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?],
-            |row| {
-                Ok(StoredTurn {
-                    learner: row.get(0)?,
-                    assistant_reply: row.get(1)?,
-                    assistant_question: row.get(2)?,
-                })
-            },
+            stored_turn,
         )?;
         rows.collect()
     }
@@ -110,8 +124,8 @@ impl SessionDatabase {
     ) -> rusqlite::Result<()> {
         let transaction = self.connection.transaction()?;
         transaction.execute(
-            "INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![i64::try_from(session_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?, i64::try_from(sequence).unwrap_or(i64::MAX), turn.learner, turn.assistant_reply, turn.assistant_question, now_ms()],
+            "INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at, answered_by_provider, answered_by_model, answered_by_backup) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![i64::try_from(session_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?, i64::try_from(sequence).unwrap_or(i64::MAX), turn.learner, turn.assistant_reply, turn.assistant_question, now_ms(), turn.answered_by.as_ref().map(|by| by.provider.as_str()), turn.answered_by.as_ref().map(|by| by.model.as_str()), turn.answered_by.as_ref().map(|by| by.is_backup)],
         )?;
         transaction.execute(
             "INSERT INTO turn_input_sources (session_id, sequence, input_source) VALUES (?1, ?2, ?3)",
@@ -142,14 +156,18 @@ impl SessionDatabase {
         sequence: usize,
         assistant_reply: &str,
         assistant_question: &str,
+        answered_by: Option<&AnsweredBy>,
     ) -> rusqlite::Result<bool> {
         let count = self.connection.execute(
-            "UPDATE turns SET assistant_reply = ?1, assistant_question = ?2 WHERE session_id = ?3 AND sequence = ?4",
+            "UPDATE turns SET assistant_reply = ?1, assistant_question = ?2, answered_by_provider = ?5, answered_by_model = ?6, answered_by_backup = ?7 WHERE session_id = ?3 AND sequence = ?4",
             params![
                 assistant_reply,
                 assistant_question,
                 to_sql_id(session_id)?,
                 to_sql_sequence(sequence)?,
+                answered_by.map(|by| by.provider.as_str()),
+                answered_by.map(|by| by.model.as_str()),
+                answered_by.map(|by| by.is_backup),
             ],
         )?;
         Ok(count == 1)
@@ -158,13 +176,9 @@ impl SessionDatabase {
     pub fn turn(&self, session_id: u64, sequence: usize) -> rusqlite::Result<Option<StoredTurn>> {
         self.connection
             .query_row(
-                "SELECT user_transcript, assistant_reply, assistant_question FROM turns WHERE session_id = ?1 AND sequence = ?2",
+                "SELECT user_transcript, assistant_reply, assistant_question, answered_by_provider, answered_by_model, answered_by_backup FROM turns WHERE session_id = ?1 AND sequence = ?2",
                 params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
-                |row| Ok(StoredTurn {
-                    learner: row.get(0)?,
-                    assistant_reply: row.get(1)?,
-                    assistant_question: row.get(2)?,
-                }),
+                stored_turn,
             )
             .optional()
     }

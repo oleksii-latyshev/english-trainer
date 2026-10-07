@@ -56,6 +56,7 @@ fn eligible_candidates_filters_sources_and_requires_transcript_match() {
         learner: "I work in there yesterday.".into(),
         assistant_reply: "I see.".into(),
         assistant_question: "Why did you go there?".into(),
+        answered_by: None,
     };
     db.save_turn(sid1, 1, &turn1).unwrap();
 
@@ -102,6 +103,7 @@ fn eligible_candidates_filters_sources_and_requires_transcript_match() {
         learner: "The main trade off is speed and I work there now.".into(),
         assistant_reply: "That makes sense.".into(),
         assistant_question: "What else?".into(),
+        answered_by: None,
     };
     db.save_turn(sid2, 1, &turn2_1).unwrap();
 
@@ -119,6 +121,7 @@ fn eligible_candidates_filters_sources_and_requires_transcript_match() {
         learner: "Yes, I work there every day.".into(),
         assistant_reply: "Great.".into(),
         assistant_question: "And trade off?".into(),
+        answered_by: None,
     };
     db.save_turn(sid3, 1, &turn3_1).unwrap();
 

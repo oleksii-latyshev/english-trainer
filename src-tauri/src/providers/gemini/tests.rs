@@ -161,6 +161,7 @@ fn streams_deltas_and_returns_the_shaped_turn() {
     assert_eq!(deltas, ["That sounds fun. ", "Where do you", " work?"]);
     assert_eq!(turn.spoken_reply, "That sounds fun.");
     assert_eq!(turn.question.as_deref(), Some("Where do you work?"));
+    assert_eq!(turn.answered_by, Some(AnsweredBy::gemini()));
     let request = requests.recv().unwrap();
     let request_line = request.lines().next().unwrap();
     assert!(request_line.contains("gemini-3.5-flash-lite:streamGenerateContent?alt=sse"));
@@ -177,6 +178,7 @@ fn backup(reply: &'static str, after_ms: u64) -> Option<Backup> {
             emit(race::Event::Done);
         }),
         after: std::time::Duration::from_millis(after_ms),
+        label: crate::providers::AnsweredBy::apple(true),
     })
 }
 
@@ -193,6 +195,7 @@ fn overload_hands_the_turn_to_the_backup_at_once() {
     )
     .unwrap();
     assert_eq!(turn.question.as_deref(), Some("Why?"));
+    assert_eq!(turn.answered_by, Some(AnsweredBy::apple(true)));
     assert!(started.elapsed() < std::time::Duration::from_secs(2));
 }
 

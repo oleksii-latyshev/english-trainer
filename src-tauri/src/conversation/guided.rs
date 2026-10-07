@@ -131,6 +131,7 @@ mod tests {
                         is_complete: false,
                         provider_latency_ms: None,
                         first_token_ms: None,
+                        answered_by: None,
                     })
                 })
                 .unwrap();

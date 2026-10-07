@@ -24,6 +24,7 @@ fn empty_candidates_persists_empty_assessment_without_calling_provider() {
                     is_complete: false,
                     provider_latency_ms: None,
                     first_token_ms: None,
+                    answered_by: None,
                 })
             },
         )
@@ -67,6 +68,7 @@ fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_revi
                     is_complete: false,
                     provider_latency_ms: None,
                     first_token_ms: None,
+                    answered_by: None,
                 })
             },
         )
@@ -102,6 +104,7 @@ fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_revi
                 is_complete: false,
                 provider_latency_ms: None,
                 first_token_ms: None,
+                answered_by: None,
             })
         })
         .unwrap();
@@ -148,6 +151,7 @@ fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_revi
                 is_complete: false,
                 provider_latency_ms: None,
                 first_token_ms: None,
+                answered_by: None,
             })
         },
     );
@@ -174,6 +178,7 @@ fn ended_saved_session_can_be_reviewed() {
                 is_complete: false,
                 provider_latency_ms: None,
                 first_token_ms: None,
+                answered_by: None,
             })
         })
         .unwrap();

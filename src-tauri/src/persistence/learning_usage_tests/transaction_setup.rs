@@ -20,6 +20,7 @@ pub(super) fn setup_usage_fixture() -> UsageFixture {
         learner: "Original turn.".into(),
         assistant_reply: "Reply.".into(),
         assistant_question: "Question.".into(),
+        answered_by: None,
     };
     db.save_turn(sid1, 1, &turn1).unwrap();
     let fb = TurnFeedback {
@@ -58,6 +59,7 @@ pub(super) fn setup_usage_fixture() -> UsageFixture {
         learner: "I used good phrasing here.".into(),
         assistant_reply: "Reply 2.".into(),
         assistant_question: "Next.".into(),
+        answered_by: None,
     };
     db.save_turn(sid2, 1, &turn2).unwrap();
 

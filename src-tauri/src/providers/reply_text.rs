@@ -21,6 +21,7 @@ pub(super) fn plain_turn(raw: &str) -> Result<ConversationTurn, ProviderError> {
         is_complete: false,
         provider_latency_ms: None,
         first_token_ms: None,
+        answered_by: None,
     })
 }
 

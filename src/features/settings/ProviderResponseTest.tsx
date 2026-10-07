@@ -1,13 +1,14 @@
 import { Button, Card } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
+import { answeredByLabel } from '@/lib/answeredBy';
 import { createReplyChannel } from '@/lib/replyStream';
 import { type ConversationProviderId, isConversationTurn, isProviderError } from '@/lib/types';
 
 type TestState =
   | { tag: 'idle' }
   | { tag: 'checking'; streamed: string }
-  | { tag: 'reply'; text: string; firstTokenMs?: number; latencyMs?: number }
+  | { tag: 'reply'; text: string; firstTokenMs?: number; latencyMs?: number; answeredBy?: string }
   | { tag: 'error'; message: string };
 
 function providerInstructions(provider: ConversationProviderId | null): string {
@@ -48,6 +49,7 @@ function responseState(result: unknown): TestState {
     text: result.question ? `${result.spoken_reply}\n\n${result.question}` : result.spoken_reply,
     firstTokenMs: result.first_token_ms,
     latencyMs: result.provider_latency_ms,
+    answeredBy: result.answered_by ? answeredByLabel(result.answered_by) : undefined,
   };
 }
 
@@ -112,6 +114,9 @@ export function ProviderResponseTest({ provider }: { provider: ConversationProvi
         {state.tag === 'reply' && (
           <div className="rounded-lg bg-black/30 p-3" aria-live="polite">
             <p className="whitespace-pre-line text-sm text-zinc-200">{state.text}</p>
+            {state.answeredBy && (
+              <p className="mt-2 text-xs text-zinc-400">Answered by: {state.answeredBy}</p>
+            )}
             {typeof state.latencyMs === 'number' && (
               <p className="mt-2 font-mono text-xs text-zinc-400">
                 First words: {state.firstTokenMs ?? state.latencyMs} ms · Full reply:{' '}

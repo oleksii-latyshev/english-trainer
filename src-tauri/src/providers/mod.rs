@@ -1,4 +1,5 @@
 pub(crate) mod agy;
+mod answered_by;
 mod apple;
 mod gemini;
 mod plain_prompt;
@@ -6,6 +7,7 @@ mod race;
 mod reply_text;
 mod settings;
 pub use agy::guided::{generate_guided_answer, GuidedAnswer};
+pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
 pub use gemini::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
 pub use settings::{AgyModel, AiSettings, ConversationProvider};
@@ -36,7 +38,9 @@ pub fn generate_configured_turn(
 ) -> Result<ConversationTurn, ProviderError> {
     measure_turn(on_delta, |forward| match settings.provider {
         ConversationProvider::Agy => {
-            let turn = agy::conversation::generate_turn_with_model(context, settings.agy_model)?;
+            let mut turn =
+                agy::conversation::generate_turn_with_model(context, settings.agy_model)?;
+            turn.answered_by = Some(AnsweredBy::agy(settings.agy_model));
             forward(&format!(
                 "{} {}",
                 turn.spoken_reply,
@@ -49,6 +53,7 @@ pub fn generate_configured_turn(
             let backup = race::Backup {
                 leg: apple.backup_leg(context.clone()),
                 after: APPLE_BACKUP_AFTER,
+                label: AnsweredBy::apple(true),
             };
             gemini::generate_turn(context, Some(backup), forward)
         }
@@ -267,6 +272,9 @@ pub struct ConversationTurn {
     pub provider_latency_ms: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub first_token_ms: Option<u64>,
+    /// The model that wrote this reply; absent only for replies stored before it was recorded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub answered_by: Option<AnsweredBy>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -326,6 +334,7 @@ mod timing_tests {
                 is_complete: false,
                 provider_latency_ms: None,
                 first_token_ms: None,
+                answered_by: None,
             })
         })
         .unwrap();

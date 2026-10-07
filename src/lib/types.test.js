@@ -25,6 +25,10 @@ describe('conversation IPC payloads', () => {
     expect(isConversationTurn({ ...turn, provider_latency_ms: 1200 })).toBe(true);
     expect(isConversationTurn({ ...turn, provider_latency_ms: -1 })).toBe(false);
     expect(isConversationTurn({ ...turn, first_token_ms: 800 })).toBe(true);
+    const answeredBy = { provider: 'apple', model: 'apple-foundation-models', is_backup: true };
+    expect(isConversationTurn({ ...turn, answered_by: answeredBy })).toBe(true);
+    expect(isConversationTurn({ ...turn, answered_by: { provider: 'x' } })).toBe(false);
+    expect(isConversationTurn({ ...turn, answered_by: null })).toBe(false);
     expect(isConversationTurn({ ...turn, first_token_ms: 'fast' })).toBe(false);
     expect(isConversationTurn({ ...turn, question: null })).toBe(true);
     expect(isConversationTurn({ status: 'SUCCESS', structured_output: turn })).toBe(false);

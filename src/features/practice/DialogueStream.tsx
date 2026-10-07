@@ -62,6 +62,9 @@ function MessageBubble({
           {message.text && <p className="chat-text">{message.text}</p>}
           {message.question && <p className="chat-question">{message.question}</p>}
         </div>
+        {isEva && message.answeredBy && (
+          <footer className="mt-1.5 text-[11px] text-zinc-500">{message.answeredBy}</footer>
+        )}
       </div>
     </article>
   );

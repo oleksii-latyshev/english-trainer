@@ -24,6 +24,7 @@ pub(super) fn prepared_turn(sequence: usize) -> PreparedTurn {
             learner: "I used bad wording and work in tandem yesterday.".into(),
             assistant_reply: "I see.".into(),
             assistant_question: "Next?".into(),
+            answered_by: None,
         },
     )
     .unwrap();
@@ -78,6 +79,7 @@ pub(super) fn prepared_turn(sequence: usize) -> PreparedTurn {
                 learner: "I used good wording and work in tandem today.".into(),
                 assistant_reply: "Thanks.".into(),
                 assistant_question: "What happened next?".into(),
+                answered_by: None,
             },
         )
         .unwrap();
@@ -89,6 +91,7 @@ pub(super) fn prepared_turn(sequence: usize) -> PreparedTurn {
                 learner: "A first answer.".into(),
                 assistant_reply: "Go on.".into(),
                 assistant_question: "What did you do?".into(),
+                answered_by: None,
             },
         )
         .unwrap();
@@ -99,6 +102,7 @@ pub(super) fn prepared_turn(sequence: usize) -> PreparedTurn {
                 learner: "I used good wording and work in tandem today.".into(),
                 assistant_reply: "Thanks.".into(),
                 assistant_question: "Anything else?".into(),
+                answered_by: None,
             },
         )
         .unwrap();

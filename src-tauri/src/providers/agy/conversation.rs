@@ -194,6 +194,7 @@ fn validate_turn(raw: RawTurn) -> Result<ConversationTurn, ReplyStage> {
         is_complete: false,
         provider_latency_ms: None,
         first_token_ms: None,
+        answered_by: None,
     })
 }
 

@@ -6,7 +6,7 @@ use super::{
     plain_prompt,
     race::{Event, Leg},
     reply_text::plain_turn,
-    ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
+    AnsweredBy, ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -92,7 +92,9 @@ impl AppleHelper {
         context: &ConversationContext,
         on_delta: &mut dyn FnMut(&str),
     ) -> Result<ConversationTurn, ProviderError> {
-        plain_turn(&self.stream_reply(context, on_delta)?)
+        let mut turn = plain_turn(&self.stream_reply(context, on_delta)?)?;
+        turn.answered_by = Some(AnsweredBy::apple(false));
+        Ok(turn)
     }
 
     /// The on-device reply as a race leg, used when the chosen cloud provider stalls.

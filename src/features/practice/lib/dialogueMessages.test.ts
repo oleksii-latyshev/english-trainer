@@ -3,6 +3,25 @@ import { describe, expect, it } from 'bun:test';
 import { buildDialogueMessages } from './dialogueMessages';
 
 describe('buildDialogueMessages', () => {
+  it('labels Eva replies with their origin and leaves old turns unlabelled', () => {
+    const msgs = buildDialogueMessages({
+      session_id: 1,
+      opening_question: 'Hi?',
+      turns: [
+        {
+          learner: 'A',
+          assistant_reply: 'Ok.',
+          assistant_question: 'Why?',
+          answered_by: { provider: 'apple', model: 'apple-foundation-models', is_backup: true },
+        },
+        { learner: 'B', assistant_reply: 'Fine.', assistant_question: 'How?', answered_by: null },
+      ],
+    });
+    const eva = msgs.filter((m) => m.id.endsWith('-assistant'));
+    expect(eva[0].answeredBy).toBe('Apple on-device (backup)');
+    expect(eva[1].answeredBy).toBeUndefined();
+  });
+
   it('renders fallback prompt when dialogue is null', () => {
     const msgs = buildDialogueMessages(null, 'What did you do today?');
     expect(msgs).toHaveLength(1);

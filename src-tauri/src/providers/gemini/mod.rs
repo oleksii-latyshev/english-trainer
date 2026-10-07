@@ -8,16 +8,16 @@ mod wire;
 
 use super::{
     agy::conversation::validate_context,
+    answered_by::GEMINI_CONVERSATION_MODEL as CONVERSATION_MODEL,
     race::{self, Backup},
     reply_text::plain_turn,
-    ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
+    AnsweredBy, ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
 };
 use std::{sync::OnceLock, time::Duration};
 
 pub use key::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
 
 const BASE_URL: &str = "https://generativelanguage.googleapis.com";
-const CONVERSATION_MODEL: &str = "gemini-3.5-flash-lite";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 
@@ -54,7 +54,15 @@ fn generate_from(
         model: CONVERSATION_MODEL,
         body: wire::request_body(context),
     });
-    plain_turn(&race::race(primary, backup, REQUEST_TIMEOUT, on_delta)?)
+    let (reply, answered_by) = race::race(
+        (primary, AnsweredBy::gemini()),
+        backup,
+        REQUEST_TIMEOUT,
+        on_delta,
+    )?;
+    let mut turn = plain_turn(&reply)?;
+    turn.answered_by = Some(answered_by);
+    Ok(turn)
 }
 
 // One client per app run keeps the TLS connection alive between turns, saving a handshake per reply.

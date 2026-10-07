@@ -229,8 +229,32 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             PRIMARY KEY(session_id, sequence),
             FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
         );")?;
+        transaction.pragma_update(None, "user_version", 8)?;
+        transaction.commit()?;
+        version = 8;
+    }
+    if version < 9 {
+        let transaction = connection.unchecked_transaction()?;
+        // Nullable: turns stored before the origin was recorded keep NULL and show no origin.
+        for (column, kind) in [
+            ("answered_by_provider", "TEXT"),
+            ("answered_by_model", "TEXT"),
+            ("answered_by_backup", "INTEGER"),
+        ] {
+            if !has_column(&transaction, "turns", column)? {
+                transaction
+                    .execute_batch(&format!("ALTER TABLE turns ADD COLUMN {column} {kind};"))?;
+            }
+        }
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }
     Ok(())
+}
+
+fn has_column(connection: &Connection, table: &str, column: &str) -> rusqlite::Result<bool> {
+    connection
+        .prepare(&format!("PRAGMA table_info({table})"))?
+        .query_map([], |row| row.get::<_, String>(1))?
+        .try_fold(false, |found, name| Ok(found || name? == column))
 }

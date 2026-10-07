@@ -1,7 +1,10 @@
+import { type AnsweredBy, isOptionalAnsweredBy } from '@/lib/answeredBy';
+
 export type PracticeDialogueTurn = {
   learner: string;
   assistant_reply: string;
   assistant_question: string;
+  answered_by?: AnsweredBy | null;
 };
 
 export type PracticeDialogue = {
@@ -19,7 +22,8 @@ export function isPracticeDialogueTurn(value: unknown): value is PracticeDialogu
     'assistant_reply' in value &&
     typeof value.assistant_reply === 'string' &&
     'assistant_question' in value &&
-    typeof value.assistant_question === 'string'
+    typeof value.assistant_question === 'string' &&
+    (!('answered_by' in value) || isOptionalAnsweredBy(value.answered_by))
   );
 }
 

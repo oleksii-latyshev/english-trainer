@@ -2,7 +2,7 @@
 //! request and then sends nothing for 10–15 s, so a missing first word, not only an error,
 //! starts the backup. The first stream that produces text is shown; the other is abandoned.
 
-use super::{ProviderError, ProviderErrorCode};
+use super::{AnsweredBy, ProviderError, ProviderErrorCode};
 use std::{
     sync::mpsc::{self, RecvTimeoutError, Sender},
     thread,
@@ -26,6 +26,8 @@ pub(super) struct Backup {
     pub leg: Leg,
     /// Start the backup if the primary has produced no text by then.
     pub after: Duration,
+    /// Reported as the reply's origin when this leg wins.
+    pub label: AnsweredBy,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,13 +36,20 @@ enum Source {
     Backup,
 }
 
-/// Streams the first reply that produces text and returns its full text.
+/// Streams the first reply that produces text and returns its full text with the label of the
+/// leg that wrote it.
 pub(super) fn race(
-    primary: Leg,
+    primary: (Leg, AnsweredBy),
     mut backup: Option<Backup>,
     timeout: Duration,
     on_delta: &mut dyn FnMut(&str),
-) -> Result<String, ProviderError> {
+) -> Result<(String, AnsweredBy), ProviderError> {
+    let (primary, primary_label) = primary;
+    let backup_label = backup.as_ref().map(|pending| pending.label.clone());
+    let winner = |source: Source| match (source, &backup_label) {
+        (Source::Backup, Some(label)) => label.clone(),
+        _ => primary_label.clone(),
+    };
     let (sender, events) = mpsc::channel();
     spawn(primary, Source::Primary, sender.clone());
     let started_at = Instant::now();
@@ -76,7 +85,7 @@ pub(super) fn race(
                 on_delta(&text);
                 reply.push_str(&text);
             }
-            Event::Done if committed.is_some() => return Ok(reply),
+            Event::Done if committed.is_some() => return Ok((reply, winner(source))),
             Event::Failed { error, .. } if committed.is_some() => return Err(error),
             Event::Done | Event::Failed { .. } => {
                 alive -= 1;
@@ -159,15 +168,48 @@ mod tests {
         Some(Backup {
             leg: leg(Duration::from_millis(delay_ms), events),
             after: Duration::from_millis(after_ms),
+            label: AnsweredBy::apple(true),
         })
     }
 
     fn run(primary: Leg, backup: Option<Backup>) -> (Result<String, ProviderError>, Vec<String>) {
         let mut deltas = Vec::new();
-        let result = race(primary, backup, Duration::from_secs(5), &mut |text| {
-            deltas.push(text.to_string())
-        });
-        (result, deltas)
+        let result = race_labelled(primary, backup, &mut |text| deltas.push(text.to_string()));
+        (result.map(|(reply, _)| reply), deltas)
+    }
+
+    fn race_labelled(
+        primary: Leg,
+        backup: Option<Backup>,
+        on_delta: &mut dyn FnMut(&str),
+    ) -> Result<(String, AnsweredBy), ProviderError> {
+        race(
+            (primary, AnsweredBy::gemini()),
+            backup,
+            Duration::from_secs(5),
+            on_delta,
+        )
+    }
+
+    #[test]
+    fn the_race_reports_the_label_of_the_leg_that_won() {
+        let (reply, label) = race_labelled(
+            leg(Duration::from_secs(3), vec![text("slow"), Event::Done]),
+            backup(100, 0, vec![text("fast"), Event::Done]),
+            &mut |_| {},
+        )
+        .unwrap();
+        assert_eq!(reply, "fast");
+        assert_eq!(label, AnsweredBy::apple(true));
+
+        let (reply, label) = race_labelled(
+            leg(Duration::ZERO, vec![text("first"), Event::Done]),
+            backup(1_000, 0, vec![text("backup"), Event::Done]),
+            &mut |_| {},
+        )
+        .unwrap();
+        assert_eq!(reply, "first");
+        assert_eq!(label, AnsweredBy::gemini());
     }
 
     #[test]
@@ -274,7 +316,7 @@ mod tests {
     fn a_silent_race_times_out() {
         let mut on_delta = |_: &str| {};
         let result = race(
-            leg(Duration::from_secs(2), vec![]),
+            (leg(Duration::from_secs(2), vec![]), AnsweredBy::gemini()),
             None,
             Duration::from_millis(100),
             &mut on_delta,

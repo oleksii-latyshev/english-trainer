@@ -93,7 +93,9 @@ Current:
   assistant question), `latest_transcript` (1–4,000 characters), up to 2 `learning_targets`.
   Total context at most 8,000 characters; the oldest turns are dropped first.
 - `ConversationTurn`: `spoken_reply`, `question` (nullable), `provider_latency_ms`,
-  `first_token_ms`. `agy` still returns the schema-validated pair (reply ≤ 30 words, one question
+  `first_token_ms`, `answered_by` (`{ provider: gemini | apple | agy, model, is_backup }`; the race
+  reports which leg won, `is_backup` is true when Apple answered for a stalled or failed Gemini).
+  `agy` still returns the schema-validated pair (reply ≤ 30 words, one question
   ≤ 20 words); Gemini and Apple return plain text.
 - Settings (`ai_settings` table): provider `gemini | apple | agy` (default `gemini`); `agy_model`
   `default | gemini-3.8-flash-low | gemini-3.8-flash-high`. Model IDs already encode effort; never
@@ -127,6 +129,11 @@ Current:
   Gemini error is reported. Configuration errors (`unauthorized`, invalid request) are reported
   without a backup reply. `gemini-3.5-flash` is not used as a fallback: its free tier allows 20
   requests a day.
+  The origin is stored per turn (schema version 9: nullable `answered_by_provider`,
+  `answered_by_model`, `answered_by_backup` on `turns`; older turns stay null and show no origin),
+  returned on each turn of `PracticeDialogue`, and shown under Eva's messages and in Settings'
+  "Test AI response". Model IDs are `gemini-3.5-flash-lite`, `apple-foundation-models` and the
+  `agy_model` setting (`default` when unset).
   The HTTP client is shared per app run to keep the connection alive. Thinking level `minimal`,
   about 150 output tokens. Errors map to `unauthorized` (401, 403, 400
   `API_KEY_INVALID`), `rate_limited` (429), `unavailable` (5xx, network), `timeout`,

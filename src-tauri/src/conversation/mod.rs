@@ -107,6 +107,7 @@ pub struct StoredTurn {
     pub learner: String,
     pub assistant_reply: String,
     pub assistant_question: String,
+    pub answered_by: Option<crate::providers::AnsweredBy>,
 }
 
 impl StoredTurn {
@@ -334,6 +335,7 @@ impl SessionStore {
             learner: context.latest_transcript,
             assistant_reply: turn.spoken_reply.clone(),
             assistant_question,
+            answered_by: turn.answered_by.clone(),
         };
         state
             .database

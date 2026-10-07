@@ -11,6 +11,7 @@ fn turn(reply: &str, question: &str) -> ConversationTurn {
         is_complete: false,
         provider_latency_ms: None,
         first_token_ms: None,
+        answered_by: None,
     }
 }
 
@@ -360,7 +361,7 @@ fn failed_coach_continue_database_update_clears_in_flight_and_can_retry() {
     );
 
     rusqlite::Connection::open(&path).unwrap().execute(
-        "CREATE TABLE turns (session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, user_transcript TEXT NOT NULL, assistant_reply TEXT NOT NULL, assistant_question TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY(session_id, sequence))",
+        "CREATE TABLE turns (session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, user_transcript TEXT NOT NULL, assistant_reply TEXT NOT NULL, assistant_question TEXT NOT NULL, created_at INTEGER NOT NULL, answered_by_provider TEXT, answered_by_model TEXT, answered_by_backup INTEGER, PRIMARY KEY(session_id, sequence))",
         [],
     ).unwrap();
     rusqlite::Connection::open(&path).unwrap().execute(
@@ -1224,6 +1225,53 @@ fn dialogue_restores_all_saved_turns_and_rejects_finished_or_other_sessions() {
     assert_eq!(reopened.dialogue(session.session_id).unwrap(), dialogue);
     reopened.finish(session.session_id).unwrap();
     assert!(reopened.dialogue(session.session_id).is_err());
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn dialogue_returns_the_recorded_origin_of_each_reply_after_reopen() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "First answer".into(), |_| {
+            let mut reply = turn("First reply", "Second question");
+            reply.answered_by = Some(crate::providers::AnsweredBy::gemini());
+            Ok(reply)
+        })
+        .unwrap();
+    store
+        .send_turn(session.session_id, "Second answer".into(), |_| {
+            let mut reply = turn("Second reply", "Third question");
+            reply.answered_by = Some(crate::providers::AnsweredBy::apple(true));
+            Ok(reply)
+        })
+        .unwrap();
+    store
+        .send_turn(session.session_id, "Third answer".into(), |_| {
+            Ok(turn("Third reply", "Fourth question"))
+        })
+        .unwrap();
+    drop(store);
+    let reopened = SessionStore::open(&path).unwrap();
+    let dialogue = reopened.dialogue(session.session_id).unwrap();
+    assert_eq!(
+        dialogue.turns[0].answered_by,
+        Some(crate::providers::AnsweredBy::gemini())
+    );
+    assert_eq!(
+        dialogue.turns[1].answered_by,
+        Some(crate::providers::AnsweredBy::apple(true))
+    );
+    assert_eq!(dialogue.turns[2].answered_by, None);
+    let json = serde_json::to_value(&dialogue).unwrap();
+    assert_eq!(json["turns"][0]["answered_by"]["provider"], "gemini");
+    assert_eq!(
+        json["turns"][0]["answered_by"]["model"],
+        "gemini-3.5-flash-lite"
+    );
+    assert_eq!(json["turns"][1]["answered_by"]["is_backup"], true);
+    assert!(json["turns"][2]["answered_by"].is_null());
     std::fs::remove_file(path).unwrap();
 }
 

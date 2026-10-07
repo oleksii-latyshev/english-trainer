@@ -1,3 +1,4 @@
+import { answeredByLabel } from '@/lib/answeredBy';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 
 export type DialogueMessage = {
@@ -6,6 +7,8 @@ export type DialogueMessage = {
   text: string;
   question?: string;
   inputSource?: 'voice' | 'edited' | 'text';
+  /** Which model wrote this Eva message; absent for turns stored before it was recorded. */
+  answeredBy?: string;
 };
 
 export function buildDialogueMessages(
@@ -42,6 +45,7 @@ export function buildDialogueMessages(
           sender: 'assistant',
           text: reply,
           question: question || undefined,
+          answeredBy: turn.answered_by ? answeredByLabel(turn.answered_by) : undefined,
         });
       }
     }
