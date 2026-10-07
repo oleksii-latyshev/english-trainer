@@ -13,13 +13,13 @@ Everything in the repository is English.
 src/
   App.tsx               app providers and window layout
   router.tsx            TanStack Router route tree
-  components/           shared by more than one feature (HeroUI-based)
+  components/           shared by more than one feature (HeroUI-based; `eva/` is the mascot)
   context/              app-wide React context; may import feature hook *types* only
   theme/                design tokens (`theme.css`) and the light/dark switch (`applyTheme.ts`)
   audio/                shared microphone capture, device preference, signal diagnostics (Web Audio)
   lib/                  shared and DOM-free: IPC types (`*Types.ts`), settings, formatting
   features/<feature>/   one user-facing area: practice, conversation, coach, memory, speech,
-                        dashboard, settings
+                        talk-start, settings
     components/         that feature's components
     lib/                that feature's pure logic, tests beside it
 src-tauri/src/          session orchestrator, local STT, providers, learning engine, SQLite
@@ -31,7 +31,7 @@ e2e/                    Playwright against Vite / Tauri, command layer faked (ad
 - Code starts in the feature that uses it and moves to `components/` or `lib/` when a second
   feature needs it — not before.
 - Features depend one way: `practice → conversation, coach, memory, speech`,
-  `coach → speech`, `memory → speech`, `dashboard → memory`; features are leaves otherwise. No
+  `coach → speech`, `memory → speech`, `talk-start → memory`; features are leaves otherwise. No
   cycles, and `components/`, `audio/` and `lib/` never import a feature. (The current
   `coach → practice` imports are a known violation, removed in F5.) When two features
   need each other, the shared part belongs in `components/` or `lib/`.

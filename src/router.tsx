@@ -6,12 +6,12 @@ import {
 } from '@tanstack/react-router';
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
-import { DailyPracticeDashboard } from '@/features/dashboard/DailyPracticeDashboard';
 import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import { SettingsHardwareView } from '@/features/settings/SettingsHardwareView';
+import { TalkStart } from '@/features/talk-start/TalkStart';
 
 // 1. Root route
 export const rootRoute = createRootRoute({
@@ -27,25 +27,13 @@ export const indexRoute = createRoute({
     const navigate = indexRoute.useNavigate();
 
     return (
-      <DailyPracticeDashboard
-        busy={practice.isBusy}
+      <TalkStart
         error={practice.error}
-        hasActiveSession={isSessionOpen}
+        isBusy={practice.isBusy}
         isRestoring={practice.state.tag === 'loading'}
-        onNavigate={(screen) => {
-          const pathMap: Record<string, string> = {
-            home: '/',
-            conversation: '/conversation',
-            coach: '/coach',
-            memory: '/memory',
-            settings: '/settings',
-            summary: '/summary',
-          };
-          const target = pathMap[screen] || '/';
-          void navigate({ to: target });
-        }}
         onOpenMemory={() => void navigate({ to: '/memory' })}
-        onStartPractice={startOrResumePractice}
+        onStartOrResume={startOrResumePractice}
+        openSession={isSessionOpen ? sessionDetails(practice.state) : undefined}
       />
     );
   },

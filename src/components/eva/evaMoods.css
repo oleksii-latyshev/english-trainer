@@ -1,0 +1,224 @@
+/* Per-mood looks and the motion they use (docs/ui/DESIGN_BRIEF.md 8.1). */
+/* Idle: waiting, blinks now and then. */
+.eva-idle {
+  --eva-tone: var(--et-orb-idle);
+}
+.eva-idle .eva-core {
+  animation: eva-breathe 5s ease-in-out infinite;
+}
+
+/* Listening: bigger eyes, slow nod, teal halo. */
+.eva-listening {
+  --eva-tone: var(--et-me);
+}
+.eva-listening .eva-ring {
+  animation: eva-ripple 1.4s ease-out infinite;
+}
+.eva-listening .eva-eye {
+  width: 19cqw;
+  height: 17cqw;
+}
+.eva-listening .eva-face {
+  animation: eva-nod 2.4s ease-in-out infinite;
+}
+
+/* Processing: narrowed eyes while speech becomes text. */
+.eva-processing {
+  --eva-tone: var(--et-me);
+}
+.eva-processing .eva-ring {
+  border-top-color: var(--et-me);
+  border-width: 2px;
+  animation: eva-spin 1s linear infinite;
+}
+.eva-processing .eva-eye {
+  height: 4cqw;
+}
+
+/* Thinking: glances up and away. */
+.eva-thinking .eva-ring {
+  border-style: dashed;
+  animation: eva-spin 3s linear infinite;
+}
+.eva-thinking .eva-eye {
+  height: 10cqw;
+  translate: 3cqw -3cqw;
+}
+.eva-thinking .eva-face {
+  animation: eva-glance 3s ease-in-out infinite;
+}
+
+/* Speaking: a small light under the eyes moves with the voice. */
+.eva-speaking .eva-core {
+  animation: eva-voice 0.42s ease-in-out infinite alternate;
+}
+.eva-speaking .eva-ring {
+  animation: eva-ripple 1.2s ease-out infinite;
+}
+.eva-speaking .eva-eye {
+  height: 14cqw;
+}
+.eva-speaking .eva-mouth {
+  opacity: 1;
+  animation: eva-talk 0.16s ease-in-out infinite alternate;
+}
+
+/* Happy and encouraging: smiling arcs and a blush. */
+.eva-happy .eva-eye,
+.eva-encouraging .eva-eye {
+  background: none;
+  box-shadow: none;
+  width: 19cqw;
+  height: 10cqw;
+  border: 3.4cqw solid var(--eye);
+  border-bottom: 0;
+  border-radius: 12cqw 12cqw 0 0;
+  animation: none;
+}
+.eva-encouraging .eva-eye {
+  width: 17cqw;
+  height: 8cqw;
+  border-width: 2.8cqw;
+  opacity: 0.9;
+}
+.eva-happy .eva-face,
+.eva-encouraging .eva-face {
+  background:
+    radial-gradient(circle at 18% 80%, rgba(255, 125, 170, 0.5) 0, transparent 15%),
+    radial-gradient(circle at 82% 80%, rgba(255, 125, 170, 0.5) 0, transparent 15%);
+}
+.eva-happy .eva-face {
+  animation: eva-hop 1.8s ease-in-out infinite;
+}
+
+/* Curious: head tilt. */
+.eva-curious .eva-face {
+  rotate: -8deg;
+}
+.eva-curious .eva-eye-r {
+  width: 20cqw;
+  height: 18cqw;
+}
+.eva-curious .eva-eye-l {
+  height: 12cqw;
+}
+
+/* Concerned: tilted eyes, neutral halo. */
+.eva-concerned {
+  --eva-tone: var(--et-orb-idle);
+}
+.eva-concerned .eva-eye {
+  height: 12cqw;
+}
+.eva-concerned .eva-eye-l {
+  rotate: -12deg;
+}
+.eva-concerned .eva-eye-r {
+  rotate: 12deg;
+}
+
+/* Asleep: closed eyes, dim halo. */
+.eva-asleep {
+  --eva-tone: var(--et-orb-dim);
+}
+.eva-asleep .eva-halo {
+  opacity: 0.3;
+}
+.eva-asleep .eva-core {
+  box-shadow:
+    inset 0 -6px 14px rgba(70, 80, 120, 0.18),
+    0 4px 12px rgba(10, 12, 30, 0.18);
+  opacity: 0.8;
+}
+.eva-asleep .eva-eye {
+  height: 2cqw;
+  box-shadow: none;
+  opacity: 0.7;
+  animation: none;
+}
+
+@keyframes eva-blink {
+  0%,
+  93%,
+  100% {
+    scale: 1 1;
+  }
+  96% {
+    scale: 1 0.08;
+  }
+}
+@keyframes eva-breathe {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+@keyframes eva-voice {
+  from {
+    transform: scale(0.96);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+@keyframes eva-ripple {
+  from {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+@keyframes eva-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes eva-nod {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 4%;
+  }
+}
+@keyframes eva-glance {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: -4% 0;
+  }
+}
+@keyframes eva-talk {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 0.7 2;
+  }
+}
+@keyframes eva-hop {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5%;
+  }
+}
+
+/* Doubled .eva outranks every per-mood selector above without !important. */
+@media (prefers-reduced-motion: reduce) {
+  .eva.eva :is(.eva-core, .eva-ring, .eva-face, .eva-eye, .eva-mouth) {
+    animation: none;
+    transition: none;
+  }
+}

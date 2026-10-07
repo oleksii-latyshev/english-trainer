@@ -1,0 +1,130 @@
+/*
+ * Eva, the mascot (docs/ui/DESIGN_BRIEF.md 8.1): a pearl sphere with two dark eyes, ported from the
+ * approved mockup as pure CSS. Customisable from outside through --shell-hi/1/2/3 and --eye-color.
+ * The halo (--eva-tone) carries whose turn it is; the sphere looks the same in both themes.
+ */
+.eva {
+  --eva-tone: var(--et-accent);
+  position: relative;
+  flex: none;
+}
+
+.eva span {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.eva-halo {
+  inset: 0;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--eva-tone) 22%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.eva-ring {
+  inset: 15%;
+  border: 1px solid color-mix(in oklab, var(--eva-tone) 40%, transparent);
+}
+
+.eva-core {
+  inset: 28%;
+  container-type: size;
+  overflow: hidden;
+  background: radial-gradient(
+    circle at 34% 22%,
+    var(--shell-hi, #ffffff) 0%,
+    var(--shell-1, #eef0f7) 34%,
+    var(--shell-2, #d2d7e5) 70%,
+    var(--shell-3, #aab1c6) 100%
+  );
+  box-shadow:
+    inset 0 -6px 14px rgba(70, 80, 120, 0.18),
+    inset 0 0 0 1.5px color-mix(in oklab, var(--eva-tone) 45%, transparent),
+    0 6px 18px rgba(10, 12, 30, 0.22),
+    0 0 30px color-mix(in oklab, var(--eva-tone) 32%, transparent);
+}
+
+.eva-face {
+  --eye: var(--eye-color, #16171d);
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 28%;
+  height: 42%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12cqw;
+  padding-bottom: 4%;
+}
+
+.eva-eye {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 18cqw;
+  height: 15cqw;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--eye) 80%, white) 0%,
+    var(--eye) 100%
+  );
+  box-shadow: 0 0.6cqw 0 rgba(255, 255, 255, 0.55);
+  transition:
+    width 0.25s ease,
+    height 0.25s ease,
+    translate 0.25s ease,
+    rotate 0.25s ease;
+  animation: eva-blink 5.5s infinite;
+}
+
+.eva-eye-r {
+  animation-delay: 0.05s;
+}
+
+.eva-mouth {
+  position: absolute;
+  left: 43%;
+  top: 76%;
+  width: 14%;
+  height: 5%;
+  border-radius: 2cqw;
+  background: var(--eye);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* Small face for message avatars. */
+.eva-mini {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding-bottom: 2px;
+  background: radial-gradient(
+    circle at 34% 22%,
+    var(--shell-hi, #ffffff) 0%,
+    var(--shell-1, #eef0f7) 34%,
+    var(--shell-2, #d2d7e5) 70%,
+    var(--shell-3, #aab1c6) 100%
+  );
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px color-mix(in oklab, var(--et-accent) 40%, transparent);
+}
+
+.eva-mini i {
+  display: block;
+  width: 5.5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--eye-color, #16171d);
+}

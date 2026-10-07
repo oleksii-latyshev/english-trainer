@@ -30,6 +30,8 @@
   --et-link: #c4b8ff;
   --et-link-hover: #e0d9ff;
   --et-knob: #ffffff;
+  --et-orb-idle: #8e8aa8; /* Eva halo: idle, concerned */
+  --et-orb-dim: #55555e; /* Eva halo: asleep */
   --et-radius-card: 20px;
   --et-radius-nav: 12px;
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
@@ -61,6 +63,8 @@
   --et-warn-line: rgba(200, 120, 20, 0.35);
   --et-link: #5b47d6;
   --et-link-hover: #3f2db5;
+  --et-orb-idle: #9c98b8;
+  --et-orb-dim: #c4c4cc;
 }
 
 /* HeroUI v3 variable mapping. Danger is left at HeroUI's value: language mistakes never use it. */
