@@ -27,12 +27,12 @@ contract of a roadmap feature that is not implemented yet.
   label is read from the acquired track. Enumerating devices never starts capture.
 - Readiness: Recording begins only after the input delivered three seconds of frames (including
   silence); startup times out after eight seconds and releases capture. Warm-up samples are not part
-  of the answer. **Target [F3]:** one warm stream per session replaces the per-answer warm-up.
+  of the answer. **Target [F2]:** one warm stream per session replaces the per-answer warm-up.
 - The Settings microphone check uses the same recorder, stops after ten seconds, offers local
   playback and discard only, and shows per-second amplitude, captured vs elapsed duration and
   reported processing flags. It never transcribes, calls a provider or saves audio. Device changes
   and checks are blocked while practice capture is active.
-- **Target [F4]:** optional voice activity detection with a configurable end-of-turn pause
+- **Target [F2]:** optional voice activity detection with a configurable end-of-turn pause
   (default ~1.5 s) and a "keep listening" control; push-to-talk remains available.
 
 ## 3. Speech recognition
@@ -61,7 +61,7 @@ Current:
 - System voices through `speechSynthesis`; voices are discovered at runtime, English voices are
   preferred, no named voice is assumed. Rate is adjustable; pause, resume, stop and replay exist.
 - A new recording or a new AI turn cancels current speech.
-- **Target [F2]:** the reply is spoken sentence by sentence as it streams in.
+- **Target [F4]:** the reply is spoken sentence by sentence as it streams in.
 
 ## 5. Conversation providers
 

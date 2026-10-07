@@ -45,7 +45,7 @@ Everything not needed for these five outcomes is deferred.
 | :--- | :--- |
 | AI replies are slow (7–30 s) and sometimes fail | Every turn spawns the `agy` agent CLI with a JSON schema, a sandbox, and a full process start. The reply is generated whole, then spoken. Strict regex/word-count validation rejects otherwise usable replies. |
 | Technical terms are misrecognised | `ggml-base.en` (smallest useful model); `whisper-cli` reloads the model on every answer; no initial prompt with the question or a personal glossary. |
-| Each answer feels slow to start | A three-second microphone warm-up runs before every recording instead of keeping the input warm for the session. |
+| Each answer feels slow to start (~2 s before speaking is possible, then a quiet first second) | Every recording opens a new microphone stream, audio graph and worklet, then discards three seconds of input while the Mac input level ramps up. Apps that keep the microphone open (e.g. Google Meet) never hit this ramp. |
 | Hard to structure a spoken answer | Help is a deterministic list of starters chosen by keywords, or a full example that must be requested and waited for. Nothing helps in the middle of an answer when the learner gets stuck or misses a word. |
 | Conversation and Coach feel like separate tools | Two session modes with different flows; Coach requires an explicit Continue step; feedback is a separate panel. |
 
@@ -55,7 +55,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 
 ### Stage 1 — Fast voice conversation
 
-**F1. Streaming conversation providers** `[~]`
+**F1. Streaming conversation providers** `[x]`
 - Make `ConversationEngine` streaming: the reply is plain text delivered in chunks to the UI over a
   Tauri `Channel` and rendered as it arrives.
 - Apple adapter: one long-lived helper process per app run (JSON lines over stdin/stdout),
@@ -70,35 +70,45 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Acceptance: median time to first token under 1 s for the chosen default; no "invalid reply"
   failures in a 20-turn session.
 
-**F2. Speak while generating + voice visual** `[ ]`
-- Split the streamed reply into sentences and speak the first sentence while the rest arrives.
-- Barge-in: starting to speak (or pressing record) stops AI speech immediately.
-- Replace the static header with a reactive voice visual (orb/waveform): microphone level while
-  listening, a "thinking" state, and a speaking state.
-- Instrument end-of-speech → first AI audio and show it in a debug panel.
-- Acceptance: end-of-speech → first AI audio under 2.5 s median over 10 turns.
+**F2. Instant microphone and hands-free turns** `[ ]`
+- Open the microphone once when a session starts and keep one warm stream until the session is
+  paused or finished, so recording starts the moment it is requested; remove the per-answer
+  three-second warm-up. Keep a short pre-roll buffer (~300 ms) so the first syllable is never cut.
+  The macOS microphone indicator stays on during an active session; pausing releases the device.
+- Auto-listen (on by default, toggle in Settings): when the AI finishes speaking, listening starts
+  automatically and is shown clearly; one key or click cancels it. Push-to-talk remains available.
+- End of turn by voice activity after a configurable pause (default ~1.5 s), with a "keep
+  listening" control for thinking pauses.
+- After transcription the answer is sent after a short visible edit window (~2 s); editing the
+  text stops the countdown.
+- Live microphone level while listening (the first piece of the voice visual).
+- Acceptance: the first word of an answer is captured and transcribed in 10 of 10 tries;
+  listening starts within 200 ms of the request or of the end of AI speech; a 10-minute
+  conversation without touching the keyboard or mouse.
 
-**F3. Accurate, warm speech recognition** `[ ]`
+**F3. Accurate speech recognition** `[ ]`
 - Keep the Whisper model loaded between answers (in-process `whisper-rs` with Metal, or a bundled
   `whisper-server` sidecar) and upgrade the default English model (e.g. `small.en`, `medium.en`,
   or a quantised `large-v3-turbo`); decide by a measured accuracy/latency comparison on the user's
   recordings.
 - Pass an initial prompt built from the current question, recent turns, and a personal glossary
   (editable in Settings: employer stack, tools, names).
-- Open the microphone once per session and keep it warm; remove the per-answer warm-up wait.
 - Acceptance: a fixed list of 30 of the user's technical terms is recognised in at least 90% of
   readings; transcription of a 15 s answer finishes in under 1.5 s.
 
-**F4. Hands-free turn taking** `[ ]`
-- Optional voice-activity mode: recording starts on speech and ends after a configurable pause
-  (default ~1.5 s); a "hold, I'm thinking" control prevents a premature end of turn.
-- After transcription, the answer is sent automatically after a short visible edit window;
-  correction stays possible. Push-to-talk remains available.
-- Acceptance: a 10-minute conversation without touching the keyboard or mouse.
+**F4. Speak while generating + voice visual** `[ ]`
+- Split the streamed reply into sentences and speak the first sentence while the rest arrives.
+- Barge-in: starting to speak (or pressing record) stops AI speech immediately. Needs echo
+  cancellation on the warm stream, or listening paused while the AI speaks.
+- The Talk screen voice visual from the design brief ([`ui/DESIGN_BRIEF.md`](ui/DESIGN_BRIEF.md)):
+  listening, thinking and speaking states driven by real audio levels.
+- Instrument end-of-speech → first AI audio and show it in a debug panel.
+- Acceptance: end-of-speech → first AI audio under 2.5 s median over 10 turns.
 
 ### Stage 2 — Help to structure spoken answers
 
 **F5. One Talk screen with inline coaching** `[ ]`
+- Built to the design brief ([`ui/DESIGN_BRIEF.md`](ui/DESIGN_BRIEF.md)).
 - Merge Conversation and Coach into a single chat. After each user message, deep feedback runs in
   parallel with the AI reply and appears under the message when ready: one natural rephrasing of
   what the user meant plus at most one focus point. It never blocks the next AI turn.

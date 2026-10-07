@@ -61,8 +61,8 @@ Target [F3]:
 - one long-lived Whisper worker per app run keeps the model loaded (Metal);
 - a larger English model chosen by measurement;
 - initial prompt = current question + recent turns + personal glossary;
-- the microphone stream opens once per session, so later answers start instantly;
-- [F4] voice activity detection ends a turn after a configurable pause, with push-to-talk kept.
+- [F2] the microphone stream opens once per session, so answers start instantly;
+- [F2] voice activity detection ends a turn after a configurable pause, with push-to-talk kept.
 
 Raw audio is never written outside the temporary directory and is deleted after transcription.
 
@@ -93,14 +93,14 @@ sequenceDiagram
 ```
 
 Current: the reply is generated whole and returned by `send_practice_turn`; feedback is requested
-separately from the Coach flow. Target: [F1] streaming, [F2] sentence-level TTS, [F5] automatic
+separately from the Coach flow. Target: [F1] streaming, [F4] sentence-level TTS, [F5] automatic
 parallel coaching, [F6] prefetched help.
 
 ## 6. Providers
 
 | Engine | Purpose | Current adapters | Target |
 | :--- | :--- | :--- | :--- |
-| `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level speech from the stream [F2] |
+| `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level speech from the stream [F4] |
 | `FeedbackEngine` | Rephrasing and focus points | `agy` | Gemini API [F5] |
 | Guided answer | Model answer for the current question | `agy` | Gemini API, prefetched [F6] |
 | `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |

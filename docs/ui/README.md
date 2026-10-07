@@ -1,5 +1,7 @@
 # UI design references
 
+**Start with [DESIGN_BRIEF.md](DESIGN_BRIEF.md)** — the current requirements for the MVP screens.
+
 Early screen descriptions and HTML prototypes made before the first personal alpha. They are visual
 and interaction references, not requirements: names such as Mini Eva, the sidebar layout, Interview,
 Drills, Progress and the ambient quick-practice window describe ideas that are now deferred.
