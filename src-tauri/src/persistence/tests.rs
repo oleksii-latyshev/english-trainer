@@ -736,6 +736,7 @@ fn session_mode_persists_and_turn_can_be_updated_in_place() {
             "Sounds interesting.",
             "What architecture did you use?",
             None,
+            None,
         )
         .unwrap();
     assert!(updated);
@@ -786,4 +787,79 @@ fn typed_and_edited_feedback_does_not_create_spoken_mastery_relapse() {
             .unwrap();
         assert_eq!(events, 0);
     }
+}
+
+fn stored(learner: &str) -> StoredTurn {
+    StoredTurn {
+        learner: learner.into(),
+        assistant_reply: "Thanks".into(),
+        assistant_question: "Next?".into(),
+        answered_by: None,
+    }
+}
+
+#[test]
+fn version_nine_database_migrates_keeping_turns_without_details() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session_id = db.create_session("Opening?").unwrap();
+    db.save_turn(session_id, 1, &stored("Old answer")).unwrap();
+    db.connection
+        .execute_batch(
+            "DROP TABLE answer_help_uses;
+             ALTER TABLE turns DROP COLUMN reply_ms;
+             ALTER TABLE turns DROP COLUMN answer_duration_ms;
+             PRAGMA user_version = 9;",
+        )
+        .unwrap();
+    migrate(&db.connection).unwrap();
+    let version: i64 = db
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    assert_eq!(
+        db.turn(session_id, 1).unwrap().unwrap().learner,
+        "Old answer"
+    );
+    assert_eq!(
+        db.turn_details(session_id).unwrap(),
+        vec![TurnDetails::default()]
+    );
+}
+
+#[test]
+fn turn_details_round_trip_per_turn() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session_id = db.create_session("Opening?").unwrap();
+    db.record_answer_help_used(session_id, 1).unwrap();
+    db.record_answer_help_used(session_id, 1).unwrap();
+    db.save_turn_with_details(
+        session_id,
+        1,
+        &stored("Spoken"),
+        "voice",
+        Some(800),
+        Some(14_000),
+    )
+    .unwrap();
+    db.save_turn_with_details(session_id, 2, &stored("Typed"), "text", None, None)
+        .unwrap();
+    assert!(db
+        .update_turn(session_id, 2, "Reply", "Q?", None, Some(1_100))
+        .unwrap());
+    assert_eq!(
+        db.turn_details(session_id).unwrap(),
+        vec![
+            TurnDetails {
+                reply_ms: Some(800),
+                answer_duration_ms: Some(14_000),
+                help_used: true
+            },
+            TurnDetails {
+                reply_ms: Some(1_100),
+                answer_duration_ms: None,
+                help_used: false
+            },
+        ]
+    );
 }

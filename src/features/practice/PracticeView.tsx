@@ -12,6 +12,7 @@ import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { isConversationTurn, type TurnFeedback } from '@/lib/types';
 import type { InputSource } from './lib/inputSource';
+import { spokenDurationMs } from './lib/messageMeta';
 import {
   canSendAnswer,
   matchingSentAnswer,
@@ -159,6 +160,7 @@ export function PracticeView({
       throw new Error('The current answer cannot be sent yet.');
     }
     const textToSend = customText ?? transcript;
+    const spokenMs = spokenDurationMs(source, model.durationMs);
     if (!textToSend?.trim()) throw new Error('The answer is empty.');
 
     if (session?.mode === 'coach') {
@@ -168,7 +170,7 @@ export function PracticeView({
         pending.current = true;
         try {
           setFollowUpRecord({ requestId: currentRequestId, state: IDLE_FOLLOW_UP });
-          await actions.saveCoachAnswer(session.sessionId, textToSend, source ?? 'text');
+          await actions.saveCoachAnswer(session.sessionId, textToSend, source ?? 'text', spokenMs);
           actions.resetCapture();
         } catch (cause) {
           failSend(++generation.current, cause);
@@ -192,9 +194,10 @@ export function PracticeView({
     }
     const sentAtMs = performance.now();
     try {
-      const result = await requestTurn(session?.sessionId, textToSend, source ?? 'text', (text) => {
+      const onDelta = (text: string) => {
         if (session && isLatestSend(reqId)) streamingReply.append(session.sessionId, text);
-      });
+      };
+      const result = await requestTurn(session?.sessionId, textToSend, source, onDelta, spokenMs);
       const replyAtMs = performance.now();
       if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
       if (session) {

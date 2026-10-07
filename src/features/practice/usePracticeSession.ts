@@ -131,10 +131,15 @@ export function usePracticeSession(dependencies: Dependencies) {
       setState((current) => (current.tag === 'completed' ? { tag: 'idle' } : current)),
     acceptTurn: (sessionId: number, transcript: string, turn: ConversationTurn) =>
       setState((current) => advancePractice(current, sessionId, transcript, turn)),
-    saveCoachAnswer: async (sessionId: number, transcript: string, inputSource?: InputSource) => {
+    saveCoachAnswer: async (
+      sessionId: number,
+      transcript: string,
+      inputSource?: InputSource,
+      answerDurationMs?: number,
+    ) => {
       setState((current) => setTurnPending(current, true));
       try {
-        const saved = await saveCoachAnswer(sessionId, transcript, inputSource);
+        const saved = await saveCoachAnswer(sessionId, transcript, inputSource, answerDurationMs);
         setState((current) => recordCoachAnswer(current, sessionId, saved));
         return saved;
       } catch (cause) {

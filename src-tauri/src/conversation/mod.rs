@@ -61,6 +61,12 @@ pub struct PracticeDialogue {
     pub opening_question: String,
     pub turns: Vec<StoredTurn>,
     pub input_sources: Vec<String>,
+    /// Per turn: time to Eva's first words in ms; absent for turns stored before it was kept.
+    pub reply_times_ms: Vec<Option<u64>>,
+    /// Per turn: how long a spoken answer lasted in ms; absent for typed or older answers.
+    pub answer_durations_ms: Vec<Option<u64>>,
+    /// Per turn: the learner opened a help level for the answer before sending it.
+    pub help_used: Vec<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -219,6 +225,10 @@ impl SessionStore {
             .as_ref()
             .filter(|session| session.id == session_id)
             .ok_or_else(invalid_session_error)?;
+        let details = state
+            .database
+            .turn_details(session_id)
+            .map_err(database_error)?;
         Ok(PracticeDialogue {
             session_id,
             opening_question: session.opening_question.clone(),
@@ -227,6 +237,9 @@ impl SessionStore {
                 .database
                 .turn_input_sources(session_id)
                 .map_err(database_error)?,
+            reply_times_ms: details.iter().map(|turn| turn.reply_ms).collect(),
+            answer_durations_ms: details.iter().map(|turn| turn.answer_duration_ms).collect(),
+            help_used: details.iter().map(|turn| turn.help_used).collect(),
         })
     }
 
@@ -240,7 +253,7 @@ impl SessionStore {
     where
         F: FnOnce(&ConversationContext) -> Result<ConversationTurn, ProviderError>,
     {
-        self.send_turn_with_source(session_id, transcript, InputSource::Voice, generate)
+        self.send_turn_with_source(session_id, transcript, InputSource::Voice, None, generate)
     }
 
     pub fn send_turn_with_source<F>(
@@ -248,6 +261,7 @@ impl SessionStore {
         session_id: u64,
         transcript: String,
         input_source: InputSource,
+        answer_duration_ms: Option<u64>,
         generate: F,
     ) -> Result<ConversationTurn, ProviderError>
     where
@@ -339,7 +353,14 @@ impl SessionStore {
         };
         state
             .database
-            .save_turn_with_source(session_id, sequence, &stored, input_source.as_str())
+            .save_turn_with_details(
+                session_id,
+                sequence,
+                &stored,
+                input_source.as_str(),
+                turn.reply_time_ms(),
+                answer_duration_ms.filter(|_| input_source != InputSource::Text),
+            )
             .map_err(database_error)?;
         state
             .active

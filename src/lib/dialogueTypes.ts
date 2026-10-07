@@ -12,7 +12,29 @@ export type PracticeDialogue = {
   opening_question: string;
   turns: PracticeDialogueTurn[];
   input_sources?: ('voice' | 'edited' | 'text')[];
+  /** Per turn: time to Eva's first words in ms; null for turns stored before it was kept. */
+  reply_times_ms?: (number | null)[];
+  /** Per turn: how long a spoken answer lasted in ms; null for typed or older answers. */
+  answer_durations_ms?: (number | null)[];
+  /** Per turn: help was opened for the answer before it was sent. */
+  help_used?: boolean[];
 };
+
+function isMillisecondsOrNull(value: unknown): boolean {
+  return value === null || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0);
+}
+
+/** An optional per-turn list: absent, or exactly one valid entry per turn. */
+function isPerTurnList(
+  value: object,
+  key: string,
+  turnCount: number,
+  isEntry: (entry: unknown) => boolean,
+): boolean {
+  if (!(key in value)) return true;
+  const list: unknown = Reflect.get(value, key);
+  return Array.isArray(list) && list.length === turnCount && list.every(isEntry);
+}
 
 export function isPracticeDialogueTurn(value: unknown): value is PracticeDialogueTurn {
   if (typeof value !== 'object' || value === null) return false;
@@ -44,6 +66,9 @@ export function isPracticeDialogue(value: unknown): value is PracticeDialogue {
         value.input_sources.length === value.turns.length &&
         value.input_sources.every(
           (source) => source === 'voice' || source === 'edited' || source === 'text',
-        )))
+        ))) &&
+    isPerTurnList(value, 'reply_times_ms', value.turns.length, isMillisecondsOrNull) &&
+    isPerTurnList(value, 'answer_durations_ms', value.turns.length, isMillisecondsOrNull) &&
+    isPerTurnList(value, 'help_used', value.turns.length, (entry) => typeof entry === 'boolean')
   );
 }

@@ -1,4 +1,5 @@
 import { Button, Kbd } from '@heroui/react';
+import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
@@ -15,6 +16,7 @@ import type { SessionDetails } from './lib/practiceState';
 import type { SendFailure } from './lib/turnIssue';
 import { evaMoodFor } from './lib/turnState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { recordAnswerHelpUsed } from './sessionApi';
 import { TalkHeader } from './TalkHeader';
 import { TurnNotice } from './TurnNotice';
 import { useTalkKeyboard } from './useTalkKeyboard';
@@ -93,6 +95,14 @@ export function TalkScreen(props: Props) {
     level: null,
   });
   const helpLevel = help.key === helpKey ? help.level : null;
+  function changeHelpLevel(level: HelpLevel | null) {
+    setHelp({ key: helpKey, level });
+    if (level === null || !isTauri()) return;
+    // The mark only decorates the saved answer, so a failed write must not interrupt the answer.
+    recordAnswerHelpUsed(session.sessionId, session.turnCount + 1).catch((cause: unknown) =>
+      console.warn('Could not record that help was used for this answer.', cause),
+    );
+  }
   const mood = evaMoodFor(state, turn.flowSignals, {
     isPhraseSaved: props.isPhraseSaved ?? false,
     isHelpOpen: helpLevel !== null,
@@ -115,7 +125,7 @@ export function TalkScreen(props: Props) {
     canPressMic: turn.canPressMic,
     isHelpAvailable,
     helpLevel,
-    onHelpLevelChange: (level) => setHelp({ key: helpKey, level }),
+    onHelpLevelChange: changeHelpLevel,
     onStartRecording: composer.startRecording,
     onStopRecording: actions.stopRecording,
     onCancelRecording: actions.cancelRecording,
@@ -176,7 +186,7 @@ export function TalkScreen(props: Props) {
                   }
                   key={helpKey}
                   level={helpLevel}
-                  onLevelChange={(level) => setHelp({ key: helpKey, level })}
+                  onLevelChange={changeHelpLevel}
                   question={question}
                   sequence={session.turnCount + 1}
                   sessionId={session.sessionId}

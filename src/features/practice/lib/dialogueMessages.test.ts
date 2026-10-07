@@ -24,6 +24,29 @@ describe('buildDialogueMessages', () => {
     expect(eva[1].isBackup).toBe(false);
   });
 
+  it('carries reply time, answer duration and help use per turn and leaves old turns bare', () => {
+    const msgs = buildDialogueMessages({
+      session_id: 1,
+      opening_question: 'Hi?',
+      turns: [
+        { learner: 'A', assistant_reply: 'Ok.', assistant_question: 'Why?' },
+        { learner: 'B', assistant_reply: 'Fine.', assistant_question: 'How?' },
+      ],
+      input_sources: ['voice', 'text'],
+      reply_times_ms: [800, null],
+      answer_durations_ms: [14_000, null],
+      help_used: [true, false],
+    });
+    const learner = msgs.filter((m) => m.sender === 'learner');
+    const eva = msgs.filter((m) => m.id.endsWith('-assistant'));
+    expect(learner[0].answerDurationMs).toBe(14_000);
+    expect(learner[0].usedHelp).toBe(true);
+    expect(learner[1].answerDurationMs).toBeUndefined();
+    expect(learner[1].usedHelp).toBe(false);
+    expect(eva[0].replyMs).toBe(800);
+    expect(eva[1].replyMs).toBeUndefined();
+  });
+
   it('renders fallback prompt when dialogue is null', () => {
     const msgs = buildDialogueMessages(null, 'What did you do today?');
     expect(msgs).toHaveLength(1);

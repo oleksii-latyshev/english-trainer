@@ -17,7 +17,7 @@ mod schema;
 mod session_summary;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 9;
+const SCHEMA_VERSION: i64 = 10;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;
@@ -37,6 +37,17 @@ fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
         assistant_question: row.get(2)?,
         answered_by,
     })
+}
+
+/// Per-turn details kept beside a turn; each is absent for turns stored before it was recorded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct TurnDetails {
+    /// Time to Eva's first words, or the whole provider latency when there was no first-token time.
+    pub reply_ms: Option<u64>,
+    /// How long the learner spoke the answer; absent for typed answers.
+    pub answer_duration_ms: Option<u64>,
+    /// The learner opened a help level for this answer before sending it.
+    pub help_used: bool,
 }
 
 pub struct SessionDatabase {
@@ -115,6 +126,7 @@ impl SessionDatabase {
         self.save_turn_with_source(session_id, sequence, turn, "voice")
     }
 
+    #[cfg(test)]
     pub fn save_turn_with_source(
         &mut self,
         session_id: u64,
@@ -122,10 +134,22 @@ impl SessionDatabase {
         turn: &StoredTurn,
         input_source: &str,
     ) -> rusqlite::Result<()> {
+        self.save_turn_with_details(session_id, sequence, turn, input_source, None, None)
+    }
+
+    pub fn save_turn_with_details(
+        &mut self,
+        session_id: u64,
+        sequence: usize,
+        turn: &StoredTurn,
+        input_source: &str,
+        reply_ms: Option<u64>,
+        answer_duration_ms: Option<u64>,
+    ) -> rusqlite::Result<()> {
         let transaction = self.connection.transaction()?;
         transaction.execute(
-            "INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at, answered_by_provider, answered_by_model, answered_by_backup) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            params![i64::try_from(session_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?, i64::try_from(sequence).unwrap_or(i64::MAX), turn.learner, turn.assistant_reply, turn.assistant_question, now_ms(), turn.answered_by.as_ref().map(|by| by.provider.as_str()), turn.answered_by.as_ref().map(|by| by.model.as_str()), turn.answered_by.as_ref().map(|by| by.is_backup)],
+            "INSERT INTO turns (session_id, sequence, user_transcript, assistant_reply, assistant_question, created_at, answered_by_provider, answered_by_model, answered_by_backup, reply_ms, answer_duration_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            params![i64::try_from(session_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?, i64::try_from(sequence).unwrap_or(i64::MAX), turn.learner, turn.assistant_reply, turn.assistant_question, now_ms(), turn.answered_by.as_ref().map(|by| by.provider.as_str()), turn.answered_by.as_ref().map(|by| by.model.as_str()), turn.answered_by.as_ref().map(|by| by.is_backup), reply_ms.map(to_sql_id).transpose()?, answer_duration_ms.map(to_sql_id).transpose()?],
         )?;
         transaction.execute(
             "INSERT INTO turn_input_sources (session_id, sequence, input_source) VALUES (?1, ?2, ?3)",
@@ -140,6 +164,36 @@ impl SessionDatabase {
         )?;
         let rows = statement.query_map([to_sql_id(session_id)?], |row| row.get(0))?;
         rows.collect()
+    }
+
+    /// Reply time, answer duration and help use for each turn, in turn order.
+    pub fn turn_details(&self, session_id: u64) -> rusqlite::Result<Vec<TurnDetails>> {
+        let mut statement = self.connection.prepare(
+            "SELECT t.reply_ms, t.answer_duration_ms, h.sequence IS NOT NULL FROM turns t LEFT JOIN answer_help_uses h ON h.session_id = t.session_id AND h.sequence = t.sequence WHERE t.session_id = ?1 ORDER BY t.sequence",
+        )?;
+        let rows = statement.query_map([to_sql_id(session_id)?], |row| {
+            let reply_ms: Option<i64> = row.get(0)?;
+            let answer_duration_ms: Option<i64> = row.get(1)?;
+            Ok(TurnDetails {
+                reply_ms: reply_ms.and_then(|value| u64::try_from(value).ok()),
+                answer_duration_ms: answer_duration_ms.and_then(|value| u64::try_from(value).ok()),
+                help_used: row.get(2)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Records that help was opened for the answer with this sequence; repeating it changes nothing.
+    pub fn record_answer_help_used(
+        &mut self,
+        session_id: u64,
+        sequence: usize,
+    ) -> rusqlite::Result<()> {
+        self.connection.execute(
+            "INSERT OR IGNORE INTO answer_help_uses (session_id, sequence) VALUES (?1, ?2)",
+            params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
+        )?;
+        Ok(())
     }
 
     pub fn is_voice_turn(&self, session_id: u64, sequence: usize) -> rusqlite::Result<bool> {
@@ -157,9 +211,10 @@ impl SessionDatabase {
         assistant_reply: &str,
         assistant_question: &str,
         answered_by: Option<&AnsweredBy>,
+        reply_ms: Option<u64>,
     ) -> rusqlite::Result<bool> {
         let count = self.connection.execute(
-            "UPDATE turns SET assistant_reply = ?1, assistant_question = ?2, answered_by_provider = ?5, answered_by_model = ?6, answered_by_backup = ?7 WHERE session_id = ?3 AND sequence = ?4",
+            "UPDATE turns SET assistant_reply = ?1, assistant_question = ?2, answered_by_provider = ?5, answered_by_model = ?6, answered_by_backup = ?7, reply_ms = ?8 WHERE session_id = ?3 AND sequence = ?4",
             params![
                 assistant_reply,
                 assistant_question,
@@ -168,6 +223,7 @@ impl SessionDatabase {
                 answered_by.map(|by| by.provider.as_str()),
                 answered_by.map(|by| by.model.as_str()),
                 answered_by.map(|by| by.is_backup),
+                reply_ms.map(to_sql_id).transpose()?,
             ],
         )?;
         Ok(count == 1)

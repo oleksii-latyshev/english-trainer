@@ -138,7 +138,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   situation–action–result), three to five useful phrases, and a model answer kept hidden by default.
 - Help is graduated and visible above the composer: Frame → Phrases → Example. Optional 15–30 s
   planning timer before speaking.
-- Opening help is recorded so cued answers are not counted as independent evidence.
+- Opening help is recorded so cued answers are not counted as independent evidence. Per-answer help
+  use is already recorded (`record_answer_help_used`, shown as "used help" in the dialogue); F6
+  should use it to exclude cued answers from independent evidence.
 - Design: the help chips are numbered "1 Frame · 2 Phrases · 3 Example"; Frame adds "Plan first:
   15 s / 30 s". Example shows the prefetched model answer at once with "Model answer — try your own
   version after reading", Play and "Hide before speaking" (replacing today's request-then-adapt flow).

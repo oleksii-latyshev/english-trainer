@@ -361,7 +361,7 @@ fn failed_coach_continue_database_update_clears_in_flight_and_can_retry() {
     );
 
     rusqlite::Connection::open(&path).unwrap().execute(
-        "CREATE TABLE turns (session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, user_transcript TEXT NOT NULL, assistant_reply TEXT NOT NULL, assistant_question TEXT NOT NULL, created_at INTEGER NOT NULL, answered_by_provider TEXT, answered_by_model TEXT, answered_by_backup INTEGER, PRIMARY KEY(session_id, sequence))",
+        "CREATE TABLE turns (session_id INTEGER NOT NULL, sequence INTEGER NOT NULL, user_transcript TEXT NOT NULL, assistant_reply TEXT NOT NULL, assistant_question TEXT NOT NULL, created_at INTEGER NOT NULL, answered_by_provider TEXT, answered_by_model TEXT, answered_by_backup INTEGER, reply_ms INTEGER, answer_duration_ms INTEGER, PRIMARY KEY(session_id, sequence))",
         [],
     ).unwrap();
     rusqlite::Connection::open(&path).unwrap().execute(
@@ -1280,7 +1280,12 @@ fn coach_dialogue_shows_saved_answer_before_explicit_continue() {
     let store = SessionStore::default();
     let session = store.start_session(Some(SessionMode::Coach)).unwrap();
     store
-        .save_coach_answer_with_source(session.session_id, "My answer".into(), InputSource::Text)
+        .save_coach_answer_with_source(
+            session.session_id,
+            "My answer".into(),
+            InputSource::Text,
+            None,
+        )
         .unwrap();
     let dialogue = store.dialogue(session.session_id).unwrap();
     assert_eq!(dialogue.turns.len(), 1);
@@ -1296,9 +1301,13 @@ fn text_and_edited_answers_cannot_be_reviewed_as_independent_spoken_evidence() {
         let store = SessionStore::default();
         let session = store.start().unwrap();
         store
-            .send_turn_with_source(session.session_id, "Written answer".into(), source, |_| {
-                Ok(turn("Thanks", "Next?"))
-            })
+            .send_turn_with_source(
+                session.session_id,
+                "Written answer".into(),
+                source,
+                None,
+                |_| Ok(turn("Thanks", "Next?")),
+            )
             .unwrap();
         let error = store
             .review_memory_usage(session.session_id, 1, |_| {
@@ -1322,6 +1331,7 @@ fn failed_text_send_preserves_session_and_saves_no_provenance_or_turn() {
             session.session_id,
             "Written answer".into(),
             InputSource::Text,
+            None,
             |_| Err(ProviderError::new(ProviderErrorCode::Timeout, "Retry"))
         )
         .is_err());

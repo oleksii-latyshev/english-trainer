@@ -30,6 +30,7 @@ export type PracticeActions = {
     sessionId: number,
     transcript: string,
     inputSource?: InputSource,
+    answerDurationMs?: number,
   ) => Promise<unknown>;
   continueCoachTurn: (
     sessionId: number,

@@ -83,7 +83,7 @@ impl super::SessionStore {
         session_id: u64,
         transcript: String,
     ) -> Result<SavedCoachState, ProviderError> {
-        self.save_coach_answer_with_source(session_id, transcript, super::InputSource::Voice)
+        self.save_coach_answer_with_source(session_id, transcript, super::InputSource::Voice, None)
     }
 
     pub fn save_coach_answer_with_source(
@@ -91,6 +91,7 @@ impl super::SessionStore {
         session_id: u64,
         transcript: String,
         input_source: super::InputSource,
+        answer_duration_ms: Option<u64>,
     ) -> Result<SavedCoachState, ProviderError> {
         super::rules::validate_transcript(&transcript)?;
         let mut state = self.lock();
@@ -119,7 +120,14 @@ impl super::SessionStore {
         };
         state
             .database
-            .save_turn_with_source(session_id, sequence, &stored, input_source.as_str())
+            .save_turn_with_details(
+                session_id,
+                sequence,
+                &stored,
+                input_source.as_str(),
+                None,
+                answer_duration_ms.filter(|_| input_source != super::InputSource::Text),
+            )
             .map_err(super::database_error)?;
         state
             .active
@@ -228,6 +236,7 @@ impl super::SessionStore {
             &turn.spoken_reply,
             &question,
             turn.answered_by.as_ref(),
+            turn.reply_time_ms(),
         ) {
             Ok(true) => {}
             Ok(false) => {
@@ -315,5 +324,32 @@ impl super::SessionStore {
             retry_evidence,
             coach_state,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::{InputSource, SessionMode, SessionStore};
+
+    #[test]
+    fn coach_keeps_answer_duration_for_spoken_answers_only() {
+        for (source, expected) in [
+            (InputSource::Voice, Some(9_000)),
+            (InputSource::Edited, Some(9_000)),
+            (InputSource::Text, None),
+        ] {
+            let store = SessionStore::default();
+            let session = store.start_session(Some(SessionMode::Coach)).unwrap();
+            store
+                .save_coach_answer_with_source(
+                    session.session_id,
+                    "My answer".into(),
+                    source,
+                    Some(9_000),
+                )
+                .unwrap();
+            let dialogue = store.dialogue(session.session_id).unwrap();
+            assert_eq!(dialogue.answer_durations_ms, vec![expected]);
+        }
     }
 }

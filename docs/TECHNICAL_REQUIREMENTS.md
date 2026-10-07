@@ -174,7 +174,15 @@ Current:
 - Modes: `conversation` (eight-answer goal; target [F8] is time-based) and `coach` (four answers,
   explicit Continue). Target [F5] retires `coach` as a separate mode; saved sessions stay readable.
 - `get_practice_dialogue(session_id)` returns `{ session_id, opening_question, turns,
-  input_sources }` for the active session only; a pending Coach answer has empty assistant fields.
+  input_sources, reply_times_ms, answer_durations_ms, help_used }` for the active session only; a
+  pending Coach answer has empty assistant fields. The last three are aligned with `turns`:
+  time to Eva's first words (falls back to total provider latency; `null` for older turns), spoken
+  answer length (`null` for typed or older answers) and whether help was opened for that answer.
+  Schema version 10 adds nullable `turns.reply_ms` and `turns.answer_duration_ms` and the
+  `answer_help_uses(session_id, sequence)` table. `send_practice_turn` takes an optional
+  `answer_duration_ms` (voice and edited answers only). `record_answer_help_used(session_id,
+  sequence)` is idempotent and rejects other sessions and any sequence but the pending answer; it
+  records only and changes no learning or mastery rule.
 - `send_practice_turn` and `save_coach_answer` take an optional `input_source`
   (`voice | edited | text`; omitted means `text`), saved atomically with the answer in
   `turn_input_sources`. Failed provider calls save nothing.
@@ -188,7 +196,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 
 | Group | Tables |
 | :--- | :--- |
-| Sessions | `sessions`, `turns`, `turn_input_sources`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
+| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
 | Settings | `ai_settings` |
@@ -248,7 +256,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `save_gemini_api_key`, `delete_gemini_api_key`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
   `send_practice_turn`, `save_coach_answer`, `continue_coach_turn`, `get_practice_dialogue`,
   `finish_practice_session`, `get_turn_feedback`, `save_practice_feedback`, `retry_practice_turn`,
-  `get_question_scaffold`, `get_guided_answer`, `get_daily_recall_plan`, `submit_daily_recall`,
+  `get_question_scaffold`, `get_guided_answer`, `record_answer_help_used`, `get_daily_recall_plan`, `submit_daily_recall`,
   `save_phrase_card`, `get_learning_memory`, `view_learning_memory`, `submit_learning_review`,
   `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `finish_memory_review`,
   `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.

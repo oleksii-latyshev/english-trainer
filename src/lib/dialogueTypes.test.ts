@@ -90,3 +90,34 @@ it('validates persisted input provenance without accepting unknown sources', () 
   expect(isPracticeDialogue({ ...base, input_sources: ['unknown'] })).toBe(false);
   expect(isPracticeDialogue({ ...base, input_sources: [] })).toBe(false);
 });
+
+it('validates per-turn reply time, answer duration and help use', () => {
+  const base = {
+    session_id: 1,
+    opening_question: 'Question?',
+    turns: [{ learner: 'Answer', assistant_reply: 'Reply', assistant_question: 'Next?' }],
+  };
+  expect(isPracticeDialogue(base)).toBe(true);
+  expect(
+    isPracticeDialogue({
+      ...base,
+      reply_times_ms: [800],
+      answer_durations_ms: [14_000],
+      help_used: [true],
+    }),
+  ).toBe(true);
+  expect(
+    isPracticeDialogue({
+      ...base,
+      reply_times_ms: [null],
+      answer_durations_ms: [null],
+      help_used: [false],
+    }),
+  ).toBe(true);
+  expect(isPracticeDialogue({ ...base, reply_times_ms: [-1] })).toBe(false);
+  expect(isPracticeDialogue({ ...base, reply_times_ms: [0.5] })).toBe(false);
+  expect(isPracticeDialogue({ ...base, answer_durations_ms: ['14'] })).toBe(false);
+  expect(isPracticeDialogue({ ...base, answer_durations_ms: [] })).toBe(false);
+  expect(isPracticeDialogue({ ...base, help_used: [1] })).toBe(false);
+  expect(isPracticeDialogue({ ...base, help_used: [true, false] })).toBe(false);
+});

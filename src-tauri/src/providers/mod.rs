@@ -277,6 +277,13 @@ pub struct ConversationTurn {
     pub answered_by: Option<AnsweredBy>,
 }
 
+impl ConversationTurn {
+    /// Time until Eva's first words, or the whole provider latency when no first-token time exists.
+    pub fn reply_time_ms(&self) -> Option<u64> {
+        self.first_token_ms.or(self.provider_latency_ms)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderErrorCode {

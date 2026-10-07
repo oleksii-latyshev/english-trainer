@@ -214,8 +214,14 @@ fn save_coach_answer(
     session_id: u64,
     transcript: String,
     input_source: Option<conversation::InputSource>,
+    answer_duration_ms: Option<u64>,
 ) -> Result<conversation::SavedCoachState, providers::ProviderError> {
-    sessions.save_coach_answer_with_source(session_id, transcript, input_source.unwrap_or_default())
+    sessions.save_coach_answer_with_source(
+        session_id,
+        transcript,
+        input_source.unwrap_or_default(),
+        answer_duration_ms,
+    )
 }
 
 #[tauri::command]
@@ -248,6 +254,7 @@ async fn send_practice_turn(
     session_id: u64,
     transcript: String,
     input_source: Option<conversation::InputSource>,
+    answer_duration_ms: Option<u64>,
     on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
     let settings = sessions.ai_settings()?;
@@ -259,6 +266,7 @@ async fn send_practice_turn(
             session_id,
             transcript,
             input_source.unwrap_or_default(),
+            answer_duration_ms,
             |context| providers::generate_configured_turn(context, &settings, &apple, &mut forward),
         )
     })
@@ -307,6 +315,15 @@ fn get_active_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<Option<conversation::PracticeSession>, providers::ProviderError> {
     sessions.get_active()
+}
+
+#[tauri::command]
+fn record_answer_help_used(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+) -> Result<(), providers::ProviderError> {
+    sessions.record_answer_help_used(session_id, sequence)
 }
 
 #[tauri::command]
@@ -492,6 +509,7 @@ pub fn run() {
             get_active_practice_session,
             get_question_scaffold,
             get_guided_answer,
+            record_answer_help_used,
             save_phrase_card,
             get_learning_memory,
             view_learning_memory,

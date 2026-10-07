@@ -246,6 +246,28 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                     .execute_batch(&format!("ALTER TABLE turns ADD COLUMN {column} {kind};"))?;
             }
         }
+        transaction.pragma_update(None, "user_version", 9)?;
+        transaction.commit()?;
+        version = 9;
+    }
+    if version < 10 {
+        let transaction = connection.unchecked_transaction()?;
+        // Nullable: turns stored before these details were recorded keep NULL and show none.
+        for column in ["reply_ms", "answer_duration_ms"] {
+            if !has_column(&transaction, "turns", column)? {
+                transaction.execute_batch(&format!(
+                    "ALTER TABLE turns ADD COLUMN {column} INTEGER CHECK({column} IS NULL OR {column} >= 0);"
+                ))?;
+            }
+        }
+        // Keyed by the answer's sequence, not by a turn row: help is opened before the answer exists.
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS answer_help_uses (
+            session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+            sequence INTEGER NOT NULL CHECK(sequence >= 1),
+            PRIMARY KEY(session_id, sequence)
+        );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

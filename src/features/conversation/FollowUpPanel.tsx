@@ -35,6 +35,7 @@ export function requestTurn(
   transcript: string,
   inputSource: InputSource = 'text',
   onDelta: (text: string) => void = () => {},
+  answerDurationMs?: number,
 ): Promise<unknown> {
   const onReply = createReplyChannel(onDelta);
   if (sessionId === undefined)
@@ -43,6 +44,7 @@ export function requestTurn(
     sessionId,
     transcript,
     inputSource,
+    answerDurationMs,
     onReply,
   });
 }

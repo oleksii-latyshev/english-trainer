@@ -230,3 +230,9 @@
     animation: none;
   }
 }
+
+.talk-mark-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

@@ -30,8 +30,14 @@ export async function saveCoachAnswer(
   sessionId: number,
   transcript: string,
   inputSource: InputSource = 'text',
+  answerDurationMs?: number,
 ): Promise<SavedCoachState> {
-  const result = await invoke<unknown>('save_coach_answer', { sessionId, transcript, inputSource });
+  const result = await invoke<unknown>('save_coach_answer', {
+    sessionId,
+    transcript,
+    inputSource,
+    answerDurationMs,
+  });
   if (!isSavedCoachState(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected coach answer response.');
   }
@@ -109,6 +115,11 @@ export async function retryPracticeTurn(sessionId: number, sequence: number, tra
   });
   if (!isAttemptComparison(result)) throw new Error('Unexpected retry comparison response.');
   return result;
+}
+
+/** Records that help was opened for the answer to the current question; once per answer is enough. */
+export async function recordAnswerHelpUsed(sessionId: number, sequence: number): Promise<void> {
+  await invoke<void>('record_answer_help_used', { sessionId, sequence });
 }
 
 export async function getPracticeDialogue(sessionId: number): Promise<PracticeDialogue> {

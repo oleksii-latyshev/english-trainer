@@ -11,6 +11,12 @@ export type DialogueMessage = {
   answeredBy?: string;
   /** The reply came from the on-device backup model after the main one stalled or failed. */
   isBackup?: boolean;
+  /** Time to Eva's first words; absent for turns stored before it was recorded. */
+  replyMs?: number;
+  /** How long a spoken answer lasted; absent for typed answers and older turns. */
+  answerDurationMs?: number;
+  /** The learner opened a help level before sending this answer. */
+  usedHelp?: boolean;
 };
 
 function turnMessages(dialogue: PracticeDialogue, index: number): DialogueMessage[] {
@@ -22,6 +28,8 @@ function turnMessages(dialogue: PracticeDialogue, index: number): DialogueMessag
       sender: 'learner',
       text: turn.learner.trim(),
       inputSource: dialogue.input_sources?.[index],
+      answerDurationMs: dialogue.answer_durations_ms?.[index] ?? undefined,
+      usedHelp: dialogue.help_used?.[index] === true,
     });
   }
   const reply = turn.assistant_reply.trim();
@@ -34,6 +42,7 @@ function turnMessages(dialogue: PracticeDialogue, index: number): DialogueMessag
       question: question || undefined,
       answeredBy: turn.answered_by ? answeredByLabel(turn.answered_by) : undefined,
       isBackup: turn.answered_by?.is_backup === true,
+      replyMs: dialogue.reply_times_ms?.[index] ?? undefined,
     });
   }
   return messages;

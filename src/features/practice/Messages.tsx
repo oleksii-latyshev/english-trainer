@@ -1,8 +1,9 @@
 import { Button } from '@heroui/react';
-import { Smartphone, Volume2 } from 'lucide-react';
+import { CircleHelp, Smartphone, Volume2 } from 'lucide-react';
 import { EvaMini } from '@/components/eva/Eva';
 import type { DialogueMessage } from './lib/dialogueMessages';
 import { inputSourceLabel } from './lib/inputSource';
+import { formatAnswerDuration, formatReplyTime } from './lib/messageMeta';
 
 type EvaProps = {
   message: DialogueMessage;
@@ -11,6 +12,9 @@ type EvaProps = {
 };
 
 export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: EvaProps) {
+  const evaMeta = [message.answeredBy, formatReplyTime(message.replyMs)]
+    .filter(Boolean)
+    .join(' · ');
   const fullText = message.question ? `${message.text} ${message.question}` : message.text;
   return (
     <article aria-label="Eva says" className="talk-msg">
@@ -45,7 +49,7 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: EvaPr
                 on-device
               </span>
             )}
-            {message.answeredBy && <span>{message.answeredBy}</span>}
+            {evaMeta && <span>{evaMeta}</span>}
           </div>
         )}
       </div>
@@ -70,12 +74,20 @@ export function EvaThinking() {
 
 export function LearnerMessage({ message }: { message: DialogueMessage }) {
   const sourceLabel = inputSourceLabel(message.inputSource);
+  const duration = formatAnswerDuration(message.answerDurationMs);
+  const meta = [sourceLabel, duration].filter(Boolean).join(' · ');
   return (
     <article aria-label="You said" className="talk-msg-me">
       <div className="talk-bubble talk-bubble-me">{message.text}</div>
-      {sourceLabel && (
+      {(meta || message.usedHelp) && (
         <div className="talk-marks">
-          <span>{sourceLabel}</span>
+          {message.usedHelp && (
+            <span className="talk-mark-help">
+              <CircleHelp aria-hidden="true" size={12} />
+              used help
+            </span>
+          )}
+          {meta && <span>{meta}</span>}
         </div>
       )}
     </article>
