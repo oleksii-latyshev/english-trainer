@@ -1,20 +1,119 @@
+/** How a number moved against the last earlier session that has it. */
+export type Trend =
+  | { kind: 'first' }
+  | { kind: 'same' }
+  | { kind: 'percent'; change: number }
+  | { kind: 'words'; change: number };
+
+export type SessionNumbers = {
+  speaking_time: { duration_ms: number | null; trend: Trend };
+  words_per_minute: { value: number | null; trend: Trend };
+  average_answer: { words: number | null; trend: Trend };
+};
+
+export type WrapupPhrase = {
+  /** Sequence of the answer it came from; used as provenance when saved. */
+  sequence: number;
+  phrase: string;
+  note: string;
+  you_said: string;
+};
+
+export type RecurringMistake = {
+  original: string;
+  improved: string;
+  explanation: string;
+  times: number;
+};
+
 export type FinishedPracticeSession = {
   session_id: number;
   finished: true;
   turn_count: number;
-  retry_count: number;
   target_turns: number;
-  recall_count: number;
-  recall_wording_count: number;
-  improvement: { turn_sequence: number; target: string } | null;
-  focus: {
-    turn_sequence: number;
-    original: string;
-    improved: string;
-    explanation: string;
-  } | null;
-  saved_phrases: string[];
+  duration_ms: number;
+  numbers: SessionNumbers;
+  phrases: WrapupPhrase[];
+  recurring_mistakes: RecurringMistake[];
 };
+
+const MAX_WRAPUP_PHRASES = 3;
+const MAX_WRAPUP_MISTAKES = 2;
+
+function isCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isNullableCount(value: unknown): value is number | null {
+  return value === null || isCount(value);
+}
+
+function isTrend(value: unknown): value is Trend {
+  if (typeof value !== 'object' || value === null || !('kind' in value)) return false;
+  if (value.kind === 'first' || value.kind === 'same') return true;
+  return (
+    (value.kind === 'percent' || value.kind === 'words') &&
+    'change' in value &&
+    typeof value.change === 'number' &&
+    Number.isSafeInteger(value.change)
+  );
+}
+
+function isNumberWithTrend(value: unknown, field: string): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    field in value &&
+    isNullableCount(Reflect.get(value, field)) &&
+    'trend' in value &&
+    isTrend(value.trend)
+  );
+}
+
+function isSessionNumbers(value: unknown): value is SessionNumbers {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'speaking_time' in value &&
+    isNumberWithTrend(value.speaking_time, 'duration_ms') &&
+    'words_per_minute' in value &&
+    isNumberWithTrend(value.words_per_minute, 'value') &&
+    'average_answer' in value &&
+    isNumberWithTrend(value.average_answer, 'words')
+  );
+}
+
+function isWrapupPhrase(value: unknown): value is WrapupPhrase {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sequence' in value &&
+    isTurnNumber(value.sequence) &&
+    'phrase' in value &&
+    isSummaryText(value.phrase) &&
+    'note' in value &&
+    typeof value.note === 'string' &&
+    Array.from(value.note).length <= 500 &&
+    'you_said' in value &&
+    isSummaryText(value.you_said)
+  );
+}
+
+function isRecurringMistake(value: unknown): value is RecurringMistake {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'original' in value &&
+    isSummaryText(value.original) &&
+    'improved' in value &&
+    isSummaryText(value.improved) &&
+    'explanation' in value &&
+    isSummaryText(value.explanation) &&
+    'times' in value &&
+    isCount(value.times) &&
+    value.times >= 2
+  );
+}
 
 function isTurnNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
@@ -22,34 +121,6 @@ function isTurnNumber(value: unknown): value is number {
 
 function isSummaryText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && Array.from(value).length <= 300;
-}
-
-function isImprovement(
-  value: unknown,
-): value is NonNullable<FinishedPracticeSession['improvement']> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'turn_sequence' in value &&
-    isTurnNumber(value.turn_sequence) &&
-    'target' in value &&
-    isSummaryText(value.target)
-  );
-}
-
-function isFocus(value: unknown): value is NonNullable<FinishedPracticeSession['focus']> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'turn_sequence' in value &&
-    isTurnNumber(value.turn_sequence) &&
-    'original' in value &&
-    isSummaryText(value.original) &&
-    'improved' in value &&
-    isSummaryText(value.improved) &&
-    'explanation' in value &&
-    isSummaryText(value.explanation)
-  );
 }
 
 export function isFinishedPracticeSession(value: unknown): value is FinishedPracticeSession {
@@ -65,31 +136,21 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     typeof value.turn_count === 'number' &&
     Number.isSafeInteger(value.turn_count) &&
     value.turn_count >= 0 &&
-    'retry_count' in value &&
-    typeof value.retry_count === 'number' &&
-    Number.isSafeInteger(value.retry_count) &&
-    value.retry_count >= 0 &&
-    value.retry_count <= value.turn_count &&
     'target_turns' in value &&
     typeof value.target_turns === 'number' &&
     Number.isSafeInteger(value.target_turns) &&
     value.target_turns > 0 &&
-    'recall_count' in value &&
-    typeof value.recall_count === 'number' &&
-    Number.isSafeInteger(value.recall_count) &&
-    value.recall_count >= 0 &&
-    'recall_wording_count' in value &&
-    typeof value.recall_wording_count === 'number' &&
-    Number.isSafeInteger(value.recall_wording_count) &&
-    value.recall_wording_count >= 0 &&
-    value.recall_wording_count <= value.recall_count &&
-    'improvement' in value &&
-    (value.improvement === null || isImprovement(value.improvement)) &&
-    'focus' in value &&
-    (value.focus === null || isFocus(value.focus)) &&
-    'saved_phrases' in value &&
-    Array.isArray(value.saved_phrases) &&
-    value.saved_phrases.length <= 3 &&
-    value.saved_phrases.every(isSummaryText)
+    'duration_ms' in value &&
+    isCount(value.duration_ms) &&
+    'numbers' in value &&
+    isSessionNumbers(value.numbers) &&
+    'phrases' in value &&
+    Array.isArray(value.phrases) &&
+    value.phrases.length <= MAX_WRAPUP_PHRASES &&
+    value.phrases.every(isWrapupPhrase) &&
+    'recurring_mistakes' in value &&
+    Array.isArray(value.recurring_mistakes) &&
+    value.recurring_mistakes.length <= MAX_WRAPUP_MISTAKES &&
+    value.recurring_mistakes.every(isRecurringMistake)
   );
 }

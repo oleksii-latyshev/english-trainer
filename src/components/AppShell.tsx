@@ -59,37 +59,42 @@ export function AppShell() {
     void navigate({ to: item.path });
   }
 
+  // The wrap-up is a focused page of its own: no sidebar until the learner is done with it.
+  const isFocusedPage = currentPath === '/summary';
+
   return (
     <div className="app-shell">
-      <nav aria-label="Main" className="app-sidebar">
-        <div className="app-brand">English Trainer</div>
-        {NAVIGATION.map((item) => {
-          const Icon = item.icon;
-          const active = item.matches.includes(currentPath);
-          return (
-            <button
-              aria-current={active ? 'page' : undefined}
-              aria-label={navLabel(item, dueCount)}
-              className="nav-item"
-              disabled={navigationLocked}
-              key={item.path}
-              onClick={() => handleNavigate(item)}
-              title={item.label}
-              type="button"
-            >
-              <Icon size={18} strokeWidth={1.8} />
-              <span className="nav-item-label">{item.label}</span>
-              {item.path === '/memory' && dueCount > 0 && (
-                <span aria-hidden="true" className="nav-badge">
-                  <span className="nav-badge-count">{dueCount}</span>
-                  <span className="nav-badge-text"> due</span>
-                </span>
-              )}
-            </button>
-          );
-        })}
-        <MicStatus status={mic.status} />
-      </nav>
+      {!isFocusedPage && (
+        <nav aria-label="Main" className="app-sidebar">
+          <div className="app-brand">English Trainer</div>
+          {NAVIGATION.map((item) => {
+            const Icon = item.icon;
+            const active = item.matches.includes(currentPath);
+            return (
+              <button
+                aria-current={active ? 'page' : undefined}
+                aria-label={navLabel(item, dueCount)}
+                className="nav-item"
+                disabled={navigationLocked}
+                key={item.path}
+                onClick={() => handleNavigate(item)}
+                title={item.label}
+                type="button"
+              >
+                <Icon size={18} strokeWidth={1.8} />
+                <span className="nav-item-label">{item.label}</span>
+                {item.path === '/memory' && dueCount > 0 && (
+                  <span aria-hidden="true" className="nav-badge">
+                    <span className="nav-badge-count">{dueCount}</span>
+                    <span className="nav-badge-text"> due</span>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <MicStatus status={mic.status} />
+        </nav>
+      )}
       <main className="screen-content">
         <Outlet />
       </main>

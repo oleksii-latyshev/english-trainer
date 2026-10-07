@@ -2,6 +2,7 @@ pub mod memory_recall;
 pub mod models;
 pub mod normalization;
 pub mod scheduling;
+pub mod session_stats;
 pub mod usage;
 
 pub use memory_recall::{

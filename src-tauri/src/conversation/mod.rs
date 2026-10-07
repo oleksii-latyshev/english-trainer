@@ -15,6 +15,7 @@ mod rules;
 mod scaffold;
 pub(crate) mod usage;
 mod usage_support;
+mod wrapup;
 pub use coach::{
     session_conflict_error, wrong_mode_error, SavedCoachState, SessionMode, COACH_TARGET_TURNS,
 };
@@ -24,6 +25,7 @@ use rules::{
     MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS, MAX_TURNS, OPENING_QUESTION,
 };
 pub use scaffold::{question_scaffold, QuestionScaffold};
+pub use wrapup::{RecurringMistake, WrapupPhrase};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PracticeSession {
@@ -74,27 +76,14 @@ pub struct FinishedPracticeSession {
     pub session_id: u64,
     pub finished: bool,
     pub turn_count: usize,
-    pub retry_count: usize,
     pub target_turns: usize,
-    pub recall_count: usize,
-    pub recall_wording_count: usize,
-    pub improvement: Option<SessionImprovement>,
-    pub focus: Option<SessionFocus>,
-    pub saved_phrases: Vec<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct SessionImprovement {
-    pub turn_sequence: usize,
-    pub target: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct SessionFocus {
-    pub turn_sequence: usize,
-    pub original: String,
-    pub improved: String,
-    pub explanation: String,
+    /// Session length, from start to finish, in ms.
+    pub duration_ms: u64,
+    pub numbers: crate::learning::session_stats::SessionNumbers,
+    /// Up to three phrases from the session's coaching that are not saved yet.
+    pub phrases: Vec<WrapupPhrase>,
+    /// Up to two mistakes observed more than once in the session.
+    pub recurring_mistakes: Vec<RecurringMistake>,
 }
 
 #[derive(Clone)]
@@ -382,19 +371,7 @@ impl SessionStore {
             SessionMode::Coach => COACH_TARGET_TURNS,
         };
         let turn_count = session.turns.len();
-        let retry_count = state
-            .database
-            .comparisons(session_id)
-            .map_err(database_error)?
-            .len();
-        let (recall_count, recall_wording_count) = state
-            .database
-            .daily_recall_counts(session_id)
-            .map_err(database_error)?;
-        let evidence = state
-            .database
-            .session_summary_evidence(session_id)
-            .map_err(database_error)?;
+        let wrapup = wrapup::build(&state.database, session_id).map_err(database_error)?;
         if !state
             .database
             .finish_session(session_id)
@@ -407,21 +384,11 @@ impl SessionStore {
             session_id,
             finished: true,
             turn_count,
-            retry_count,
             target_turns,
-            recall_count,
-            recall_wording_count,
-            improvement: evidence.improvement.map(|improvement| SessionImprovement {
-                turn_sequence: improvement.turn_sequence,
-                target: improvement.target,
-            }),
-            focus: evidence.focus.map(|focus| SessionFocus {
-                turn_sequence: focus.turn_sequence,
-                original: focus.original,
-                improved: focus.improved,
-                explanation: focus.explanation,
-            }),
-            saved_phrases: evidence.saved_phrases,
+            duration_ms: wrapup.duration_ms,
+            numbers: wrapup.numbers,
+            phrases: wrapup.phrases,
+            recurring_mistakes: wrapup.recurring_mistakes,
         })
     }
 
@@ -636,6 +603,21 @@ impl SessionStore {
         state
             .database
             .save_phrase_card(trimmed_phrase, &meaning_or_note, session_id, sequence)
+            .map_err(database_error)
+    }
+
+    /// Removes a saved phrase card (for example to undo a save). False when no card has this id.
+    pub fn delete_phrase(&self, phrase_id: u64) -> Result<bool, ProviderError> {
+        if phrase_id == 0 || phrase_id > MAX_SAFE_SESSION_ID {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "Invalid phrase card ID.",
+            ));
+        }
+        let mut state = self.lock();
+        state
+            .database
+            .delete_phrase_card(phrase_id)
             .map_err(database_error)
     }
 

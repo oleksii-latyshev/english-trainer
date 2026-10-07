@@ -75,7 +75,9 @@ export function usePracticeSession(dependencies: Dependencies) {
   }, []);
 
   async function start(mode: SessionMode = 'conversation') {
-    if (state.tag !== 'idle' || !dependencies.canChangeSession) return;
+    // "Talk more" on the wrap-up starts the next session straight from the summary.
+    if ((state.tag !== 'idle' && state.tag !== 'completed') || !dependencies.canChangeSession)
+      return;
     if (!isTauri()) {
       setError('Open the desktop app with bun run dev to start a conversation.');
       return;

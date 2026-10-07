@@ -111,6 +111,19 @@ export async function savePhraseCard(
   return result;
 }
 
+/** Removes a saved phrase card (the toast's Undo). False when it was already gone. */
+export async function deletePhraseCard(phraseId: number): Promise<boolean> {
+  if (!isTauri()) {
+    throw new Error('Desktop app required to remove phrases.');
+  }
+  const result = await invoke<unknown>('delete_phrase_card', { phrase_id: phraseId });
+  if (typeof result !== 'boolean') {
+    throw new Error('Unexpected phrase removal response.');
+  }
+  window.dispatchEvent(new Event('learning-memory-changed'));
+  return result;
+}
+
 export async function submitLearningReview(
   itemType: LearningItemType,
   itemId: number,

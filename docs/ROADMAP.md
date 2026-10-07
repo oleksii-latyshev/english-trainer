@@ -167,7 +167,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Design: start screen heading "What shall we talk about?", topic grid, length segment, the summary
   line under Start ("Work & technology · 10 min · warm-up first"), and a Continue card naming the
   topic, when it was paused and the minutes left; the Talk header shows the topic and "6:12 of
-  10:00".
+  10:00". The wrap-up header's subtitle gains the topic ("Work & technology · 10 min 24 s"); today
+  it shows only the session length.
 - Acceptance: three sessions on different topics feel relevant to the user's real life and work.
 
 ### Stage 3 — Remember and review
@@ -178,6 +179,13 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   action.
 - Local fluency numbers for the session: speaking time, words per minute, average answer length.
   Presented as personal trends, never as CEFR levels.
+- Built with the wrap-up screen (design `Wrapup`): the numbers with trends against the last
+  session, up to three phrase cards from the session's Coach feedback, recurring mistakes, and
+  "Save all to Memory" with Undo. What is still open for F9: Conversation sessions have no
+  coaching, so their lists are empty and the screen says phrases appear when Eva coaches an
+  answer; F9 generates phrases and recurring mistakes in the background for every session, with
+  a short note per phrase ("The word you were looking for: normalise.") instead of the quoted
+  original, and may offer the recurring mistakes themselves as savable items.
 
 **F10. Spoken phrase review** `[ ]`
 - Due phrases return as short spoken tasks: the AI gives a situation, the user answers using the

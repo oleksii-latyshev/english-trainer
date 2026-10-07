@@ -551,7 +551,6 @@ fn spoken_recall_queue_and_evidence_survive_without_changing_mastery() {
     assert_eq!(duplicate, saved);
     assert_eq!(db.daily_recall_plan(second).unwrap().completed_count, 1);
     assert!(db.daily_recall_plan(second).unwrap().items.is_empty());
-    assert_eq!(db.daily_recall_counts(second).unwrap(), (1, 1));
     let memory = db.get_learning_memory().unwrap();
     assert_eq!(memory.phrase_cards[0].status, LearningStatus::Learning);
     assert!(memory.phrase_cards[0].is_due);
@@ -559,7 +558,6 @@ fn spoken_recall_queue_and_evidence_survive_without_changing_mastery() {
 
     let db = SessionDatabase::open(&path).unwrap();
     assert_eq!(db.daily_recall_plan(second).unwrap().completed_count, 1);
-    assert_eq!(db.daily_recall_counts(second).unwrap(), (1, 1));
     drop(db);
     std::fs::remove_file(path).unwrap();
 }

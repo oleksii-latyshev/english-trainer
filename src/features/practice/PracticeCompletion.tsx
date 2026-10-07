@@ -1,90 +1,230 @@
-import { Button, Card } from '@heroui/react';
-import type { FinishedPracticeSession } from '@/lib/types';
+import { Button } from '@heroui/react';
+import { Bookmark, Check, X } from 'lucide-react';
+import { useState } from 'react';
+import { showSavedToast } from '@/components/savedToast';
+import { deletePhraseCard, savePhraseCard } from '@/features/memory/memoryApi';
+import type {
+  FinishedPracticeSession,
+  RecurringMistake,
+  Trend,
+  WrapupPhrase,
+} from '@/lib/finishedPracticeSession';
+import { newlySavedCards } from '@/lib/savedPhrases';
+import { formatDuration, savePhrasesLabel, trendLine } from './lib/wrapup';
+import './wrapup.css';
 
 type Props = {
   summary: FinishedPracticeSession;
   onDone: () => void;
+  onTalkMore: () => void;
 };
 
-export function PracticeCompletion({ summary, onDone }: Props) {
-  const goalReached = summary.turn_count >= summary.target_turns;
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+function StatCard(props: { label: string; value: string; trend: Trend; emptyHint: string }) {
+  const hasValue = props.value !== '—';
+  const line = hasValue
+    ? trendLine(props.trend)
+    : { text: props.emptyHint, tone: 'quiet' as const };
   return (
-    <Card className="panel max-w-2xl" variant="secondary">
-      <Card.Header>
-        <div>
-          <p className="section-kicker">SESSION COMPLETE</p>
-          <Card.Title>Session saved</Card.Title>
-        </div>
-      </Card.Header>
-      <Card.Content className="space-y-4">
-        <p className="m-0 text-slate-200">
-          You spoke through {summary.turn_count} {summary.turn_count === 1 ? 'answer' : 'answers'}
-          {summary.retry_count > 0
-            ? ` and re-spoke ${summary.retry_count} ${summary.retry_count === 1 ? 'answer' : 'answers'}`
-            : ''}
-          .
-        </p>
-        <p className="m-0 text-sm text-slate-400">
-          {goalReached
-            ? `You reached the ${summary.target_turns}-answer practice goal.`
-            : `You ended before the suggested ${summary.target_turns}-answer goal. Short sessions count too.`}
-        </p>
-        <p className="m-0 text-sm text-slate-300">
-          {summary.recall_count} spoken phrase recall{' '}
-          {summary.recall_count === 1 ? 'attempt' : 'attempts'} saved; saved wording appeared in{' '}
-          {summary.recall_wording_count}{' '}
-          {summary.recall_wording_count === 1 ? 'transcript' : 'transcripts'}.
-        </p>
-        <section aria-label="Session learning highlights" className="space-y-3">
-          <div>
-            <h3 className="m-0 text-sm font-semibold text-slate-100">One thing you used again</h3>
-            {summary.improvement ? (
-              <p className="mt-1 mb-0 text-sm text-slate-300">
-                In Try Again for answer {summary.improvement.turn_sequence}, your transcript newly
-                included “{summary.improvement.target}”.
-              </p>
-            ) : (
-              <p className="mt-1 mb-0 text-sm text-slate-400">
-                No newly used target wording was saved in a Try Again attempt.
-              </p>
-            )}
-          </div>
-          <div>
-            <h3 className="m-0 text-sm font-semibold text-slate-100">One focus for next time</h3>
-            {summary.focus ? (
-              <p className="mt-1 mb-0 text-sm text-slate-300">
-                From answer {summary.focus.turn_sequence}: “{summary.focus.original}” → “
-                {summary.focus.improved}”. {summary.focus.explanation}
-              </p>
-            ) : (
-              <p className="mt-1 mb-0 text-sm text-slate-400">
-                No focused correction was saved for this session.
-              </p>
-            )}
-          </div>
-          <div>
-            <h3 className="m-0 text-sm font-semibold text-slate-100">Phrases you saved</h3>
-            {summary.saved_phrases.length > 0 ? (
-              <ul className="mt-1 mb-0 list-disc pl-5 text-sm text-slate-300">
-                {summary.saved_phrases.map((phrase) => (
-                  <li key={phrase}>{phrase}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-1 mb-0 text-sm text-slate-400">
-                No phrase cards were saved from this session.
-              </p>
-            )}
-          </div>
-        </section>
-        <p className="m-0 text-xs text-slate-400">
-          These counts come from saved conversation turns, Try Again attempts, and spoken recall
-          transcripts. Wording observed in a transcript is not a fluency or mastery assessment.
-        </p>
-        <Button className="self-start" onPress={onDone} variant="primary">
-          Back to Home
+    <div className="wrapup-card wrapup-stat">
+      <div className="wrapup-stat-label">{props.label}</div>
+      <div className="wrapup-stat-value">{props.value}</div>
+      <div className="wrapup-stat-trend" data-tone={line.tone}>
+        {line.text}
+      </div>
+    </div>
+  );
+}
+
+function Stats({ numbers }: { numbers: FinishedPracticeSession['numbers'] }) {
+  const { speaking_time, words_per_minute, average_answer } = numbers;
+  return (
+    <div className="wrapup-stats">
+      <StatCard
+        emptyHint="no spoken answers to time"
+        label="Speaking time"
+        trend={speaking_time.trend}
+        value={speaking_time.duration_ms === null ? '—' : formatDuration(speaking_time.duration_ms)}
+      />
+      <StatCard
+        emptyHint="needs a spoken answer"
+        label="Words per minute"
+        trend={words_per_minute.trend}
+        value={words_per_minute.value === null ? '—' : String(words_per_minute.value)}
+      />
+      <StatCard
+        emptyHint="no answers yet"
+        label="Average answer"
+        trend={average_answer.trend}
+        value={
+          average_answer.words === null
+            ? '—'
+            : `${average_answer.words} ${average_answer.words === 1 ? 'word' : 'words'}`
+        }
+      />
+    </div>
+  );
+}
+
+function SectionHeading(props: { id: string; title: string; count: number }) {
+  return (
+    <div className="wrapup-heading">
+      <h2 id={props.id}>{props.title}</h2>
+      <span>{props.count}</span>
+    </div>
+  );
+}
+
+function PhraseCard(props: { phrase: WrapupPhrase; canRemove: boolean; onRemove: () => void }) {
+  return (
+    <div className="wrapup-card wrapup-phrase">
+      <div className="wrapup-phrase-copy">
+        <div className="wrapup-phrase-text">{props.phrase.phrase}</div>
+        <div className="wrapup-phrase-source">You said: “{props.phrase.you_said}”</div>
+      </div>
+      {props.canRemove && (
+        <Button
+          aria-label={`Remove phrase “${props.phrase.phrase}”`}
+          isIconOnly
+          onPress={props.onRemove}
+          size="sm"
+          variant="ghost"
+        >
+          <X aria-hidden="true" size={16} strokeWidth={2} />
         </Button>
-      </Card.Content>
-    </Card>
+      )}
+    </div>
+  );
+}
+
+function MistakeCard({ mistake }: { mistake: RecurringMistake }) {
+  return (
+    <div className="wrapup-card wrapup-mistake">
+      <div className="wrapup-mistake-change">
+        <span className="wrapup-strike">{mistake.original}</span> →{' '}
+        <span className="wrapup-highlight">{mistake.improved}</span>
+      </div>
+      <div className="wrapup-mistake-rule">
+        {mistake.explanation} · {mistake.times} times today
+      </div>
+    </div>
+  );
+}
+
+export function PracticeCompletion({ summary, onDone, onTalkMore }: Props) {
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const phrases = summary.phrases.filter((item) => !removed.has(item.phrase));
+  const isSaved = saveState === 'saved';
+
+  async function handleSaveAll() {
+    if (phrases.length === 0 || saveState === 'saving') return;
+    setSaveState('saving');
+    const requestedAtMs = Date.now();
+    try {
+      const cards = [];
+      for (const item of phrases) {
+        cards.push(await savePhraseCard(item.phrase, item.note, summary.session_id, item.sequence));
+      }
+      setSaveState('saved');
+      const created = newlySavedCards(cards, requestedAtMs);
+      showSavedToast({
+        onUndo:
+          created.length > 0
+            ? async () => {
+                await Promise.all(created.map((card) => deletePhraseCard(card.id)));
+                setSaveState('idle');
+              }
+            : undefined,
+      });
+    } catch {
+      // A phrase that did get saved is skipped as a duplicate when the learner retries.
+      setSaveState('error');
+    }
+  }
+
+  return (
+    <div className="wrapup">
+      <header className="wrapup-header">
+        <div className="wrapup-header-copy">
+          <div className="wrapup-subtitle">{formatDuration(summary.duration_ms)}</div>
+          <h1>Nice session. Here’s what to keep.</h1>
+        </div>
+        <div className="wrapup-header-actions">
+          <Button onPress={onTalkMore} variant="secondary">
+            Talk more
+          </Button>
+          <Button onPress={onDone} variant="primary">
+            Done
+          </Button>
+        </div>
+      </header>
+
+      <Stats numbers={summary.numbers} />
+
+      <div className="wrapup-columns">
+        <section aria-labelledby="wrapup-phrases" className="wrapup-section">
+          <SectionHeading
+            count={phrases.length}
+            id="wrapup-phrases"
+            title="Phrases worth learning"
+          />
+          {phrases.map((item) => (
+            <PhraseCard
+              canRemove={!isSaved}
+              key={item.phrase}
+              onRemove={() => setRemoved(new Set(removed).add(item.phrase))}
+              phrase={item}
+            />
+          ))}
+          {phrases.length === 0 && (
+            <p className="wrapup-empty">
+              {summary.phrases.length === 0
+                ? 'Phrases appear here when Eva coaches an answer.'
+                : 'All phrases removed. Nothing will be saved from this session.'}
+            </p>
+          )}
+        </section>
+
+        <section aria-labelledby="wrapup-mistakes" className="wrapup-section">
+          <SectionHeading
+            count={summary.recurring_mistakes.length}
+            id="wrapup-mistakes"
+            title="Came up more than once"
+          />
+          {summary.recurring_mistakes.map((mistake) => (
+            <MistakeCard key={`${mistake.original}→${mistake.improved}`} mistake={mistake} />
+          ))}
+          {summary.recurring_mistakes.length === 0 ? (
+            <p className="wrapup-empty">
+              Nothing repeated in this session. Mistakes that come up twice or more show up here.
+            </p>
+          ) : (
+            <p className="wrapup-note">These are already in Memory and will come back to review.</p>
+          )}
+          {phrases.length > 0 && (
+            <Button
+              className="wrapup-save"
+              isDisabled={saveState === 'saving' || isSaved}
+              onPress={() => void handleSaveAll()}
+              variant="primary"
+            >
+              {isSaved ? (
+                <Check aria-hidden="true" size={16} strokeWidth={2.2} />
+              ) : (
+                <Bookmark aria-hidden="true" size={16} strokeWidth={2} />
+              )}
+              {isSaved ? 'Saved to Memory' : savePhrasesLabel(phrases.length)}
+            </Button>
+          )}
+          {saveState === 'error' && (
+            <p className="wrapup-error" role="alert">
+              Could not save these phrases. Please try again.
+            </p>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }

@@ -103,14 +103,4 @@ impl SessionDatabase {
             wording_observed: observed,
         }))
     }
-
-    pub fn daily_recall_counts(&self, session_id: u64) -> rusqlite::Result<(usize, usize)> {
-        let counts: (i64, i64) = self.connection.query_row(
-            "SELECT COUNT(*), COALESCE(SUM(wording_observed), 0)
-             FROM session_phrase_recalls WHERE session_id = ?1",
-            [to_sql_id(session_id)?],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )?;
-        Ok((counts.0 as usize, counts.1 as usize))
-    }
 }

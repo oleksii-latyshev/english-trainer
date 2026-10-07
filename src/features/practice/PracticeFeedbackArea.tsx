@@ -1,5 +1,5 @@
 import { FeedbackPanel } from '@/features/coach/FeedbackPanel';
-import { savePhraseCard } from '@/features/memory/memoryApi';
+import { deletePhraseCard, savePhraseCard } from '@/features/memory/memoryApi';
 import type { TurnFeedback } from '@/lib/types';
 import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
@@ -18,6 +18,7 @@ type Props = {
   onRetryAnchor: (answer: ReviewedAnswer) => void;
   onTryAgain: () => void;
   onPhraseSaved: () => void;
+  onPhraseSaveUndone: () => void;
   onPersistFeedback: (
     sessionId: number,
     sequence: number,
@@ -52,6 +53,7 @@ export function PracticeFeedbackArea({
   onRetryAnchor,
   onTryAgain,
   onPhraseSaved,
+  onPhraseSaveUndone,
   onPersistFeedback,
   onSpeakRewrite,
 }: Props) {
@@ -70,7 +72,9 @@ export function PracticeFeedbackArea({
         if (savedAnswer) onRetryAnchor({ ...savedAnswer, feedback });
       }}
       onPhraseSaved={onPhraseSaved}
+      onPhraseSaveUndone={onPhraseSaveUndone}
       onSavePhrase={savePhraseCard}
+      onUndoSavePhrase={deletePhraseCard}
       onSpeakRewrite={onSpeakRewrite}
       onTryAgain={retryAnchor ? onTryAgain : undefined}
       persistReviewed={

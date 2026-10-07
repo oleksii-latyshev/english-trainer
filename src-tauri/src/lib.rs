@@ -373,6 +373,14 @@ fn save_phrase_card(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+fn delete_phrase_card(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    phrase_id: u64,
+) -> Result<bool, providers::ProviderError> {
+    sessions.delete_phrase(phrase_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 fn get_learning_memory(
     sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<learning::LearningMemoryView, providers::ProviderError> {
@@ -511,6 +519,7 @@ pub fn run() {
             get_guided_answer,
             record_answer_help_used,
             save_phrase_card,
+            delete_phrase_card,
             get_learning_memory,
             view_learning_memory,
             submit_learning_review,

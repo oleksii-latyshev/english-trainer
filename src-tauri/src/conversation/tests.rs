@@ -67,24 +67,6 @@ fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
     assert_eq!(resumed.retry_evidence, vec![result]);
     let finished = reopened.finish(session.session_id).unwrap();
     assert_eq!(finished.turn_count, 1);
-    assert_eq!(finished.retry_count, 1);
-    assert_eq!(
-        finished.improvement,
-        Some(SessionImprovement {
-            turn_sequence: 1,
-            target: "I work there".into(),
-        })
-    );
-    assert_eq!(
-        finished.focus,
-        Some(SessionFocus {
-            turn_sequence: 1,
-            original: "I work in there".into(),
-            improved: "I work there".into(),
-            explanation: "Drop the extra preposition.".into(),
-        })
-    );
-    assert!(finished.saved_phrases.is_empty());
     std::fs::remove_file(path).unwrap();
 }
 
@@ -161,11 +143,7 @@ fn start_turn_context_resume_and_finish_form_a_session() {
     let finished = store.finish(session.session_id).unwrap();
     assert!(finished.finished);
     assert_eq!(finished.turn_count, 2);
-    assert_eq!(finished.retry_count, 0);
     assert_eq!(finished.target_turns, DAILY_TARGET_TURNS);
-    assert_eq!(finished.improvement, None);
-    assert_eq!(finished.focus, None);
-    assert!(finished.saved_phrases.is_empty());
     assert_eq!(
         store.finish(session.session_id).unwrap_err().code,
         ProviderErrorCode::InvalidSession
@@ -173,100 +151,7 @@ fn start_turn_context_resume_and_finish_form_a_session() {
 }
 
 #[test]
-fn finished_summary_uses_only_current_session_phrases_and_limits_them_to_three() {
-    let store = SessionStore::default();
-    let earlier = store.start().unwrap();
-    store
-        .send_turn(earlier.session_id, "An earlier answer".into(), |_| {
-            Ok(turn("Thanks.", "Next?"))
-        })
-        .unwrap();
-    store
-        .save_phrase(
-            "Phrase from earlier session".into(),
-            String::new(),
-            Some(earlier.session_id),
-            Some(1),
-        )
-        .unwrap();
-    store.finish(earlier.session_id).unwrap();
-
-    let current = store.start().unwrap();
-    store
-        .send_turn(current.session_id, "A current answer".into(), |_| {
-            Ok(turn("Thanks.", "Next?"))
-        })
-        .unwrap();
-    for phrase in [
-        "Current phrase one",
-        "Current phrase two",
-        "Current phrase three",
-        "Current phrase four",
-    ] {
-        store
-            .save_phrase(
-                phrase.into(),
-                String::new(),
-                Some(current.session_id),
-                Some(1),
-            )
-            .unwrap();
-    }
-
-    let summary = store.finish(current.session_id).unwrap();
-    assert_eq!(
-        summary.saved_phrases,
-        vec![
-            "Current phrase one",
-            "Current phrase two",
-            "Current phrase three"
-        ]
-    );
-}
-
-#[test]
-fn finished_summary_uses_latest_nonempty_focus_feedback() {
-    let store = SessionStore::default();
-    let session = store.start().unwrap();
-    store
-        .send_turn(session.session_id, "First answer".into(), |_| {
-            Ok(turn("Thanks.", "Next?"))
-        })
-        .unwrap();
-    store
-        .save_feedback(session.session_id, 1, "First answer", &sample_feedback())
-        .unwrap();
-    store
-        .send_turn(session.session_id, "Second answer".into(), |_| {
-            Ok(turn("Thanks.", "Next?"))
-        })
-        .unwrap();
-    store
-        .save_feedback(
-            session.session_id,
-            2,
-            "Second answer",
-            &TurnFeedback {
-                focus_feedback: Vec::new(),
-                b2_rewrite: "That is a clear answer.".into(),
-            },
-        )
-        .unwrap();
-
-    let summary = store.finish(session.session_id).unwrap();
-    assert_eq!(
-        summary.focus,
-        Some(SessionFocus {
-            turn_sequence: 1,
-            original: "I work in there".into(),
-            improved: "I work there".into(),
-            explanation: "Drop the extra preposition.".into(),
-        })
-    );
-}
-
-#[test]
-fn uncertain_partial_and_already_present_retries_do_not_claim_improvement() {
+fn uncertain_partial_and_already_present_retries_report_their_evidence() {
     let store = SessionStore::default();
     let cases = [
         (
@@ -305,8 +190,7 @@ fn uncertain_partial_and_already_present_retries_do_not_claim_improvement() {
             .retry_turn(session.session_id, 1, retry.into())
             .unwrap();
         assert_eq!(comparison.target_evidence, expected_evidence);
-        let summary = store.finish(session.session_id).unwrap();
-        assert_eq!(summary.improvement, None);
+        store.finish(session.session_id).unwrap();
     }
 }
 
@@ -440,9 +324,7 @@ fn spoken_recall_opens_after_speaking_goal_and_keeps_empty_queue_finishable() {
     let plan = store.daily_recall_plan(session.session_id).unwrap();
     assert!(plan.items.is_empty());
     assert_eq!(plan.completed_count, 0);
-    let finished = store.finish(session.session_id).unwrap();
-    assert_eq!(finished.recall_count, 0);
-    assert_eq!(finished.recall_wording_count, 0);
+    store.finish(session.session_id).unwrap();
 }
 
 #[test]
@@ -1010,7 +892,6 @@ fn persisted_coach_mode_and_pending_state_on_reopen() {
     let finished = reopened.finish(session.session_id).unwrap();
     assert_eq!(finished.target_turns, COACH_TARGET_TURNS);
     assert_eq!(finished.turn_count, 1);
-    assert_eq!(finished.retry_count, 1);
     std::fs::remove_file(path).unwrap();
 }
 
@@ -1138,7 +1019,6 @@ fn mode_specific_target_and_recall_gates() {
     let finished = store.finish(session.session_id).unwrap();
     assert_eq!(finished.target_turns, COACH_TARGET_TURNS);
     assert_eq!(finished.turn_count, COACH_TARGET_TURNS);
-    assert_eq!(finished.recall_count, 0);
 }
 
 #[test]
@@ -1413,4 +1293,163 @@ fn a_reply_without_a_question_becomes_the_prompt_the_learner_answers() {
             Ok(turn("Good.", "Why?"))
         })
         .is_ok());
+}
+
+fn feedback_for(original: &str, improved: &str, rewrite: &str) -> TurnFeedback {
+    TurnFeedback {
+        focus_feedback: vec![crate::providers::FocusFeedback {
+            category: crate::providers::FocusCategory::Grammar,
+            original: original.into(),
+            improved: improved.into(),
+            explanation: "Use for with a length of time.".into(),
+        }],
+        b2_rewrite: rewrite.into(),
+    }
+}
+
+fn answer_with_duration(store: &SessionStore, session_id: u64, text: &str, duration_ms: u64) {
+    store
+        .send_turn_with_source(
+            session_id,
+            text.into(),
+            InputSource::Voice,
+            Some(duration_ms),
+            |_| Ok(turn("Thanks.", "Next?")),
+        )
+        .unwrap();
+}
+
+#[test]
+fn finished_summary_carries_numbers_trends_phrases_and_recurring_mistakes() {
+    let store = SessionStore::default();
+
+    let earlier = store.start().unwrap();
+    answer_with_duration(&store, earlier.session_id, &"word ".repeat(50), 25_000);
+    store.finish(earlier.session_id).unwrap();
+
+    let current = store.start().unwrap();
+    let id = current.session_id;
+    answer_with_duration(&store, id, "I am working here since two weeks", 10_000);
+    answer_with_duration(&store, id, "I live here since two weeks too", 12_000);
+    answer_with_duration(&store, id, "It was fine", 6_000);
+    store
+        .save_feedback(
+            id,
+            1,
+            "I am working here since two weeks",
+            &feedback_for(
+                "since two weeks",
+                "for two weeks",
+                "I have worked here for two weeks.",
+            ),
+        )
+        .unwrap();
+    store
+        .save_feedback(
+            id,
+            2,
+            "I live here since two weeks too",
+            &feedback_for(
+                "since two weeks",
+                "for two weeks",
+                "I have lived here for two weeks.",
+            ),
+        )
+        .unwrap();
+    store
+        .save_phrase(
+            "I have worked here for two weeks.".into(),
+            String::new(),
+            Some(id),
+            Some(1),
+        )
+        .unwrap();
+
+    let summary = store.finish(id).unwrap();
+
+    assert_eq!(summary.numbers.speaking_time.duration_ms, Some(28_000));
+    assert_eq!(
+        summary.numbers.speaking_time.trend,
+        crate::learning::session_stats::Trend::Percent { change: 12 }
+    );
+    assert_eq!(summary.numbers.average_answer.words, Some(6));
+    assert_eq!(
+        summary.numbers.average_answer.trend,
+        crate::learning::session_stats::Trend::Words { change: -44 }
+    );
+    // The rewrite saved earlier is skipped; "for two weeks" appears once although given twice.
+    let phrases: Vec<_> = summary
+        .phrases
+        .iter()
+        .map(|p| (p.sequence, p.phrase.as_str()))
+        .collect();
+    assert_eq!(
+        phrases,
+        [
+            (2, "for two weeks"),
+            (2, "I have lived here for two weeks.")
+        ]
+    );
+    assert_eq!(summary.phrases[0].you_said, "since two weeks");
+    assert_eq!(
+        summary.recurring_mistakes,
+        vec![RecurringMistake {
+            original: "since two weeks".into(),
+            improved: "for two weeks".into(),
+            explanation: "Use for with a length of time.".into(),
+            times: 2,
+        }]
+    );
+    assert!(summary.duration_ms < 60_000);
+}
+
+#[test]
+fn finished_summary_without_coaching_has_empty_lists() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "Just talking".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    let summary = store.finish(session.session_id).unwrap();
+    assert!(summary.phrases.is_empty());
+    assert!(summary.recurring_mistakes.is_empty());
+    assert_eq!(summary.numbers.speaking_time.duration_ms, None);
+}
+
+#[test]
+fn deleting_a_phrase_card_removes_it_and_tolerates_stale_or_invalid_ids() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "An answer".into(), |_| {
+            Ok(turn("Thanks.", "Next?"))
+        })
+        .unwrap();
+    let card = store
+        .save_phrase(
+            "for two weeks".into(),
+            "note".into(),
+            Some(session.session_id),
+            Some(1),
+        )
+        .unwrap();
+    assert_eq!(store.get_learning_memory().unwrap().phrase_cards.len(), 1);
+
+    assert!(store.delete_phrase(card.id).unwrap());
+    assert!(store.get_learning_memory().unwrap().phrase_cards.is_empty());
+    // A second removal of the same card, and a card that never existed, change nothing.
+    assert!(!store.delete_phrase(card.id).unwrap());
+    assert!(!store.delete_phrase(card.id + 100).unwrap());
+    assert_eq!(
+        store.delete_phrase(0).unwrap_err().code,
+        ProviderErrorCode::InvalidRequest
+    );
+
+    // The same wording can be saved again after an undo.
+    let again = store
+        .save_phrase("for two weeks".into(), String::new(), None, None)
+        .unwrap();
+    assert_ne!(again.id, card.id);
 }

@@ -1,6 +1,8 @@
-import { toast } from '@heroui/react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
+import { showSavedToast } from '@/components/savedToast';
+import type { PhraseCardRecord } from '@/lib/learningTypes';
+import { newlySavedCards } from '@/lib/savedPhrases';
 import { isProviderError, isTurnFeedback, type TurnFeedback } from '@/lib/types';
 import { CoachingNote, type NoteState, type PhraseSaveState } from './CoachingNote';
 
@@ -19,15 +21,17 @@ type Props = {
     note: string,
     sessionId?: number,
     sequence?: number,
-  ) => Promise<unknown>;
+  ) => Promise<PhraseCardRecord>;
+  /** Takes a just-saved phrase back out of Memory (the toast's Undo). */
+  onUndoSavePhrase?: (phraseId: number) => Promise<unknown>;
   onReviewed?: (feedback: TurnFeedback, question: string) => void;
   onTryAgain?: () => void;
   /** Called once a phrase from this feedback has been saved to Learning Memory. */
   onPhraseSaved?: () => void;
+  /** Called when the toast's Undo took the saved phrase back out of Memory. */
+  onPhraseSaveUndone?: () => void;
   onSpeakRewrite?: (text: string) => void;
 };
-
-const PHRASE_SAVED_MESSAGE = 'Saved to Memory — it’ll come back in a later session.';
 
 function feedbackError(cause: unknown): string {
   if (isProviderError(cause)) return cause.message;
@@ -56,9 +60,11 @@ export function FeedbackPanel({
   sessionId,
   sequence,
   onSavePhrase,
+  onUndoSavePhrase,
   onReviewed,
   onTryAgain,
   onPhraseSaved,
+  onPhraseSaveUndone,
   onSpeakRewrite,
 }: Props) {
   const [answerQuestion] = useState(question);
@@ -136,9 +142,20 @@ export function FeedbackPanel({
     setPhraseSaveState('saving');
     setPhraseSaveError(null);
     try {
-      await onSavePhrase(phrase, note, sessionId, sequence);
+      const requestedAtMs = Date.now();
+      const card = await onSavePhrase(phrase, note, sessionId, sequence);
       setPhraseSaveState('saved');
-      toast.success(PHRASE_SAVED_MESSAGE);
+      const [created] = newlySavedCards([card], requestedAtMs);
+      showSavedToast({
+        onUndo:
+          created && onUndoSavePhrase
+            ? async () => {
+                await onUndoSavePhrase(created.id);
+                setPhraseSaveState('idle');
+                onPhraseSaveUndone?.();
+              }
+            : undefined,
+      });
       onPhraseSaved?.();
     } catch {
       setPhraseSaveState('error');

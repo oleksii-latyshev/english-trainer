@@ -14,7 +14,7 @@ pub(crate) mod learning_usage;
 mod learning_writes;
 mod memory_recall;
 mod schema;
-mod session_summary;
+pub(crate) mod session_wrapup;
 use std::path::Path;
 
 const SCHEMA_VERSION: i64 = 10;

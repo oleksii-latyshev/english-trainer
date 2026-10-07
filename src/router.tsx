@@ -172,7 +172,7 @@ export const summaryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/summary',
   component: function SummaryComponent() {
-    const { practice } = useTrainer();
+    const { practice, startPractice } = useTrainer();
     const navigate = summaryRoute.useNavigate();
 
     if (practice.state.tag !== 'completed') {
@@ -185,6 +185,7 @@ export const summaryRoute = createRoute({
           practice.dismissSummary();
           void navigate({ to: '/' });
         }}
+        onTalkMore={() => startPractice()}
         summary={practice.state.summary}
       />
     );

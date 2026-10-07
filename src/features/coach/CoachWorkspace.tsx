@@ -59,6 +59,7 @@ type ExtrasProps = Props & {
   session: SessionDetails;
   isCoachPending: boolean;
   onPhraseSaved: () => void;
+  onPhraseSaveUndone: () => void;
 };
 
 function RetryExtras(props: ExtrasProps) {
@@ -135,6 +136,7 @@ function CoachExtras(props: ExtrasProps) {
         isRetrying={props.isRetrying}
         onPersistFeedback={actions.saveFeedback}
         onPhraseSaved={props.onPhraseSaved}
+        onPhraseSaveUndone={props.onPhraseSaveUndone}
         onRetryAnchor={props.onRetryAnchor}
         onSpeakRewrite={speech.play}
         onTryAgain={props.onTryAgain}
@@ -213,6 +215,11 @@ export function CoachWorkspace(props: Props) {
         {...props}
         isCoachPending={isCoachPending}
         onPhraseSaved={() => setPhraseSavedRequestId(model.currentRequestId)}
+        onPhraseSaveUndone={() => {
+          // The closure belongs to the answer that was saved; a later answer's state stays.
+          const savedRequestId = model.currentRequestId;
+          setPhraseSavedRequestId((current) => (current === savedRequestId ? null : current));
+        }}
         session={session}
       />
     </TalkScreen>
