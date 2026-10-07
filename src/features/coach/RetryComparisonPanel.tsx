@@ -1,6 +1,7 @@
 import { Button } from '@heroui/react';
 import { isTauri } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { TurnNotice } from '@/features/practice/TurnNotice';
 import { type AttemptComparison, isAttemptComparison, isProviderError } from '@/lib/types';
 
 type Props = {
@@ -31,35 +32,37 @@ function RetryComparisonReady({ result, onContinue }: ReadyProps) {
     result.word_count_change > 0 ? `+${result.word_count_change}` : `${result.word_count_change}`;
 
   return (
-    <div aria-live="polite" className="flex flex-col gap-4">
-      <div className="comparison-grid">
-        <div className="comparison-column">
-          <span className="comparison-label">Original Attempt</span>
-          <p className="comparison-text">{result.original_transcript}</p>
+    <div aria-live="polite" className="talk-help-group">
+      <div className="talk-compare">
+        <div>
+          <span className="talk-help-caption">Original attempt</span>
+          <p>{result.original_transcript}</p>
         </div>
-        <div className="comparison-column comparison-column--retry">
-          <span className="comparison-label">Try Again Attempt</span>
-          <p className="comparison-text">{result.retry_transcript}</p>
+        <div data-retry="true">
+          <span className="talk-help-caption">Second try</span>
+          <p>{result.retry_transcript}</p>
         </div>
       </div>
 
-      <div className="comparison-metrics">
-        <span className="metric-pill metric-pill--highlight">
+      <div className="talk-pills">
+        <span className="talk-pill">
           Target wording: {result.target_evidence.replace(/_/g, ' ')}
         </span>
-        <span className="metric-pill">Word count change: {wordDelta}</span>
-        <span className="metric-pill">Hesitation: {result.hesitation}</span>
+        <span className="talk-pill">Word count change: {wordDelta}</span>
+        <span className="talk-pill">Hesitation: {result.hesitation}</span>
       </div>
 
       {result.target.length === 0 && (
-        <p className="m-0 text-xs text-zinc-400">
+        <p className="talk-help-caption">
           No focused correction was available for a target wording comparison.
         </p>
       )}
 
-      <Button className="secondary-action w-fit mt-1" onPress={onContinue} variant="secondary">
-        Continue with a new answer
-      </Button>
+      <div className="talk-card-actions">
+        <Button onPress={onContinue} size="sm" variant="secondary">
+          Continue with a new answer
+        </Button>
+      </div>
     </div>
   );
 }
@@ -123,40 +126,30 @@ export function RetryComparisonPanel({
   }, [compare, retry, state.tag]);
 
   return (
-    <div className="coach-card">
-      <div className="prompt-card-header">
-        <div>
-          <p className="section-kicker">STEP 5 · RETRY COMPARISON</p>
-          <h3 className="section-title">Compare your second attempt</h3>
-        </div>
+    <section aria-label="Compare your second attempt" className="talk-card">
+      <div className="talk-card-label" data-tone="accent">
+        Compare your second attempt
       </div>
-      <div>
-        {state.tag === 'waiting' && (
-          <p className="empty-transcript">
-            Record and transcribe your answer to compare it with the original.
-          </p>
-        )}
-        {state.tag === 'loading' && (
-          <p className="empty-transcript">Comparing the two transcripts…</p>
-        )}
-        {state.tag === 'error' && (
-          <div className="grid justify-items-start gap-3">
-            <p className="error-message" role="alert">
-              {state.message}
-            </p>
-            <Button
-              className="secondary-action"
-              onPress={() => (retry === undefined ? undefined : void compare(retry))}
-              variant="secondary"
-            >
-              Retry comparison
-            </Button>
-          </div>
-        )}
-        {state.tag === 'ready' && (
-          <RetryComparisonReady onContinue={onContinue} result={state.result} />
-        )}
-      </div>
-    </div>
+      {state.tag === 'waiting' && (
+        <p className="talk-help-text">
+          Record and transcribe your answer to compare it with the original.
+        </p>
+      )}
+      {state.tag === 'loading' && <p className="talk-help-text">Comparing the two transcripts…</p>}
+      {state.tag === 'error' && (
+        <TurnNotice message={state.message}>
+          <Button
+            onPress={() => (retry === undefined ? undefined : void compare(retry))}
+            size="sm"
+            variant="secondary"
+          >
+            Retry comparison
+          </Button>
+        </TurnNotice>
+      )}
+      {state.tag === 'ready' && (
+        <RetryComparisonReady onContinue={onContinue} result={state.result} />
+      )}
+    </section>
   );
 }

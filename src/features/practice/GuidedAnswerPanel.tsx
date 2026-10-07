@@ -1,5 +1,6 @@
 import { Button } from '@heroui/react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import { Play } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import { type GuidedAnswer, isGuidedAnswer } from '@/lib/guidedAnswerTypes';
@@ -29,100 +30,103 @@ function GuidedExample({
   const [step, setStep] = useState<'read' | 'adapt' | 'independent'>('read');
   const [personalAnswer, setPersonalAnswer] = useState(answer.adaptation);
   return (
-    <div className="grid gap-3 rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
-      <p className="m-0 text-xs text-zinc-400">
+    <div className="talk-help-group">
+      <div className="talk-help-caption">
         Fictional example for this question. Replace details to make it true for you. Guided
         practice is kept separate from independent phrase mastery.
-      </p>
+      </div>
       {step !== 'independent' && (
-        <p className="m-0">
+        <p className="talk-help-text">
           <strong>Partner:</strong> {question}
         </p>
       )}
       {step === 'read' && (
         <>
-          <p className="m-0 text-sm text-zinc-100">
-            <strong>Example answer:</strong> {answer.model_answer}
-          </p>
-          <div className="flex flex-wrap gap-2">
+          <p className="talk-help-example">{answer.model_answer}</p>
+          <div className="talk-help-actions">
             <Button
-              size="sm"
-              variant="secondary"
               isDisabled={disabled}
               onPress={() => speech.play(answer.model_answer)}
+              size="sm"
+              variant="secondary"
             >
+              <Play aria-hidden="true" fill="currentColor" size={12} />
               Listen to example
             </Button>
             <Button
-              size="sm"
-              variant="secondary"
               isDisabled={disabled}
               onPress={() => {
                 speech.stop();
                 setStep('adapt');
               }}
+              size="sm"
+              variant="secondary"
             >
               Replace a few details
             </Button>
           </div>
-          <p className="m-0">Read it aloud once, then make it your own.</p>
+          <p className="talk-help-text">Read it aloud once, then make it your own.</p>
         </>
       )}
       {step === 'adapt' && (
         <>
-          <label className="grid gap-1 font-medium">
+          <label className="talk-help-field">
             Your version — replace the words in brackets
             <textarea
-              className="composer-textarea"
               aria-label="Adapt the example answer"
-              rows={3}
+              className="talk-help-textarea"
               disabled={disabled}
-              value={personalAnswer}
               onChange={(event) => {
                 const value = event.target.value;
                 setPersonalAnswer(value);
               }}
+              rows={3}
+              value={personalAnswer}
             />
           </label>
-          <p className="m-0">
-            Say your version using Record below. You can also try one short sentence of your own.
+          <p className="talk-help-text">
+            Say your version with the microphone below. You can also try one short sentence of your
+            own.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="talk-help-actions">
             <Button
-              size="sm"
-              variant="secondary"
               isDisabled={disabled}
               onPress={() => setStep('read')}
+              size="sm"
+              variant="secondary"
             >
               Back to example
             </Button>
             <Button
-              size="sm"
-              variant="secondary"
               isDisabled={disabled}
               onPress={() => {
                 speech.stop();
                 setStep('independent');
               }}
+              size="sm"
+              variant="ghost"
             >
-              Hide help and try speaking
+              Hide before speaking
             </Button>
           </div>
         </>
       )}
       {step === 'independent' && (
         <>
-          <p className="m-0">
-            Now answer in your own words using Record below. One or two simple sentences are enough.
+          <p className="talk-help-text">
+            Now answer in your own words with the microphone below. One or two simple sentences are
+            enough.
           </p>
-          <Button
-            size="sm"
-            variant="secondary"
-            isDisabled={disabled}
-            onPress={() => setStep('adapt')}
-          >
-            Show my version again
-          </Button>
+          <div className="talk-help-actions">
+            <Button
+              isDisabled={disabled}
+              onPress={() => setStep('adapt')}
+              size="sm"
+              variant="secondary"
+            >
+              Show my version again
+            </Button>
+          </div>
         </>
       )}
     </div>
@@ -174,24 +178,26 @@ export function GuidedAnswerPanel({
   if (state.tag === 'ready')
     return <GuidedExample answer={state.answer} question={question} disabled={disabled} />;
   return (
-    <div className="grid gap-2">
-      <p className="m-0">
+    <div className="talk-help-group">
+      <p className="talk-help-text">
         Need a complete answer? Read an example, replace a few details, then speak.
       </p>
-      <p className="m-0 text-zinc-400">
+      <div className="talk-help-caption">
         Examples use Antigravity, including when conversation uses Apple. Only this question is
         sent.
-      </p>
-      <Button
-        size="sm"
-        variant="secondary"
-        isDisabled={disabled || !isTauri() || !sessionId || !sequence || state.tag === 'loading'}
-        onPress={() => void requestExample()}
-      >
-        {state.tag === 'loading' ? 'Preparing an example…' : 'Show complete example'}
-      </Button>
+      </div>
+      <div className="talk-help-actions">
+        <Button
+          isDisabled={disabled || !isTauri() || !sessionId || !sequence || state.tag === 'loading'}
+          onPress={() => void requestExample()}
+          size="sm"
+          variant="secondary"
+        >
+          {state.tag === 'loading' ? 'Preparing an example…' : 'Show complete example'}
+        </Button>
+      </div>
       {state.tag === 'error' && (
-        <p className="m-0 text-rose-300" role="alert">
+        <p className="talk-help-text" role="alert">
           {state.message}
         </p>
       )}

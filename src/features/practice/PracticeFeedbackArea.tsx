@@ -17,6 +17,7 @@ type Props = {
   isCurrent: () => boolean;
   onRetryAnchor: (answer: ReviewedAnswer) => void;
   onTryAgain: () => void;
+  onPhraseSaved: () => void;
   onPersistFeedback: (
     sessionId: number,
     sequence: number,
@@ -50,6 +51,7 @@ export function PracticeFeedbackArea({
   isCurrent,
   onRetryAnchor,
   onTryAgain,
+  onPhraseSaved,
   onPersistFeedback,
   onSpeakRewrite,
 }: Props) {
@@ -67,6 +69,7 @@ export function PracticeFeedbackArea({
       onReviewed={(feedback) => {
         if (savedAnswer) onRetryAnchor({ ...savedAnswer, feedback });
       }}
+      onPhraseSaved={onPhraseSaved}
       onSavePhrase={savePhraseCard}
       onSpeakRewrite={onSpeakRewrite}
       onTryAgain={retryAnchor ? onTryAgain : undefined}

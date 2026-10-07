@@ -18,9 +18,11 @@ import {
   recallSessionId,
   restoredCoachAnswer,
   restoredRetryAnchor,
+  sendFailure,
 } from './lib/practiceViewState';
 import { PracticeConversationWorkspace } from './PracticeConversationWorkspace';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import type { TalkScreenName } from './TalkScreen';
 import { useAutoListen } from './useAutoListen';
 import { useCoachContinue } from './useCoachContinue';
 import { useDailyRecall } from './useDailyRecall';
@@ -28,14 +30,12 @@ import { usePracticeDialogue } from './usePracticeDialogue';
 import { usePrewarmProvider } from './usePrewarmProvider';
 import { useStreamingReply } from './useStreamingReply';
 
-type Screen = 'home' | 'practice' | 'coach' | 'memory' | 'summary';
-
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
   speech: ReturnType<typeof useSystemSpeech>;
   activeScreen?: 'conversation' | 'coach';
-  onNavigate?: (screen: Screen) => void;
+  onNavigate?: (screen: TalkScreenName) => void;
 };
 
 const IDLE_FOLLOW_UP: FollowUpState = { tag: 'idle' };
@@ -244,9 +244,8 @@ export function PracticeView({
       {activeScreen === 'conversation' && (
         <PracticeConversationWorkspace
           actions={controlActions}
-          activeScreen={activeScreen}
           dialogue={dialogue}
-          sendError={followUpState.tag === 'error' ? followUpState.message : ''}
+          sendError={sendFailure(followUpState)}
           historyError={historyError}
           retryHistory={retryHistory}
           pendingReply={streamingReply.pendingReply}
@@ -255,7 +254,6 @@ export function PracticeView({
           onNavigate={onNavigate}
           onSend={handleSendTurn}
           recall={recall}
-          retryPrompt={activeRetryAnchor?.feedback.b2_rewrite}
           savedAnswer={savedAnswer}
           session={session}
           speech={speech}
@@ -263,40 +261,36 @@ export function PracticeView({
       )}
 
       {activeScreen === 'coach' && (
-        <section
-          aria-label="Coach workspace"
-          className="flex-1 min-h-0 flex flex-col h-full overflow-hidden"
-        >
-          <CoachWorkspace
-            actions={controlActions}
-            continueError={coachContinue.error}
-            dialogue={dialogue}
-            sendError={followUpState.tag === 'error' ? followUpState.message : ''}
-            historyError={historyError}
-            retryHistory={retryHistory}
-            pendingReply={streamingReply.pendingReply}
-            isContinuingCoach={coachContinue.isContinuing}
-            isCurrent={isCurrent}
-            isRetrying={isRetrying}
-            model={model}
-            onCancelRetry={() => {
-              actions.resetCapture();
-              setIsRetrying(false);
-            }}
-            onContinueCoach={() => void coachContinue.continueCoach()}
-            onContinueFromRetry={() => {
-              resetTurnState();
-              actions.resetCapture();
-            }}
-            onRetryAnchor={setRetryAnchor}
-            onSend={handleSendTurn}
-            onTryAgain={startRetry}
-            retryAnchor={activeRetryAnchor}
-            savedAnswer={savedAnswer}
-            session={session}
-            speech={speech}
-          />
-        </section>
+        <CoachWorkspace
+          actions={controlActions}
+          continueError={coachContinue.error}
+          dialogue={dialogue}
+          sendError={sendFailure(followUpState)}
+          historyError={historyError}
+          retryHistory={retryHistory}
+          pendingReply={streamingReply.pendingReply}
+          isContinuingCoach={coachContinue.isContinuing}
+          isCurrent={isCurrent}
+          isRetrying={isRetrying}
+          model={model}
+          onCancelRetry={() => {
+            actions.resetCapture();
+            setIsRetrying(false);
+          }}
+          onContinueCoach={() => void coachContinue.continueCoach()}
+          onContinueFromRetry={() => {
+            resetTurnState();
+            actions.resetCapture();
+          }}
+          onNavigate={onNavigate}
+          onRetryAnchor={setRetryAnchor}
+          onSend={handleSendTurn}
+          onTryAgain={startRetry}
+          retryAnchor={activeRetryAnchor}
+          savedAnswer={savedAnswer}
+          session={session}
+          speech={speech}
+        />
       )}
     </div>
   );

@@ -1,228 +1,153 @@
 import { Button } from '@heroui/react';
+import { ArrowRight } from 'lucide-react';
 import { MemoryUsageReview } from '@/features/memory/components/MemoryUsageReview';
-import { SpeechPanel } from '@/features/speech/SpeechPanel';
-import { TimingPanel } from '@/features/speech/TimingPanel';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { DailyRecallPanel } from './DailyRecallPanel';
-import { DialogueStream } from './DialogueStream';
-import { composerVoice } from './lib/composerVoice';
 import type { InputSource } from './lib/inputSource';
 import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
-import { PracticeChatComposer } from './PracticeChatComposer';
-import { PracticeControls } from './PracticeControls';
+import type { SendFailure } from './lib/turnState';
+import { ManualRecorder } from './ManualRecorder';
+import { NoSession } from './NoSession';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { TalkScreen, type TalkScreenName } from './TalkScreen';
 import type { useDailyRecall } from './useDailyRecall';
 
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
   speech: ReturnType<typeof useSystemSpeech>;
-  activeScreen: 'conversation' | 'coach';
   session?: SessionDetails;
   recall: ReturnType<typeof useDailyRecall>;
   isRetrying: boolean;
-  retryPrompt?: string;
-  sendError: string;
+  sendError?: SendFailure;
   historyError: string;
   retryHistory: () => void;
   pendingReply?: string;
   savedAnswer: SentAnswer | null;
   dialogue: PracticeDialogue | null;
   onSend: (text: string, source: InputSource) => Promise<void>;
-  onNavigate?: (screen: 'home' | 'practice' | 'coach' | 'memory' | 'summary') => void;
+  onNavigate?: (screen: TalkScreenName) => void;
 };
 
-export function PracticeConversationWorkspace({
-  model,
-  actions,
-  speech,
-  activeScreen,
-  session,
-  recall,
-  isRetrying,
-  retryPrompt,
-  savedAnswer,
-  dialogue,
-  sendError,
-  historyError,
-  retryHistory,
-  pendingReply,
-  onSend,
-  onNavigate,
-}: Props) {
-  const canUseRecall = session?.mode === 'conversation' && session.turnCount >= session.targetTurns;
+type ExtrasProps = Pick<
+  Props,
+  'model' | 'actions' | 'recall' | 'isRetrying' | 'savedAnswer' | 'dialogue' | 'onNavigate'
+> & { session: SessionDetails };
+
+function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasProps) {
+  const canUseRecall = session.mode === 'conversation' && session.turnCount >= session.targetTurns;
+  if (!canUseRecall) return null;
+  return (
+    <>
+      {recall.active && (
+        <ManualRecorder
+          actions={actions}
+          cue={recall.currentItem?.cue ?? 'Review your saved recall below.'}
+          isLocked={recall.saving || recall.result !== null}
+          kicker="Phrase recall cue"
+          model={model}
+          surface="recall"
+        />
+      )}
+      <DailyRecallPanel
+        canLeave={model.canChangeSession}
+        canStart={
+          model.canChangeSession && !model.busy && !isRetrying && model.practice.tag === 'active'
+        }
+        recall={{
+          ...recall,
+          start: () => {
+            actions.resetCapture();
+            recall.start();
+          },
+        }}
+        resetCapture={actions.resetCapture}
+        transcript={model.transcript}
+      />
+    </>
+  );
+}
+
+function CoachGateway({ model, onNavigate }: Pick<ExtrasProps, 'model' | 'onNavigate'>) {
+  return (
+    <div className="talk-aside">
+      <Button
+        isDisabled={model.busy || !model.canChangeSession || model.practice.tag !== 'active'}
+        onPress={() => onNavigate?.('coach')}
+        size="sm"
+        variant="ghost"
+      >
+        Get feedback in Coach
+        <ArrowRight aria-hidden="true" size={14} />
+      </Button>
+    </div>
+  );
+}
+
+function ConversationExtras(props: ExtrasProps) {
+  const { model, recall, isRetrying, savedAnswer, dialogue, session } = props;
+  const showUsageReview =
+    session.mode === 'conversation' &&
+    savedAnswer !== null &&
+    savedAnswer.sequence <= 2 &&
+    dialogue?.input_sources?.[savedAnswer.sequence - 1] === 'voice' &&
+    !isRetrying &&
+    !recall.active;
+  return (
+    <>
+      <RecallExtras {...props} />
+      {showUsageReview && (
+        <MemoryUsageReview sequence={savedAnswer.sequence} sessionId={savedAnswer.sessionId} />
+      )}
+      {(savedAnswer || model.transcript) && (
+        <CoachGateway model={model} onNavigate={props.onNavigate} />
+      )}
+    </>
+  );
+}
+
+export function PracticeConversationWorkspace(props: Props) {
+  const { model, actions, session, recall, isRetrying } = props;
+  if (!session) {
+    return (
+      <NoSession
+        actionLabel="Start practice"
+        isDisabled={model.busy}
+        onStart={() => actions.startPractice('conversation')}
+        text="Start a conversation with Eva to begin."
+        title="Your voice, in English."
+      />
+    );
+  }
 
   return (
-    <section
-      aria-label="Conversation workspace"
-      className="practice-chat-layout"
-      hidden={activeScreen !== 'conversation'}
+    <TalkScreen
+      dialogue={props.dialogue}
+      historyError={props.historyError}
+      isFinishDisabled={
+        model.busy || !model.canChangeSession || model.practice.tag !== 'active' || recall.active
+      }
+      isRecalling={recall.active}
+      isRetrying={isRetrying}
+      lock={{
+        isLocked: recall.active || isRetrying,
+        reason: recall.active ? 'Spoken phrase recall is in progress above.' : undefined,
+      }}
+      mode="conversation"
+      actions={actions}
+      model={model}
+      onNavigate={props.onNavigate}
+      onSend={props.onSend}
+      pendingReply={props.pendingReply}
+      question={session.question}
+      retryHistory={props.retryHistory}
+      sendError={props.sendError}
+      session={session}
+      speech={props.speech}
     >
-      <header className="practice-compact-header">
-        <div className="practice-compact-header-left">
-          <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
-            Conversation · Daily practice
-          </span>
-          <h1 className="practice-compact-title">
-            {session ? session.question : 'Your voice, in English.'}
-          </h1>
-        </div>
-        <div className="practice-compact-header-right">
-          {session ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
-                {session.turnCount} / {session.targetTurns} answers
-              </span>
-              <Button
-                className="secondary-action text-xs"
-                isDisabled={
-                  model.busy ||
-                  !model.canChangeSession ||
-                  model.practice.tag !== 'active' ||
-                  recall.active
-                }
-                onPress={actions.finishPractice}
-                size="sm"
-              >
-                {model.practice.tag === 'finishing' ? 'Finishing…' : 'Finish'}
-              </Button>
-            </div>
-          ) : (
-            <Button
-              className="primary-action text-xs"
-              isDisabled={model.busy}
-              onPress={() => actions.startPractice('conversation')}
-              size="sm"
-            >
-              Start practice
-            </Button>
-          )}
-        </div>
-      </header>
-
-      {model.practiceError && (
-        <p className="error-message px-4 m-0" role="alert">
-          {model.practiceError}
-        </p>
-      )}
-
-      <DialogueStream
-        currentQuestion={session?.question}
-        dialogue={dialogue}
-        historyError={historyError}
-        retryHistory={retryHistory}
-        pendingReply={pendingReply}
-        onPlaySpeech={speech.play}
-      >
-        {canUseRecall && recall.active && (
-          <div className="my-3">
-            <PracticeControls
-              actions={actions}
-              isRetrying={isRetrying}
-              model={model}
-              recallActive={recall.active}
-              recallCompletedCount={
-                recall.state.tag === 'ready' ? recall.state.plan.completed_count : 0
-              }
-              recallCue={recall.currentItem?.cue}
-              recallLocked={recall.saving || recall.result !== null}
-              retryPrompt={retryPrompt}
-              surface="conversation"
-            />
-          </div>
-        )}
-
-        {canUseRecall && (
-          <DailyRecallPanel
-            canLeave={model.canChangeSession}
-            canStart={
-              model.canChangeSession &&
-              !model.busy &&
-              !isRetrying &&
-              model.practice.tag === 'active'
-            }
-            recall={{
-              ...recall,
-              start: () => {
-                actions.resetCapture();
-                recall.start();
-              },
-            }}
-            resetCapture={actions.resetCapture}
-            transcript={model.transcript}
-          />
-        )}
-
-        {session?.mode === 'conversation' &&
-          savedAnswer &&
-          savedAnswer.sequence <= 2 &&
-          dialogue?.input_sources?.[savedAnswer.sequence - 1] === 'voice' &&
-          !isRetrying &&
-          !recall.active && (
-            <MemoryUsageReview sessionId={savedAnswer.sessionId} sequence={savedAnswer.sequence} />
-          )}
-
-        {(savedAnswer || model.transcript) && (
-          <div className="coach-gateway-banner my-3">
-            <div>
-              <p className="section-kicker !text-purple-300">DELIBERATE PRACTICE</p>
-              <p className="m-0 text-sm font-semibold text-zinc-100">
-                {savedAnswer
-                  ? 'Ready for focused feedback and Try Again on this answer?'
-                  : 'Want focused feedback on this answer? Open Coach to review.'}
-              </p>
-              <p className="mt-1 mb-0 text-xs text-zinc-400">
-                {savedAnswer
-                  ? 'Review one high-value improvement, see a B2 rewrite, and re-speak your answer.'
-                  : 'Send your answer to Eva to unlock focused feedback and re-speaking.'}
-              </p>
-            </div>
-            <Button
-              className="secondary-action shrink-0 !border-purple-500/30 hover:!bg-purple-500/20"
-              isDisabled={model.busy || !model.canChangeSession || model.practice.tag !== 'active'}
-              onPress={() => onNavigate?.('coach')}
-            >
-              Open Coach →
-            </Button>
-          </div>
-        )}
-
-        <details className="chat-collapsible-diagnostics my-3">
-          <summary className="chat-collapsible-summary">Audio &amp; Voice Settings</summary>
-          <div className="flex flex-col gap-4 p-4 border border-white/8 rounded-xl bg-black/30 mt-2">
-            <SpeechPanel speech={speech} transcript={model.transcript} />
-            <TimingPanel timing={model.timing} />
-          </div>
-        </details>
-      </DialogueStream>
-
-      <PracticeChatComposer
-        answerSequence={session ? session.turnCount + 1 : undefined}
-        busy={model.busy || model.practice.tag !== 'active'}
-        currentRequestId={model.currentRequestId}
-        disabled={session === undefined || recall.active || isRetrying}
-        disabledReason={
-          session === undefined
-            ? 'Start a conversation above to begin.'
-            : recall.active
-              ? 'Spoken phrase recall in progress above.'
-              : undefined
-        }
-        errorMessage={sendError || model.error || model.transcriptionFailure?.message}
-        isRecording={model.status === 'recording'}
-        isRetrying={isRetrying}
-        onSend={onSend}
-        onStartRecording={actions.startRecording}
-        onStopRecording={actions.stopRecording}
-        question={session?.question}
-        recallActive={recall.active}
-        voice={composerVoice(model, actions)}
-        sessionId={session?.sessionId}
-        transcript={model.transcript}
-        transcribing={model.transcribing}
-      />
-    </section>
+      <ConversationExtras {...props} session={session} />
+    </TalkScreen>
   );
 }

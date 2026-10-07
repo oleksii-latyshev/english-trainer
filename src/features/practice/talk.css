@@ -1,0 +1,162 @@
+/*
+ * The Talk conversation screen (docs/ui/DESIGN_BRIEF.md 6.2 to 6.5, 7), built on the --et-* tokens.
+ * Below 1180px the Eva stage column leaves and a small Eva joins the header; below 1100px (the
+ * rail breakpoint) shortcut hints go too.
+ */
+.practice-screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.talk {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.talk-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.talk-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Header */
+.talk-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--et-line2);
+}
+
+.talk-header-eva {
+  display: none;
+  flex: none;
+}
+
+.talk-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.talk-mode-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.talk-mode-step {
+  color: var(--et-faint);
+  font-size: 12px;
+}
+
+.talk-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.talk-progress-track {
+  width: 120px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--et-surface3);
+}
+
+.talk-progress-fill {
+  height: 100%;
+  background: var(--et-accent);
+  transition: width 0.3s ease;
+}
+
+.talk-progress-count {
+  color: var(--et-muted);
+  font: 500 13px / 1 var(--font-mono);
+}
+
+.talk-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.talk-timing {
+  display: grid;
+  gap: 10px;
+  min-width: 260px;
+  padding: 4px;
+}
+
+.talk-timing-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.talk-timing dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.talk-timing dl > div {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--et-surface2);
+}
+
+.talk-timing dt {
+  color: var(--et-faint);
+  font-size: 11px;
+}
+
+.talk-timing dd {
+  margin: 2px 0 0;
+  font: 500 13px / 1.2 var(--font-mono);
+}
+
+.talk-timing p {
+  margin: 0;
+  color: var(--et-faint);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 1180px) {
+  .talk-header-eva {
+    display: flex;
+  }
+}
+
+@media (max-width: 1100px) {
+  .talk-header {
+    height: 56px;
+    padding: 0 16px;
+  }
+
+  .talk-progress {
+    margin-left: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talk-progress-fill {
+    transition: none;
+  }
+}

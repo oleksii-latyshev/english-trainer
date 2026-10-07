@@ -27,6 +27,8 @@
   --et-on-warn: #2a1a00;
   --et-warn-bg: rgba(242, 182, 90, 0.12);
   --et-warn-line: rgba(242, 182, 90, 0.35);
+  --et-eva-text: #d9d9de; /* Eva's reply text */
+  --et-live-text: #cfefea; /* live transcript */
   --et-link: #c4b8ff;
   --et-link-hover: #e0d9ff;
   --et-knob: #ffffff;
@@ -61,6 +63,8 @@
   --et-on-warn: #ffffff;
   --et-warn-bg: rgba(242, 160, 60, 0.12);
   --et-warn-line: rgba(200, 120, 20, 0.35);
+  --et-eva-text: #3f3f46;
+  --et-live-text: #0b5f54;
   --et-link: #5b47d6;
   --et-link-hover: #3f2db5;
   --et-orb-idle: #9c98b8;

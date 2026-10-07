@@ -1,6 +1,8 @@
+import type { FollowUpState } from '@/features/conversation/FollowUpPanel';
 import type { TurnFeedback } from '@/lib/types';
 import type { SessionDetails } from './practiceState';
 import type { SentAnswer } from './sentAnswer';
+import type { SendFailure } from './turnState';
 
 export function matchingSentAnswer(
   answer: SentAnswer | null,
@@ -100,4 +102,13 @@ export function canContinueCoach(
     gate.canChangeSession &&
     !gate.isBusy
   );
+}
+
+/** A failed send as the turn screen shows it; only a missing setup cannot be fixed by retrying. */
+export function sendFailure(state: FollowUpState): SendFailure | undefined {
+  if (state.tag !== 'error') return undefined;
+  return {
+    message: state.message,
+    needsSetup: state.code === 'unavailable' || state.code === 'unauthorized',
+  };
 }

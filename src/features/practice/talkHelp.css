@@ -1,0 +1,118 @@
+/* Help bar */
+.talk-help-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.talk-help-label {
+  margin-right: 4px;
+  color: var(--et-faint);
+  font-size: 13px;
+}
+
+.talk-chip {
+  height: 32px;
+  min-height: 0;
+  padding: 0 14px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  background: var(--et-surface);
+  color: var(--et-fg);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.talk-chip[aria-pressed="true"] {
+  border-color: color-mix(in oklab, var(--et-accent) 50%, transparent);
+  background: color-mix(in oklab, var(--et-accent) 18%, var(--et-surface));
+}
+
+.talk-chip-static {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  background: var(--et-surface);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.talk-help-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--et-line);
+  border-radius: 18px;
+  background: var(--et-surface);
+}
+
+.talk-help-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.talk-help-caption {
+  color: var(--et-faint);
+  font-size: 12px;
+}
+
+.talk-help-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.talk-help-arrow {
+  color: var(--et-faint);
+}
+
+.talk-help-example {
+  margin: 0;
+  color: var(--et-eva-text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.talk-help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.talk-help-text {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.talk-help-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.talk-help-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--et-line);
+  border-radius: 12px;
+  background: var(--et-bg);
+  color: var(--et-fg);
+  font: 400 14px / 1.5 var(--font-sans);
+  resize: none;
+}
+
+.talk-help-textarea:focus {
+  outline: 2px solid var(--et-me);
+  outline-offset: 1px;
+}

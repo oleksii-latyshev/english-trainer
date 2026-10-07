@@ -1,0 +1,158 @@
+/* Eva stage */
+.talk-stage {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 300px;
+  box-sizing: border-box;
+  padding: 40px 24px 24px;
+  border-right: 1px solid var(--et-line2);
+  overflow-y: auto;
+}
+
+.talk-stage-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.talk-stage-actor {
+  color: var(--et-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.talk-stage-actor[data-actor="learner"] {
+  color: var(--et-me);
+}
+
+.talk-stage-actor[data-actor="eva"] {
+  color: var(--et-accent);
+}
+
+.talk-stage-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.talk-stage-hint {
+  max-width: 220px;
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.talk-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: auto;
+  padding: 16px;
+  border: 1px solid var(--et-line);
+  border-radius: 18px;
+  background: var(--et-surface);
+}
+
+.talk-flow-title {
+  color: var(--et-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.talk-flow-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.talk-flow-input {
+  color: var(--et-faint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.talk-switch {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 13px;
+}
+
+.talk-seg {
+  display: flex;
+  padding: 2px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  background: var(--et-bg);
+}
+
+.talk-seg-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.talk-seg-group legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.talk-seg label {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.talk-seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.talk-seg span {
+  flex: 1;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--et-muted);
+  font: 500 12px / 26px var(--font-sans);
+  text-align: center;
+}
+
+.talk-seg input:checked + span {
+  background: var(--et-surface3);
+  color: var(--et-fg);
+}
+
+.talk-seg input:disabled {
+  cursor: default;
+}
+
+.talk-seg input:disabled + span {
+  opacity: 0.5;
+}
+
+.talk-seg input:focus-visible + span {
+  outline: 2px solid var(--et-accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 1180px) {
+  .talk-stage {
+    display: none;
+  }
+}

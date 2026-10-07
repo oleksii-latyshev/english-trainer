@@ -20,6 +20,8 @@ describe('buildDialogueMessages', () => {
     const eva = msgs.filter((m) => m.id.endsWith('-assistant'));
     expect(eva[0].answeredBy).toBe('Apple on-device (backup)');
     expect(eva[1].answeredBy).toBeUndefined();
+    expect(eva[0].isBackup).toBe(true);
+    expect(eva[1].isBackup).toBe(false);
   });
 
   it('renders fallback prompt when dialogue is null', () => {

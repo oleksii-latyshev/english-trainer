@@ -1,0 +1,202 @@
+import { Button, Kbd } from '@heroui/react';
+import { type ReactNode, useState } from 'react';
+import { usePreferredMicrophone } from '@/audio/devicePreference';
+import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import { setConversationFlow } from '@/lib/conversationFlowPreferences';
+import type { PracticeDialogue } from '@/lib/dialogueTypes';
+import { Composer } from './Composer';
+import { Dialogue } from './Dialogue';
+import { EvaStage } from './EvaStage';
+import { HelpBar, type HelpLevel } from './HelpBar';
+import type { InputSource } from './lib/inputSource';
+import type { SessionDetails } from './lib/practiceState';
+import { evaMoodFor, type SendFailure } from './lib/turnState';
+import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { TalkHeader } from './TalkHeader';
+import { TurnNotice } from './TurnNotice';
+import { useTalkTurn } from './useTalkTurn';
+import './talk.css';
+import './talkCards.css';
+import './talkComposer.css';
+import './talkDialogue.css';
+import './talkHelp.css';
+import './talkStage.css';
+
+export type TalkScreenName = 'home' | 'practice' | 'coach' | 'memory' | 'summary' | 'settings';
+
+type Props = {
+  mode: 'conversation' | 'coach';
+  model: PracticeViewModel;
+  actions: PracticeActions;
+  speech: ReturnType<typeof useSystemSpeech>;
+  session: SessionDetails;
+  dialogue: PracticeDialogue | null;
+  historyError: string;
+  retryHistory: () => void;
+  pendingReply?: string;
+  sendError?: SendFailure;
+  /** The question the learner is answering now; help is prepared for it. */
+  question: string;
+  lock: { isLocked: boolean; reason?: string };
+  isRetrying: boolean;
+  isRecalling?: boolean;
+  isContinuing?: boolean;
+  isFinishDisabled: boolean;
+  isPhraseSaved?: boolean;
+  coachStep?: string;
+  onSend: (text: string, source: InputSource) => Promise<void>;
+  onNavigate?: (screen: TalkScreenName) => void;
+  /** Extra material after the messages: recall, coaching notes, retry comparison. */
+  children?: ReactNode;
+};
+
+function helpAvailable(question: string, isRetrying: boolean, isRecalling: boolean): boolean {
+  return question !== '' && !isRetrying && !isRecalling;
+}
+
+/** The Talk screen shared by Conversation and Coach: header, Eva's stage, dialogue and composer. */
+export function TalkScreen(props: Props) {
+  const { mode, model, actions, speech, session, question, lock, isRetrying } = props;
+  const isRecalling = props.isRecalling ?? false;
+  const { actualInput } = usePreferredMicrophone();
+  const turn = useTalkTurn({
+    model,
+    actions,
+    speech,
+    sendError: props.sendError,
+    isLocked: lock.isLocked,
+    isRetrying,
+    isRecalling,
+    isContinuing: props.isContinuing ?? false,
+    pendingReply: props.pendingReply,
+    onSend: props.onSend,
+    onOpenSettings: () => props.onNavigate?.('settings'),
+  });
+  const { state, presentation, composer, flow } = turn;
+
+  // Help opens per question; a new question starts closed without an effect resetting it.
+  const helpKey = `${session.sessionId}:${session.turnCount + 1}:${question}`;
+  const [help, setHelp] = useState<{ key: string; level: HelpLevel | null }>({
+    key: helpKey,
+    level: null,
+  });
+  const helpLevel = help.key === helpKey ? help.level : null;
+  const mood = evaMoodFor(state, turn.flowSignals, {
+    isPhraseSaved: props.isPhraseSaved ?? false,
+    isHelpOpen: helpLevel !== null,
+  });
+
+  const micStatus = model.micStatus;
+  const isMicOpen = micStatus === 'opening' || micStatus === 'warming' || micStatus === 'ready';
+  const canResume = micStatus === 'paused' || micStatus === 'error';
+  const pause =
+    isMicOpen || canResume
+      ? {
+          isPaused: canResume,
+          isDisabled:
+            model.status === 'recording' || lock.isLocked || turn.isBusy || model.transcribing,
+          onPause: actions.pauseMic,
+          onResume: actions.resumeMic,
+        }
+      : undefined;
+  const fix = state.tag === 'error' ? turn.fixes[state.issue.fix] : undefined;
+
+  return (
+    <section
+      aria-label={mode === 'coach' ? 'Coach workspace' : 'Conversation workspace'}
+      className="talk"
+    >
+      <TalkHeader
+        coachStep={props.coachStep}
+        isFinishDisabled={props.isFinishDisabled}
+        isFinishing={model.practice.tag === 'finishing'}
+        mode={mode}
+        mood={mood}
+        onFinish={actions.finishPractice}
+        pause={pause}
+        targetTurns={session.targetTurns}
+        timing={model.timing}
+        turnCount={session.turnCount}
+      />
+      <div className="talk-body">
+        <EvaStage
+          flow={flow}
+          inputLabel={actualInput?.label}
+          isSendLocked={lock.isLocked}
+          mood={mood}
+          onFlowChange={setConversationFlow}
+          presentation={presentation}
+        />
+        <div className="talk-main">
+          <Dialogue
+            currentQuestion={question}
+            dialogue={props.dialogue}
+            historyError={props.historyError}
+            onPlaySpeech={speech.play}
+            pendingReply={props.pendingReply}
+            retryHistory={props.retryHistory}
+          >
+            {model.practiceError && <TurnNotice message={model.practiceError} />}
+            {props.children}
+          </Dialogue>
+          <div className="talk-composer-zone">
+            <div className="talk-composer-inner">
+              {state.tag === 'error' && fix && (
+                <TurnNotice message={state.issue.message}>
+                  <Button onPress={fix.run} size="sm" variant="secondary">
+                    {fix.label}
+                  </Button>
+                </TurnNotice>
+              )}
+              {helpAvailable(question, isRetrying, isRecalling) && (
+                <HelpBar
+                  disabled={
+                    turn.isBusy ||
+                    composer.isSending ||
+                    model.status === 'recording' ||
+                    model.transcribing ||
+                    lock.isLocked
+                  }
+                  key={helpKey}
+                  level={helpLevel}
+                  onLevelChange={(level) => setHelp({ key: helpKey, level })}
+                  question={question}
+                  sequence={session.turnCount + 1}
+                  sessionId={session.sessionId}
+                />
+              )}
+              <Composer
+                draft={composer.draft}
+                isBusy={turn.isBusy}
+                isHandsFree={flow.handsFree}
+                isLocked={lock.isLocked}
+                isSending={composer.isSending}
+                level={model.level}
+                lockedReason={lock.reason}
+                onCancel={actions.cancelRecording}
+                onChangeDraft={composer.changeDraft}
+                onHold={actions.holdListening}
+                onResume={actions.resumeMic}
+                onSend={composer.sendDraft}
+                onStart={composer.startRecording}
+                onStop={actions.stopRecording}
+                presentation={presentation}
+                state={state}
+              />
+              <div className="talk-hints">
+                <span>
+                  <Kbd>Esc</Kbd>
+                  cancel listening
+                </span>
+                <span>
+                  <Kbd>⌘ ↩</Kbd>
+                  send a typed answer
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
