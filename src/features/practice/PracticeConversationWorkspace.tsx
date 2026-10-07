@@ -6,6 +6,7 @@ import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { DailyRecallPanel } from './DailyRecallPanel';
 import { DialogueStream } from './DialogueStream';
+import { composerVoice } from './lib/composerVoice';
 import type { InputSource } from './lib/inputSource';
 import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
@@ -217,6 +218,7 @@ export function PracticeConversationWorkspace({
         onStopRecording={actions.stopRecording}
         question={session?.question}
         recallActive={recall.active}
+        voice={composerVoice(model, actions)}
         sessionId={session?.sessionId}
         transcript={model.transcript}
         transcribing={model.transcribing}

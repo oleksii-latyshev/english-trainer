@@ -1,17 +1,39 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
-import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
-import type { ActualAudioInput } from '@/audio/types';
-import { type CaptureState, type Recording, viewFor } from './captureView';
+import type { MicrophoneSession } from '@/audio/microphoneSession';
+import type { PcmRecorder } from '@/audio/recordPcm';
+import type { MicrophoneController } from '@/audio/useMicrophoneSession';
+import {
+  type CaptureState,
+  isCapturing,
+  type Recording,
+  type RecordingMode,
+  viewFor,
+} from './captureView';
+import {
+  isAssistantSpeaking,
+  openRecorder,
+  sessionFor,
+  startElapsedTimer,
+  type TurnWatch,
+  watchTurn,
+} from './listening';
 import { microphoneError } from './microphoneError';
 import type { SpeechTiming } from './TimingPanel';
-import { transcribeWav } from './transcribeWav';
-import { transcriptionRecovery } from './transcriptionRecovery';
+import { createTranscriptionRunner } from './transcriptionRunner';
 import type { useSystemSpeech } from './useSystemSpeech';
 
 export type { CaptureView, RecordingStatus } from './captureView';
 
-export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
+/**
+ * Records and transcribes answers. With a microphone controller the recording uses its warm
+ * session (instant start, pre-roll, end-of-turn detection); without one every recording opens
+ * its own microphone, as the memory recall drill does.
+ */
+export function useSpeechCapture(
+  speech: ReturnType<typeof useSystemSpeech>,
+  mic?: MicrophoneController,
+) {
   const [state, setState] = useState<CaptureState>({ tag: 'idle' });
   const [timing, setTiming] = useState<SpeechTiming>({});
   const recorderRef = useRef<PcmRecorder | null>(null);
@@ -21,10 +43,19 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
   const requestIdRef = useRef(0);
   const startingRef = useRef(false);
   const transcribingRef = useRef(false);
+  const stateRef = useRef(state);
+  const speechRef = useRef(speech);
+  const micRef = useRef(mic);
+  const turnWatchRef = useRef<TurnWatch | null>(null);
+  const handlersRef = useRef({ stop: () => {}, cancel: () => {} });
+  stateRef.current = state;
+  speechRef.current = speech;
+  micRef.current = mic;
 
   useEffect(() => {
     return () => {
       requestIdRef.current += 1;
+      turnWatchRef.current?.dispose();
       // Cleanup errors cannot be shown after unmount; no data is persisted.
       void recorderRef.current?.cancel().catch(() => {});
       recorderRef.current = null;
@@ -48,13 +79,23 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
     setState({ tag: 'idle' });
   }
 
+  function clearElapsedTimer() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
+
+  function stopListening() {
+    turnWatchRef.current?.dispose();
+    turnWatchRef.current = null;
+  }
+
   function deviceLost() {
     const recorder = recorderRef.current;
     if (!recorder) return;
     const requestId = requestIdRef.current;
     recorderRef.current = null;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
+    stopListening();
+    clearElapsedTimer();
     void recorder.cancel().catch((cause) => {
       if (requestId === requestIdRef.current) {
         setState({ tag: 'error', message: microphoneError(cause) });
@@ -66,38 +107,74 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
     });
   }
 
-  async function startRecording() {
-    if (
-      startingRef.current ||
-      recorderRef.current ||
-      state.tag === 'requesting' ||
-      state.tag === 'stopping' ||
-      state.tag === 'transcribing'
-    )
-      return;
+  function watchActiveTurn(session: MicrophoneSession, mode: RecordingMode, requestId: number) {
+    turnWatchRef.current = watchTurn(
+      session,
+      mode,
+      {
+        onSpeechStarted: () =>
+          setState((current) =>
+            current.tag === 'recording' ? { ...current, heardSpeech: true } : current,
+          ),
+        onTurnEnded: () => handlersRef.current.stop(),
+        onIdleTimeout: () => handlersRef.current.cancel(),
+      },
+      () => requestId === requestIdRef.current,
+    );
+  }
+
+  function startBlocked(): boolean {
+    return startingRef.current || recorderRef.current !== null || isCapturing(stateRef.current);
+  }
+
+  function enterRecording(
+    recorder: PcmRecorder,
+    session: MicrophoneSession | null,
+    mode: RecordingMode,
+    requestId: number,
+    requestedAtMs: number,
+  ) {
+    recorderRef.current = recorder;
+    const startedAt = performance.now();
+    setTiming({ captureStartMs: startedAt - requestedAtMs });
+    timerRef.current = startElapsedTimer(recorder, startedAt, (elapsedMs, level) =>
+      setState((state) => (state.tag === 'recording' ? { ...state, elapsedMs, level } : state)),
+    );
+    if (session) watchActiveTurn(session, mode, requestId);
+    setState({
+      tag: 'recording',
+      elapsedMs: 0,
+      level: 0,
+      mode,
+      held: false,
+      heardSpeech: false,
+      actualInput: recorder.actualInput,
+    });
+  }
+
+  async function beginRecording(mode: RecordingMode) {
+    if (startBlocked()) return;
+    const session = sessionFor(micRef.current, mode);
+    if (mode === 'auto' && !session) return;
     startingRef.current = true;
     const requestId = ++requestIdRef.current;
-    speech.stop();
+    const requestedAtMs = performance.now();
+    const assistantWasSpeaking = isAssistantSpeaking(speechRef.current);
+    speechRef.current.stop();
     discardRecording();
     setTiming({});
     setState({ tag: 'requesting' });
     try {
-      const recorder = await startPcmRecording(deviceLost);
+      const recorder = await openRecorder(session, {
+        mode,
+        assistantWasSpeaking,
+        onDeviceLost: deviceLost,
+      });
       if (requestId !== requestIdRef.current) {
         await recorder.cancel();
         return;
       }
-      recorderRef.current = recorder;
-      const actualInput = recorder.actualInput;
-      const startedAt = performance.now();
-      timerRef.current = setInterval(() => {
-        setState((current) =>
-          current.tag === 'recording'
-            ? { ...current, elapsedMs: performance.now() - startedAt }
-            : current,
-        );
-      }, 100);
-      setState({ tag: 'recording', elapsedMs: 0, actualInput });
+      enterRecording(recorder, session, mode, requestId, requestedAtMs);
     } catch (cause) {
       if (requestId === requestIdRef.current) {
         setState({ tag: 'error', message: microphoneError(cause) });
@@ -109,20 +186,21 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
 
   async function stopRecording() {
     const recorder = recorderRef.current;
-    if (!recorder || state.tag !== 'recording') return;
+    const current = stateRef.current;
+    if (!recorder || current.tag !== 'recording') return;
     const requestId = requestIdRef.current;
     const speechStoppedAtMs = performance.now();
-    const actualInput = state.actualInput;
+    const actualInput = current.actualInput;
     recorderRef.current = null;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    setState({ tag: 'stopping', elapsedMs: state.elapsedMs, actualInput });
+    stopListening();
+    clearElapsedTimer();
+    setState({ ...current, tag: 'stopping', level: 0, held: false });
     try {
       const startedAt = performance.now();
       const result = await recorder.stop();
       if (requestId !== requestIdRef.current) return;
-      setTiming((current) => ({
-        ...current,
+      setTiming((timing) => ({
+        ...timing,
         captureFinalizationMs: performance.now() - startedAt,
       }));
       const playbackUrl = URL.createObjectURL(result.wav);
@@ -155,77 +233,37 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
     }
   }
 
-  async function runTranscription(
-    requestId: number,
-    recording: Recording,
-    wav: Blob,
-    actualInput?: ActualAudioInput,
-  ) {
-    transcribingRef.current = true;
-    setState({
-      tag: 'transcribing',
-      playbackUrl: recording.playbackUrl,
-      durationMs: recording.durationMs,
-      speechStoppedAtMs: recording.speechStoppedAtMs,
-      actualInput,
-    });
-    try {
-      const { text, sttMs } = await transcribeWav(wav);
-      handleTranscript(requestId, recording, text, sttMs, actualInput);
-    } catch (cause) {
-      handleTranscriptionError(requestId, recording, cause, actualInput);
-    } finally {
-      transcribingRef.current = false;
-    }
-  }
-
-  function handleTranscript(
-    requestId: number,
-    recording: Recording,
-    text: string,
-    sttMs: number,
-    actualInput?: ActualAudioInput,
-  ) {
-    if (requestId !== requestIdRef.current) return;
-    setTiming((current) => ({ ...current, sttMs }));
-    if (!text.trim()) {
-      discardRecording();
-      setState({
-        tag: 'error',
-        message: '',
-        actualInput,
-        failure: {
-          kind: 'record_again',
-          message: 'No speech was detected. Try speaking closer to the microphone.',
-        },
-      });
-      return;
-    }
-    discardRecording();
-    setState({
-      tag: 'transcript',
-      text,
-      durationMs: recording.durationMs,
-      speechStoppedAtMs: recording.speechStoppedAtMs,
-      actualInput,
+  /** Abandons listening or recording without transcribing or sending anything. */
+  function cancelRecording() {
+    const recorder = recorderRef.current;
+    const current = stateRef.current;
+    if (!recorder && current.tag !== 'requesting') return;
+    const requestId = ++requestIdRef.current;
+    recorderRef.current = null;
+    stopListening();
+    clearElapsedTimer();
+    setState({ tag: 'idle' });
+    void recorder?.cancel().catch((cause) => {
+      if (requestId === requestIdRef.current) {
+        setState({ tag: 'error', message: microphoneError(cause) });
+      }
     });
   }
 
-  function handleTranscriptionError(
-    requestId: number,
-    recording: Recording,
-    cause: unknown,
-    actualInput?: ActualAudioInput,
-  ) {
-    if (requestId !== requestIdRef.current) return;
-    const failure = transcriptionRecovery(cause);
-    if (failure.kind === 'record_again') {
-      discardRecording();
-      setState({ tag: 'error', message: '', failure, actualInput });
-    } else {
-      setState({ ...recording, tag: 'ready', failure, actualInput });
-    }
+  function holdListening(held: boolean) {
+    turnWatchRef.current?.setHold(held);
+    setState((state) => (state.tag === 'recording' ? { ...state, held } : state));
   }
+
+  handlersRef.current = { stop: () => void stopRecording(), cancel: cancelRecording };
+
+  const runTranscription = createTranscriptionRunner({
+    requestIdRef,
+    transcribingRef,
+    setState,
+    setTiming,
+    discardRecording,
+  });
 
   async function transcribeRecording() {
     if (state.tag !== 'ready' || transcribingRef.current || !recordedWavRef.current) return;
@@ -242,21 +280,23 @@ export function useSpeechCapture(speech: ReturnType<typeof useSystemSpeech>) {
     await runTranscription(requestIdRef.current, state, recordedWavRef.current, state.actualInput);
   }
 
-  const view = viewFor(state, timing, requestIdRef.current);
-  const canChangeSession =
-    !startingRef.current &&
-    !transcribingRef.current &&
-    state.tag !== 'requesting' &&
-    state.tag !== 'recording' &&
-    state.tag !== 'stopping' &&
-    state.tag !== 'transcribing';
+  const view = viewFor(
+    state,
+    timing,
+    requestIdRef.current,
+    mic ? { status: mic.status, error: mic.error } : undefined,
+  );
+  const canChangeSession = !startingRef.current && !transcribingRef.current && !isCapturing(state);
 
   return {
     view,
     canChangeSession,
     reset,
-    startRecording,
+    startRecording: () => beginRecording('manual'),
+    startAutoListen: () => beginRecording('auto'),
     stopRecording,
+    cancelRecording,
+    holdListening,
     transcribeRecording,
     isCurrentRequest: (requestId: number) => requestId === requestIdRef.current,
   };

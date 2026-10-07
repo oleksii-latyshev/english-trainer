@@ -1,14 +1,28 @@
+import type { MicrophoneStatus } from '@/audio/microphoneManager';
 import type { ActualAudioInput } from '@/audio/types';
 import type { SpeechTiming } from './TimingPanel';
 import type { TranscriptionRecovery } from './transcriptionRecovery';
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
 
+/** `auto` listening started by itself after the assistant finished speaking; `manual` was requested. */
+export type RecordingMode = 'manual' | 'auto';
+
 export type Recording = { playbackUrl: string; durationMs: number; speechStoppedAtMs: number };
+
+export type ListeningState = {
+  elapsedMs: number;
+  /** Live input level, 0 to 1. */
+  level: number;
+  mode: RecordingMode;
+  /** "Keep listening" is on: the turn does not end by silence. */
+  held: boolean;
+  heardSpeech: boolean;
+};
 
 export type CaptureState =
   | { tag: 'idle' | 'requesting'; actualInput?: ActualAudioInput }
-  | { tag: 'recording' | 'stopping'; elapsedMs: number; actualInput?: ActualAudioInput }
+  | ({ tag: 'recording' | 'stopping'; actualInput?: ActualAudioInput } & ListeningState)
   | ({ tag: 'ready'; failure?: TranscriptionRecovery; actualInput?: ActualAudioInput } & Recording)
   | ({ tag: 'transcribing'; actualInput?: ActualAudioInput } & Recording)
   | {
@@ -38,17 +52,56 @@ export type CaptureView = {
   currentRequestId: number;
   speechStoppedAtMs?: number;
   actualInput?: ActualAudioInput;
+  level: number;
+  recordingMode?: RecordingMode;
+  held: boolean;
+  heardSpeech: boolean;
+  /** `unmanaged` when no warm microphone session is attached (each recording opens its own). */
+  micStatus: MicrophoneStatus | 'unmanaged';
+  micError: string;
 };
+
+/** Pre-roll keeps the first syllable but must not pick up the assistant's own voice. */
+export const PRE_ROLL_MS = 300;
+
+export function preRollMsFor(mode: RecordingMode, assistantWasSpeaking: boolean): number {
+  return mode === 'auto' || assistantWasSpeaking ? 0 : PRE_ROLL_MS;
+}
+
+/** A recording, its hand-off to transcription, or the wait for the microphone is in progress. */
+export function isCapturing(state: CaptureState): boolean {
+  return (
+    state.tag === 'requesting' ||
+    state.tag === 'recording' ||
+    state.tag === 'stopping' ||
+    state.tag === 'transcribing'
+  );
+}
 
 function recordingStatus(state: CaptureState): RecordingStatus {
   if (state.tag === 'transcribing' || state.tag === 'transcript') return 'ready';
   return state.tag;
 }
 
+function listeningFields(state: CaptureState) {
+  const listening = state.tag === 'recording' || state.tag === 'stopping' ? state : undefined;
+  return {
+    elapsedMs: listening?.elapsedMs ?? 0,
+    level: listening?.level ?? 0,
+    recordingMode: listening?.mode,
+    held: listening?.held ?? false,
+    heardSpeech: listening?.heardSpeech ?? false,
+  };
+}
+
 export function viewFor(
   state: CaptureState,
   timing: SpeechTiming,
   currentRequestId: number,
+  mic: { status: MicrophoneStatus | 'unmanaged'; error: string } = {
+    status: 'unmanaged',
+    error: '',
+  },
 ): CaptureView {
   const isCompleted =
     state.tag === 'ready' || state.tag === 'transcribing' || state.tag === 'transcript';
@@ -56,7 +109,9 @@ export function viewFor(
   return {
     status: recordingStatus(state),
     error: state.tag === 'error' && !state.failure ? state.message : '',
-    elapsedMs: state.tag === 'recording' || state.tag === 'stopping' ? state.elapsedMs : 0,
+    ...listeningFields(state),
+    micStatus: mic.status,
+    micError: mic.error,
     durationMs: isCompleted ? state.durationMs : 0,
     playbackUrl: isPlayback ? state.playbackUrl : undefined,
     transcript: state.tag === 'transcript' ? state.text : undefined,

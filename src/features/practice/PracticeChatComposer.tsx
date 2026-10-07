@@ -1,6 +1,10 @@
 import { Button } from '@heroui/react';
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
+import { useConversationFlow } from '@/lib/conversationFlowPreferences';
+import { ComposerFooter } from './ComposerFooter';
+import { ListeningStatus } from './ListeningStatus';
+import type { ComposerVoice } from './lib/composerVoice';
 import { clearSessionDraft, getSessionDraft, setSessionDraft } from './lib/draftStore';
 import {
   canSendPracticeInput,
@@ -8,7 +12,9 @@ import {
   resolveInputSource,
   shouldAutoSendVoiceTranscript,
 } from './lib/inputSource';
+import { autoSendAction } from './lib/sendCountdown';
 import { ScaffoldingPanel } from './ScaffoldingPanel';
+import { useAutoSendCountdown } from './useAutoSendCountdown';
 
 type Props = {
   sessionId?: number;
@@ -24,6 +30,7 @@ type Props = {
   errorMessage?: string;
   isRetrying?: boolean;
   recallActive?: boolean;
+  voice: ComposerVoice;
   onStartRecording: () => void;
   onStopRecording: () => void;
   onSend: (text: string, source: InputSource) => Promise<void>;
@@ -43,6 +50,7 @@ export function PracticeChatComposer({
   errorMessage,
   isRetrying = false,
   recallActive = false,
+  voice,
   onStartRecording,
   onStopRecording,
   onSend,
@@ -51,7 +59,7 @@ export function PracticeChatComposer({
   const [draft, setDraft] = useState('');
   const [lastRecognizedVoice, setLastRecognizedVoice] = useState<string | undefined>(undefined);
   const [isNewVoice, setIsNewVoice] = useState(false);
-  const [autoSendVoice, setAutoSendVoice] = useState(false);
+  const { preferences: flow, update: updateFlow } = useConversationFlow();
   const [isSending, setIsSending] = useState(false);
 
   const sendingRef = useRef(false);
@@ -59,7 +67,7 @@ export function PracticeChatComposer({
   const sendRef = useRef<(text: string, source: InputSource) => void>(() => {});
   const initialRequestIdRef = useRef(currentRequestId);
   const hadTranscriptAtMountRef = useRef(Boolean(transcript?.trim()));
-  const autoSendVoiceRef = useRef(autoSendVoice);
+  const flowRef = useRef(flow);
   const sendStateRef = useRef({
     busy,
     isRecording,
@@ -70,7 +78,7 @@ export function PracticeChatComposer({
     isSending,
   });
 
-  autoSendVoiceRef.current = autoSendVoice;
+  flowRef.current = flow;
   sendStateRef.current = {
     busy,
     isRecording,
@@ -80,6 +88,21 @@ export function PracticeChatComposer({
     recallActive,
     isSending: isSending || sendingRef.current,
   };
+
+  const autoSend = useAutoSendCountdown((text) => sendRef.current(text, 'voice'));
+
+  // Esc abandons listening and the edit window without sending anything.
+  const escapeActive = isRecording || autoSend.active;
+  useEffect(() => {
+    if (!escapeActive) return;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      autoSend.cancel();
+      if (isRecording) voice.onCancel();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [escapeActive, isRecording, autoSend.cancel, voice.onCancel]);
 
   // Restore existing in-memory draft if returning to the same active session
   useEffect(() => {
@@ -120,12 +143,15 @@ export function PracticeChatComposer({
       initialRequestId: initialRequestIdRef.current,
       hadTranscriptAtMount: hadTranscriptAtMountRef.current,
       processedRequestId: processedRequestIdRef.current,
-      autoSendVoice: autoSendVoiceRef.current,
+      autoSendVoice: flowRef.current.autoSendVoice,
       canSend: canSendPracticeInput(sendStateRef.current),
     });
     processedRequestIdRef.current = currentRequestId;
-    if (shouldAutoSend) sendRef.current(transcript, 'voice');
-  }, [currentRequestId, transcript, sessionId]);
+    if (!shouldAutoSend) return;
+    const delayMs = flowRef.current.autoSendDelayMs;
+    if (autoSendAction(delayMs) === 'send-now') sendRef.current(transcript, 'voice');
+    else autoSend.start(transcript, delayMs);
+  }, [currentRequestId, transcript, sessionId, autoSend.start]);
 
   async function handleTriggerSend(text: string, source: InputSource) {
     if (
@@ -164,6 +190,7 @@ export function PracticeChatComposer({
 
   function handleTextChange(event: ChangeEvent<HTMLTextAreaElement>) {
     const value = event.target.value;
+    autoSend.cancel();
     setDraft(value);
     setSessionDraft(sessionId, {
       text: value,
@@ -181,6 +208,7 @@ export function PracticeChatComposer({
   }
 
   function handleSendClick() {
+    autoSend.cancel();
     const source = resolveInputSource({ draft, recognizedText: lastRecognizedVoice, isNewVoice });
     void handleTriggerSend(draft, source);
   }
@@ -245,7 +273,10 @@ export function PracticeChatComposer({
                 aria-label="Start recording"
                 className="secondary-action"
                 isDisabled={busy || transcribing || isComposerBlocked}
-                onPress={onStartRecording}
+                onPress={() => {
+                  autoSend.cancel();
+                  onStartRecording();
+                }}
               >
                 🎤 Record
               </Button>
@@ -269,36 +300,40 @@ export function PracticeChatComposer({
           </div>
         </div>
 
+        <ListeningStatus
+          disabled={isComposerBlocked || busy || transcribing}
+          handsFree={flow.handsFree}
+          isRecording={isRecording}
+          voice={voice}
+        />
+        {autoSend.active && !isSending && (
+          <p className="m-0 flex items-center gap-3 text-xs text-purple-300" role="status">
+            <span>{autoSend.label}</span>
+            <Button
+              className="secondary-action text-xs"
+              onPress={() => {
+                autoSend.cancel();
+                handleSendClick();
+              }}
+              size="sm"
+            >
+              Send now
+            </Button>
+          </p>
+        )}
         {isNewVoice && !isSending && (
           <p className="m-0 text-xs text-zinc-400">
             Check the recognized text, especially names and technical words, before sending.
           </p>
         )}
-        <div className="composer-footer">
-          {actualInput && (
-            <span className="text-xs text-zinc-400">Last input: {actualInput.label}</span>
-          )}
-          <div className="flex items-center gap-3">
-            <label className="composer-checkbox-label">
-              <input
-                aria-label="Send voice answers automatically"
-                checked={autoSendVoice}
-                disabled={isComposerBlocked}
-                onChange={(e) => setAutoSendVoice(e.target.checked)}
-                type="checkbox"
-              />
-              <span>Send voice answers automatically</span>
-            </label>
-            {transcribing && (
-              <span className="text-xs text-purple-300 animate-pulse">Transcribing locally…</span>
-            )}
-          </div>
-          {errorMessage && (
-            <p className="error-message m-0 text-xs" role="alert">
-              {errorMessage}
-            </p>
-          )}
-        </div>
+        <ComposerFooter
+          actualInputLabel={actualInput?.label}
+          blocked={isComposerBlocked}
+          errorMessage={errorMessage}
+          flow={flow}
+          onFlowChange={updateFlow}
+          transcribing={transcribing}
+        />
       </div>
     </section>
   );

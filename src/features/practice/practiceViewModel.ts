@@ -13,6 +13,14 @@ export type PracticeViewModel = CaptureView & {
 export type PracticeActions = {
   startRecording: () => void;
   stopRecording: () => void;
+  /** Listening that starts by itself after the AI finished speaking. */
+  startAutoListen: () => void;
+  /** Abandons listening or recording without sending. */
+  cancelRecording: () => void;
+  /** "Keep listening": the turn does not end by silence while held. */
+  holdListening: (held: boolean) => void;
+  pauseMic: () => void;
+  resumeMic: () => void;
   transcribeRecording: () => void;
   resetCapture: () => void;
   startPractice: (mode?: SessionMode) => void;

@@ -25,15 +25,37 @@ contract of a roadmap feature that is not implemented yet.
 - An explicit device uses `deviceId: { exact: id }`; a missing device is a recoverable error, never
   a silent fallback to the default. The device ID is a local WebView preference. The actual input
   label is read from the acquired track. Enumerating devices never starts capture.
-- Readiness: Recording begins only after the input delivered three seconds of frames (including
-  silence); startup times out after eight seconds and releases capture. Warm-up samples are not part
-  of the answer. **Target [F2]:** one warm stream per session replaces the per-answer warm-up.
+- Microphone session (`src/audio/microphoneSession.ts`): one open stream, `AudioContext` and
+  worklet. The input is warmed up once at open (three seconds of frames, including silence); the
+  session times out after eight seconds without readiness and releases the device. Frames keep
+  flowing afterwards into a 300 ms in-memory pre-roll ring buffer, a live level and a noise-floor
+  estimate. A capture starts immediately, even before the warm-up finished, and returns the same
+  16 kHz mono WAV plus signal summary as before. Raw audio stays in memory and is discarded after
+  transcription.
+- Practice conversations keep one warm session (`useMicrophoneSession`) open while a practice
+  session is active; it is released on finish, unmount, device loss, or the user's "Pause mic"
+  (Record or Resume mic reopens it) and is reopened when the preferred device changes. macOS shows
+  its microphone indicator while the session is open. Without a session (memory recall drill,
+  Settings test) `startPcmRecording` opens, warms, captures and releases one on the same code path.
+- Pre-roll is 300 ms for a manual press, but 0 when the assistant was speaking at the press and
+  0 for auto-listening, so the assistant's own voice is not captured. Capture starts only after
+  speech ended or was stopped. The request-to-capture latency is shown in the speech timing panel
+  ("Mic Start").
+- Turn detection (`src/audio/turnDetector.ts`) is energy based with an adaptive noise floor seeded
+  from the session. A turn needs about 300 ms of speech; it ends after the configured pause of
+  silence (default 1.5 s, 1.0-3.0 s). With hands-free on, recording stops by itself at the end of
+  the turn and is transcribed as usual; "Keep listening" holds the turn open. Auto-listening that
+  hears no speech for 20 s cancels back to idle. Esc cancels listening without sending.
+- Conversation flow preferences (localStorage, `src/lib/conversationFlowPreferences.ts`, edited in
+  Settings): auto-listen (default on), hands-free turn end (on), end-of-turn pause (1500 ms),
+  auto-send of voice answers (on) and the edit window before sending (2000 ms, 0-5000 ms). After
+  a transcript the composer shows "Sending in N s - edit to stop" with "Send now"; editing the
+  draft stops the countdown; an unedited auto-sent transcript is still sent as `voice`.
+- Auto-listen runs after the AI's reply finished speaking by itself, on the Conversation screen only.
 - The Settings microphone check uses the same recorder, stops after ten seconds, offers local
   playback and discard only, and shows per-second amplitude, captured vs elapsed duration and
   reported processing flags. It never transcribes, calls a provider or saves audio. Device changes
   and checks are blocked while practice capture is active.
-- **Target [F2]:** optional voice activity detection with a configurable end-of-turn pause
-  (default ~1.5 s) and a "keep listening" control; push-to-talk remains available.
 
 ## 3. Speech recognition
 

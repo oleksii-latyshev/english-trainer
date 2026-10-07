@@ -70,7 +70,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Acceptance: median time to first token under 1 s for the chosen default; no "invalid reply"
   failures in a 20-turn session.
 
-**F2. Instant microphone and hands-free turns** `[ ]`
+**F2. Instant microphone and hands-free turns** `[~]`
 - Open the microphone once when a session starts and keep one warm stream until the session is
   paused or finished, so recording starts the moment it is requested; remove the per-answer
   three-second warm-up. Keep a short pre-roll buffer (~300 ms) so the first syllable is never cut.

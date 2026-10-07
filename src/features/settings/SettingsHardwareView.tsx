@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import type { ConversationProviderId, SetupDiagnostics } from '@/lib/types';
+import { ConversationFlowSettings } from './ConversationFlowSettings';
 import { ConversationProviderSettings } from './ConversationProviderSettings';
 import { MicrophoneSettings } from './MicrophoneSettings';
 import { ProviderResponseTest } from './ProviderResponseTest';
@@ -146,6 +147,8 @@ export function SettingsHardwareView() {
       />
 
       <MicrophoneSettings />
+
+      <ConversationFlowSettings />
 
       <Card className="border border-white/[0.08] bg-[#161619] p-5">
         <div>

@@ -75,7 +75,7 @@ export const conversationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/conversation',
   component: function ConversationComponent() {
-    const { practice, capture, speech, startPractice } = useTrainer();
+    const { practice, capture, speech, mic, startPractice } = useTrainer();
     const navigate = conversationRoute.useNavigate();
 
     return (
@@ -83,6 +83,11 @@ export const conversationRoute = createRoute({
         actions={{
           startRecording: capture.startRecording,
           stopRecording: capture.stopRecording,
+          startAutoListen: capture.startAutoListen,
+          cancelRecording: capture.cancelRecording,
+          holdListening: capture.holdListening,
+          pauseMic: mic.pause,
+          resumeMic: mic.resume,
           transcribeRecording: capture.transcribeRecording,
           resetCapture: capture.reset,
           startPractice,
@@ -121,7 +126,7 @@ export const coachRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/coach',
   component: function CoachComponent() {
-    const { practice, capture, speech, startPractice } = useTrainer();
+    const { practice, capture, speech, mic, startPractice } = useTrainer();
     const navigate = coachRoute.useNavigate();
 
     return (
@@ -129,6 +134,11 @@ export const coachRoute = createRoute({
         actions={{
           startRecording: capture.startRecording,
           stopRecording: capture.stopRecording,
+          startAutoListen: capture.startAutoListen,
+          cancelRecording: capture.cancelRecording,
+          holdListening: capture.holdListening,
+          pauseMic: mic.pause,
+          resumeMic: mic.resume,
           transcribeRecording: capture.transcribeRecording,
           resetCapture: capture.reset,
           startPractice,

@@ -53,16 +53,18 @@ record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
   → temp dir → spawn whisper-cli (ggml-base.en) → JSON → transcript → delete temp dir
 ```
 
-Each recording waits for three seconds of input frames before the Recording state, to avoid a
-quiet start observed on the MacBook microphone.
+Practice keeps one warm microphone session open (`audio/microphoneSession.ts`, owned by
+`audio/microphoneManager.ts` and the `useMicrophoneSession` hook): the three-second input warm-up
+that avoids the quiet start observed on the MacBook microphone happens once when the session opens,
+not per answer. Recording starts at once with a 300 ms pre-roll, `audio/turnDetector.ts` ends a
+turn after a pause, and `useSpeechCapture` falls back to a one-shot session where no warm one is
+provided (recall drill, Settings test).
 
 Target [F3]:
 
 - one long-lived Whisper worker per app run keeps the model loaded (Metal);
 - a larger English model chosen by measurement;
-- initial prompt = current question + recent turns + personal glossary;
-- [F2] the microphone stream opens once per session, so answers start instantly;
-- [F2] voice activity detection ends a turn after a configurable pause, with push-to-talk kept.
+- initial prompt = current question + recent turns + personal glossary.
 
 Raw audio is never written outside the temporary directory and is deleted after transcription.
 

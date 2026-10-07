@@ -1,6 +1,8 @@
 import { formatTiming } from '@/lib/formatTiming';
 
 export type SpeechTiming = {
+  /** Time from the record request to audio being captured. */
+  captureStartMs?: number;
   captureFinalizationMs?: number;
   sttMs?: number;
   ttsStartMs?: number;
@@ -10,6 +12,7 @@ type Props = { timing: SpeechTiming };
 
 export function TimingPanel({ timing }: Props) {
   if (
+    timing.captureStartMs === undefined &&
     timing.captureFinalizationMs === undefined &&
     timing.sttMs === undefined &&
     timing.ttsStartMs === undefined
@@ -25,6 +28,10 @@ export function TimingPanel({ timing }: Props) {
         </div>
       </div>
       <dl className="timing-grid-codex" aria-label="Speech pipeline timing">
+        <div className="timing-stat-box">
+          <dt>Mic Start</dt>
+          <dd>{formatTiming(timing.captureStartMs)}</dd>
+        </div>
         <div className="timing-stat-box">
           <dt>Audio Buffer</dt>
           <dd>{formatTiming(timing.captureFinalizationMs)}</dd>

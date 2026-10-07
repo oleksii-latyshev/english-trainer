@@ -266,3 +266,14 @@
   max-height: min(28dvh, 220px);
   overflow-y: auto;
 }
+
+.composer-listening {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.composer-level {
+  width: 120px;
+  height: 8px;
+}

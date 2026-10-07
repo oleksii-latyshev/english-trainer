@@ -1,5 +1,6 @@
 import { Button } from '@heroui/react';
 import { DialogueStream } from '@/features/practice/DialogueStream';
+import { composerVoice } from '@/features/practice/lib/composerVoice';
 import type { InputSource } from '@/features/practice/lib/inputSource';
 import type { SessionDetails } from '@/features/practice/lib/practiceState';
 import { coachPromptQuestion } from '@/features/practice/lib/practiceViewState';
@@ -306,6 +307,7 @@ export function CoachWorkspace({
         onStartRecording={actions.startRecording}
         onStopRecording={actions.stopRecording}
         question={currentQuestion}
+        voice={composerVoice(model, actions)}
         sessionId={session?.sessionId}
         transcript={model.transcript}
         transcribing={model.transcribing}

@@ -47,7 +47,8 @@ export function useSystemSpeech() {
     };
   }, []);
 
-  const play = (text: string, onStart?: (latencyMs: number) => void) => {
+  /** `onEnd` runs only when the utterance finishes by itself, not on stop, cancel or error. */
+  const play = (text: string, onStart?: (latencyMs: number) => void, onEnd?: () => void) => {
     const cleanText = text.trim();
     if (!cleanText) {
       setState({ tag: 'error', reason: 'empty-text' });
@@ -86,7 +87,10 @@ export function useSystemSpeech() {
       }
     };
     utterance.onend = () => {
-      if (isMounted.current && generation.current === currentGeneration) setState({ tag: 'idle' });
+      if (isMounted.current && generation.current === currentGeneration) {
+        setState({ tag: 'idle' });
+        onEnd?.();
+      }
     };
     utterance.onerror = () => {
       if (isMounted.current && generation.current === currentGeneration) {

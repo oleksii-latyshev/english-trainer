@@ -6,10 +6,11 @@ import {
   requestTurn,
   spokenTurn,
 } from '@/features/conversation/FollowUpPanel';
+import { withTurnReset } from '@/features/practice/lib/controlActions';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import { isConversationTurn, type SessionMode, type TurnFeedback } from '@/lib/types';
+import { isConversationTurn, type TurnFeedback } from '@/lib/types';
 import type { InputSource } from './lib/inputSource';
 import {
   canSendAnswer,
@@ -20,6 +21,7 @@ import {
 } from './lib/practiceViewState';
 import { PracticeConversationWorkspace } from './PracticeConversationWorkspace';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { useAutoListen } from './useAutoListen';
 import { useCoachContinue } from './useCoachContinue';
 import { useDailyRecall } from './useDailyRecall';
 import { usePracticeDialogue } from './usePracticeDialogue';
@@ -101,6 +103,17 @@ export function PracticeView({
     },
   });
 
+  const listenAfterReply = useAutoListen(
+    activeScreen === 'conversation' &&
+      practice.tag === 'active' &&
+      !model.busy &&
+      model.canChangeSession &&
+      !recall.active &&
+      !isRetrying,
+    generation,
+    actions.startAutoListen,
+  );
+
   const followUpState: FollowUpState =
     followUpRecord.requestId === currentRequestId ? followUpRecord.state : IDLE_FOLLOW_UP;
 
@@ -125,11 +138,6 @@ export function PracticeView({
     }
   }
 
-  function finishSend() {
-    pending.current = false;
-    onTurnPendingChange(false);
-  }
-
   function resetTurnState() {
     streamingReply.clear();
     setSentAnswer(null);
@@ -138,14 +146,11 @@ export function PracticeView({
   }
 
   async function handleSendTurn(customText?: string, source?: InputSource) {
-    const gate = {
-      practiceTag: practice.tag,
-      isBusy: model.busy,
-      canChangeSession: model.canChangeSession,
-    };
     if (
       !canSendAnswer({
-        ...gate,
+        practiceTag: practice.tag,
+        isBusy: model.busy,
+        canChangeSession: model.canChangeSession,
         isPending: pending.current,
         isRetrying,
         isRecalling: recall.active,
@@ -208,12 +213,17 @@ export function PracticeView({
         state: { tag: 'ready', turn: result, sentAtMs, replyAtMs },
       });
       actions.resetCapture();
-      speech.play(spokenTurn(result), (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs));
+      speech.play(
+        spokenTurn(result),
+        (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs),
+        session?.mode === 'conversation' ? () => listenAfterReply(reqId) : undefined,
+      );
     } catch (cause) {
       failSend(reqId, cause);
       throw cause;
     } finally {
-      finishSend();
+      pending.current = false;
+      onTurnPendingChange(false);
     }
   }
 
@@ -222,21 +232,12 @@ export function PracticeView({
     startRecording();
   }
 
-  const controlActions = {
-    ...actions,
-    startRecording: isRetrying
-      ? startRetry
-      : () => {
-          if (session?.mode === 'coach' && session.coachState?.is_pending) return;
-          resetTurnState();
-          startRecording();
-        },
-    startPractice: (mode?: SessionMode) => {
-      resetTurnState();
-      actions.startPractice(mode);
-    },
-    finishPractice: actions.finishPractice,
-  };
+  const controlActions = withTurnReset(actions, {
+    session,
+    isRetrying,
+    startRetry,
+    resetTurnState,
+  });
 
   return (
     <div className="practice-screen">

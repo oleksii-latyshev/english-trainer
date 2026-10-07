@@ -1,5 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
@@ -11,7 +12,8 @@ import './appShell.css';
 
 function App() {
   const speech = useSystemSpeech();
-  const capture = useSpeechCapture(speech);
+  const mic = useMicrophoneSession();
+  const capture = useSpeechCapture(speech, mic);
   const practice = usePracticeSession({
     canChangeSession: capture.canChangeSession,
     resetCapture: capture.reset,
@@ -23,6 +25,12 @@ function App() {
     practice.state.tag === 'active' ||
     practice.state.tag === 'waiting' ||
     practice.state.tag === 'finishing';
+
+  const micActive = practice.state.tag === 'active' || practice.state.tag === 'waiting';
+  const { setActive: setMicActive } = mic;
+  useEffect(() => {
+    setMicActive(micActive);
+  }, [micActive, setMicActive]);
 
   const startPractice = useCallback(
     (mode?: SessionMode) => {
@@ -47,12 +55,13 @@ function App() {
     () => ({
       speech,
       capture,
+      mic,
       practice,
       startPractice,
       startOrResumePractice,
       isSessionOpen,
     }),
-    [speech, capture, practice, startPractice, startOrResumePractice, isSessionOpen],
+    [speech, capture, mic, practice, startPractice, startOrResumePractice, isSessionOpen],
   );
 
   const previousPracticeTag = useRef(practice.state.tag);
