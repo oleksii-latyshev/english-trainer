@@ -1,35 +1,14 @@
 import { useRouterState } from '@tanstack/react-router';
-import { type ChangeEvent, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
 import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
-import { litBars } from './lib/levelMeter';
+import { LevelMeter } from './LevelMeter';
+import { MicrophoneDeviceSelect } from './MicrophoneDeviceSelect';
 import { MicrophoneTestControls } from './MicrophoneTestControls';
 import { SettingsButton } from './SettingsControls';
 import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
-
-const METER_BARS = 12;
-const METER_BAR_IDS = Array.from({ length: METER_BARS }, (_, index) => `bar-${index + 1}`);
-
-function LevelMeter({ level }: { level: number | undefined }) {
-  const lit = litBars(level, METER_BARS);
-  return (
-    // biome-ignore lint/a11y/useSemanticElements: <meter> cannot draw the design's separate bars.
-    <div
-      aria-label="Live microphone input level"
-      aria-valuemax={1}
-      aria-valuemin={0}
-      aria-valuenow={level ?? 0}
-      className="settings-meter"
-      role="meter"
-    >
-      {METER_BAR_IDS.map((id, index) => (
-        <i data-on={index < lit} key={id} />
-      ))}
-    </div>
-  );
-}
 
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();
@@ -48,15 +27,6 @@ export function MicrophoneSettings() {
   const test = useMicrophoneTest(selectedDeviceId, () => {
     void loadDevices();
   });
-
-  const handleDeviceSelect = (event: ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
-    selectDevice(value);
-  };
-
-  const isDisconnectedDevice =
-    selectedDeviceId !== '' &&
-    !deviceOptions.some((device) => device.deviceId === selectedDeviceId);
 
   const activeActualInput =
     test.state.tag === 'recording' || test.state.tag === 'stopping' || test.state.tag === 'recorded'
@@ -98,26 +68,15 @@ export function MicrophoneSettings() {
         htmlFor="microphone-select"
         title="Input device"
       >
-        <select
+        <MicrophoneDeviceSelect
           className="settings-select"
           disabled={test.isCapturing || practiceCapturing}
           id="microphone-select"
-          onChange={handleDeviceSelect}
-          ref={deviceSelectRef}
-          value={selectedDeviceId}
-        >
-          <option value="">System default</option>
-          {deviceOptions.map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label}
-            </option>
-          ))}
-          {isDisconnectedDevice && (
-            <option value={selectedDeviceId}>
-              Disconnected device ({selectedDeviceId.slice(0, 8)}…)
-            </option>
-          )}
-        </select>
+          onSelect={selectDevice}
+          options={deviceOptions}
+          selectRef={deviceSelectRef}
+          selectedDeviceId={selectedDeviceId}
+        />
         <SettingsButton
           disabled={test.isCapturing || practiceCapturing}
           onClick={() => void loadDevices()}

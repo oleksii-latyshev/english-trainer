@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { MicrophoneController } from '@/audio/useMicrophoneSession';
+import type { FirstRunGate } from '@/features/first-run/useFirstRunGate';
 import type { DueCount } from '@/features/memory/useDuePhraseCount';
 import type { usePracticeSession } from '@/features/practice/usePracticeSession';
 import type { useSpeechCapture } from '@/features/speech/useSpeechCapture';
@@ -16,6 +17,8 @@ export type TrainerContextValue = {
   isSessionOpen: boolean;
   /** Phrases due for review; shown in the sidebar and on the Talk start screen. */
   due: DueCount;
+  /** Whether this launch opens first run instead of Talk start. */
+  firstRun: FirstRunGate;
 };
 
 const TrainerContext = createContext<TrainerContextValue | null>(null);

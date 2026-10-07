@@ -1,6 +1,8 @@
-import { useRouterState } from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTrainer } from '@/context/TrainerContext';
+import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import { AppearanceSettings } from './AppearanceSettings';
 import { ConversationFlowSettings } from './ConversationFlowSettings';
@@ -21,6 +23,8 @@ async function readDiagnostics() {
 export function SettingsView() {
   const [diagnostics, setDiagnostics] = useState<DiagnosticsState>({ tag: 'loading' });
   const requestGeneration = useRef(0);
+  const { isSessionOpen, capture } = useTrainer();
+  const navigate = useNavigate();
   const hash = useRouterState({ select: (state) => state.location.hash });
 
   // The sidebar's sub-navigation and Talk's "Choose microphone" arrive here with a group's id as hash.
@@ -63,7 +67,16 @@ export function SettingsView() {
       <EvaSettingsLink />
       <ConversationFlowSettings />
       <PrivacySettings />
-      <SetupDetails onRecheck={() => void loadDiagnostics()} state={diagnostics} />
+      <SetupDetails
+        onRecheck={() => void loadDiagnostics()}
+        onRunSetupAgain={() => void navigate({ to: FIRST_RUN_PATH })}
+        setupDisabledReason={
+          isSessionOpen || !capture.canChangeSession
+            ? 'Finish or end the open conversation first: setup uses the microphone.'
+            : undefined
+        }
+        state={diagnostics}
+      />
     </div>
   );
 }

@@ -152,7 +152,7 @@
   background-color: var(--et-bg);
 }
 
-.screen-content:has(.practice-screen, .review-screen) {
+.screen-content:has(.practice-screen, .review-screen, .first-run) {
   display: flex;
   flex-direction: column;
   padding: 0;

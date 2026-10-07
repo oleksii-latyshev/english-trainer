@@ -3,6 +3,7 @@ import { Bookmark, MessageCircle, Settings } from 'lucide-react';
 import type React from 'react';
 import type { MicrophoneStatus } from '@/audio/microphoneManager';
 import { useTrainer } from '@/context/TrainerContext';
+import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import {
   activeSettingsSection,
   EVA_SETTINGS_PATH,
@@ -83,8 +84,8 @@ export function AppShell() {
 
   const activeSection = activeSettingsSection(currentPath, currentHash);
 
-  // The wrap-up is a focused page of its own: no sidebar until the learner is done with it.
-  const isFocusedPage = currentPath === '/summary';
+  // The wrap-up and first run are focused pages of their own: no sidebar until the learner is done.
+  const isFocusedPage = currentPath === '/summary' || currentPath === FIRST_RUN_PATH;
 
   return (
     <div className="app-shell">

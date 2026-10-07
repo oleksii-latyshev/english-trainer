@@ -53,8 +53,16 @@ export function useSystemSpeech() {
     };
   }, []);
 
-  /** `onEnd` runs only when the utterance finishes by itself, not on stop, cancel or error. */
-  const play = (text: string, onStart?: (latencyMs: number) => void, onEnd?: () => void) => {
+  /**
+   * `onEnd` runs only when the utterance finishes by itself, not on stop, cancel or error.
+   * `voiceURI` speaks this one line in that voice (for a sample, before the choice has settled).
+   */
+  const play = (
+    text: string,
+    onStart?: (latencyMs: number) => void,
+    onEnd?: () => void,
+    voiceURI?: string,
+  ) => {
     const cleanText = text.trim();
     if (!cleanText) {
       setState({ tag: 'error', reason: 'empty-text' });
@@ -67,8 +75,9 @@ export function useSystemSpeech() {
 
     const synthesis = window.speechSynthesis;
     const availableVoices = synthesis.getVoices();
+    const wantedVoiceURI = voiceURI ?? selectedVoiceURI;
     const voice =
-      availableVoices.find((candidate) => candidate.voiceURI === selectedVoiceURI) ??
+      availableVoices.find((candidate) => candidate.voiceURI === wantedVoiceURI) ??
       getPreferredVoice(availableVoices);
     if (!voice) {
       setVoices([]);

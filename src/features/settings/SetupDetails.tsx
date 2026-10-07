@@ -27,9 +27,14 @@ function DiagnosticLine({ label, check }: { label: string; check: SetupDiagnosti
 export function SetupDetails({
   state,
   onRecheck,
+  onRunSetupAgain,
+  setupDisabledReason,
 }: {
   state: DiagnosticsState;
   onRecheck: () => void;
+  onRunSetupAgain: () => void;
+  /** Why setup cannot open right now (a conversation is using the microphone), if it cannot. */
+  setupDisabledReason?: string;
 }) {
   return (
     <details className="settings-details settings-quiet settings-setup">
@@ -68,11 +73,19 @@ export function SetupDetails({
             )}
           </>
         )}
-        <div>
+        <div className="settings-details-actions">
           <SettingsButton onClick={onRecheck} variant="ghost">
             Recheck files
           </SettingsButton>
+          <SettingsButton
+            disabled={setupDisabledReason !== undefined}
+            onClick={onRunSetupAgain}
+            variant="ghost"
+          >
+            Run setup again
+          </SettingsButton>
         </div>
+        {setupDisabledReason && <p role="status">{setupDisabledReason}</p>}
       </div>
     </details>
   );

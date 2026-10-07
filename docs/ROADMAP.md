@@ -254,6 +254,10 @@ Ordered by expected value; revisit with real usage data before starting any of t
    ten states idle, listening, processing, thinking, speaking, happy, encouraging, curious,
    concerned, asleep, "Choose file" and "Get template"); hidden until this item.
 2. **Natural voice.** Neural TTS (local or API) with a voice the user enjoys listening to.
+   Design: first run's voice step describes each voice with a character ("warm, clear", "calm",
+   "lively"). macOS gives only the name, accent and quality tier, so first run shows those
+   ("American English · Premium"); the character words need curated voice metadata, which comes with
+   this item.
 3. **Interview packs.** Structured mock interviews with the same Talk screen.
 4. **Progress view.** Weekly trends of speaking time, words per minute, pauses and saved phrases,
    with examples from real answers.

@@ -175,6 +175,11 @@
   cursor: pointer;
 }
 
+.settings-details-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .settings-details-body {
   display: flex;
   flex-direction: column;

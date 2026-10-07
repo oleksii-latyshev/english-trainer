@@ -3,9 +3,11 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Navigate,
 } from '@tanstack/react-router';
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
+import { FirstRunView } from '@/features/first-run/FirstRunView';
 import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
 import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
@@ -15,6 +17,7 @@ import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
 import { SettingsView } from '@/features/settings/SettingsView';
 import { TalkStart } from '@/features/talk-start/TalkStart';
+import { FIRST_RUN_PATH } from '@/lib/firstRun';
 
 function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
   if (screen === 'home') return { to: '/' };
@@ -32,8 +35,12 @@ export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: function IndexComponent() {
-    const { practice, isSessionOpen, startOrResumePractice, due } = useTrainer();
+    const { practice, isSessionOpen, startOrResumePractice, due, firstRun } = useTrainer();
     const navigate = indexRoute.useNavigate();
+
+    // Launch looks for earlier use first; a brand-new learner lands on first run instead.
+    if (firstRun === 'checking') return null;
+    if (firstRun === 'show') return <Navigate replace to={FIRST_RUN_PATH} />;
 
     return (
       <TalkStart
@@ -191,6 +198,12 @@ export const settingsEvaRoute = createRoute({
   component: EvaSettingsView,
 });
 
+export const firstRunRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: FIRST_RUN_PATH,
+  component: FirstRunView,
+});
+
 export const summaryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/summary',
@@ -224,6 +237,7 @@ export const routeTree = rootRoute.addChildren([
   memoryReviewRoute,
   settingsRoute,
   settingsEvaRoute,
+  firstRunRoute,
   summaryRoute,
 ]);
 

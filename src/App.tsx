@@ -2,6 +2,7 @@ import { Toast } from '@heroui/react';
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
+import { useFirstRunGate } from '@/features/first-run/useFirstRunGate';
 import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
@@ -28,6 +29,11 @@ function App() {
     practice.state.tag === 'active' ||
     practice.state.tag === 'waiting' ||
     practice.state.tag === 'finishing';
+
+  const firstRun = useFirstRunGate({
+    isRestoring: practice.state.tag === 'loading',
+    hasSession: isSessionOpen,
+  });
 
   const micActive = practice.state.tag === 'active' || practice.state.tag === 'waiting';
   const { setActive: setMicActive } = mic;
@@ -64,8 +70,19 @@ function App() {
       startOrResumePractice,
       isSessionOpen,
       due,
+      firstRun,
     }),
-    [speech, capture, mic, practice, startPractice, startOrResumePractice, isSessionOpen, due],
+    [
+      speech,
+      capture,
+      mic,
+      practice,
+      startPractice,
+      startOrResumePractice,
+      isSessionOpen,
+      due,
+      firstRun,
+    ],
   );
 
   const previousPracticeTag = useRef(practice.state.tag);
