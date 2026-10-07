@@ -128,8 +128,10 @@ Ordered by expected value; each needs real usage data before it starts.
 2. Natural neural voice.
 3. Interview packs with realistic follow-ups.
 4. Progress view: weekly trends with examples.
-5. Menu-bar quick practice (20–90 s micro-tasks) and opt-in reminders with quiet hours; no guilt
-   mechanics, no punishment for missed days.
+5. Eva check-ins: an opt-in floating panel that asks one spontaneous question during the day
+   ("What are you working on right now?") for a 30–90 s spoken answer, with a user-set frequency,
+   quiet hours and Less often / More often / Not now in the panel; also opened from the menu bar.
+   No screen access, no guilt mechanics, no punishment for missed check-ins.
 6. Pronunciation: shadowing timing feedback, later phoneme-level scoring as a separate pipeline.
    Whisper transcripts are never presented as pronunciation grades.
 

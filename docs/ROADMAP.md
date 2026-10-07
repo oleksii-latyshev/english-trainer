@@ -82,6 +82,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - After transcription the answer is sent after a short visible edit window (~2 s); editing the
   text stops the countdown.
 - Live microphone level while listening (the first piece of the voice visual).
+- Microphone check in Settings and first run: device picker, live level, 10-second record and
+  playback.
 - Acceptance: the first word of an answer is captured and transcribed in 10 of 10 tries;
   listening starts within 200 ms of the request or of the end of AI speech; a 10-minute
   conversation without touching the keyboard or mouse.
@@ -102,6 +104,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   cancellation on the warm stream, or listening paused while the AI speaks.
 - The Talk screen voice visual from the design brief ([`ui/DESIGN_BRIEF.md`](ui/DESIGN_BRIEF.md)):
   listening, thinking and speaking states driven by real audio levels.
+- The visual is Eva, the mascot (brief §8.1): eye expressions per turn state and emotion, a small
+  face on Eva's messages, the app icon, the "Reduce motion" fallback. Settings → Eva: sphere and
+  eye colour, animation level (full / gentle / still), the explanation of every face.
 - Instrument end-of-speech → first AI audio and show it in a debug panel.
 - Acceptance: end-of-speech → first AI audio under 2.5 s median over 10 turns.
 
@@ -143,6 +148,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   glossary.
 - Session goal by time (e.g. 10 minutes) instead of a fixed number of answers; the AI varies
   question types: describe, explain, compare, give an opinion, tell a story, disagree politely.
+- An unfinished session can be continued from the start screen ("Continue: Work & technology,
+  4 min left").
 - Acceptance: three sessions on different topics feel relevant to the user's real life and work.
 
 ### Stage 3 — Remember and review
@@ -158,6 +165,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Due phrases return as short spoken tasks: the AI gives a situation, the user answers using the
   phrase. Optional shadowing: listen to an AI sentence and repeat it.
 - Due phrases are also woven into topic questions (existing learning-target context).
+- Optional two-minute spoken warm-up with due phrases before a session, chosen on the start
+  screen.
 - Freeze the existing usage-review/mastery-streak machinery: keep it working, do not extend it
   until the core loop is fast and used daily.
 
@@ -185,11 +194,22 @@ Ordered by expected value; revisit with real usage data before starting any of t
 1. **Avatar.** A 2D character with state animation driven by real audio amplitude, then a 3D
    avatar (e.g. VRM with viseme lip-sync). Real lip-sync needs TTS audio the app can analyse, so it
    likely comes with a neural local TTS (e.g. Kokoro) instead of the Web Speech API.
+   Includes the experimental upload of an own character (Rive or Lottie with Eva's states;
+   missing states fall back to Eva).
 2. **Natural voice.** Neural TTS (local or API) with a voice the user enjoys listening to.
 3. **Interview packs.** Structured mock interviews with the same Talk screen.
 4. **Progress view.** Weekly trends of speaking time, words per minute, pauses and saved phrases,
    with examples from real answers.
-5. **Quick practice from the menu bar** and opt-in reminders with quiet hours.
+5. **Eva check-ins and menu-bar quick practice.** Opt-in (off by default). A small floating panel
+   with Eva appears during the day and asks one short spontaneous question ("What are you working
+   on right now?", "Describe what is on your desk"); the app never sees the screen. The learner
+   answers aloud for 30–90 s and gets one rephrasing with Save phrase, or continues in the main
+   window. Frequency in Settings (Off / Rarely ~2 a day / Sometimes ~4 / Often ~8) with working and
+   quiet hours, and in the panel itself: Less often, More often, Not now (snooze 1 h); several
+   ignored check-ins in a row lower the frequency automatically. No streaks or guilt. The panel
+   never takes keyboard focus until clicked (non-activating panel), does not appear in Focus / Do
+   Not Disturb, over a full-screen app or while another app uses the microphone, and opens the
+   microphone only for the answer. The same panel opens on demand from a menu-bar icon.
 6. **Windows build.** Tauri, whisper.cpp, WebView2 speech synthesis, the Gemini API and the encrypted
    key file all work on Windows; Apple Foundation Models does not, so Gemini is
    the conversation provider there. Needs a Windows CI job and installer.

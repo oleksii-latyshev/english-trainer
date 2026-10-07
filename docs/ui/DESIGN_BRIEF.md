@@ -159,6 +159,10 @@ Groups:
   Gemini API key field (password-style, Save / Remove, "Saved, encrypted on this Mac" status, the
   free-tier data notice), "Test AI response" showing *first words* and *full reply* times.
 - **Voice:** system voice, speed, preview.
+- **Eva:** live preview; sphere colour (pearl, lavender, mint, peach, sky, graphite) and eye
+  colour; animation level (full / gentle / still); an explanation of every face (§8.1);
+  experimental upload of an own character (Rive or Lottie file with the same states, missing
+  states fall back to Eva).
 - **Conversation flow:** hands-free on/off, end-of-turn pause (1–3 s), auto-listen after Eva
   speaks, auto-send delay.
 - **Personalisation:** short profile (role, stack, interests, goals) and personal glossary
@@ -203,10 +207,32 @@ Notes:
 - Motion is purposeful: the voice visual and state transitions only.
 - Space for a future 2D/3D avatar replacing the orb, without redesigning the layout.
 
+### 8.1 Mascot: Eva
+
+The voice visual is also the product mascot.
+
+- **Form:** a glossy pearl-white sphere with two simple dark eyes on it: soft, slightly wide
+  rounded ovals, tall enough that the emotions read clearly. The sphere looks the same in both themes; the halo around it
+  carries the turn colour (learner teal while the learner speaks, Eva violet while Eva speaks or
+  thinks).
+- **Character:** Eva reads as feminine and kind: simple, soft dark ovals set level and a
+  little apart (no realistic irises or highlights, no tilt that reads as a frown), and a pink
+  blush under the eyes when she is happy or encouraging. No sharp or aggressive shapes.
+- **Eyes show emotion and make the conversation feel two-way:** idle (occasional blink),
+  listening (larger eyes looking at the learner, slow nod), processing (narrowed eyes), thinking
+  (glance up and away), speaking (a small light under the eyes moves with Eva's voice), happy
+  (smiling arcs: a saved phrase was used, session finished), encouraging (soft arcs on "not
+  yet"), curious (head tilt: follow-up question, help opened), concerned (tilted eyes: microphone
+  or AI problem), asleep (closed eyes: session paused).
+- **Where Eva appears:** the Talk stage, the start greeting, spoken review, first run, message
+  avatars (a small face) and the app icon. The sidebar shows a plain wordmark, so Eva never
+  appears twice on one screen.
+- With "Reduce motion" the eyes stay still and only change shape between states.
+
 ## 9. Out of scope for this design
 
-Interview packs as a separate mode, drills, progress dashboards and charts, the menu-bar quick
-practice window, gamification (XP, badges, streak pressure), pronunciation scoring, avatar art.
+Interview packs as a separate mode, drills, progress dashboards and charts, Eva check-ins and the
+menu-bar quick practice panel (after the MVP, ROADMAP "After MVP" 5), gamification (XP, badges, streak pressure), pronunciation scoring, avatar art.
 
 ## 10. Deliverables
 
