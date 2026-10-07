@@ -95,6 +95,13 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   recordings.
 - Pass an initial prompt built from the current question, recent turns, and a personal glossary
   (editable in Settings: employer stack, tools, names).
+- Design (Settings > Personalisation, hidden until the data exists): the row "Personal glossary"
+  ("Words speech recognition should know: Tauri, Kubernetes, idempotent, Oleksii…") with an
+  "Edit · 18" button that opens an editable word list; the list feeds the initial prompt above.
+- Design (Settings > Privacy): the "Keep raw audio" switch (off by default; "Off: audio is deleted
+  right after transcription"). Needs a stored retention setting and an audio path that keeps the
+  recording only when it is on; until then Settings states that audio is always deleted and shows
+  no switch.
 - Design: a live transcript bubble (dashed, with a caret, "Live transcript") grows while the learner
   speaks; needs partial results from the loaded model. The spoken Memory review has the same bubble
   while the learner answers a situation; today it shows the result only after the answer.
@@ -161,6 +168,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   interview (HR, behavioural, technical). Free topic is also possible.
 - A short personal profile (role, stack, interests, goals) feeds topic questions and the STT
   glossary.
+- Design (Settings > Personalisation, hidden until the data exists): the row "About you" with the
+  profile as one line ("Backend engineer · Rust, TypeScript · climbing, sci-fi · goal: speak up in
+  stand-ups") and an "Edit" button; the group returns to the Settings sub-navigation with it.
 - Session goal by time (e.g. 10 minutes) instead of a fixed number of answers; the AI varies
   question types: describe, explain, compare, give an opinion, tell a story, disagree politely.
 - An unfinished session can be continued from the start screen ("Continue: Work & technology,
@@ -239,7 +249,10 @@ Ordered by expected value; revisit with real usage data before starting any of t
    avatar (e.g. VRM with viseme lip-sync). Real lip-sync needs TTS audio the app can analyse, so it
    likely comes with a neural local TTS (e.g. Kokoro) instead of the Web Speech API.
    Includes the experimental upload of an own character (Rive or Lottie with Eva's states;
-   missing states fall back to Eva).
+   missing states fall back to Eva). Design: Settings > Eva has the card "Your own
+   character" (Experimental badge, drop area "Drop a Rive (.riv) or Lottie (.lottie) file", the
+   ten states idle, listening, processing, thinking, speaking, happy, encouraging, curious,
+   concerned, asleep, "Choose file" and "Get template"); hidden until this item.
 2. **Natural voice.** Neural TTS (local or API) with a voice the user enjoys listening to.
 3. **Interview packs.** Structured mock interviews with the same Talk screen.
 4. **Progress view.** Weekly trends of speaking time, words per minute, pauses and saved phrases,

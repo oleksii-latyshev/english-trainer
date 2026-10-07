@@ -1,94 +1,64 @@
-import { Card } from '@heroui/react';
 import {
-  AUTO_SEND_DELAY_RANGE_MS,
-  END_PAUSE_RANGE_MS,
-  isFullyHandsFree,
+  AUTO_SEND_CHOICES_MS,
+  autoSendChoice,
+  autoSendPatch,
+  END_PAUSE_CHOICES_MS,
   useConversationFlow,
 } from '@/lib/conversationFlowPreferences';
+import { SegmentedControl, Switch } from './SettingsControls';
+import { SettingsGroup, SettingsRow } from './SettingsGroup';
 
-function Toggle({
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="flex items-start gap-3 text-xs text-zinc-300">
-      <input
-        checked={checked}
-        className="mt-0.5"
-        onChange={(event) => onChange(event.target.checked)}
-        type="checkbox"
-      />
-      <span className="flex flex-col gap-0.5">
-        <span className="text-sm text-zinc-100">{label}</span>
-        <span className="text-zinc-400">{hint}</span>
-      </span>
-    </label>
-  );
-}
+const END_PAUSE_OPTIONS = END_PAUSE_CHOICES_MS.map((ms) => ({
+  value: ms,
+  label: `${ms / 1000} s`,
+}));
+
+const AUTO_SEND_OPTIONS = [
+  { value: 'off' as const, label: 'Off' },
+  ...AUTO_SEND_CHOICES_MS.map((ms) => ({ value: ms, label: `${ms / 1000} s` })),
+];
 
 export function ConversationFlowSettings() {
   const { preferences, update } = useConversationFlow();
   return (
-    <Card className="border border-white/[0.08] bg-[#161619] p-5">
-      <div>
-        <h2 className="text-base font-semibold text-zinc-100">Conversation flow</h2>
-        <p className="mt-1 text-xs text-zinc-400">
-          How a spoken conversation moves from one turn to the next. Press Esc to cancel listening.
-        </p>
-      </div>
-      <div className="mt-4 flex flex-col gap-4">
-        <Toggle
+    <SettingsGroup id="flow" title="Conversation flow">
+      <SettingsRow
+        description="A pause ends your turn — no button needed. Esc cancels listening."
+        title="Hands-free"
+      >
+        <Switch
+          checked={preferences.handsFree}
+          label="Hands-free"
+          onChange={(handsFree) => update({ handsFree })}
+        />
+      </SettingsRow>
+      <SettingsRow title="End-of-turn pause">
+        <SegmentedControl
+          isDisabled={!preferences.handsFree}
+          label="End-of-turn pause"
+          onChange={(endPauseMs) => update({ endPauseMs })}
+          options={END_PAUSE_OPTIONS}
+          value={preferences.endPauseMs}
+        />
+      </SettingsRow>
+      <SettingsRow title="Listen automatically after Eva speaks">
+        <Switch
           checked={preferences.autoListen}
-          hint="When Eva finishes speaking, listening starts by itself."
           label="Listen automatically after Eva speaks"
           onChange={(autoListen) => update({ autoListen })}
         />
-        <Toggle
-          checked={preferences.handsFree}
-          hint="Recording stops after a pause in your speech. Use Keep listening to think."
-          label="End my turn after a pause"
-          onChange={(handsFree) => update({ handsFree })}
+      </SettingsRow>
+      <SettingsRow
+        description="With hands-free and auto-listen both on, answers are sent as soon as they are transcribed."
+        title="Auto-send after review"
+      >
+        <SegmentedControl
+          label="Auto-send after review"
+          onChange={(choice) => update(autoSendPatch(choice))}
+          options={AUTO_SEND_OPTIONS}
+          value={autoSendChoice(preferences)}
         />
-        <label className="flex flex-col gap-2 text-xs text-zinc-300">
-          Pause that ends a turn: {(preferences.endPauseMs / 1000).toFixed(1)} s
-          <input
-            disabled={!preferences.handsFree}
-            max={END_PAUSE_RANGE_MS.max}
-            min={END_PAUSE_RANGE_MS.min}
-            onChange={(event) => update({ endPauseMs: Number(event.target.value) })}
-            step={100}
-            type="range"
-            value={preferences.endPauseMs}
-          />
-        </label>
-        <Toggle
-          checked={preferences.autoSendVoice}
-          hint="The transcript is sent after a short window in which you can edit it."
-          label="Send voice answers automatically"
-          onChange={(autoSendVoice) => update({ autoSendVoice })}
-        />
-        <label className="flex flex-col gap-2 text-xs text-zinc-300">
-          {isFullyHandsFree(preferences)
-            ? 'Hands-free with auto-listen: answers are sent as soon as they are transcribed.'
-            : `Edit window before sending: ${(preferences.autoSendDelayMs / 1000).toFixed(1)} s`}
-          <input
-            disabled={!preferences.autoSendVoice || isFullyHandsFree(preferences)}
-            max={AUTO_SEND_DELAY_RANGE_MS.max}
-            min={AUTO_SEND_DELAY_RANGE_MS.min}
-            onChange={(event) => update({ autoSendDelayMs: Number(event.target.value) })}
-            step={500}
-            type="range"
-            value={preferences.autoSendDelayMs}
-          />
-        </label>
-      </div>
-    </Card>
+      </SettingsRow>
+    </SettingsGroup>
   );
 }

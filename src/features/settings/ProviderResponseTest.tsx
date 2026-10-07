@@ -1,9 +1,11 @@
-import { Button, Card } from '@heroui/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { answeredByLabel } from '@/lib/answeredBy';
 import { createReplyChannel } from '@/lib/replyStream';
 import { type ConversationProviderId, isConversationTurn, isProviderError } from '@/lib/types';
+import { formatSeconds } from './lib/levelMeter';
+import { SettingsButton } from './SettingsControls';
+import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type TestState =
   | { tag: 'idle' }
@@ -11,17 +13,18 @@ type TestState =
   | { tag: 'reply'; text: string; firstTokenMs?: number; latencyMs?: number; answeredBy?: string }
   | { tag: 'error'; message: string };
 
+const SAMPLE_SENTENCE = 'I am testing my English practice setup.';
+
 function providerInstructions(provider: ConversationProviderId | null): string {
+  const sample = `Sends “${SAMPLE_SENTENCE}” to`;
   if (provider === 'apple') {
-    return 'This sends the sample sentence “I am testing my English practice setup.” to your configured Apple (on-device) conversation provider. Apple Intelligence requires macOS 26+, Apple Intelligence enabled in System Settings, and on-device models downloaded.';
+    return `${sample} Apple on-device. It needs macOS 26+, Apple Intelligence enabled in System Settings, and the on-device models downloaded.`;
   }
-  if (provider === 'gemini') {
-    return 'This sends the sample sentence “I am testing my English practice setup.” to the Gemini API using your saved API key.';
-  }
+  if (provider === 'gemini') return `${sample} the Gemini API with your saved key.`;
   if (provider === 'agy') {
-    return 'This sends the sample sentence “I am testing my English practice setup.” to your configured Antigravity CLI provider. A detected agy command only confirms that a file exists; it does not confirm account authentication. If the test fails, install Antigravity CLI and sign in using its setup flow; see README → Personal Alpha setup.';
+    return `${sample} Antigravity CLI. A found agy command does not prove you are signed in; if the test fails, sign in using its setup flow (README, Personal Alpha setup).`;
   }
-  return 'This sends the sample sentence “I am testing my English practice setup.” to your saved conversation provider.';
+  return `${sample} your saved conversation provider.`;
 }
 
 function providerError(error: unknown, provider: ConversationProviderId | null): string {
@@ -53,6 +56,28 @@ function responseState(result: unknown): TestState {
   };
 }
 
+function RowDescription({
+  state,
+  provider,
+}: {
+  state: TestState;
+  provider: ConversationProviderId | null;
+}) {
+  if (state.tag === 'checking') return <>Waiting for the provider…</>;
+  if (state.tag === 'reply' && typeof state.latencyMs === 'number') {
+    return (
+      <>
+        First words{' '}
+        <span className="settings-mono">
+          {formatSeconds(state.firstTokenMs ?? state.latencyMs, 2)}
+        </span>{' '}
+        · Full reply <span className="settings-mono">{formatSeconds(state.latencyMs, 1)}</span>
+      </>
+    );
+  }
+  return <>{providerInstructions(provider)}</>;
+}
+
 export function ProviderResponseTest({ provider }: { provider: ConversationProviderId | null }) {
   const [state, setState] = useState<TestState>({ tag: 'idle' });
   const generation = useRef(0);
@@ -80,7 +105,7 @@ export function ProviderResponseTest({ provider }: { provider: ConversationProvi
         );
       });
       const result: unknown = await invoke<unknown>('generate_follow_up', {
-        transcript: 'I am testing my English practice setup.',
+        transcript: SAMPLE_SENTENCE,
         onReply,
       });
       if (request === generation.current) setState(responseState(result));
@@ -94,43 +119,33 @@ export function ProviderResponseTest({ provider }: { provider: ConversationProvi
   }
 
   return (
-    <Card className="border border-white/[0.08] bg-[#161619] p-5">
-      <h2 className="text-base font-semibold text-zinc-100">Test AI response</h2>
-      <p className="mt-1 text-xs leading-relaxed text-zinc-400">{providerInstructions(provider)}</p>
-      <div className="mt-4 flex flex-col gap-3">
-        <Button
-          isDisabled={state.tag === 'checking'}
-          onPress={() => void handleTest()}
-          size="sm"
-          variant="secondary"
-        >
-          {state.tag === 'checking' ? 'Waiting for provider…' : 'Test AI response'}
-        </Button>
-        {state.tag === 'checking' && state.streamed && (
-          <div className="rounded-lg bg-black/30 p-3" aria-live="polite">
-            <p className="text-sm text-zinc-200">{state.streamed}</p>
-          </div>
-        )}
-        {state.tag === 'reply' && (
-          <div className="rounded-lg bg-black/30 p-3" aria-live="polite">
-            <p className="whitespace-pre-line text-sm text-zinc-200">{state.text}</p>
-            {state.answeredBy && (
-              <p className="mt-2 text-xs text-zinc-400">Answered by: {state.answeredBy}</p>
-            )}
-            {typeof state.latencyMs === 'number' && (
-              <p className="mt-2 font-mono text-xs text-zinc-400">
-                First words: {state.firstTokenMs ?? state.latencyMs} ms · Full reply:{' '}
-                {state.latencyMs} ms
-              </p>
-            )}
-          </div>
-        )}
-        {state.tag === 'error' && (
-          <p className="text-sm text-rose-300" role="alert">
-            {state.message}
+    <>
+      <SettingsRow
+        description={<RowDescription provider={provider} state={state} />}
+        title="Test AI response"
+      >
+        <SettingsButton disabled={state.tag === 'checking'} onClick={() => void handleTest()}>
+          {state.tag === 'checking' ? 'Testing…' : 'Run test'}
+        </SettingsButton>
+      </SettingsRow>
+      {state.tag === 'checking' && state.streamed && (
+        <SettingsBlock tone="plain">
+          <p aria-live="polite">{state.streamed}</p>
+        </SettingsBlock>
+      )}
+      {state.tag === 'reply' && (
+        <SettingsBlock tone="plain">
+          <p aria-live="polite" style={{ whiteSpace: 'pre-line' }}>
+            {state.text}
           </p>
-        )}
-      </div>
-    </Card>
+          {state.answeredBy && <p className="settings-quiet">Answered by: {state.answeredBy}</p>}
+        </SettingsBlock>
+      )}
+      {state.tag === 'error' && (
+        <SettingsBlock role="alert" tone="error">
+          {state.message}
+        </SettingsBlock>
+      )}
+    </>
   );
 }

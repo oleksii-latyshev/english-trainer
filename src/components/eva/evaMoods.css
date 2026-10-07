@@ -222,3 +222,16 @@
     transition: none;
   }
 }
+
+/*
+ * Settings > Eva > Animation (applyEvaLook.ts sets data-eva-motion on <html>).
+ * Gentle keeps blinking, ring pulses and the talking light but drops everything that bounces;
+ * still stops all of it, so faces only change shape. The selectors outrank the per-mood rules above.
+ */
+:root[data-eva-motion="gentle"] .eva :is(.eva-core, .eva-face) {
+  animation: none;
+}
+
+:root[data-eva-motion="still"] .eva :is(.eva-core, .eva-ring, .eva-face, .eva-eye, .eva-mouth) {
+  animation: none;
+}

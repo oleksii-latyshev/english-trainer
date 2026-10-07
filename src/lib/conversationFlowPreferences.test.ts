@@ -1,6 +1,8 @@
 // @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, it } from 'bun:test';
 import {
+  autoSendChoice,
+  autoSendPatch,
   DEFAULT_CONVERSATION_FLOW,
   effectiveAutoSendDelayMs,
   getConversationFlow,
@@ -71,5 +73,15 @@ describe('effectiveAutoSendDelayMs', () => {
       2000,
     );
     expect(effectiveAutoSendDelayMs({ ...DEFAULT_CONVERSATION_FLOW, handsFree: false })).toBe(2000);
+  });
+});
+
+describe('auto-send choice', () => {
+  it('maps the stored values to one choice and back', () => {
+    expect(autoSendChoice({ ...DEFAULT_CONVERSATION_FLOW })).toBe(2000);
+    expect(autoSendChoice({ ...DEFAULT_CONVERSATION_FLOW, autoSendVoice: false })).toBe('off');
+    expect(autoSendChoice({ ...DEFAULT_CONVERSATION_FLOW, autoSendDelayMs: 500 })).toBeUndefined();
+    expect(autoSendPatch('off')).toEqual({ autoSendVoice: false });
+    expect(autoSendPatch(3000)).toEqual({ autoSendVoice: true, autoSendDelayMs: 3000 });
   });
 });

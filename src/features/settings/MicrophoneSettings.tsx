@@ -1,11 +1,35 @@
-import { Card } from '@heroui/react';
 import { useRouterState } from '@tanstack/react-router';
 import { type ChangeEvent, useEffect, useRef } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
 import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
+import { litBars } from './lib/levelMeter';
 import { MicrophoneTestControls } from './MicrophoneTestControls';
+import { SettingsButton } from './SettingsControls';
+import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+
+const METER_BARS = 12;
+const METER_BAR_IDS = Array.from({ length: METER_BARS }, (_, index) => `bar-${index + 1}`);
+
+function LevelMeter({ level }: { level: number | undefined }) {
+  const lit = litBars(level, METER_BARS);
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: <meter> cannot draw the design's separate bars.
+    <div
+      aria-label="Live microphone input level"
+      aria-valuemax={1}
+      aria-valuemin={0}
+      aria-valuenow={level ?? 0}
+      className="settings-meter"
+      role="meter"
+    >
+      {METER_BAR_IDS.map((id, index) => (
+        <i data-on={index < lit} key={id} />
+      ))}
+    </div>
+  );
+}
 
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();
@@ -13,11 +37,11 @@ export function MicrophoneSettings() {
   const hash = useRouterState({ select: (state) => state.location.hash });
   const deviceSelectRef = useRef<HTMLSelectElement | null>(null);
 
-  // Talk's "Choose microphone" lands here with #microphone: bring the device choice into view.
+  // Talk's "Choose microphone" lands here with #microphone: put the cursor on the device choice.
+  // The page itself scrolls the group into view.
   useEffect(() => {
     if (hash !== 'microphone') return;
-    deviceSelectRef.current?.scrollIntoView({ block: 'center' });
-    deviceSelectRef.current?.focus();
+    deviceSelectRef.current?.focus({ preventScroll: true });
   }, [hash]);
   const { selectedDeviceId, selectDevice, storageStatus, actualInput } = usePreferredMicrophone();
   const { deviceOptions, hasUnnamed, deviceError, loadDevices } = useAudioInputOptions();
@@ -39,88 +63,85 @@ export function MicrophoneSettings() {
       ? test.state.actualInput
       : actualInput;
 
+  const deviceDescription = [
+    hasUnnamed
+      ? 'Microphone names are hidden by macOS until you record once; then they appear.'
+      : undefined,
+    activeActualInput
+      ? `Last recorded with: ${activeActualInput.label || 'Default input'}.`
+      : undefined,
+  ]
+    .filter((line) => line !== undefined)
+    .join(' ');
+
   return (
-    <Card className="border border-white/[0.08] bg-[#161619] p-5">
-      <div>
-        <h2 className="text-base font-semibold text-zinc-100">Microphone</h2>
-        <p className="mt-1 text-xs text-zinc-400">
-          Choose an audio input and run a quick 10-second test before starting practice.
-        </p>
-      </div>
-
+    <SettingsGroup id="microphone" title="Microphone">
       {practiceCapturing && (
-        <p className="mt-3 text-xs text-amber-300" role="status">
+        <SettingsBlock role="status" tone="warn">
           Finish the active practice recording before testing or changing the microphone.
-        </p>
+        </SettingsBlock>
       )}
-
       {!storageStatus.available && (
-        <div
-          className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200"
-          role="status"
-        >
+        <SettingsBlock role="status" tone="warn">
           {storageStatus.warning ||
             'Local storage is unavailable; device selection will only apply to the current session.'}
-        </div>
+        </SettingsBlock>
       )}
-
       {deviceError && (
-        <p className="mt-4 text-xs text-rose-300" role="alert">
+        <SettingsBlock role="alert" tone="error">
           {deviceError}
-        </p>
+        </SettingsBlock>
       )}
 
-      <div className="mt-4 flex flex-col gap-4">
-        <label className="flex flex-col gap-2 text-xs text-zinc-300" htmlFor="microphone-select">
-          Input device
-          <select
-            className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 disabled:opacity-50"
-            disabled={test.isCapturing || practiceCapturing}
-            id="microphone-select"
-            onChange={handleDeviceSelect}
-            ref={deviceSelectRef}
-            value={selectedDeviceId}
-          >
-            <option value="">System default</option>
-            {deviceOptions.map((device) => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label}
-              </option>
-            ))}
-            {isDisconnectedDevice && (
-              <option value={selectedDeviceId}>
-                Disconnected device ({selectedDeviceId.slice(0, 8)}…)
-              </option>
-            )}
-          </select>
-        </label>
+      <SettingsRow
+        description={deviceDescription || undefined}
+        htmlFor="microphone-select"
+        title="Input device"
+      >
+        <select
+          className="settings-select"
+          disabled={test.isCapturing || practiceCapturing}
+          id="microphone-select"
+          onChange={handleDeviceSelect}
+          ref={deviceSelectRef}
+          value={selectedDeviceId}
+        >
+          <option value="">System default</option>
+          {deviceOptions.map((device) => (
+            <option key={device.deviceId} value={device.deviceId}>
+              {device.label}
+            </option>
+          ))}
+          {isDisconnectedDevice && (
+            <option value={selectedDeviceId}>
+              Disconnected device ({selectedDeviceId.slice(0, 8)}…)
+            </option>
+          )}
+        </select>
+        <SettingsButton
+          disabled={test.isCapturing || practiceCapturing}
+          onClick={() => void loadDevices()}
+          variant="ghost"
+        >
+          Refresh
+        </SettingsButton>
+      </SettingsRow>
 
-        {hasUnnamed && (
-          <p className="text-xs text-zinc-400">
-            Microphone names are hidden by macOS until permission is granted. Once you record,
-            device names will appear.
-          </p>
-        )}
+      <SettingsRow
+        description="Speak normally — the bar should reach the middle. It moves while you record the check below."
+        title="Level"
+      >
+        <LevelMeter level={test.state.tag === 'recording' ? test.state.level : undefined} />
+      </SettingsRow>
 
-        {activeActualInput && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-black/20 p-3 text-xs text-zinc-300">
-            <span>Last recorded input:</span>
-            <span className="font-medium text-emerald-300">
-              {activeActualInput.label || 'Default input'}
-            </span>
-          </div>
-        )}
-
-        <MicrophoneTestControls
-          test={test}
-          disabled={practiceCapturing}
-          onStart={() => {
-            speech.stop();
-            void test.startTest();
-          }}
-          onRefresh={() => void loadDevices()}
-        />
-      </div>
-    </Card>
+      <MicrophoneTestControls
+        disabled={practiceCapturing}
+        onStart={() => {
+          speech.stop();
+          void test.startTest();
+        }}
+        test={test}
+      />
+    </SettingsGroup>
   );
 }

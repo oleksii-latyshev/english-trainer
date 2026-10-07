@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react';
+import { Check } from 'lucide-react';
 import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import {
   deleteGeminiApiKey,
@@ -7,6 +7,8 @@ import {
   saveGeminiApiKey,
 } from '@/lib/geminiKey';
 import { isProviderError } from '@/lib/types';
+import { SettingsButton } from './SettingsControls';
+import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type KeyState =
   | { tag: 'loading' }
@@ -19,11 +21,18 @@ function keyErrorMessage(error: unknown): string {
   return 'Could not update the Gemini API key. Please try again.';
 }
 
-function statusLabel(status: GeminiKeyStatus): string {
-  if (!status.configured) return 'No API key saved.';
-  return status.source === 'environment'
-    ? 'Using the ENG_TRAINER_GEMINI_API_KEY environment variable.'
-    : 'Gemini API key saved — encrypted on this Mac.';
+function StatusLine({ state }: { state: KeyState }) {
+  if (state.tag === 'loading') return <>Checking for a saved API key…</>;
+  const { status } = state;
+  if (!status?.configured) return <>No API key saved.</>;
+  return (
+    <span className="settings-status">
+      <Check aria-hidden="true" size={12} strokeWidth={2.4} />
+      {status.source === 'environment'
+        ? 'Using the ENG_TRAINER_GEMINI_API_KEY environment variable'
+        : 'Saved, encrypted on this Mac'}
+    </span>
+  );
 }
 
 function currentStatus(state: KeyState): GeminiKeyStatus | null {
@@ -74,56 +83,50 @@ export function GeminiKeyField() {
   const isWorking = state.tag === 'working';
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-black/20 p-3">
-      <p className="text-xs text-zinc-300" role="status">
-        {state.tag === 'loading' && 'Checking for a saved API key…'}
-        {status && statusLabel(status)}
-      </p>
-      <form className="flex flex-wrap items-end gap-2" onSubmit={handleSubmit}>
-        <label className="flex min-w-60 flex-1 flex-col gap-1 text-xs font-medium text-zinc-300">
-          Gemini API key
-          <input
-            autoComplete="off"
-            className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
-            disabled={isWorking}
-            onChange={handleKeyInput}
-            spellCheck={false}
-            type="password"
-            value={draftKey}
-          />
-        </label>
-        <Button
-          isDisabled={isWorking || draftKey.trim().length === 0}
-          size="sm"
-          type="submit"
-          variant="secondary"
+    <>
+      <SettingsRow
+        description={<StatusLine state={state} />}
+        htmlFor="gemini-key"
+        onSubmit={handleSubmit}
+        title="Gemini API key"
+      >
+        <input
+          autoComplete="off"
+          className="settings-field"
+          disabled={isWorking}
+          id="gemini-key"
+          onChange={handleKeyInput}
+          placeholder={status?.configured ? '••••••••••••••••' : 'Paste your key'}
+          spellCheck={false}
+          type="password"
+          value={draftKey}
+        />
+        <SettingsButton disabled={isWorking || draftKey.trim().length === 0} type="submit">
+          Save
+        </SettingsButton>
+        <SettingsButton
+          disabled={isWorking || status?.source !== 'settings'}
+          onClick={() => void change(deleteGeminiApiKey)}
+          variant="ghost"
         >
-          Save key
-        </Button>
-        <Button
-          isDisabled={isWorking || status?.source !== 'settings'}
-          onPress={() => void change(deleteGeminiApiKey)}
-          size="sm"
-          variant="secondary"
-        >
-          Remove key
-        </Button>
-      </form>
+          Remove
+        </SettingsButton>
+      </SettingsRow>
       {state.tag === 'error' && (
-        <p className="text-xs text-rose-300" role="alert">
+        <SettingsBlock role="alert" tone="error">
           {state.message}
-        </p>
+        </SettingsBlock>
       )}
-      <p className="text-xs leading-relaxed text-zinc-400">
-        On the free tier, requests cost nothing and are not billed unless billing is enabled for the
-        key&apos;s Google Cloud project in Google AI Studio. When a free daily or per-minute limit
-        is reached, Gemini refuses requests (rate limited) and the app answers with Apple on-device
-        instead. Limits and usage are shown in Google AI Studio.
-      </p>
-      <p className="text-xs leading-relaxed text-zinc-400">
-        Free-tier prompts may be used by Google to improve its products and may be read by human
-        reviewers. Only your practice transcripts are sent. Get a key in Google AI Studio.
-      </p>
-    </div>
+      <SettingsBlock tone="quiet">
+        <p>
+          On the free tier, Google may use what you send to improve its models. Don't share anything
+          private in practice sessions.
+        </p>
+        <p>
+          When a free limit is reached, replies come from Apple on-device instead. Limits and usage
+          are in Google AI Studio.
+        </p>
+      </SettingsBlock>
+    </>
   );
 }

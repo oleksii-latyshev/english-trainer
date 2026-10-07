@@ -12,7 +12,8 @@ import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import type { TalkScreenName } from '@/features/practice/TalkScreen';
-import { SettingsHardwareView } from '@/features/settings/SettingsHardwareView';
+import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
+import { SettingsView } from '@/features/settings/SettingsView';
 import { TalkStart } from '@/features/talk-start/TalkStart';
 
 function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
@@ -180,8 +181,14 @@ export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
   component: function SettingsComponent() {
-    return <SettingsHardwareView />;
+    return <SettingsView />;
   },
+});
+
+export const settingsEvaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings/eva',
+  component: EvaSettingsView,
 });
 
 export const summaryRoute = createRoute({
@@ -216,6 +223,7 @@ export const routeTree = rootRoute.addChildren([
   memoryRoute,
   memoryReviewRoute,
   settingsRoute,
+  settingsEvaRoute,
   summaryRoute,
 ]);
 

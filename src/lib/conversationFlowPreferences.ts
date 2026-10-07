@@ -30,6 +30,25 @@ export function effectiveAutoSendDelayMs(preferences: ConversationFlowPreference
   return isFullyHandsFree(preferences) ? 0 : preferences.autoSendDelayMs;
 }
 
+export const END_PAUSE_CHOICES_MS = [1000, 1500, 2000, 3000] as const;
+export const AUTO_SEND_CHOICES_MS = [1000, 2000, 3000] as const;
+
+/** Settings shows auto-send as one choice: off, or the edit window in whole seconds. */
+export type AutoSendChoice = 'off' | (typeof AUTO_SEND_CHOICES_MS)[number];
+
+/** The choice matching the stored values, or undefined when the delay is not one Settings offers. */
+export function autoSendChoice(
+  preferences: ConversationFlowPreferences,
+): AutoSendChoice | undefined {
+  if (!preferences.autoSendVoice) return 'off';
+  return AUTO_SEND_CHOICES_MS.find((choice) => choice === preferences.autoSendDelayMs);
+}
+
+export function autoSendPatch(choice: AutoSendChoice): Partial<ConversationFlowPreferences> {
+  if (choice === 'off') return { autoSendVoice: false };
+  return { autoSendVoice: true, autoSendDelayMs: choice };
+}
+
 function parseBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }

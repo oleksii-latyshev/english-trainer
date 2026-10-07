@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { voicePreference } from './voicePreferences';
 import { clampSpeechRate, getPreferredVoice, getVoiceOptions } from './voices';
 
 export type SpeechState =
@@ -11,8 +12,11 @@ export type SpeechState =
 
 export function useSystemSpeech() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(null);
-  const [rate, setRateState] = useState(1);
+  // The saved choice survives restarts; an unavailable voice falls back below without erasing it.
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(
+    () => voicePreference.get().voiceURI,
+  );
+  const [rate, setRateState] = useState(() => voicePreference.get().rate);
   const [state, setState] = useState<SpeechState>({ tag: 'idle' });
   const generation = useRef(0);
   const isMounted = useRef(false);
@@ -30,6 +34,8 @@ export function useSystemSpeech() {
     const refreshVoices = () => {
       if (!isMounted.current) return;
       const discovered = synthesis.getVoices();
+      // The list is empty until macOS has loaded it; keep the saved choice meanwhile.
+      if (discovered.length === 0) return;
       setVoices(discovered);
       setSelectedVoiceURI((current) => {
         if (current && discovered.some((voice) => voice.voiceURI === current)) return current;
@@ -126,14 +132,23 @@ export function useSystemSpeech() {
     setState({ tag: 'idle' });
   };
 
-  const setRate = (nextRate: number) => setRateState(clampSpeechRate(nextRate));
+  const selectVoice = (voiceURI: string) => {
+    setSelectedVoiceURI(voiceURI);
+    voicePreference.set({ voiceURI });
+  };
+
+  const setRate = (nextRate: number) => {
+    const clamped = clampSpeechRate(nextRate);
+    setRateState(clamped);
+    voicePreference.set({ rate: clamped });
+  };
   const voiceOptions = getVoiceOptions(voices);
 
   return {
     state,
     voices: voiceOptions,
     selectedVoiceURI,
-    selectVoice: setSelectedVoiceURI,
+    selectVoice,
     rate,
     setRate,
     play,

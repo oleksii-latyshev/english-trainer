@@ -3,6 +3,13 @@ import { Bookmark, MessageCircle, Settings } from 'lucide-react';
 import type React from 'react';
 import type { MicrophoneStatus } from '@/audio/microphoneManager';
 import { useTrainer } from '@/context/TrainerContext';
+import {
+  activeSettingsSection,
+  EVA_SETTINGS_PATH,
+  isSettingsPath,
+  SETTINGS_SECTIONS,
+  type SettingsSectionId,
+} from '@/lib/settingsSections';
 import { micStatusBox } from './lib/micStatusBox';
 
 type NavEntry = {
@@ -21,7 +28,12 @@ const NAVIGATION: NavEntry[] = [
     matches: ['/', '/conversation', '/coach', '/summary'],
   },
   { path: '/memory', label: 'Memory', icon: Bookmark, matches: ['/memory', '/memory/review'] },
-  { path: '/settings', label: 'Settings', icon: Settings, matches: ['/settings'] },
+  {
+    path: '/settings',
+    label: 'Settings',
+    icon: Settings,
+    matches: ['/settings', EVA_SETTINGS_PATH],
+  },
 ];
 
 function navLabel(item: NavEntry, dueCount: number): string {
@@ -48,6 +60,7 @@ export function AppShell() {
     !capture.canChangeSession || practice.state.tag === 'waiting' || practice.isBusy;
   const navigate = useNavigate();
   const currentPath = useRouterState({ select: (state) => state.location.pathname });
+  const currentHash = useRouterState({ select: (state) => state.location.hash });
 
   function handleNavigate(item: NavEntry) {
     if (navigationLocked) return;
@@ -58,6 +71,17 @@ export function AppShell() {
     }
     void navigate({ to: item.path });
   }
+
+  function handleSettingsSection(id: SettingsSectionId) {
+    if (navigationLocked) return;
+    if (id === 'eva') {
+      void navigate({ to: EVA_SETTINGS_PATH });
+      return;
+    }
+    void navigate({ to: '/settings', hash: id });
+  }
+
+  const activeSection = activeSettingsSection(currentPath, currentHash);
 
   // The wrap-up is a focused page of its own: no sidebar until the learner is done with it.
   const isFocusedPage = currentPath === '/summary';
@@ -92,6 +116,22 @@ export function AppShell() {
               </button>
             );
           })}
+          {isSettingsPath(currentPath) && (
+            <div className="app-subnav">
+              {SETTINGS_SECTIONS.map((section) => (
+                <button
+                  aria-current={activeSection === section.id ? 'true' : undefined}
+                  className="sub-item"
+                  disabled={navigationLocked}
+                  key={section.id}
+                  onClick={() => handleSettingsSection(section.id)}
+                  type="button"
+                >
+                  {section.label}
+                </button>
+              ))}
+            </div>
+          )}
           <MicStatus status={mic.status} />
         </nav>
       )}
