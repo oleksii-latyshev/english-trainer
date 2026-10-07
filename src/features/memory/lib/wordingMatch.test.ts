@@ -31,12 +31,30 @@ describe('highlightWording', () => {
     expect(highlightWording('anything', '')).toEqual([]);
   });
 
-  it('works with a wording that has a gap marker only as far as Rust does: the dots are ignored', () => {
+  it('matches "…" pieces in order with a short gap, like the Rust check', () => {
     expect(
-      hasWording(highlightWording('the tricky part was …', 'Honestly the tricky part was it')),
+      highlightWording("I'd rather … than …", "Honestly I'd rather do it than patch it"),
+    ).toEqual([
+      { text: 'Honestly ', isMatch: false },
+      { text: "I'd rather", isMatch: true },
+      { text: ' do it ', isMatch: false },
+      { text: 'than', isMatch: true },
+      { text: ' patch it', isMatch: false },
+    ]);
+    expect(
+      hasWording(highlightWording('the tricky part was ...', 'Honestly the tricky part was it')),
     ).toBe(true);
-    expect(hasWording(highlightWording("I'd rather … than …", "I'd rather do it than not"))).toBe(
+    expect(hasWording(highlightWording("I'd rather … than …", "Than that, I'd rather wait."))).toBe(
       false,
     );
+    expect(
+      hasWording(
+        highlightWording(
+          "I'd rather … than …",
+          "I'd rather wait for the next sprint and the review of the whole design than rush.",
+        ),
+      ),
+    ).toBe(false);
+    expect(hasWording(highlightWording('…', 'anything'))).toBe(false);
   });
 });

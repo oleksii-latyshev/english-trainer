@@ -214,7 +214,9 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   interval 2 → 4 → previous × ease (4–365 days), ease +0.1 up to 3.0. `new → learning`;
   `learning → improving` once the interval reaches 4 days; a review never sets `stable`.
 - Spoken recall (daily recall, Memory review) saves transcript wording evidence and the schedule
-  change atomically. Wording match is transcript evidence, not mastery.
+  change atomically. Wording match is transcript evidence, not mastery. The saved wording must
+  appear as whole words in order; a phrase with "…" gaps matches when its pieces are said in order
+  with at most 8 of the learner's own words in each gap (`conversation/recall.rs`).
 - A Memory review run holds up to three due items, answered in order. An item the learner skips is
   closed without a score: it keeps its schedule and stays due, and its wording stays hidden. The
   first answer to an item is the one that is saved; a later try on screen is practice only.

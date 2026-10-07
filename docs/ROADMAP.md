@@ -211,10 +211,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   saved, so it is recall, and showing it would make the answer cued; F10 decides whether a cued
   mode exists, and it must not count as independent use; (3) a model answer for "With the phrase":
   today it is the wording itself (for a mistake, the corrected sentence), not a sentence written
-  around it; (4) a retry that is scored: the first answer is the saved one, a later try is practice
-  only; (5) runs of six items ("N of 6", "about 3 minutes"): a run holds three; (6) phrases saved
-  with "…" gaps ("I'd rather … than …") need a gap-aware wording check: the check reads them as one
-  unbroken sequence, so they rarely match.
+  around it; (4) runs of six items ("N of 6", "about 3 minutes"): a run holds three. Decided
+  2026-10-07: Try again in the review stays practice only; the first answer is the scored one.
 
 ### MVP acceptance
 
