@@ -15,10 +15,11 @@ src/
   router.tsx            TanStack Router route tree
   components/           shared by more than one feature (HeroUI-based)
   context/              app-wide React context; may import feature hook *types* only
+  theme/                design tokens (`theme.css`) and the light/dark switch (`applyTheme.ts`)
   audio/                shared microphone capture, device preference, signal diagnostics (Web Audio)
   lib/                  shared and DOM-free: IPC types (`*Types.ts`), settings, formatting
   features/<feature>/   one user-facing area: practice, conversation, coach, memory, speech,
-                        dashboard, settings; drills, interview, progress are unavailable prototypes
+                        dashboard, settings
     components/         that feature's components
     lib/                that feature's pure logic, tests beside it
 src-tauri/src/          session orchestrator, local STT, providers, learning engine, SQLite

@@ -13,23 +13,6 @@ import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import { SettingsHardwareView } from '@/features/settings/SettingsHardwareView';
 
-function UnavailableFeature({ title }: { title: string }) {
-  return (
-    <section className="dashboard-card mx-auto max-w-2xl" aria-labelledby="unavailable-title">
-      <p className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">
-        NOT AVAILABLE YET
-      </p>
-      <h1 className="mt-2 text-xl font-semibold text-zinc-100" id="unavailable-title">
-        {title}
-      </h1>
-      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-        This area is still a prototype. Use Daily Practice for conversation and re-speaking, or open
-        Learning Memory to review saved phrases.
-      </p>
-    </section>
-  );
-}
-
 // 1. Root route
 export const rootRoute = createRootRoute({
   component: AppShell,
@@ -54,10 +37,7 @@ export const indexRoute = createRoute({
             home: '/',
             conversation: '/conversation',
             coach: '/coach',
-            interview: '/interview',
-            drills: '/drills',
             memory: '/memory',
-            progress: '/progress',
             settings: '/settings',
             summary: '/summary',
           };
@@ -173,18 +153,6 @@ export const coachRoute = createRoute({
   },
 });
 
-export const interviewRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/interview',
-  component: () => <UnavailableFeature title="Interview practice" />,
-});
-
-export const drillsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/drills',
-  component: () => <UnavailableFeature title="Skill drills" />,
-});
-
 export const memoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory',
@@ -200,12 +168,6 @@ export const memoryRoute = createRoute({
       />
     );
   },
-});
-
-export const progressRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/progress',
-  component: () => <UnavailableFeature title="Progress tracking" />,
 });
 
 export const settingsRoute = createRoute({
@@ -244,10 +206,7 @@ export const routeTree = rootRoute.addChildren([
   indexRoute,
   conversationRoute,
   coachRoute,
-  interviewRoute,
-  drillsRoute,
   memoryRoute,
-  progressRoute,
   settingsRoute,
   summaryRoute,
 ]);

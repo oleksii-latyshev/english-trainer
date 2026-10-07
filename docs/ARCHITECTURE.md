@@ -34,9 +34,8 @@ differs, the **target** that the roadmap feature named in brackets delivers.
 
 ## 3. Frontend
 
-- **Routes:** `/` (home), `/conversation`, `/coach`, `/memory`, `/settings`, `/summary`. Interview,
-  Drills and Progress are prototypes shown as unavailable. [F5] merges Conversation and Coach into
-  one Talk route.
+- **Routes:** `/` (home), `/conversation`, `/coach`, `/memory`, `/settings`, `/summary`. The sidebar
+  shows Talk, Memory and Settings. [F5] merges Conversation and Coach into one Talk route.
 - **State:** `TrainerContext` holds the speech, capture and practice hooks shared by routes.
   Lifecycle states are discriminated unions (`captureView.ts`, `practiceState.ts`).
 - **Shared audio** lives in `src/audio/` (recorder, device preference, signal diagnostics).

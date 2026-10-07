@@ -1,0 +1,124 @@
+/*
+ * Design tokens, single source of truth (docs/ui/DESIGN_BRIEF.md section 4).
+ * Dark is the default; `data-theme="light"` on <html> switches to the light set (see applyTheme.ts).
+ * Tokens are declared unlayered so they win over the HeroUI theme layer; HeroUI's own variables are
+ * mapped onto them below, so HeroUI components pick up the look without per-component overrides.
+ */
+:root {
+  --et-bg: #0d0d10;
+  --et-surface: #16161a;
+  --et-surface2: #1e1e23;
+  --et-surface3: #27272d;
+  --et-sidebar: #111114;
+  --et-line: rgba(255, 255, 255, 0.08);
+  --et-line2: rgba(255, 255, 255, 0.06);
+  --et-fg: #f2f2f4;
+  --et-muted: #a3a3ad;
+  --et-faint: #8c8c96;
+  --et-accent: #9d8cff; /* Eva */
+  --et-on-accent: #17142b;
+  --et-me: #5bd4c0; /* learner */
+  --et-on-me: #06201c;
+  --et-ok: #a6ebbb;
+  --et-on-ok: #0d2415;
+  --et-ok-bg: rgba(166, 235, 187, 0.12);
+  --et-ok-line: rgba(166, 235, 187, 0.3);
+  --et-warn: #f2b65a;
+  --et-on-warn: #2a1a00;
+  --et-warn-bg: rgba(242, 182, 90, 0.12);
+  --et-warn-line: rgba(242, 182, 90, 0.35);
+  --et-link: #c4b8ff;
+  --et-link-hover: #e0d9ff;
+  --et-knob: #ffffff;
+  --et-radius-card: 20px;
+  --et-radius-nav: 12px;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", monospace;
+}
+
+:root[data-theme="light"] {
+  --et-bg: #f6f6f8;
+  --et-surface: #ffffff;
+  --et-surface2: #f1f1f4;
+  --et-surface3: #e5e5ea;
+  --et-sidebar: #fbfbfc;
+  --et-line: rgba(0, 0, 0, 0.09);
+  --et-line2: rgba(0, 0, 0, 0.07);
+  --et-fg: #18181b;
+  --et-muted: #52525b;
+  --et-faint: #6b6b74;
+  --et-accent: #6e5ce6;
+  --et-on-accent: #ffffff;
+  --et-me: #0b7f70;
+  --et-on-me: #ffffff;
+  --et-ok: #1c7a43;
+  --et-on-ok: #ffffff;
+  --et-ok-bg: rgba(28, 122, 67, 0.11);
+  --et-ok-line: rgba(28, 122, 67, 0.3);
+  --et-warn: #a85f00;
+  --et-on-warn: #ffffff;
+  --et-warn-bg: rgba(242, 160, 60, 0.12);
+  --et-warn-line: rgba(200, 120, 20, 0.35);
+  --et-link: #5b47d6;
+  --et-link-hover: #3f2db5;
+}
+
+/* HeroUI v3 variable mapping. Danger is left at HeroUI's value: language mistakes never use it. */
+:root {
+  --background: var(--et-bg);
+  --foreground: var(--et-fg);
+  --surface: var(--et-surface);
+  --surface-foreground: var(--et-fg);
+  --surface-secondary: var(--et-surface2);
+  --surface-secondary-foreground: var(--et-fg);
+  --surface-tertiary: var(--et-surface3);
+  --surface-tertiary-foreground: var(--et-fg);
+  --overlay: var(--et-surface2);
+  --overlay-foreground: var(--et-fg);
+  --muted: var(--et-muted);
+  --accent: var(--et-accent);
+  --accent-foreground: var(--et-on-accent);
+  --default: var(--et-surface3);
+  --default-foreground: var(--et-fg);
+  --field-background: var(--et-surface);
+  --field-foreground: var(--et-fg);
+  --field-border: var(--et-line);
+  --success: var(--et-ok);
+  --success-foreground: var(--et-on-ok);
+  --warning: var(--et-warn);
+  --warning-foreground: var(--et-on-warn);
+  --segment: var(--et-surface3);
+  --segment-foreground: var(--et-fg);
+  --border: var(--et-line);
+  --separator: var(--et-line2);
+  --focus: var(--et-accent);
+  --link: var(--et-link);
+  --radius: 0.5rem;
+}
+
+html,
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: var(--et-bg);
+  color: var(--et-fg);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea,
+kbd {
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.02em;
+}

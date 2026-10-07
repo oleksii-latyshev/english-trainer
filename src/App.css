@@ -1,49 +1,11 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "./theme/theme.css";
 @import "./features/speech/speech.css";
 @import "./features/practice/practice.css";
 @import "./features/coach/coach.css";
-
-/* Standardized Typography Tokens */
-:root {
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", -apple-system-subheadline, system-ui,
-    sans-serif;
-  --font-display:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
-  font-family: var(--font-sans);
-  color: #ededed;
-  background-color: #0d0d0f;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-
-html,
-body {
-  margin: 0;
-  min-width: 320px;
-  background-color: #0d0d0f;
-  color: #ededed;
-  font-family: var(--font-sans);
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-display);
-  letter-spacing: -0.02em;
-}
-
-button,
-input,
-select,
-textarea,
-audio,
-kbd {
-  font-family: var(--font-sans);
-}
 
 /* Custom macOS Minimalist Scrollbars */
 ::-webkit-scrollbar {
@@ -54,23 +16,11 @@ kbd {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in oklab, var(--foreground) 14%, transparent);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-/* Apple-Style Glassmorphism Cards */
-.glass-panel {
-  background: rgba(22, 22, 26, 0.75);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
-    0 12px 36px rgba(0, 0, 0, 0.45);
+  background: color-mix(in oklab, var(--foreground) 26%, transparent);
 }
 
 .panel {
@@ -105,56 +55,6 @@ kbd {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-/* Practice Voice Recorder State */
-.recorder-state {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  min-height: 120px;
-  padding: 20px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  background: rgba(14, 14, 17, 0.85);
-  backdrop-filter: blur(16px);
-}
-
-.mic-orb {
-  display: grid;
-  width: 64px;
-  height: 64px;
-  flex: none;
-  place-items: center;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  border-radius: 50%;
-  color: #34d399;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0, rgba(16, 185, 129, 0.04) 70%);
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.08);
-  transition: all 0.2s ease;
-}
-
-.recorder-state--recording .mic-orb {
-  border-color: rgba(239, 68, 68, 0.55);
-  color: #f87171;
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.35) 0, rgba(239, 68, 68, 0.08) 70%);
-  animation: pulse-recording 1.8s infinite ease-in-out;
-}
-
-@keyframes pulse-recording {
-  0%,
-  100% {
-    transform: scale(0.96);
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
-  }
-  50% {
-    transform: scale(1.04);
-    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0.22);
-  }
-}
-
-.controls {
-  margin-top: 20px;
 }
 
 /* Flagship Codex Button: Solid White, Jet Black Text */
@@ -228,37 +128,11 @@ kbd {
   font-size: 0.8rem;
 }
 
-.transcript-panel {
-  margin-top: 16px;
-}
-
-.transcript-text {
-  margin: 0;
-  color: #f4f4f5;
-  font-size: 1rem;
-  line-height: 1.7;
-  white-space: pre-wrap;
-}
-
-.empty-transcript {
-  margin: 0;
-  color: #71717a;
-  line-height: 1.6;
-}
-
 @media (max-width: 620px) {
   .panel-header {
     padding: 20px 16px 0;
   }
   .panel-content {
     padding: 16px;
-  }
-  .recorder-state {
-    min-height: 100px;
-    padding: 16px;
-  }
-  .mic-orb {
-    width: 52px;
-    height: 52px;
   }
 }
