@@ -24,6 +24,20 @@
   font-weight: 500;
 }
 
+.talk-chip-number {
+  color: var(--et-faint);
+  font: 500 11px / 1 var(--font-mono);
+}
+
+.talk-help-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--et-faint);
+  font-size: 12px;
+}
+
 .talk-chip[aria-pressed="true"] {
   border-color: color-mix(in oklab, var(--et-accent) 50%, transparent);
   background: color-mix(in oklab, var(--et-accent) 18%, var(--et-surface));

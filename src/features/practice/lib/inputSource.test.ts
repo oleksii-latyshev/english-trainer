@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   canSendPracticeInput,
+  inputSourceLabel,
   resolveInputSource,
   shouldAutoSendVoiceTranscript,
 } from './inputSource';
@@ -114,5 +115,14 @@ describe('resolveInputSource', () => {
         canSend: true,
       }),
     ).toBe(true);
+  });
+});
+
+describe('inputSourceLabel', () => {
+  it('names how an answer was given', () => {
+    expect(inputSourceLabel('voice')).toBe('spoken');
+    expect(inputSourceLabel('text')).toBe('typed');
+    expect(inputSourceLabel('edited')).toBe('edited');
+    expect(inputSourceLabel(undefined)).toBeUndefined();
   });
 });

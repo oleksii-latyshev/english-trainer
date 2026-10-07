@@ -95,6 +95,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   recordings.
 - Pass an initial prompt built from the current question, recent turns, and a personal glossary
   (editable in Settings: employer stack, tools, names).
+- Design: a live transcript bubble (dashed, with a caret, "Live transcript") grows while the learner
+  speaks; needs partial results from the loaded model.
 - Acceptance: a fixed list of 30 of the user's technical terms is recognised in at least 90% of
   readings; transcription of a 15 s answer finishes in under 1.5 s.
 
@@ -108,6 +110,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   face on Eva's messages, the app icon, the "Reduce motion" fallback. Settings → Eva: sphere and
   eye colour, animation level (full / gentle / still), the explanation of every face.
 - Instrument end-of-speech → first AI audio and show it in a debug panel.
+- Design: while Eva is thinking the mic control reads "Speak anyway" (sub "You can speak anyway") and
+  pressing it cancels the pending reply and starts listening. (Stopping Eva while she speaks, by the
+  mic or Esc, already exists; barge-in by voice is the item above.)
 - Acceptance: end-of-speech → first AI audio under 2.5 s median over 10 turns.
 
 ### Stage 2 — Help to structure spoken answers
@@ -120,6 +125,10 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - "Say it again" on any message records a second attempt and shows the comparison inline.
 - Remove the separate Coach session mode and the explicit Continue step; existing sessions stay
   readable. This also removes the `coach ↔ practice` feature dependency cycle.
+- Design details of the inline note: it appears by itself under its own message (Conversation
+  included), collapses when the next turn starts, and "Say it again" shows the second try inside the
+  note (dashed teal box, "✓ You used …") instead of the separate comparison panel. The focus point
+  is one sentence. The "Coach" chip and step name in the header go away.
 - Acceptance: a 10-turn session where feedback appears for every answer and the AI reply is never
   delayed by it.
 
@@ -130,6 +139,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Help is graduated and visible above the composer: Frame → Phrases → Example. Optional 15–30 s
   planning timer before speaking.
 - Opening help is recorded so cued answers are not counted as independent evidence.
+- Design: the help chips are numbered "1 Frame · 2 Phrases · 3 Example"; Frame adds "Plan first:
+  15 s / 30 s". Example shows the prefetched model answer at once with "Model answer — try your own
+  version after reading", Play and "Hide before speaking" (replacing today's request-then-adapt flow).
 - Acceptance: help is shown instantly (already prefetched) for at least 9 of 10 questions.
 
 **F7. Stuck rescue** `[ ]`
@@ -150,6 +162,10 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   question types: describe, explain, compare, give an opinion, tell a story, disagree politely.
 - An unfinished session can be continued from the start screen ("Continue: Work & technology,
   4 min left").
+- Design: start screen heading "What shall we talk about?", topic grid, length segment, the summary
+  line under Start ("Work & technology · 10 min · warm-up first"), and a Continue card naming the
+  topic, when it was paused and the minutes left; the Talk header shows the topic and "6:12 of
+  10:00".
 - Acceptance: three sessions on different topics feel relevant to the user's real life and work.
 
 ### Stage 3 — Remember and review
@@ -169,6 +185,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   screen.
 - Freeze the existing usage-review/mastery-streak machinery: keep it working, do not extend it
   until the core loop is fast and used daily.
+- Design: the start-screen review card offers "A 2-minute spoken warm-up before you start" with a
+  Before session / Skip today toggle.
 
 ### MVP acceptance
 

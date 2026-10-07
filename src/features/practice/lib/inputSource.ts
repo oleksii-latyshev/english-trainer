@@ -59,3 +59,17 @@ export function resolveInputSource({
   }
   return 'text';
 }
+
+/** How a learner answer reached Eva, as the message meta reads it; unknown for answers stored before it was kept. */
+export function inputSourceLabel(source: InputSource | undefined): string | undefined {
+  switch (source) {
+    case 'voice':
+      return 'spoken';
+    case 'text':
+      return 'typed';
+    case 'edited':
+      return 'edited';
+    default:
+      return undefined;
+  }
+}

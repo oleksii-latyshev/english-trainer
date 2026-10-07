@@ -1,6 +1,7 @@
 import { Button } from '@heroui/react';
 import { Bookmark, Clock, Mic, TriangleAlert } from 'lucide-react';
 import { Eva } from '@/components/eva/Eva';
+import type { DueCount } from '@/features/memory/useDuePhraseCount';
 import type { SessionMode } from '@/lib/types';
 import {
   PRIMARY_ACTION_LABEL,
@@ -9,13 +10,13 @@ import {
   reviewHint,
   reviewTitle,
 } from './lib/talkStartState';
-import { useDuePhraseCount } from './useDuePhraseCount';
 import './talkStart.css';
 
 type Props = {
   isBusy: boolean;
   error: string;
   isRestoring: boolean;
+  due: DueCount;
   /** Present while a session is open. */
   openSession?: { mode: SessionMode; turnCount: number; targetTurns: number };
   onStartOrResume: () => void;
@@ -26,11 +27,11 @@ export function TalkStart({
   isBusy,
   error,
   isRestoring,
+  due,
   openSession,
   onStartOrResume,
   onOpenMemory,
 }: Props) {
-  const due = useDuePhraseCount();
   const action = primaryAction({
     isRestoring,
     isBusy,

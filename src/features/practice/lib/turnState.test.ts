@@ -1,12 +1,13 @@
 // @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, it } from 'bun:test';
+import type { TurnIssue } from './turnIssue';
 import {
+  canPressMic,
   deriveTurnState,
   describeTurn,
   evaMoodFor,
   type FlowSignals,
   type TurnSignals,
-  turnIssue,
 } from './turnState';
 
 const QUIET: TurnSignals = {
@@ -21,7 +22,11 @@ const QUIET: TurnSignals = {
 };
 
 const FLOW: FlowSignals = { isHandsFree: true, endPauseMs: 1500 };
-const ISSUE = { message: 'Gemini did not answer.', fix: 'retry-send' } as const;
+const ISSUE: TurnIssue = {
+  message: 'Gemini did not answer.',
+  kind: 'reply',
+  fixes: ['retry-send'],
+};
 
 function derive(patch: Partial<TurnSignals>) {
   return deriveTurnState({ ...QUIET, ...patch });
@@ -84,49 +89,16 @@ describe('deriveTurnState', () => {
   });
 });
 
-describe('turnIssue', () => {
-  const base = { captureError: '', micStatus: 'ready', micError: '' } as const;
-
-  it('is empty when nothing is wrong', () => {
-    expect(turnIssue(base)).toBeNull();
-  });
-
-  it('maps a failed send to a retry, or to Settings when only setup helps', () => {
-    expect(turnIssue({ ...base, sendError: { message: 'Slow.', needsSetup: false } })).toEqual({
-      message: 'Slow.',
-      fix: 'retry-send',
-    });
-    expect(turnIssue({ ...base, sendError: { message: 'No key.', needsSetup: true } })?.fix).toBe(
-      'open-settings',
-    );
-  });
-
-  it('maps each transcription recovery to its own fix', () => {
-    const fixFor = (kind: 'setup' | 'record_again' | 'retry') =>
-      turnIssue({ ...base, transcriptionFailure: { kind, message: 'x' } })?.fix;
-    expect(fixFor('setup')).toBe('open-settings');
-    expect(fixFor('record_again')).toBe('record-again');
-    expect(fixFor('retry')).toBe('transcribe-again');
-  });
-
-  it('offers recording again for a capture error and resuming for a lost microphone', () => {
-    expect(turnIssue({ ...base, captureError: 'Permission denied.' })?.fix).toBe('record-again');
-    expect(turnIssue({ ...base, micStatus: 'error', micError: 'Mic unplugged.' })).toEqual({
-      message: 'Mic unplugged.',
-      fix: 'resume-mic',
-    });
-    expect(turnIssue({ ...base, micStatus: 'error' })?.message).toBe(
-      'The microphone is unavailable.',
-    );
-  });
-
-  it('puts a failed send ahead of an older transcription failure', () => {
-    const issue = turnIssue({
-      ...base,
-      sendError: { message: 'Send failed.', needsSetup: false },
-      transcriptionFailure: { kind: 'retry', message: 'Old.' },
-    });
-    expect(issue?.message).toBe('Send failed.');
+describe('canPressMic', () => {
+  it('follows the composer rules: live listening, paused and free states accept a press', () => {
+    expect(canPressMic({ tag: 'idle' }, false)).toBe(true);
+    expect(canPressMic({ tag: 'idle' }, true)).toBe(false);
+    expect(canPressMic({ tag: 'speaking' }, false)).toBe(true);
+    expect(canPressMic({ tag: 'listening', isLive: true, isHeld: false }, true)).toBe(true);
+    expect(canPressMic({ tag: 'listening', isLive: false, isHeld: false }, false)).toBe(false);
+    expect(canPressMic({ tag: 'transcribing' }, false)).toBe(false);
+    expect(canPressMic({ tag: 'thinking' }, false)).toBe(false);
+    expect(canPressMic({ tag: 'paused' }, true)).toBe(true);
   });
 });
 
@@ -134,7 +106,6 @@ describe('describeTurn', () => {
   it('keeps the voice visual, the label and the microphone control in agreement', () => {
     const listening = describeTurn({ tag: 'listening', isLive: true, isHeld: false }, FLOW);
     expect(listening).toMatchObject({ mood: 'listening', micVariant: 'live', micIcon: 'stop' });
-    expect(listening.hasMeter).toBe(true);
     expect(listening.stageHint).toContain('1.5 s');
 
     expect(describeTurn({ tag: 'transcribing' }, FLOW)).toMatchObject({
@@ -156,6 +127,7 @@ describe('describeTurn', () => {
   it('words the auto-listen cue and the hands-free hint', () => {
     const auto = describeTurn({ tag: 'auto-listen', isLive: true, isHeld: false }, FLOW);
     expect(auto.stageHint).toContain('Esc');
+    expect(auto.stageTitle).toBe('Listening…');
     const manual = describeTurn(
       { tag: 'listening', isLive: true, isHeld: false },
       {
@@ -165,6 +137,37 @@ describe('describeTurn', () => {
     );
     expect(manual.stageHint).toBe('Speak naturally, then press stop.');
     expect(manual.micHint).toBe('Press to finish');
+  });
+
+  it('teaches the keyboard in the idle and speaking copy', () => {
+    const idle = describeTurn({ tag: 'idle' }, FLOW);
+    expect(idle.stageHint).toBe('Press the mic or hold Space to answer.');
+    expect(idle.micHint).toBe('or hold Space');
+    expect(describeTurn({ tag: 'speaking' }, FLOW).stageHint).toBe(
+      'Start talking or press Esc to interrupt.',
+    );
+  });
+
+  it('words a failed reply as no reply yet and keeps other problems accurate', () => {
+    const reply = describeTurn(
+      {
+        tag: 'error',
+        issue: { message: 'x', kind: 'reply', fixes: ['switch-to-apple', 'retry-send'] },
+      },
+      FLOW,
+    );
+    expect(reply).toMatchObject({
+      stageTitle: 'No reply yet',
+      micTitle: 'Eva couldn’t answer',
+      micHint: 'Try again or switch model',
+    });
+    const retryOnly = describeTurn({ tag: 'error', issue: ISSUE }, FLOW);
+    expect(retryOnly.micHint).toBe('Try again in a moment');
+    const mic = describeTurn(
+      { tag: 'error', issue: { message: 'x', kind: 'microphone', fixes: ['choose-microphone'] } },
+      FLOW,
+    );
+    expect(mic.stageTitle).toBe('Something went wrong');
   });
 
   it('shows the countdown seconds in the review title', () => {

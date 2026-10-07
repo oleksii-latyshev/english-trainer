@@ -1,5 +1,6 @@
 import { Card } from '@heroui/react';
-import type { ChangeEvent } from 'react';
+import { useRouterState } from '@tanstack/react-router';
+import { type ChangeEvent, useEffect, useRef } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
 import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
@@ -9,6 +10,15 @@ import { MicrophoneTestControls } from './MicrophoneTestControls';
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();
   const practiceCapturing = !capture.canChangeSession;
+  const hash = useRouterState({ select: (state) => state.location.hash });
+  const deviceSelectRef = useRef<HTMLSelectElement | null>(null);
+
+  // Talk's "Choose microphone" lands here with #microphone: bring the device choice into view.
+  useEffect(() => {
+    if (hash !== 'microphone') return;
+    deviceSelectRef.current?.scrollIntoView({ block: 'center' });
+    deviceSelectRef.current?.focus();
+  }, [hash]);
   const { selectedDeviceId, selectDevice, storageStatus, actualInput } = usePreferredMicrophone();
   const { deviceOptions, hasUnnamed, deviceError, loadDevices } = useAudioInputOptions();
   const test = useMicrophoneTest(selectedDeviceId, () => {
@@ -68,6 +78,7 @@ export function MicrophoneSettings() {
             disabled={test.isCapturing || practiceCapturing}
             id="microphone-select"
             onChange={handleDeviceSelect}
+            ref={deviceSelectRef}
             value={selectedDeviceId}
           >
             <option value="">System default</option>

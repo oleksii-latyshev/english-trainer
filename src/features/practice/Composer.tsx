@@ -1,7 +1,7 @@
 import { Button, Kbd } from '@heroui/react';
 import { Keyboard } from 'lucide-react';
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
-import type { TurnPresentation, TurnState } from './lib/turnState';
+import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { canPressMic, type TurnPresentation, type TurnState } from './lib/turnState';
 import { LevelMeter, MicButton } from './MicControl';
 
 type Props = {
@@ -16,6 +16,8 @@ type Props = {
   isBusy: boolean;
   isSending: boolean;
   draft: string;
+  /** A problem with its fixes; sits at the top of the card. */
+  notice?: ReactNode;
   onChangeDraft: (value: string) => void;
   onSend: () => void;
   onStart: () => void;
@@ -23,6 +25,7 @@ type Props = {
   onCancel: () => void;
   onHold: (isHeld: boolean) => void;
   onResume: () => void;
+  onStopEva: () => void;
 };
 
 type ListeningState = Extract<TurnState, { tag: 'listening' | 'auto-listen' }>;
@@ -31,21 +34,6 @@ function canEditDraft(state: TurnState, hasDraft: boolean, isTyping: boolean): b
   if (state.tag === 'review') return true;
   if (state.tag === 'idle') return hasDraft || isTyping;
   return state.tag === 'error' && hasDraft;
-}
-
-function isMicDisabled(state: TurnState, isUnavailable: boolean): boolean {
-  switch (state.tag) {
-    case 'listening':
-    case 'auto-listen':
-      return !state.isLive;
-    case 'transcribing':
-    case 'thinking':
-      return true;
-    case 'paused':
-      return false;
-    default:
-      return isUnavailable;
-  }
 }
 
 function DraftField({
@@ -139,6 +127,9 @@ function EditingActions({ props }: { props: Props }) {
         variant="primary"
       >
         {sendLabel(state, isSending)}
+        <Kbd aria-hidden="true" className="talk-kbd-on-accent">
+          ⌘↩
+        </Kbd>
       </Button>
     </>
   );
@@ -158,6 +149,7 @@ export function Composer(props: Props) {
 
   return (
     <section aria-label="Answer composer" className="talk-composer" data-live={listening !== null}>
+      {props.notice}
       {isEditing && (
         <DraftField
           isDisabled={isLocked || isBusy || isSending}
@@ -172,7 +164,7 @@ export function Composer(props: Props) {
       <div className="talk-composer-main">
         <MicButton
           icon={presentation.micIcon}
-          isDisabled={isMicDisabled(state, isLocked || isBusy)}
+          isDisabled={!canPressMic(state, isLocked || isBusy)}
           name={presentation.micName}
           onPress={handlePressMic}
           variant={presentation.micVariant}
@@ -184,12 +176,16 @@ export function Composer(props: Props) {
           </span>
           <span className="talk-mic-hint">{presentation.micHint}</span>
         </div>
-        {presentation.hasMeter && (
-          <LevelMeter isActive={listening?.isLive === true} level={props.level} />
-        )}
+        <LevelMeter isActive={listening?.isLive === true} level={props.level} />
         <div className="talk-composer-actions">
           {listening && <ListeningActions props={props} state={listening} />}
           {isEditing && <EditingActions props={props} />}
+          {state.tag === 'speaking' && (
+            <Button onPress={props.onStopEva} size="sm" variant="ghost">
+              <Kbd>Esc</Kbd>
+              Stop Eva
+            </Button>
+          )}
           {state.tag === 'idle' && !isEditing && (
             <Button
               isDisabled={isLocked || isBusy}

@@ -2,7 +2,9 @@ import type { FollowUpState } from '@/features/conversation/FollowUpPanel';
 import type { TurnFeedback } from '@/lib/types';
 import type { SessionDetails } from './practiceState';
 import type { SentAnswer } from './sentAnswer';
-import type { SendFailure } from './turnState';
+import type { SendFailure } from './turnIssue';
+
+type FollowUpErrorCode = Extract<FollowUpState, { tag: 'error' }>['code'];
 
 export function matchingSentAnswer(
   answer: SentAnswer | null,
@@ -104,11 +106,20 @@ export function canContinueCoach(
   );
 }
 
+/** Provider failures where the model did not answer, so trying another model can help. */
+const UNRESPONSIVE_CODES: FollowUpErrorCode[] = [
+  'timeout',
+  'rate_limited',
+  'process_failed',
+  'invalid_output',
+];
+
 /** A failed send as the turn screen shows it; only a missing setup cannot be fixed by retrying. */
 export function sendFailure(state: FollowUpState): SendFailure | undefined {
   if (state.tag !== 'error') return undefined;
   return {
     message: state.message,
     needsSetup: state.code === 'unavailable' || state.code === 'unauthorized',
+    isUnresponsive: UNRESPONSIVE_CODES.includes(state.code),
   };
 }

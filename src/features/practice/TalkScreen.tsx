@@ -7,13 +7,17 @@ import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { Composer } from './Composer';
 import { Dialogue } from './Dialogue';
 import { EvaStage } from './EvaStage';
-import { HelpBar, type HelpLevel } from './HelpBar';
+import { HelpBar } from './HelpBar';
+import type { HelpLevel } from './lib/helpLevels';
 import type { InputSource } from './lib/inputSource';
+import { pauseControl } from './lib/pauseControl';
 import type { SessionDetails } from './lib/practiceState';
-import { evaMoodFor, type SendFailure } from './lib/turnState';
+import type { SendFailure } from './lib/turnIssue';
+import { evaMoodFor } from './lib/turnState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { TalkHeader } from './TalkHeader';
 import { TurnNotice } from './TurnNotice';
+import { useTalkKeyboard } from './useTalkKeyboard';
 import { useTalkTurn } from './useTalkTurn';
 import './talk.css';
 import './talkCards.css';
@@ -22,7 +26,14 @@ import './talkDialogue.css';
 import './talkHelp.css';
 import './talkStage.css';
 
-export type TalkScreenName = 'home' | 'practice' | 'coach' | 'memory' | 'summary' | 'settings';
+export type TalkScreenName =
+  | 'home'
+  | 'practice'
+  | 'coach'
+  | 'memory'
+  | 'summary'
+  | 'settings'
+  | 'settings-microphone';
 
 type Props = {
   mode: 'conversation' | 'coach';
@@ -71,6 +82,7 @@ export function TalkScreen(props: Props) {
     pendingReply: props.pendingReply,
     onSend: props.onSend,
     onOpenSettings: () => props.onNavigate?.('settings'),
+    onChooseMicrophone: () => props.onNavigate?.('settings-microphone'),
   });
   const { state, presentation, composer, flow } = turn;
 
@@ -86,20 +98,32 @@ export function TalkScreen(props: Props) {
     isHelpOpen: helpLevel !== null,
   });
 
-  const micStatus = model.micStatus;
-  const isMicOpen = micStatus === 'opening' || micStatus === 'warming' || micStatus === 'ready';
-  const canResume = micStatus === 'paused' || micStatus === 'error';
-  const pause =
-    isMicOpen || canResume
-      ? {
-          isPaused: canResume,
-          isDisabled:
-            model.status === 'recording' || lock.isLocked || turn.isBusy || model.transcribing,
-          onPause: actions.pauseMic,
-          onResume: actions.resumeMic,
-        }
-      : undefined;
-  const fix = state.tag === 'error' ? turn.fixes[state.issue.fix] : undefined;
+  const pause = {
+    ...pauseControl({
+      micStatus: model.micStatus,
+      isRecording: model.status === 'recording',
+      isTranscribing: model.transcribing,
+      isBusy: turn.isBusy,
+      isLocked: lock.isLocked,
+    }),
+    onPause: actions.pauseMic,
+    onResume: actions.resumeMic,
+  };
+  const isHelpAvailable = helpAvailable(question, isRetrying, isRecalling);
+  useTalkKeyboard({
+    state,
+    canPressMic: turn.canPressMic,
+    isHelpAvailable,
+    helpLevel,
+    onHelpLevelChange: (level) => setHelp({ key: helpKey, level }),
+    onStartRecording: composer.startRecording,
+    onStopRecording: actions.stopRecording,
+    onCancelRecording: actions.cancelRecording,
+    onCancelCountdown: composer.cancelAutoSend,
+    onHoldListening: actions.holdListening,
+    onStopEva: speech.stop,
+  });
+  const fixes = state.tag === 'error' ? state.issue.fixes.map((fix) => turn.fixes[fix]) : [];
 
   return (
     <section
@@ -141,14 +165,7 @@ export function TalkScreen(props: Props) {
           </Dialogue>
           <div className="talk-composer-zone">
             <div className="talk-composer-inner">
-              {state.tag === 'error' && fix && (
-                <TurnNotice message={state.issue.message}>
-                  <Button onPress={fix.run} size="sm" variant="secondary">
-                    {fix.label}
-                  </Button>
-                </TurnNotice>
-              )}
-              {helpAvailable(question, isRetrying, isRecalling) && (
+              {isHelpAvailable && (
                 <HelpBar
                   disabled={
                     turn.isBusy ||
@@ -173,6 +190,22 @@ export function TalkScreen(props: Props) {
                 isSending={composer.isSending}
                 level={model.level}
                 lockedReason={lock.reason}
+                notice={
+                  state.tag === 'error' && (
+                    <TurnNotice message={state.issue.message}>
+                      {fixes.map((fix, index) => (
+                        <Button
+                          key={fix.label}
+                          onPress={fix.run}
+                          size="sm"
+                          variant={index === 0 ? 'secondary' : 'ghost'}
+                        >
+                          {fix.label}
+                        </Button>
+                      ))}
+                    </TurnNotice>
+                  )
+                }
                 onCancel={actions.cancelRecording}
                 onChangeDraft={composer.changeDraft}
                 onHold={actions.holdListening}
@@ -180,17 +213,18 @@ export function TalkScreen(props: Props) {
                 onSend={composer.sendDraft}
                 onStart={composer.startRecording}
                 onStop={actions.stopRecording}
+                onStopEva={speech.stop}
                 presentation={presentation}
                 state={state}
               />
               <div className="talk-hints">
                 <span>
-                  <Kbd>Esc</Kbd>
-                  cancel listening
+                  <Kbd>Space</Kbd>
+                  hold to talk
                 </span>
                 <span>
-                  <Kbd>⌘ ↩</Kbd>
-                  send a typed answer
+                  <Kbd>Esc</Kbd>
+                  cancel / stop Eva
                 </span>
               </div>
             </div>

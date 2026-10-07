@@ -1,6 +1,8 @@
+import { Toast } from '@heroui/react';
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
+import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
@@ -13,6 +15,7 @@ import './appShell.css';
 function App() {
   const speech = useSystemSpeech();
   const mic = useMicrophoneSession();
+  const due = useDuePhraseCount();
   const capture = useSpeechCapture(speech, mic);
   const practice = usePracticeSession({
     canChangeSession: capture.canChangeSession,
@@ -60,8 +63,9 @@ function App() {
       startPractice,
       startOrResumePractice,
       isSessionOpen,
+      due,
     }),
-    [speech, capture, mic, practice, startPractice, startOrResumePractice, isSessionOpen],
+    [speech, capture, mic, practice, startPractice, startOrResumePractice, isSessionOpen, due],
   );
 
   const previousPracticeTag = useRef(practice.state.tag);
@@ -85,6 +89,7 @@ function App() {
   return (
     <TrainerProvider value={trainerContext}>
       <RouterProvider router={router} />
+      <Toast.Provider />
     </TrainerProvider>
   );
 }

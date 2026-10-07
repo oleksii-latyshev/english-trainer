@@ -5,7 +5,7 @@ import type { InputSource } from '@/features/practice/lib/inputSource';
 import type { SessionDetails } from '@/features/practice/lib/practiceState';
 import { coachPromptQuestion } from '@/features/practice/lib/practiceViewState';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
-import type { SendFailure } from '@/features/practice/lib/turnState';
+import type { SendFailure } from '@/features/practice/lib/turnIssue';
 import { ManualRecorder } from '@/features/practice/ManualRecorder';
 import { NoSession } from '@/features/practice/NoSession';
 import { PracticeFeedbackArea } from '@/features/practice/PracticeFeedbackArea';

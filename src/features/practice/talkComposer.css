@@ -32,6 +32,12 @@
   gap: 16px;
 }
 
+.talk-kbd-on-accent {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: transparent;
+  color: var(--et-on-accent);
+}
+
 .talk-draft {
   display: flex;
   flex-direction: column;

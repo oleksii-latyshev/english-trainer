@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { getLearningMemory } from '@/features/memory/memoryApi';
+import { getLearningMemory } from './memoryApi';
 
-type DueCount = { tag: 'loading' } | { tag: 'ready'; dueCount: number } | { tag: 'unavailable' };
+export type DueCount =
+  | { tag: 'loading' }
+  | { tag: 'ready'; dueCount: number }
+  | { tag: 'unavailable' };
 
-/** Phrases due for review; reloads when Memory changes. Failures leave the secondary card hidden. */
+/** Phrases due for review; reloads when Memory changes. Failures hide the count and the review card. */
 export function useDuePhraseCount(): DueCount {
   const [state, setState] = useState<DueCount>({ tag: 'loading' });
 

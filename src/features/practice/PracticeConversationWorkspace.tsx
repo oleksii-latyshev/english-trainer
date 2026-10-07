@@ -7,7 +7,7 @@ import { DailyRecallPanel } from './DailyRecallPanel';
 import type { InputSource } from './lib/inputSource';
 import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
-import type { SendFailure } from './lib/turnState';
+import type { SendFailure } from './lib/turnIssue';
 import { ManualRecorder } from './ManualRecorder';
 import { NoSession } from './NoSession';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';

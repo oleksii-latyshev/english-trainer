@@ -5,6 +5,7 @@ import {
   recallSessionId,
   restoredCoachAnswer,
   restoredRetryAnchor,
+  sendFailure,
 } from './practiceViewState';
 
 describe('saved practice projection', () => {
@@ -65,5 +66,19 @@ describe('saved practice projection', () => {
     };
     expect(coachPromptQuestion(anchor, anchor, continued, true)).toBe('What did you build?');
     expect(coachPromptQuestion(anchor, anchor, continued, false)).toBe('What changed next?');
+  });
+});
+
+describe('sendFailure', () => {
+  it('is empty unless the send failed', () => {
+    expect(sendFailure({ tag: 'idle' })).toBeUndefined();
+  });
+
+  it('tells a missing setup from a model that did not answer', () => {
+    const failure = (code) => sendFailure({ tag: 'error', code, message: 'x' });
+    expect(failure('unauthorized')).toMatchObject({ needsSetup: true, isUnresponsive: false });
+    expect(failure('timeout')).toMatchObject({ needsSetup: false, isUnresponsive: true });
+    expect(failure('rate_limited').isUnresponsive).toBe(true);
+    expect(failure('busy')).toMatchObject({ needsSetup: false, isUnresponsive: false });
   });
 });

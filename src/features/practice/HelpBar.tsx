@@ -1,16 +1,9 @@
-import { Button } from '@heroui/react';
+import { Button, Kbd } from '@heroui/react';
 import { isTauri } from '@tauri-apps/api/core';
 import { Fragment } from 'react';
 import { GuidedAnswerPanel } from './GuidedAnswerPanel';
+import { HELP_LEVELS, type HelpLevel } from './lib/helpLevels';
 import { useQuestionScaffold } from './useQuestionScaffold';
-
-/** The help levels the app supports today; the design's "Frame" level has no logic yet. */
-export type HelpLevel = 'phrases' | 'example';
-
-const LEVELS: { id: HelpLevel; label: string }[] = [
-  { id: 'phrases', label: 'Phrases' },
-  { id: 'example', label: 'Example' },
-];
 
 type Props = {
   question: string;
@@ -83,7 +76,7 @@ export function HelpBar({ question, sessionId, sequence, level, onLevelChange, d
     <section aria-label="Answer help" className="talk-help">
       <div className="talk-help-row">
         <span className="talk-help-label">Need help?</span>
-        {LEVELS.map((item) => (
+        {HELP_LEVELS.map((item) => (
           <Button
             aria-pressed={level === item.id}
             className="talk-chip"
@@ -92,9 +85,16 @@ export function HelpBar({ question, sessionId, sequence, level, onLevelChange, d
             size="sm"
             variant="outline"
           >
+            <span aria-hidden="true" className="talk-chip-number">
+              {item.keyNumber}
+            </span>
             {item.label}
           </Button>
         ))}
+        <span className="talk-help-key">
+          <Kbd>H</Kbd>
+          help
+        </span>
       </div>
       {level === 'phrases' && (
         <div className="talk-help-panel">

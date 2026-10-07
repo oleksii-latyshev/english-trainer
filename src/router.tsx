@@ -10,8 +10,15 @@ import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
+import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { SettingsHardwareView } from '@/features/settings/SettingsHardwareView';
 import { TalkStart } from '@/features/talk-start/TalkStart';
+
+function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
+  if (screen === 'home') return { to: '/' };
+  if (screen === 'settings-microphone') return { to: '/settings', hash: 'microphone' };
+  return { to: `/${screen}` };
+}
 
 // 1. Root route
 export const rootRoute = createRootRoute({
@@ -23,11 +30,12 @@ export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: function IndexComponent() {
-    const { practice, isSessionOpen, startOrResumePractice } = useTrainer();
+    const { practice, isSessionOpen, startOrResumePractice, due } = useTrainer();
     const navigate = indexRoute.useNavigate();
 
     return (
       <TalkStart
+        due={due}
         error={practice.error}
         isBusy={practice.isBusy}
         isRestoring={practice.state.tag === 'loading'}
@@ -80,10 +88,7 @@ export const conversationRoute = createRoute({
             capture.view.status === 'stopping',
           canChangeSession: capture.canChangeSession,
         }}
-        onNavigate={(screen) => {
-          const path = screen === 'home' ? '/' : `/${screen}`;
-          void navigate({ to: path });
-        }}
+        onNavigate={(screen) => void navigate(talkScreenLocation(screen))}
         speech={speech}
       />
     );
@@ -131,10 +136,7 @@ export const coachRoute = createRoute({
             capture.view.status === 'stopping',
           canChangeSession: capture.canChangeSession,
         }}
-        onNavigate={(screen) => {
-          const path = screen === 'home' ? '/' : `/${screen}`;
-          void navigate({ to: path });
-        }}
+        onNavigate={(screen) => void navigate(talkScreenLocation(screen))}
         speech={speech}
       />
     );

@@ -1,17 +1,7 @@
 import type { MicrophoneStatus } from '@/audio/microphoneManager';
 import type { EvaMood } from '@/components/eva/Eva';
 import type { RecordingMode, RecordingStatus } from '@/features/speech/captureView';
-import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
-
-/** What fixes a problem in one press; the screen maps each to an existing action. */
-export type TurnFix =
-  | 'retry-send'
-  | 'transcribe-again'
-  | 'record-again'
-  | 'open-settings'
-  | 'resume-mic';
-
-export type TurnIssue = { message: string; fix: TurnFix };
+import type { TurnFix, TurnIssue } from './turnIssue';
 
 /** The voice turn as the learner experiences it (docs/ui/DESIGN_BRIEF.md section 7). */
 export type TurnState =
@@ -40,6 +30,22 @@ export type TurnSignals = {
   issue: TurnIssue | null;
 };
 
+/** Whether the microphone control accepts a press now; the screen's lock or a busy session is `isUnavailable`. */
+export function canPressMic(state: TurnState, isUnavailable: boolean): boolean {
+  switch (state.tag) {
+    case 'listening':
+    case 'auto-listen':
+      return state.isLive;
+    case 'transcribing':
+    case 'thinking':
+      return false;
+    case 'paused':
+      return true;
+    default:
+      return !isUnavailable;
+  }
+}
+
 function isListening(status: RecordingStatus): boolean {
   return status === 'requesting' || status === 'recording' || status === 'stopping';
 }
@@ -62,47 +68,6 @@ export function deriveTurnState(signals: TurnSignals): TurnState {
   return { tag: 'idle' };
 }
 
-/** The answer could not be sent; `needsSetup` when no retry can help until Settings change. */
-export type SendFailure = { message: string; needsSetup: boolean };
-
-export type IssueSignals = {
-  sendError?: SendFailure;
-  transcriptionFailure?: TranscriptionRecovery;
-  captureError: string;
-  micStatus: MicrophoneStatus | 'unmanaged';
-  micError: string;
-};
-
-function transcriptionFix(failure: TranscriptionRecovery): TurnFix {
-  switch (failure.kind) {
-    case 'setup':
-      return 'open-settings';
-    case 'record_again':
-      return 'record-again';
-    case 'retry':
-      return 'transcribe-again';
-  }
-}
-
-/** One sentence and one fix; the most recent cause the learner can still act on wins. */
-export function turnIssue(signals: IssueSignals): TurnIssue | null {
-  const { sendError, transcriptionFailure } = signals;
-  if (sendError) {
-    return {
-      message: sendError.message,
-      fix: sendError.needsSetup ? 'open-settings' : 'retry-send',
-    };
-  }
-  if (transcriptionFailure) {
-    return { message: transcriptionFailure.message, fix: transcriptionFix(transcriptionFailure) };
-  }
-  if (signals.captureError) return { message: signals.captureError, fix: 'record-again' };
-  if (signals.micStatus === 'error') {
-    return { message: signals.micError || 'The microphone is unavailable.', fix: 'resume-mic' };
-  }
-  return null;
-}
-
 export type MicVariant = 'ready' | 'live' | 'quiet';
 
 export type TurnPresentation = {
@@ -118,7 +83,6 @@ export type TurnPresentation = {
   micName: string;
   micTitle: string;
   micHint: string;
-  hasMeter: boolean;
 };
 
 export type FlowSignals = { isHandsFree: boolean; endPauseMs: number };
@@ -139,7 +103,7 @@ function listeningPresentation(
     mood: 'listening',
     actor: 'learner',
     stageLabel: 'Your turn',
-    stageTitle: 'Listening',
+    stageTitle: isAuto ? 'Listening…' : 'Listening',
     stageHint: isAuto ? 'Started automatically after Eva. Esc to cancel.' : stageHint,
     micVariant: 'live',
     micIcon: 'stop',
@@ -150,7 +114,6 @@ function listeningPresentation(
       : flow.isHandsFree
         ? 'Press to finish, or just pause'
         : 'Press to finish',
-    hasMeter: true,
   };
 }
 
@@ -159,14 +122,37 @@ const IDLE: TurnPresentation = {
   actor: 'learner',
   stageLabel: 'Your turn',
   stageTitle: 'Ready when you are',
-  stageHint: 'Press the mic to answer.',
+  stageHint: 'Press the mic or hold Space to answer.',
   micVariant: 'ready',
   micIcon: 'mic',
   micName: 'Start speaking',
   micTitle: 'Press to speak',
-  micHint: 'or type your answer',
-  hasMeter: false,
+  micHint: 'or hold Space',
 };
+
+function replyHint(fixes: TurnFix[]): string {
+  if (fixes.includes('switch-to-apple')) return 'Try again or switch model';
+  if (fixes.includes('open-settings')) return 'Open Settings to finish setup';
+  return 'Try again in a moment';
+}
+
+/** A failed reply reads as "no reply yet"; microphone and transcription problems keep their own words. */
+function errorCopy(
+  issue: TurnIssue,
+): Pick<TurnPresentation, 'stageTitle' | 'micTitle' | 'micHint'> {
+  if (issue.kind === 'reply') {
+    return {
+      stageTitle: 'No reply yet',
+      micTitle: 'Eva couldn’t answer',
+      micHint: replyHint(issue.fixes),
+    };
+  }
+  return {
+    stageTitle: 'Something went wrong',
+    micTitle: 'Eva couldn’t continue',
+    micHint: 'Use the fix above, or speak again',
+  };
+}
 
 export function describeTurn(state: TurnState, flow: FlowSignals): TurnPresentation {
   switch (state.tag) {
@@ -216,7 +202,7 @@ export function describeTurn(state: TurnState, flow: FlowSignals): TurnPresentat
         actor: 'eva',
         stageLabel: 'Eva',
         stageTitle: 'Speaking',
-        stageHint: 'Start talking to interrupt.',
+        stageHint: 'Start talking or press Esc to interrupt.',
         micVariant: 'quiet',
         micName: 'Interrupt and speak',
         micTitle: 'Eva is speaking',
@@ -241,12 +227,10 @@ export function describeTurn(state: TurnState, flow: FlowSignals): TurnPresentat
         mood: 'concerned',
         actor: 'neutral',
         stageLabel: 'Eva',
-        stageTitle: 'Something went wrong',
         stageHint: 'Your answer is safe. Pick a fix below.',
         micVariant: 'quiet',
         micName: 'Speak',
-        micTitle: 'Eva couldn’t continue',
-        micHint: 'Use the fix above, or speak again',
+        ...errorCopy(state.issue),
       };
   }
 }

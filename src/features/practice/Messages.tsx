@@ -2,12 +2,7 @@ import { Button } from '@heroui/react';
 import { Smartphone, Volume2 } from 'lucide-react';
 import { EvaMini } from '@/components/eva/Eva';
 import type { DialogueMessage } from './lib/dialogueMessages';
-
-function InputMark({ source }: { source: DialogueMessage['inputSource'] }) {
-  if (source === 'text') return <span>typed</span>;
-  if (source === 'edited') return <span>edited</span>;
-  return null;
-}
+import { inputSourceLabel } from './lib/inputSource';
 
 type EvaProps = {
   message: DialogueMessage;
@@ -74,13 +69,13 @@ export function EvaThinking() {
 }
 
 export function LearnerMessage({ message }: { message: DialogueMessage }) {
-  const hasMark = message.inputSource === 'text' || message.inputSource === 'edited';
+  const sourceLabel = inputSourceLabel(message.inputSource);
   return (
     <article aria-label="You said" className="talk-msg-me">
       <div className="talk-bubble talk-bubble-me">{message.text}</div>
-      {hasMark && (
+      {sourceLabel && (
         <div className="talk-marks">
-          <InputMark source={message.inputSource} />
+          <span>{sourceLabel}</span>
         </div>
       )}
     </article>

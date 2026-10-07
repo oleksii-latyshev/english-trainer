@@ -1,0 +1,18 @@
+/** The help levels the app supports today; the design's "Frame" level (number 1) has no logic yet. */
+export type HelpLevel = 'phrases' | 'example';
+
+export const HELP_LEVELS: { id: HelpLevel; label: string; keyNumber: number }[] = [
+  { id: 'phrases', label: 'Phrases', keyNumber: 2 },
+  { id: 'example', label: 'Example', keyNumber: 3 },
+];
+
+/** What a help key does to the open level; `null` means the key is not a help key. */
+export function helpLevelForKey(
+  key: string,
+  current: HelpLevel | null,
+): { level: HelpLevel | null } | null {
+  if (key.toLowerCase() === 'h') return { level: current === null ? HELP_LEVELS[0].id : null };
+  const level = HELP_LEVELS.find((item) => String(item.keyNumber) === key);
+  if (!level) return null;
+  return { level: current === level.id ? null : level.id };
+}

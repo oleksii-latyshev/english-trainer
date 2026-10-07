@@ -1,3 +1,4 @@
+import { toast } from '@heroui/react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { isProviderError, isTurnFeedback, type TurnFeedback } from '@/lib/types';
@@ -25,6 +26,8 @@ type Props = {
   onPhraseSaved?: () => void;
   onSpeakRewrite?: (text: string) => void;
 };
+
+const PHRASE_SAVED_MESSAGE = 'Saved to Memory — it’ll come back in a later session.';
 
 function feedbackError(cause: unknown): string {
   if (isProviderError(cause)) return cause.message;
@@ -135,6 +138,7 @@ export function FeedbackPanel({
     try {
       await onSavePhrase(phrase, note, sessionId, sequence);
       setPhraseSaveState('saved');
+      toast.success(PHRASE_SAVED_MESSAGE);
       onPhraseSaved?.();
     } catch {
       setPhraseSaveState('error');

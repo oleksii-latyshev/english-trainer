@@ -62,6 +62,52 @@
   flex: none;
 }
 
+.nav-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--et-surface3);
+  color: var(--et-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.app-mic {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid var(--et-line);
+  border-radius: 14px;
+  background-color: var(--et-surface);
+}
+
+.app-mic-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.app-mic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--et-faint);
+}
+
+.app-mic-dot[data-on="true"] {
+  background-color: var(--et-warn);
+}
+
+.app-mic-hint {
+  color: var(--et-faint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .screen-content {
   flex: 1;
   min-width: 0;
@@ -86,12 +132,30 @@
     padding: 16px 10px;
   }
   .app-brand,
-  .nav-item-label {
+  .nav-item-label,
+  .nav-badge-text,
+  .app-mic {
     display: none;
   }
   .nav-item {
+    position: relative;
     justify-content: center;
     padding: 0;
+  }
+  /* In the rail the due count rides on the icon as a small pip. */
+  .nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    min-width: 16px;
+    padding: 1px 4px;
+    box-sizing: border-box;
+    background-color: var(--et-accent);
+    color: var(--et-on-accent);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 14px;
+    text-align: center;
   }
   .screen-content {
     padding: 24px 24px 48px;

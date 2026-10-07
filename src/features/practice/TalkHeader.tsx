@@ -1,8 +1,9 @@
-import { Button, Chip } from '@heroui/react';
+import { Button, Chip, Tooltip } from '@heroui/react';
 import { Pause, Play } from 'lucide-react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { SpeechTiming } from '@/features/speech/TimingPanel';
 import { TimingPopover } from '@/features/speech/TimingPanel';
+import type { PauseControl } from './lib/pauseControl';
 
 type Props = {
   mode: 'conversation' | 'coach';
@@ -12,12 +13,42 @@ type Props = {
   turnCount: number;
   targetTurns: number;
   timing: SpeechTiming;
-  /** Pause is offered only while a warm microphone session exists. */
-  pause?: { isPaused: boolean; isDisabled: boolean; onPause: () => void; onResume: () => void };
+  /** Pause or Resume; when `disabledReason` is set the control is disabled and says why. */
+  pause: PauseControl & { onPause: () => void; onResume: () => void };
   isFinishing: boolean;
   isFinishDisabled: boolean;
   onFinish: () => void;
 };
+
+function PauseButton({ pause }: { pause: Props['pause'] }) {
+  if (pause.isPaused) {
+    return (
+      <Button onPress={pause.onResume} size="sm" variant="ghost">
+        <Play aria-hidden="true" fill="currentColor" size={14} />
+        Resume
+      </Button>
+    );
+  }
+  if (pause.disabledReason === undefined) {
+    return (
+      <Button onPress={pause.onPause} size="sm" variant="ghost">
+        <Pause aria-hidden="true" fill="currentColor" size={14} />
+        Pause
+      </Button>
+    );
+  }
+  return (
+    <Tooltip>
+      <Tooltip.Trigger className="talk-pause-trigger">
+        <Button isDisabled size="sm" variant="ghost">
+          <Pause aria-hidden="true" fill="currentColor" size={14} />
+          Pause
+        </Button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>{pause.disabledReason}</Tooltip.Content>
+    </Tooltip>
+  );
+}
 
 export function TalkHeader({
   mode,
@@ -62,18 +93,7 @@ export function TalkHeader({
       </div>
       <div className="talk-header-actions">
         <TimingPopover timing={timing} />
-        {pause &&
-          (pause.isPaused ? (
-            <Button onPress={pause.onResume} size="sm" variant="ghost">
-              <Play aria-hidden="true" fill="currentColor" size={14} />
-              Resume
-            </Button>
-          ) : (
-            <Button isDisabled={pause.isDisabled} onPress={pause.onPause} size="sm" variant="ghost">
-              <Pause aria-hidden="true" fill="currentColor" size={14} />
-              Pause
-            </Button>
-          ))}
+        <PauseButton pause={pause} />
         <Button isDisabled={isFinishDisabled} onPress={onFinish} size="sm" variant="secondary">
           {isFinishing ? 'Finishing…' : 'Finish'}
         </Button>

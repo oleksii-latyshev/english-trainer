@@ -160,3 +160,12 @@
     transition: none;
   }
 }
+
+/* A disabled button swallows hover, so the wrapper carries the tooltip that says why. */
+.talk-pause-trigger {
+  display: inline-flex;
+}
+
+.talk-pause-trigger button {
+  pointer-events: none;
+}

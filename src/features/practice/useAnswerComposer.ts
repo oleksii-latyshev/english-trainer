@@ -22,7 +22,6 @@ type Options = {
   recallActive: boolean;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onStartRecording: () => void;
-  onCancelRecording: () => void;
 };
 
 /**
@@ -41,7 +40,6 @@ export function useAnswerComposer({
   recallActive,
   onSend,
   onStartRecording,
-  onCancelRecording,
 }: Options) {
   const [draft, setDraft] = useState('');
   const [lastRecognizedVoice, setLastRecognizedVoice] = useState<string | undefined>(undefined);
@@ -77,19 +75,6 @@ export function useAnswerComposer({
   };
 
   const autoSend = useAutoSendCountdown((text) => sendRef.current(text, 'voice'));
-
-  // Esc abandons listening and the edit window without sending anything.
-  const escapeActive = isRecording || autoSend.active;
-  useEffect(() => {
-    if (!escapeActive) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      autoSend.cancel();
-      if (isRecording) onCancelRecording();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [escapeActive, isRecording, autoSend.cancel, onCancelRecording]);
 
   // Restore existing in-memory draft if returning to the same active session
   useEffect(() => {
@@ -205,5 +190,6 @@ export function useAnswerComposer({
     changeDraft,
     sendDraft,
     startRecording,
+    cancelAutoSend: autoSend.cancel,
   };
 }
