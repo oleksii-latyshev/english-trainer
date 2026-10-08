@@ -41,7 +41,9 @@ Principles:
    rephrasing.
 4. **Help is graduated and fades.** Frame → phrases → full example; cued answers are marked so they
    do not count as independent evidence.
-5. **English only in practice.** The learner never needs to switch language to get help.
+5. **English only in practice.** The learner never needs to switch language to get help. One
+   approved exception: on demand, a selected word can be translated into the native language chosen
+   in Settings, on this Mac (F13). Conversation, help, coaching and review stay in English.
 6. **Evidence, not scores.** Progress is shown as concrete examples and simple local numbers.
 7. **Privacy by default.** Speech is transcribed locally and raw audio is discarded.
 
@@ -91,8 +93,10 @@ Every use of help is recorded as a cue for that answer.
   disagree politely, explain a technical idea simply, react to an unexpected follow-up.
 - A short profile (role, stack, interests, goals) makes questions relevant and feeds the speech
   recognition glossary.
-- The AI partner speaks simple, natural English, keeps replies short (one or two sentences plus a
-  question), and never invents facts about the learner.
+- The AI partner speaks natural everyday English and never invents facts about the learner. By
+  default (Settings > Conversation AI > Eva's style: Natural) a reply is two to four sentences with
+  a varied reaction (agreeing, relating, light humour, a short opinion of her own) and one question;
+  "Short and simple" keeps one or two short sentences plus a question.
 
 ## 7. Session wrap-up
 

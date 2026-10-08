@@ -105,10 +105,18 @@ Current:
   `first_token_ms`, `answered_by` (`{ provider: gemini | apple | agy, model, is_backup }`; the race
   reports which leg won, `is_backup` is true when Apple answered for a stalled or failed Gemini).
   `agy` still returns the schema-validated pair (reply ≤ 30 words, one question
-  ≤ 20 words); Gemini and Apple return plain text.
+  ≤ 20 words; the reply limit depends on the style); Gemini and Apple return plain text.
 - Settings (`ai_settings` table): provider `gemini | apple | agy` (default `gemini`); `agy_model`
-  `default | gemini-3.8-flash-low | gemini-3.8-flash-high`. Model IDs already encode effort; never
-  also pass `--effort`.
+  `default | gemini-3.8-flash-low | gemini-3.8-flash-high`; `eva_style` `short_and_simple |
+  natural` (default `natural`; rows saved before it existed read as `natural`). Model IDs already
+  encode effort; never also pass `--effort`.
+- Eva's style (`providers/plain_prompt.rs`, `providers/settings.rs`): `ConversationContext.eva_style`
+  is set from the saved settings in `generate_configured_turn` and never serialised into the model
+  data. `short_and_simple` asks for one or two short sentences of simple English; `natural` for two
+  to four sentences of B2-level everyday English with varied reactions, light humour, a short opinion
+  of her own as an AI friend and sometimes a deeper follow-up. Both end with exactly one question and
+  give no corrections. Gemini's `maxOutputTokens` is 220 and the reply cap 520 characters. `agy`
+  reads the style too: `natural` allows 400 characters and 70 words in `spoken_reply`.
 - Streaming: `send_practice_turn` and `generate_follow_up` take a Tauri
   `Channel` that receives `{ kind: "delta", text }` chunks while the reply is generated; the command
   still returns the final `ConversationTurn`. `agy` sends its whole reply as one delta at the end.
@@ -164,7 +172,7 @@ Current:
 
 - **Coaching queue** (`conversation/coaching_queue.rs`, F5). Every saved learner answer waits for
   coaching. The queue is derived from SQLite: answers without a `turn_feedback` row and with fewer
-  than 2 failed attempts (`coaching_failures`, schema version 11), so a restart resumes it. One
+  than 2 failed attempts (`coaching_failures`, schema version 11; the current version is 12), so a restart resumes it. One
   worker thread runs one batch at a time. A batch of the oldest waiting answers, at most 5, starts
   when 5 answers wait, when the session finishes (`flush`), when the learner has been quiet for 60 s
   with anything waiting (`IDLE_FLUSH`, restarted by every saved answer), or at once for an answer that
@@ -236,6 +244,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
 | Settings | `ai_settings` |
+| API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
 
 - Migrations are additive and idempotent; tests cover upgrade from older schemas.
 - Writes that change learning state (answer + source, review + schedule, assessment + evidence +
@@ -297,7 +306,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `invalid_session`, `database_error`); separating them into their own error types is planned with
   [F5].
 - Current commands: `transcribe_audio`, `get_setup_diagnostics`, `get_ai_settings`,
-  `save_ai_settings`, `prewarm_conversation_provider`, `get_gemini_key_status`,
+  `save_ai_settings`, `set_dock_icon`, `get_api_usage`, `prewarm_conversation_provider`, `get_gemini_key_status`,
   `save_gemini_api_key`, `delete_gemini_api_key`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
   `send_practice_turn`, `get_practice_dialogue`, `finish_practice_session`, `get_session_wrapup`,
   `retry_answer_coaching`, `retry_practice_turn`,
@@ -307,6 +316,18 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `skip_memory_review_item`,
   `finish_memory_review`,
   `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.
+- API usage (`src/api_usage/`): neither Gemini nor `agy` reports a remaining quota, so requests are
+  counted where they are sent (`providers/gemini/stream.rs`, `agy::runner::run_cli`) and limit
+  errors are noted where they arrive (Gemini 429: only `error.message`, bounded; `agy`: the quota
+  line and the moment from "Resets in 4h44m53s"). Events go over a channel to a writer thread, so
+  counting never delays a reply. Days are Pacific dates (daylight saving implemented by hand in
+  `pacific.rs`); counts older than 14 days are dropped. `get_api_usage` returns today's counts, the
+  day's last Gemini limit error, the last `agy` quota error and the next Pacific midnight; Settings >
+  Usage shows them with a link to the AI Studio usage page.
+- Dock icon: `set_dock_icon(icon: "dark" | "light")` swaps the running app's Dock tile through
+  `NSApplication.applicationIconImage` (objc2; a no-op off macOS). The choice is a UI preference in
+  localStorage re-applied at launch; the bundle icon (Finder, Launchpad) stays the dark one. Icon
+  sources are in `src-tauri/icons/source/`; every size comes from `tauri icon`.
 - Long-running commands are `async` and run blocking work with `spawn_blocking`.
 
 ## 11. Setup diagnostics

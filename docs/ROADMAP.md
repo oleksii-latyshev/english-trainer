@@ -1,6 +1,6 @@
 # Roadmap: English Trainer
 
-Updated 2026-10-06 after the first personal-alpha sessions.
+Updated 2026-10-08. Plan after F5: F3 is next, then F8 (with topics), F11, F12 and F13.
 
 ## Goal
 
@@ -20,7 +20,8 @@ Everything not needed for these five outcomes is deferred.
 
 | Topic | Decision |
 | :--- | :--- |
-| Conversation language | English only. The interface may later be localised (e.g. Russian); practice content never is. Whisper stays English-only. |
+| Conversation language | English only. The interface may later be localised (e.g. Russian); practice content never is. Whisper stays English-only. One approved on-demand exception: F13 translates a selected word into the native language chosen in Settings, on this Mac. |
+| Gemini API use (2026-10-08) | The Gemini API free tier is used only for conversation. Coaching and every other AI side task go to Antigravity pinned to a Gemini model (batched) or to on-device Apple / macOS frameworks. Settings > Usage shows locally counted requests and the last limit errors, because neither API reports the remaining quota. |
 | Conversation provider | Two streaming adapters behind one interface: **Apple Foundation Models** (on-device, free, private; measured 1.6 s warm / 4.6 s cold for a whole non-streamed reply on 2026-10-06) and the **Gemini API** (Flash / Flash-Lite, API key from Google AI Studio). The default is chosen by measured time to first spoken word. |
 | Coaching, planning and wrap-up | Coaching runs through Antigravity CLI with `gemini-3.8-flash-medium`, in batches of up to five answers (decided 2026-10-08 from a measurement on 66 real answers: Apple on-device rewrites whole answers, "corrects" recognition artefacts or finds nothing; one `agy` call per answer exhausted the Antigravity quota after about 54 calls; the Gemini API free quota is reserved for conversation). Planning (F6) stays on the Gemini API. |
 | Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured; 14–136 s for a batch of five) and cannot stream. It stays as the slow background tier (coaching, answer examples, usage review), always with an explicit Gemini model. |
@@ -197,6 +198,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   topic, when it was paused and the minutes left; the Talk header shows the topic and "6:12 of
   10:00". The wrap-up header's subtitle gains the topic ("Work & technology · 10 min 24 s"); today
   it shows only the session length.
+- Added 2026-10-08: choose a topic for a conversation or get a random one, and the opening question
+  varies with the topic instead of always asking "What is something interesting that happened to
+  you recently?".
 - Acceptance: three sessions on different topics feel relevant to the user's real life and work.
 
 ### Stage 3 — Remember and review
@@ -238,6 +242,28 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   today it is the wording itself (for a mistake, the corrected sentence), not a sentence written
   around it; (4) runs of six items ("N of 6", "about 3 minutes"): a run holds three. Decided
   2026-10-07: Try again in the review stays practice only; the first answer is the scored one.
+
+### Stage 4 — Plan of 2026-10-08 (after F3 and F8)
+
+**F11. Write it, then say it** `[ ]` (the learner's idea)
+- A text chat with Eva on a topic; also available as a standalone "text chat" mode for social
+  practice.
+- After writing, the learner first reviews the corrections of what they wrote and repeats them. On
+  "Ready to speak" the same conversation runs by voice. Afterwards the corrections of the spoken
+  answers are reviewed again, with the aim of fewer mistakes than in writing.
+- A mistake that repeats several times goes into the spoken review (F10).
+- Coaching goes through Antigravity (Gemini, batched) like F5; the Gemini API is not used for it.
+
+**F12. Practice my usual mistakes** `[ ]`
+- From the recurring mistakes in Memory (for example "the most part of" → "most of", "Just I want"
+  → "I just want", "in the university" → "at university"), Eva asks about five short spoken
+  questions that need the right form. About two minutes.
+
+**F13. Translate a word** `[ ]`
+- Select a word in Talk, in notes or in Memory to see its translation into the native language
+  chosen in Settings (Russian for this user) next to a simple English explanation.
+- The translation uses the on-device macOS Translation framework, never the Gemini API. An approved,
+  on-demand exception to "practice content is English only" (see `PRODUCT_SPEC.md`).
 
 ### MVP acceptance
 
@@ -289,7 +315,8 @@ Ordered by expected value; revisit with real usage data before starting any of t
 6. **Windows build.** Tauri, whisper.cpp, WebView2 speech synthesis, the Gemini API and the encrypted
    key file all work on Windows; Apple Foundation Models does not, so Gemini is
    the conversation provider there. Needs a Windows CI job and installer.
-7. **Pronunciation.** Shadowing feedback and, later, phoneme-level scoring. WidgetKit and
+7. **4/3/2 retelling drill.** Tell the same story in four, three and two minutes.
+8. **Pronunciation.** Shadowing feedback and, later, phoneme-level scoring. WidgetKit and
    gamification only if they increase how often the user speaks.
 
 ## Removed from the plan
