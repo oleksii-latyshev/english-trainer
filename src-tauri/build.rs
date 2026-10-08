@@ -1,8 +1,10 @@
 use std::{env, path::PathBuf, process::Command};
 
 fn main() {
+    // Only the Swift source is an input. The compiled helper in binaries/ is this script's output;
+    // listing it too made every build rewrite it and rerun the script, and `tauri dev` restarted
+    // on each rewrite in an endless loop. A deleted helper comes back with `cargo clean`.
     println!("cargo:rerun-if-changed=apple/ConversationModel.swift");
-    println!("cargo:rerun-if-changed=binaries/apple-conversation");
     if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
         let target = env::var("TARGET").expect("Cargo provides target");
         let architecture = target.split('-').next().expect("target architecture");

@@ -1,0 +1,2 @@
+# Written by build.rs on every Swift change; not a source the dev watcher should react to.
+binaries/
