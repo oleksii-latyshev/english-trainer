@@ -35,7 +35,7 @@ impl SessionDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::providers::{AgyModel, ConversationProvider};
+    use crate::providers::{AgyModel, ConversationProvider, EvaStyle};
 
     #[test]
     fn settings_default_and_round_trip_without_changing_sessions() {
@@ -44,6 +44,7 @@ mod tests {
         let settings = AiSettings {
             provider: ConversationProvider::Apple,
             agy_model: AgyModel::FlashLow,
+            eva_style: EvaStyle::ShortAndSimple,
         };
         db.save_ai_settings(&settings).unwrap();
         assert_eq!(db.ai_settings().unwrap(), settings);
@@ -56,6 +57,24 @@ mod tests {
         )
         .is_err());
     }
+    #[test]
+    fn settings_saved_before_the_style_existed_read_as_natural() {
+        let db = SessionDatabase::open_in_memory().unwrap();
+        db.connection
+            .execute(
+                "INSERT INTO ai_settings(id, settings_json) VALUES(1, ?1)",
+                [r#"{"provider":"apple","agy_model":"default"}"#],
+            )
+            .unwrap();
+        let settings = db.ai_settings().unwrap();
+        assert_eq!(settings.provider, ConversationProvider::Apple);
+        assert_eq!(settings.eva_style, EvaStyle::Natural);
+        assert!(serde_json::from_str::<AiSettings>(
+            r#"{"provider":"apple","agy_model":"default","eva_style":"chatty"}"#
+        )
+        .is_err());
+    }
+
     #[test]
     fn version_six_migrates_and_settings_survive_reopening() {
         let directory = crate::providers::agy::runner::ScratchDirectory::new().unwrap();
@@ -70,6 +89,7 @@ mod tests {
         let settings = AiSettings {
             provider: ConversationProvider::Apple,
             agy_model: AgyModel::FlashHigh,
+            eva_style: EvaStyle::Natural,
         };
         db.save_ai_settings(&settings).unwrap();
         drop(db);

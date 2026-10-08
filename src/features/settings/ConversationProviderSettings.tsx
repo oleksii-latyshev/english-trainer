@@ -1,5 +1,5 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getAiSettings, saveAiSettings } from '@/lib/aiSettings';
+import { getAiSettings, isEvaStyleId, saveAiSettings } from '@/lib/aiSettings';
 import {
   type AiSettings,
   type ConversationProviderId,
@@ -109,6 +109,11 @@ export function ConversationProviderSettings() {
     if (isAgyModelId(value)) void save({ ...settings, agy_model: value });
   }
 
+  function handleStyleChange(event: ChangeEvent<HTMLSelectElement>) {
+    const value = event.target.value;
+    if (isEvaStyleId(value)) void save({ ...settings, eva_style: value });
+  }
+
   const isSaving = saveState.tag === 'saving';
 
   return (
@@ -181,14 +186,30 @@ export function ConversationProviderSettings() {
 
           {settings.provider === 'gemini' && <GeminiKeyField />}
 
+          <SettingsRow
+            description="Natural: two to four sentences with her own reactions. Short and simple: one or two plain sentences. Eva always ends with one question."
+            htmlFor="eva-style"
+            title="Eva's style"
+          >
+            <select
+              className="settings-select"
+              disabled={isSaving}
+              id="eva-style"
+              onChange={handleStyleChange}
+              value={settings.eva_style}
+            >
+              <option value="natural">Natural</option>
+              <option value="short_and_simple">Short and simple</option>
+            </select>
+          </SettingsRow>
+
           <ProviderResponseTest provider={settings.provider} />
 
           <SettingsBlock tone="quiet">
             <p>
               Coaching under your answers runs in the background through Antigravity with Gemini 3.8
               Flash, whichever conversation provider you choose, so it never slows Eva down. Answer
-              examples and memory checks use Antigravity too. Replies use simple English and ask one
-              short question.
+              examples and memory checks use Antigravity too.
             </p>
           </SettingsBlock>
         </>

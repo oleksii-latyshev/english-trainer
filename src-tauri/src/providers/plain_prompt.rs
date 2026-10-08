@@ -1,16 +1,33 @@
 //! Prompt text shared by the plain-text providers (Gemini and Apple).
 
-use super::ConversationContext;
+use super::{ConversationContext, EvaStyle};
 
-pub(super) fn instructions(context: &ConversationContext) -> String {
-    let mut text = String::from(
-        "You are Eva, a friendly English conversation partner for a learner who finds speaking difficult. \
+/// Eva's voice for each style. Both end with exactly one question: the app splits the reply from it.
+fn voice(style: EvaStyle) -> &'static str {
+    match style {
+        EvaStyle::ShortAndSimple => {
+            "You are Eva, a friendly English conversation partner for a learner who finds speaking difficult. \
 Use simple everyday English. Reply with one or two short sentences that react to what the learner just said, \
 then ask exactly one short question that continues the conversation. \
 Write plain spoken text only: no markdown, lists, emojis, grammar explanations or corrections. \
 Do not describe your own job and do not invent facts about the learner; ask when something is unclear. \
-Preserve the learner's intended meaning.",
-    );
+Preserve the learner's intended meaning."
+        }
+        EvaStyle::Natural => {
+            "You are Eva, a warm, curious English conversation partner and an AI friend of a learner who is practising speaking. \
+Talk like a real person in natural, everyday B2-level English: contractions and common phrasal verbs are fine, rare words are not. \
+Reply with two to four sentences that react to what the learner just said, then ask exactly one question at the end, and nothing after it. \
+Vary your reactions from turn to turn: agree, relate to it, show curiosity, use light humour, or add a short opinion or relatable comment of your own as an AI friend. \
+Never claim human experiences and never invent facts about the learner; ask when something is unclear. \
+Often dig deeper into what the learner just said instead of jumping to a new topic. \
+Write plain spoken text only: no markdown, lists, emojis, grammar explanations or corrections, and no question marks before the final question. \
+Do not describe your own job. Preserve the learner's intended meaning."
+        }
+    }
+}
+
+pub(super) fn instructions(context: &ConversationContext) -> String {
+    let mut text = String::from(voice(context.eva_style));
     if !context.learning_targets.is_empty() {
         let targets = serde_json::to_string(&context.learning_targets).unwrap_or_default();
         text.push_str(
@@ -117,7 +134,41 @@ mod tests {
                 cue: "work".into(),
                 target: "I work on".into(),
             }],
+            ..Default::default()
         }
+    }
+
+    #[test]
+    fn short_style_keeps_the_brief_simple_reply_rules() {
+        let text = instructions(&ConversationContext {
+            eva_style: EvaStyle::ShortAndSimple,
+            ..context()
+        });
+        assert!(text.contains("simple everyday English"));
+        assert!(text.contains("one or two short sentences"));
+        assert!(text.contains("exactly one short question"));
+        assert!(!text.contains("two to four sentences"));
+    }
+
+    #[test]
+    fn natural_style_asks_for_a_lively_reply_without_coaching() {
+        let text = instructions(&ConversationContext {
+            eva_style: EvaStyle::Natural,
+            ..context()
+        });
+        assert!(text.contains("two to four sentences"));
+        assert!(text.contains("B2-level"));
+        assert!(text.contains("light humour"));
+        assert!(text.contains("dig deeper"));
+        assert!(text.contains("never invent facts about the learner"));
+        assert!(text.contains("exactly one question at the end"));
+        assert!(text.contains("grammar explanations or corrections"));
+        assert!(!text.contains("one or two short sentences"));
+        assert_eq!(
+            instructions(&context()),
+            text,
+            "Natural is the default style"
+        );
     }
 
     #[test]

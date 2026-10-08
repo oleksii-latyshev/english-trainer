@@ -30,6 +30,7 @@ fn settings() -> AiSettings {
     AiSettings {
         provider: ConversationProvider::Apple,
         agy_model: AgyModel::FlashHigh,
+        ..Default::default()
     }
 }
 

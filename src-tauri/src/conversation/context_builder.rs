@@ -39,6 +39,7 @@ pub(super) fn build_context(
             .filter(|answer| !answer.is_empty())
             .collect(),
         asked_questions: asked_questions(opening_question, prior_turns),
+        ..Default::default()
     };
     context.trim_to(MAX_CONTEXT_CHARS);
     context

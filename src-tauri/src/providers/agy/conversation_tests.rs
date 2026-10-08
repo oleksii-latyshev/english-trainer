@@ -74,7 +74,7 @@ fn fake_cli(dir: &TestDirectory, body: &str) -> PathBuf {
 #[test]
 fn parses_only_structured_output_and_validates_plain_text() {
     let raw = parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":"That sounds interesting.","question":"What happened next?","session_phase":"active","is_complete":false},"response":"unused"}"#).unwrap();
-    let turn = validate_turn(raw).unwrap();
+    let turn = validate_turn(raw, ReplyLimits::of(EvaStyle::ShortAndSimple)).unwrap();
     assert_eq!(turn.spoken_reply, "That sounds interesting.");
     assert_eq!(turn.question.as_deref(), Some("What happened next?"));
     assert_eq!(turn.session_phase, "active");
@@ -82,11 +82,11 @@ fn parses_only_structured_output_and_validates_plain_text() {
     assert_eq!(turn.provider_latency_ms, None);
 
     let raw = parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":"```json {} ```","question":null,"session_phase":"active","is_complete":false}}"#).unwrap();
-    assert!(validate_turn(raw).is_err());
+    assert!(validate_turn(raw, ReplyLimits::of(EvaStyle::ShortAndSimple)).is_err());
     assert!(parse_envelope(r#"{"response":"No structured output here"}"#).is_err());
     assert!(parse_envelope(r#"{"status":"ERROR","structured_output":{"spoken_reply":"I see.","question":"What happened?","session_phase":"active","is_complete":false}}"#).is_err());
     let raw = parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":"I see.","question":null,"session_phase":"active","is_complete":false}}"#).unwrap();
-    assert!(validate_turn(raw).is_err());
+    assert!(validate_turn(raw, ReplyLimits::of(EvaStyle::ShortAndSimple)).is_err());
 }
 
 #[cfg(unix)]
@@ -151,7 +151,11 @@ fn unavailable_cli_and_timeout_have_typed_errors() {
     let workspace = ScratchDirectory::new().unwrap();
     let schema = workspace.path().join("schema.json");
     let log = workspace.path().join("agy.log");
-    fs::write(&schema, response_schema()).unwrap();
+    fs::write(
+        &schema,
+        response_schema(ReplyLimits::of(EvaStyle::ShortAndSimple)),
+    )
+    .unwrap();
     let error = run_cli(
         &script,
         workspace.path(),
@@ -234,7 +238,10 @@ printf '%s' '{"status":"SUCCESS","structured_output":{"spoken_reply":"Hello.","q
 "#,
     );
     let engine = AgyEngine { binary };
-    let request = context("Hello");
+    let request = ConversationContext {
+        eva_style: EvaStyle::ShortAndSimple,
+        ..context("Hello")
+    };
     assert!(generate_using_model(&engine, &request, "gemini-3.8-flash-low").is_ok());
     assert!(generate_using_model(&engine, &request, "gemini-3.8-flash-high").is_ok());
     let prompt = make_prompt(&request, false);
@@ -255,11 +262,43 @@ fn failures_distinguish_envelope_shape_and_content_without_accepting_partial_rep
         Err(ReplyStage::Schema)
     ));
     let raw = parse_envelope(r#"{"status":"SUCCESS","structured_output":{"spoken_reply":"What?","question":"How are you?","session_phase":"active","is_complete":false}}"#).unwrap();
-    assert!(matches!(validate_turn(raw), Err(ReplyStage::Content)));
+    assert!(matches!(
+        validate_turn(raw, ReplyLimits::of(EvaStyle::ShortAndSimple)),
+        Err(ReplyStage::Content)
+    ));
     let error = parse_structured_turn(r#"{"spoken_reply":"Hello.","question":"Missing punctuation","session_phase":"active","is_complete":false}"#).unwrap_err();
     assert_eq!(error.reply_stage, Some(ReplyStage::Content));
     assert_eq!(
         serde_json::to_value(error).unwrap()["reply_stage"],
         "content"
     );
+}
+
+#[test]
+fn natural_style_prompt_and_limits_allow_a_livelier_reply() {
+    let natural = context("I went to the beach.");
+    assert_eq!(natural.eva_style, EvaStyle::Natural);
+    let prompt = make_prompt(&natural, false);
+    assert!(prompt.contains("two to four sentences"));
+    assert!(prompt.contains("light humour"));
+    assert!(prompt.contains("exactly one question"));
+    assert!(prompt.contains("Do not invent facts"));
+    let short = ConversationContext {
+        eva_style: EvaStyle::ShortAndSimple,
+        ..natural
+    };
+    assert!(make_prompt(&short, false).contains("one short statement"));
+
+    let long_reply = "That sounds like a lovely day, honestly. I can picture the waves from here. Sea air always seems to help people relax, doesn't it. I would have stayed all afternoon too.";
+    let raw = || RawTurn {
+        spoken_reply: long_reply.into(),
+        question: Some("Who did you go with?".into()),
+        session_phase: "active".into(),
+        is_complete: false,
+    };
+    assert!(validate_turn(raw(), ReplyLimits::of(EvaStyle::Natural)).is_ok());
+    assert!(validate_turn(raw(), ReplyLimits::of(EvaStyle::ShortAndSimple)).is_err());
+    let schema = response_schema(ReplyLimits::of(EvaStyle::Natural));
+    assert!(serde_json::from_str::<serde_json::Value>(&schema).is_ok());
+    assert!(schema.contains("\"maxLength\":400"));
 }

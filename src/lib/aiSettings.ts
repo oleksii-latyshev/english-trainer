@@ -4,14 +4,19 @@ export type ConversationProviderId = 'gemini' | 'apple' | 'agy';
 
 export type AgyModelId = 'default' | 'gemini-3.8-flash-low' | 'gemini-3.8-flash-high';
 
+/** How lively Eva's replies are; mirrors `EvaStyle` in Rust `providers/settings.rs`. */
+export type EvaStyleId = 'short_and_simple' | 'natural';
+
 export type AiSettings = {
   provider: ConversationProviderId;
   agy_model: AgyModelId;
+  eva_style: EvaStyleId;
 };
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
   provider: 'gemini',
   agy_model: 'default',
+  eva_style: 'natural',
 };
 
 export function isConversationProviderId(value: unknown): value is ConversationProviderId {
@@ -24,6 +29,10 @@ export function isAgyModelId(value: unknown): value is AgyModelId {
   );
 }
 
+export function isEvaStyleId(value: unknown): value is EvaStyleId {
+  return value === 'short_and_simple' || value === 'natural';
+}
+
 export function isAiSettings(value: unknown): value is AiSettings {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
@@ -32,7 +41,9 @@ export function isAiSettings(value: unknown): value is AiSettings {
     'provider' in value &&
     isConversationProviderId(value.provider) &&
     'agy_model' in value &&
-    isAgyModelId(value.agy_model)
+    isAgyModelId(value.agy_model) &&
+    'eva_style' in value &&
+    isEvaStyleId(value.eva_style)
   );
 }
 

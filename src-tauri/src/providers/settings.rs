@@ -31,9 +31,23 @@ impl AgyModel {
     }
 }
 
+/// How long and how lively Eva's replies are.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvaStyle {
+    /// One or two short, simple sentences and a question.
+    ShortAndSimple,
+    /// Two to four natural sentences with a reaction of her own, then a question.
+    #[default]
+    Natural,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AiSettings {
     pub provider: ConversationProvider,
     pub agy_model: AgyModel,
+    /// Absent in settings saved before the style existed; those learners get the default.
+    #[serde(default)]
+    pub eva_style: EvaStyle,
 }

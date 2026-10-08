@@ -11,7 +11,7 @@ pub use agy::guided::{generate_guided_answer, GuidedAnswer};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
 pub use gemini::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
-pub use settings::{AgyModel, AiSettings, ConversationProvider};
+pub use settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
 
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -53,6 +53,9 @@ pub fn generate_configured_turn(
     apple: &AppleHelper,
     on_delta: &mut dyn FnMut(&str),
 ) -> Result<ConversationTurn, ProviderError> {
+    let mut styled = context.clone();
+    styled.eva_style = settings.eva_style;
+    let context = &styled;
     measure_turn(on_delta, |forward| match settings.provider {
         ConversationProvider::Agy => {
             let context = context.compact(AGY_MAX_TURNS, AGY_MAX_CHARS, AGY_MAX_QUESTIONS);
@@ -277,6 +280,9 @@ pub struct ConversationContext {
     /// Questions Eva already asked this session, oldest first.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub asked_questions: Vec<String>,
+    /// How Eva should sound; set from the saved settings, never part of the data sent to a model.
+    #[serde(skip)]
+    pub eva_style: EvaStyle,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

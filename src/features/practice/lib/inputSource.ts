@@ -28,6 +28,17 @@ export function canSendPracticeInput(state: PracticeSendState): boolean {
   );
 }
 
+/**
+ * The capture transcript the composer may see. While "Say it again" is running the shared capture
+ * belongs to the second try, whose words are compared inside the note and never become an answer.
+ */
+export function composerTranscript(
+  transcript: string | undefined,
+  isRetrying: boolean,
+): string | undefined {
+  return isRetrying ? undefined : transcript;
+}
+
 export function shouldAutoSendVoiceTranscript(params: {
   transcript: string;
   requestId: number;

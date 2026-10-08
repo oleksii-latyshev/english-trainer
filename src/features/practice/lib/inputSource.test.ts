@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   canSendPracticeInput,
+  composerTranscript,
   inputSourceLabel,
   resolveInputSource,
   shouldAutoSendVoiceTranscript,
@@ -124,5 +125,16 @@ describe('inputSourceLabel', () => {
     expect(inputSourceLabel('text')).toBe('typed');
     expect(inputSourceLabel('edited')).toBe('edited');
     expect(inputSourceLabel(undefined)).toBeUndefined();
+  });
+});
+
+describe('composerTranscript', () => {
+  it('keeps the capture transcript out of the composer during a second try', () => {
+    expect(composerTranscript('I went to the shop.', true)).toBeUndefined();
+  });
+
+  it('passes the transcript through when no second try is running', () => {
+    expect(composerTranscript('I went to the shop.', false)).toBe('I went to the shop.');
+    expect(composerTranscript(undefined, false)).toBeUndefined();
   });
 });

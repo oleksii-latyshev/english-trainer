@@ -1,6 +1,6 @@
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { useConversationFlow } from '@/lib/conversationFlowPreferences';
-import type { InputSource } from './lib/inputSource';
+import { composerTranscript, type InputSource } from './lib/inputSource';
 import { sessionDetails } from './lib/practiceState';
 import { type SendFailure, type TurnFix, turnIssue } from './lib/turnIssue';
 import { canPressMic, deriveTurnState, describeTurn } from './lib/turnState';
@@ -30,11 +30,12 @@ export function useTalkTurn(options: Options) {
   const { preferences: flow } = useConversationFlow();
   const isEvaSpeaking = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
   const isBusy = model.busy || model.practice.tag !== 'active';
+  const answerTranscript = composerTranscript(model.transcript, isRetrying);
 
   const composer = useAnswerComposer({
     sessionId: sessionDetails(model.practice)?.sessionId,
     currentRequestId: model.currentRequestId,
-    transcript: model.transcript,
+    transcript: answerTranscript,
     isRecording: model.status === 'recording',
     transcribing: model.transcribing,
     busy: isBusy,
@@ -60,7 +61,7 @@ export function useTalkTurn(options: Options) {
     recordingMode: model.recordingMode,
     isHeld: model.held,
     isTranscribing: model.transcribing,
-    hasTranscript: Boolean(model.transcript),
+    hasTranscript: Boolean(answerTranscript),
     sendingLabel:
       composer.autoSend.isActive && !composer.isSending ? composer.autoSend.label : undefined,
     // Once Eva speaks, the reply is complete even if its saved copy has not arrived yet.

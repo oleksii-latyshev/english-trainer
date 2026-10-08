@@ -18,7 +18,7 @@ pub(super) fn request_body(context: &ConversationContext) -> Value {
         "systemInstruction": { "parts": [{ "text": plain_prompt::instructions(context) }] },
         "contents": contents,
         "generationConfig": {
-            "maxOutputTokens": 150,
+            "maxOutputTokens": 220,
             "temperature": 0.8,
             "thinkingConfig": { "thinkingLevel": "minimal" },
         },

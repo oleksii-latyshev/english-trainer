@@ -3,7 +3,7 @@
 
 use super::{ConversationTurn, ProviderError, ProviderErrorCode};
 
-const MAX_REPLY_CHARS: usize = 350;
+const MAX_REPLY_CHARS: usize = 520;
 
 pub(super) fn plain_turn(raw: &str) -> Result<ConversationTurn, ProviderError> {
     let text = cap_at_sentence(&strip_markdown(raw));

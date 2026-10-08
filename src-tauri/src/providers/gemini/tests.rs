@@ -91,7 +91,7 @@ fn request_uses_dialogue_contents_and_targets_as_instruction_data() {
         .as_str()
         .unwrap();
     assert!(instruction.contains("I work on"));
-    assert_eq!(body["generationConfig"]["maxOutputTokens"], 150);
+    assert_eq!(body["generationConfig"]["maxOutputTokens"], 220);
     assert_eq!(
         body["generationConfig"]["thinkingConfig"]["thinkingLevel"],
         "minimal"

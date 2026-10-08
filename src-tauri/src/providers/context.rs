@@ -96,6 +96,7 @@ mod tests {
             learning_targets: Vec::new(),
             earlier_answers: (0..30).map(|i| format!("old {i}")).collect(),
             asked_questions: (0..40).map(|i| format!("Question {i}?")).collect(),
+            ..Default::default()
         }
     }
 
