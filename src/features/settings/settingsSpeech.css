@@ -1,0 +1,146 @@
+/* Speech recognition, the speech check and the glossary of Settings. */
+.speech-sentence {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--et-fg);
+}
+
+.speech-sentence-count {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 12px;
+}
+
+.speech-sentence-text {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.speech-sentence-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.speech-sentence-hint {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 12px;
+}
+
+.speech-sentence-hint[role="alert"] {
+  color: var(--et-warn);
+}
+
+.speech-progress {
+  width: 100%;
+  height: 8px;
+  margin-bottom: 6px;
+}
+
+.speech-results {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--et-fg);
+  font-size: 13px;
+}
+
+.speech-results th,
+.speech-results td {
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid var(--et-line);
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.speech-results thead th {
+  color: var(--et-muted);
+  font-size: 12px;
+}
+
+.speech-results tbody th {
+  font-family: var(--font-mono);
+}
+
+.speech-results-note {
+  margin: 10px 0;
+}
+
+.speech-transcripts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.speech-transcripts p {
+  margin: 0;
+}
+
+.speech-transcript-label {
+  display: inline-block;
+  min-width: 42px;
+  color: var(--et-muted);
+  font-size: 12px;
+}
+
+.glossary-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.glossary-terms li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  background-color: var(--et-surface2);
+  color: var(--et-fg);
+  font-size: 13px;
+}
+
+.glossary-terms button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--et-muted);
+  cursor: pointer;
+}
+
+.glossary-terms button:hover {
+  background-color: var(--et-surface3);
+  color: var(--et-fg);
+}
+
+.glossary-terms button:focus-visible {
+  outline: 2px solid var(--et-accent);
+}
+
+.glossary-add {
+  display: flex;
+  gap: 8px;
+}
+
+.glossary-input {
+  font-family: inherit;
+}
+
+.settings-block[data-tone="plain"] .speech-results-note,
+.settings-block .settings-details {
+  margin-top: 8px;
+}

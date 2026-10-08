@@ -19,9 +19,10 @@ mod learning_writes;
 mod memory_recall;
 mod schema;
 pub(crate) mod session_wrapup;
+mod speech_settings;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 12;
+const SCHEMA_VERSION: i64 = 13;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;

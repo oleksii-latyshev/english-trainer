@@ -8,9 +8,11 @@ import { AppearanceSettings } from './AppearanceSettings';
 import { ConversationFlowSettings } from './ConversationFlowSettings';
 import { ConversationProviderSettings } from './ConversationProviderSettings';
 import { EvaSettingsLink } from './EvaSettingsLink';
+import { GlossarySettings } from './GlossarySettings';
 import { MicrophoneSettings } from './MicrophoneSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
+import { SpeechSettings } from './SpeechSettings';
 import { UsageSettings } from './UsageSettings';
 import { VoiceSettings } from './VoiceSettings';
 import './settings.css';
@@ -60,12 +62,14 @@ export function SettingsView() {
     <div className="settings">
       <h1>Settings</h1>
       <MicrophoneSettings />
+      <SpeechSettings />
       <ConversationProviderSettings />
       <UsageSettings />
       <VoiceSettings />
       <AppearanceSettings />
       <EvaSettingsLink />
       <ConversationFlowSettings />
+      <GlossarySettings />
       <PrivacySettings />
       <SetupDetails
         onRecheck={() => void loadDiagnostics()}

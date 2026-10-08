@@ -64,18 +64,34 @@ Current:
 - `transcribe_audio` receives raw WAV bytes; Rust validates RIFF/WAVE, mono, 16-bit, 16 kHz, at most
   60 MB.
 - `whisper-cli` is resolved from `ENG_TRAINER_WHISPER_BIN`, `PATH`, then Homebrew paths. The model
-  defaults to `<app data>/models/ggml-base.en.bin` (override `ENG_TRAINER_WHISPER_MODEL`).
+  is `<app data>/models/<model_file>` where `model_file` is the learner's choice in Settings >
+  Speech recognition (default `ggml-base.en.bin`; any plain `ggml-*.bin` name, never a path).
+  `ENG_TRAINER_WHISPER_MODEL` overrides the choice and Settings says so.
 - Each call runs in a private temporary directory, has a 120 s timeout and maps failures to typed
   `TranscriptionError` codes (`model_missing`, `engine_missing`, `engine_failed`, `timeout`,
   `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`).
 
-**Target [F3]:**
+- Speech check (F3 part 1, `src-tauri/src/audio/speech_check.rs`): 12 fixed sentences; the learner
+  reads them in Settings and each reading is stored as the same 16 kHz mono WAV as `NN.wav` with
+  the sentence as `NN.txt` in `<app data>/speech-check/` (owner-only; replacing a reading
+  overwrites it; "Delete recordings" removes the folder with the measurements). Measuring runs the
+  same `whisper-cli` call as the app for each chosen model (and, if asked, again with
+  `--prompt "Vocabulary: <glossary>."`, at most 500 characters), off the UI thread, one measurement
+  at a time. Per model and prompt setting it stores term accuracy (glossary terms present in the
+  sentence that appear in the transcript as whole words, ignoring case and tolerant of spacing and
+  of small number words: "CS 2", "CS two"), word error rate (pooled, on normalised words), median and
+  slowest time (the whole process, so including model load) and every transcript, in
+  `speech-check/results.json`. Scoring is pure code in `audio/scoring.rs`.
+- The personal glossary and the settings below are stored in SQLite (section 8).
+
+**Target [F3, part 2]:**
 
 - A long-lived worker keeps the model loaded (Metal). Model choice (English-only) is made from a
   measured comparison on the learner's recordings; record word accuracy on a fixed list of
   technical terms and latency for 5 s and 15 s answers.
 - The request carries an initial prompt built from the current question, the last turns and the
-  personal glossary, bounded to Whisper's prompt length.
+  personal glossary, bounded to Whisper's prompt length (`prompt_from_terms` builds the glossary
+  part and the speech check already measures it).
 - Recognition uncertainty is never presented as a pronunciation or knowledge error.
 
 ## 4. Speech output
@@ -243,13 +259,17 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 | Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
-| Settings | `ai_settings` |
+| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file and `keep_raw_audio`, default off), `glossary_terms` (ordered personal glossary), the last two added by schema version 13; the glossary is seeded there once with 27 words |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
 
 - Migrations are additive and idempotent; tests cover upgrade from older schemas.
 - Writes that change learning state (answer + source, review + schedule, assessment + evidence +
   projection) are single transactions.
-- Raw audio is never stored. API keys are never stored in SQLite.
+- Raw audio is discarded after transcription unless the learner turns on "Keep raw audio"; then
+  each answer is kept in `<app data>/recordings/<session>/<sequence>.wav` (owner-only files; answers
+  outside a session in `recordings/review/`), never uploaded, and removed by "Delete kept
+  recordings". The speech check recordings are kept on purpose in `<app data>/speech-check/`
+  (section 3). API keys are never stored in SQLite.
 
 ## 9. Learning rules
 
@@ -305,7 +325,16 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   Current `ProviderErrorCode` also carries session and database failures (`busy`,
   `invalid_session`, `database_error`); separating them into their own error types is planned with
   [F5].
-- Current commands: `transcribe_audio`, `get_setup_diagnostics`, `get_ai_settings`,
+- Speech commands (`src-tauri/src/audio/commands.rs`, types in `src/lib/speechTypes.ts`):
+  `transcribe_audio` (raw WAV; reads the model choice and the keep-audio setting),
+  `get_speech_settings`, `save_speech_model`, `save_keep_raw_audio`, `list_speech_models`,
+  `get_glossary`, `save_glossary` (trimmed, deduplicated ignoring case, at most 200 words of 40
+  characters), `get_kept_recordings`, `delete_kept_recordings`, `get_speech_check`,
+  `save_speech_check_recording` (raw WAV, header `x-sentence-index`),
+  `delete_speech_check_recordings`, `run_speech_check` (model files, `include_prompt`, progress
+  channel). Failures are `TranscriptionError` or `ProviderError` values with a `code`;
+  `TranscriptionErrorCode` gained `busy`.
+- Other current commands: `get_setup_diagnostics`, `get_ai_settings`,
   `save_ai_settings`, `set_dock_icon`, `get_api_usage`, `prewarm_conversation_provider`, `get_gemini_key_status`,
   `save_gemini_api_key`, `delete_gemini_api_key`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
   `send_practice_turn`, `get_practice_dialogue`, `finish_practice_session`, `get_session_wrapup`,
@@ -356,8 +385,9 @@ Synthetic benchmarks record timings and error categories only, never personal tr
 ## 13. Privacy and permissions
 
 - Required: microphone. Not required: Screen Recording, Accessibility, notifications, autostart.
-- Audio is transcribed locally and discarded; failed transient attempts stay in memory for retry
-  until reset or close.
+- Audio is transcribed locally and discarded by default; failed transient attempts stay in memory
+  for retry until reset or close. Keeping answers (Settings > Privacy) and the speech check
+  recordings are the only audio stored, both local, opt-in and deletable.
 - Only the transcript and minimal context go to the selected provider. The Gemini free tier allows
   Google to use prompts for product improvement and human review; Settings shows this notice.
 - Local data: sessions, transcripts, Learning Memory and settings in SQLite; device ID in WebView

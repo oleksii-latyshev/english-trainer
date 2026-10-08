@@ -104,21 +104,6 @@ fn whisper_resolver_honors_explicit_path_without_fallback() {
 }
 
 #[test]
-fn model_path_uses_injected_override_or_runtime_default() {
-    assert_eq!(
-        model_path_from(Path::new("/app-data"), None),
-        PathBuf::from("/app-data/models/ggml-base.en.bin")
-    );
-    assert_eq!(
-        model_path_from(
-            Path::new("/app-data"),
-            Some(std::ffi::OsString::from("/custom/model.bin"))
-        ),
-        PathBuf::from("/custom/model.bin")
-    );
-}
-
-#[test]
 fn whisper_resolver_finds_executable_from_injected_path() {
     use std::{
         fs,

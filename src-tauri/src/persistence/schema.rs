@@ -309,6 +309,39 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             resets_at_ms INTEGER
         );",
         )?;
+        transaction.pragma_update(None, "user_version", 12)?;
+        transaction.commit()?;
+        version = 12;
+    }
+    if version < 13 {
+        let transaction = connection.unchecked_transaction()?;
+        // The glossary is seeded here, once: a learner who empties it later keeps it empty.
+        let is_new: bool = transaction.query_row(
+            "SELECT COUNT(*) = 0 FROM sqlite_master WHERE name = 'glossary_terms'",
+            [],
+            |row| row.get(0),
+        )?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS speech_settings (
+                id INTEGER PRIMARY KEY CHECK(id = 1),
+                model_file TEXT NOT NULL,
+                keep_raw_audio INTEGER NOT NULL DEFAULT 0 CHECK(keep_raw_audio IN (0, 1))
+            );
+            CREATE TABLE IF NOT EXISTS glossary_terms (
+                position INTEGER PRIMARY KEY,
+                term TEXT NOT NULL
+            );",
+        )?;
+        for (position, term) in crate::audio::SEED_GLOSSARY
+            .iter()
+            .enumerate()
+            .filter(|_| is_new)
+        {
+            transaction.execute(
+                "INSERT INTO glossary_terms(position, term) VALUES(?1, ?2)",
+                rusqlite::params![position as i64, term],
+            )?;
+        }
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

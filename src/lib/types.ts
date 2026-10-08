@@ -14,7 +14,8 @@ export type TranscriptionErrorCode =
   | 'engine_failed'
   | 'timeout'
   | 'io_failure'
-  | 'invalid_output';
+  | 'invalid_output'
+  | 'busy';
 
 export type TranscriptionError = {
   code: TranscriptionErrorCode;
@@ -212,6 +213,7 @@ function isTranscriptionErrorCode(value: unknown): value is TranscriptionErrorCo
     case 'timeout':
     case 'io_failure':
     case 'invalid_output':
+    case 'busy':
       return true;
     default:
       return false;

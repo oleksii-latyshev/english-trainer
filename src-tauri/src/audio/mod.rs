@@ -1,9 +1,18 @@
+pub(crate) mod commands;
 mod error;
+mod glossary;
+pub(crate) mod kept;
+mod models;
+mod private_files;
+mod scoring;
+mod speech_check;
 mod temp;
 #[cfg(test)]
 mod tests;
 
 pub use error::{TranscriptionError, TranscriptionErrorCode};
+pub use glossary::SEED_GLOSSARY;
+pub use models::{model_path, SpeechSettings};
 use temp::TemporaryDirectory;
 
 use serde::{Deserialize, Serialize};
@@ -140,16 +149,6 @@ fn validate_wav(wav: &[u8]) -> Result<u64, TranscriptionError> {
     Ok((bytes as u64 * 1000) / 32_000)
 }
 
-pub(crate) fn model_path(app_data: &Path) -> PathBuf {
-    model_path_from(app_data, std::env::var_os("ENG_TRAINER_WHISPER_MODEL"))
-}
-
-fn model_path_from(app_data: &Path, configured: Option<std::ffi::OsString>) -> PathBuf {
-    configured
-        .map(PathBuf::from)
-        .unwrap_or_else(|| app_data.join("models/ggml-base.en.bin"))
-}
-
 pub(crate) fn resolve_whisper_binary() -> Option<PathBuf> {
     resolve_whisper_binary_from(
         std::env::var_os("ENG_TRAINER_WHISPER_BIN"),
@@ -197,24 +196,15 @@ fn is_executable(path: &Path) -> bool {
     }
 }
 
-pub fn transcribe(wav: Vec<u8>, app_data: PathBuf) -> Result<Transcript, TranscriptionError> {
+/// Transcribes a recording with the Whisper model at `model`. `prompt` is Whisper's initial prompt.
+pub fn transcribe(
+    wav: Vec<u8>,
+    model: &Path,
+    prompt: Option<&str>,
+) -> Result<Transcript, TranscriptionError> {
     let duration_ms = validate_wav(&wav)?;
-    let model = model_path(&app_data);
-    if !model.is_file() {
-        return Err(TranscriptionError::new(
-            TranscriptionErrorCode::ModelMissing,
-            format!(
-                "Whisper model is missing at {}. Set ENG_TRAINER_WHISPER_MODEL to a local ggml model file, then restart the app.",
-                model.display()
-            ),
-        ));
-    }
-    let model = fs::canonicalize(model).map_err(|_| {
-        TranscriptionError::new(
-            TranscriptionErrorCode::ModelMissing,
-            "Cannot read the Whisper model. Check its permissions, then retry.",
-        )
-    })?;
+    let binary = require_binary()?;
+    let model = ready_model(model)?;
     let directory = TemporaryDirectory::new().map_err(|_| {
         TranscriptionError::new(
             TranscriptionErrorCode::IoFailure,
@@ -222,27 +212,73 @@ pub fn transcribe(wav: Vec<u8>, app_data: PathBuf) -> Result<Transcript, Transcr
         )
     })?;
     let input = directory.path().join("recording.wav");
-    let output_base = directory.path().join("transcript");
     fs::write(&input, wav).map_err(|_| {
         TranscriptionError::new(
             TranscriptionErrorCode::IoFailure,
             "Cannot write temporary audio for transcription. Please retry.",
         )
     })?;
-    let binary = resolve_whisper_binary().ok_or_else(|| {
+    transcribe_file(
+        &binary,
+        &model,
+        &input,
+        prompt,
+        directory.path(),
+        duration_ms,
+    )
+}
+
+pub(crate) fn require_binary() -> Result<PathBuf, TranscriptionError> {
+    resolve_whisper_binary().ok_or_else(|| {
         TranscriptionError::new(
             TranscriptionErrorCode::EngineMissing,
             "whisper-cli was not found. Install whisper.cpp or set ENG_TRAINER_WHISPER_BIN to its executable, then restart the app.",
         )
-    })?;
-    let mut child = Command::new(&binary)
-        .current_dir(directory.path())
+    })
+}
+
+/// The canonical path of a model that exists, so a relative or linked path cannot surprise the CLI.
+pub(crate) fn ready_model(model: &Path) -> Result<PathBuf, TranscriptionError> {
+    if !model.is_file() {
+        return Err(TranscriptionError::new(
+            TranscriptionErrorCode::ModelMissing,
+            format!(
+                "Whisper model is missing at {}. Choose another model in Settings, or set ENG_TRAINER_WHISPER_MODEL to a local ggml model file, then restart the app.",
+                model.display()
+            ),
+        ));
+    }
+    fs::canonicalize(model).map_err(|_| {
+        TranscriptionError::new(
+            TranscriptionErrorCode::ModelMissing,
+            "Cannot read the Whisper model. Check its permissions, then retry.",
+        )
+    })
+}
+
+/// Runs `whisper-cli` on a WAV file already on disk; the transcript JSON goes into `workspace`.
+pub(crate) fn transcribe_file(
+    binary: &Path,
+    model: &Path,
+    input: &Path,
+    prompt: Option<&str>,
+    workspace: &Path,
+    duration_ms: u64,
+) -> Result<Transcript, TranscriptionError> {
+    let output_base = workspace.join("transcript");
+    let mut command = Command::new(binary);
+    command
+        .current_dir(workspace)
         .arg("-m")
-        .arg(&model)
+        .arg(model)
         .arg("-f")
-        .arg(&input)
+        .arg(input)
         .args(["-l", "en", "-oj", "-of"])
-        .arg(&output_base)
+        .arg(&output_base);
+    if let Some(prompt) = prompt {
+        command.arg("--prompt").arg(prompt);
+    }
+    let mut child = command
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()

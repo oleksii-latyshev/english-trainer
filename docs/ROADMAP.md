@@ -89,20 +89,32 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   listening starts within 200 ms of the request or of the end of AI speech; a 10-minute
   conversation without touching the keyboard or mouse.
 
-**F3. Accurate speech recognition** `[ ]`
+**F3. Accurate speech recognition** `[ ]` (part 1 built 2026-10-08: tools to choose the model and the glossary; part 2 below is next)
+- **Part 1 (built, awaiting a check in the app on a physical Mac).** Settings > Speech recognition: the
+  speech check (12 fixed sentences read aloud, kept in `<app data>/speech-check/` as the learner's own
+  test set, "Delete recordings" removes them), measurement of every `ggml-*.bin` model in
+  `<app data>/models/` (term accuracy over the glossary, word error rate, median and slowest time,
+  each transcript beside its sentence; optionally also with the glossary as initial prompt), and a
+  Model select whose choice is stored and used by transcription (default `ggml-base.en.bin`;
+  `ENG_TRAINER_WHISPER_MODEL` still wins). Settings > Personalisation: the editable personal
+  glossary, seeded once with 27 words. Settings > Privacy: the "Keep raw audio" switch (off by
+  default) with "Delete kept recordings". The glossary does not yet reach the live transcription:
+  that is part 2.
+- **Part 2 (next).** The decision on the model from the measurements, keeping it loaded, and the
+  initial prompt in the live path.
 - Keep the Whisper model loaded between answers (in-process `whisper-rs` with Metal, or a bundled
   `whisper-server` sidecar) and upgrade the default English model (e.g. `small.en`, `medium.en`,
   or a quantised `large-v3-turbo`); decide by a measured accuracy/latency comparison on the user's
   recordings.
 - Pass an initial prompt built from the current question, recent turns, and a personal glossary
   (editable in Settings: employer stack, tools, names).
-- Design (Settings > Personalisation, hidden until the data exists): the row "Personal glossary"
-  ("Words speech recognition should know: Tauri, Kubernetes, idempotent, Oleksii…") with an
-  "Edit · 18" button that opens an editable word list; the list feeds the initial prompt above.
+- Design (Settings > Personalisation): the row "Personal glossary" ("Words speech recognition
+  should know: Tauri, Kubernetes, idempotent, Oleksii…") with an "Edit · 18" button that opens an
+  editable word list; the list feeds the initial prompt above. Built in part 1 (the list is stored
+  and edited; the prompt is part 2). "About you" stays hidden until F8.
 - Design (Settings > Privacy): the "Keep raw audio" switch (off by default; "Off: audio is deleted
-  right after transcription"). Needs a stored retention setting and an audio path that keeps the
-  recording only when it is on; until then Settings states that audio is always deleted and shows
-  no switch.
+  right after transcription"). Built in part 1: a stored setting, answers kept under
+  `<app data>/recordings/<session>/<sequence>.wav` only when it is on, and "Delete kept recordings".
 - Design: a live transcript bubble (dashed, with a caret, "Live transcript") grows while the learner
   speaks; needs partial results from the loaded model. The spoken Memory review has the same bubble
   while the learner answers a situation; today it shows the result only after the answer.

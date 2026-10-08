@@ -11,6 +11,7 @@ pub enum TranscriptionErrorCode {
     Timeout,
     IoFailure,
     InvalidOutput,
+    Busy,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]

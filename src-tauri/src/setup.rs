@@ -26,9 +26,9 @@ pub(crate) enum ComponentStatus {
     Unreadable,
 }
 
-pub(crate) fn collect(app_data: &Path) -> SetupDiagnostics {
+pub(crate) fn collect(app_data: &Path, model_file: &str) -> SetupDiagnostics {
     let whisper_cli = check_cli(crate::audio::resolve_whisper_binary());
-    let whisper_model = check_model(&crate::audio::model_path(app_data));
+    let whisper_model = check_model(&crate::audio::model_path(app_data, model_file));
     let agy_cli = check_cli(crate::providers::resolve_agy_binary());
     SetupDiagnostics {
         whisper_cli,

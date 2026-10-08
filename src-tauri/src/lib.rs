@@ -117,46 +117,18 @@ fn save_ai_settings(
 }
 
 #[tauri::command]
-async fn transcribe_audio(
-    app: tauri::AppHandle,
-    request: tauri::ipc::Request<'_>,
-) -> Result<audio::Transcript, audio::TranscriptionError> {
-    let wav = match request.body() {
-        tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
-        _ => {
-            return Err(audio::TranscriptionError::new(
-                audio::TranscriptionErrorCode::InvalidAudio,
-                "Expected raw WAV audio bytes. Please record again.",
-            ))
-        }
-    };
-    let app_data = app.path().app_data_dir().map_err(|_| {
-        audio::TranscriptionError::new(
-            audio::TranscriptionErrorCode::IoFailure,
-            "Cannot locate application data directory. Please restart the app and retry.",
-        )
-    })?;
-    tauri::async_runtime::spawn_blocking(move || audio::transcribe(wav, app_data))
-        .await
-        .map_err(|_| {
-            audio::TranscriptionError::new(
-                audio::TranscriptionErrorCode::EngineFailed,
-                "Local transcription task failed. Please retry.",
-            )
-        })?
-}
-
-#[tauri::command]
 async fn get_setup_diagnostics(
     app: tauri::AppHandle,
+    sessions: tauri::State<'_, conversation::SessionStore>,
 ) -> Result<setup::SetupDiagnostics, providers::ProviderError> {
+    let model_file = sessions.speech_settings()?.model_file;
     let app_data = app.path().app_data_dir().map_err(|_| {
         providers::ProviderError::new(
             providers::ProviderErrorCode::ProcessFailed,
             "Cannot locate application data directory.",
         )
     })?;
-    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data))
+    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data, &model_file))
         .await
         .map_err(|_| {
             providers::ProviderError::new(
@@ -514,7 +486,19 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            transcribe_audio,
+            audio::commands::transcribe_audio,
+            audio::commands::get_speech_settings,
+            audio::commands::save_speech_model,
+            audio::commands::save_keep_raw_audio,
+            audio::commands::list_speech_models,
+            audio::commands::get_glossary,
+            audio::commands::save_glossary,
+            audio::commands::get_kept_recordings,
+            audio::commands::delete_kept_recordings,
+            audio::commands::get_speech_check,
+            audio::commands::save_speech_check_recording,
+            audio::commands::delete_speech_check_recordings,
+            audio::commands::run_speech_check,
             get_setup_diagnostics,
             get_ai_settings,
             set_dock_icon,

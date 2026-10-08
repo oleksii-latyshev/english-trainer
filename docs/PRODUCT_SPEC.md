@@ -45,7 +45,7 @@ Principles:
    approved exception: on demand, a selected word can be translated into the native language chosen
    in Settings, on this Mac (F13). Conversation, help, coaching and review stay in English.
 6. **Evidence, not scores.** Progress is shown as concrete examples and simple local numbers.
-7. **Privacy by default.** Speech is transcribed locally and raw audio is discarded.
+7. **Privacy by default.** Speech is transcribed locally and raw audio is discarded unless the learner turns on "Keep raw audio" (local, deletable). The speech check recordings the learner makes are kept locally until deleted.
 
 ## 4. Talk screen (main experience)
 

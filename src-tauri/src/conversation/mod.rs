@@ -16,6 +16,7 @@ pub(crate) mod memory_recall;
 pub(crate) mod recall;
 mod rules;
 mod scaffold;
+mod speech_settings;
 pub(crate) mod usage;
 mod usage_support;
 mod wrapup;
