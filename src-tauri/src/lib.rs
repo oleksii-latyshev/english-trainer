@@ -1,5 +1,6 @@
 mod audio;
 mod conversation;
+mod dock_icon;
 mod learning;
 mod persistence;
 mod providers;
@@ -64,6 +65,19 @@ async fn delete_gemini_api_key() -> Result<(), providers::ProviderError> {
         .map_err(conversation_task_failed(
             "Could not remove the Gemini API key.",
         ))?
+}
+
+#[tauri::command]
+fn set_dock_icon(
+    app: tauri::AppHandle,
+    icon: dock_icon::DockIcon,
+) -> Result<(), providers::ProviderError> {
+    dock_icon::apply(&app, icon).map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "Could not change the Dock icon. Please retry.",
+        )
+    })
 }
 
 #[tauri::command]
@@ -481,6 +495,7 @@ pub fn run() {
             transcribe_audio,
             get_setup_diagnostics,
             get_ai_settings,
+            set_dock_icon,
             save_ai_settings,
             prewarm_conversation_provider,
             get_gemini_key_status,

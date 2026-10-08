@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Eva } from '@/components/eva/Eva';
+import { DOCK_ICONS, dockIconPreference } from '@/lib/dockIcon';
 import {
   DEFAULT_EVA_LOOK,
   EVA_MOTIONS,
@@ -45,6 +46,7 @@ function Swatch({
 export function EvaSettingsView() {
   const navigate = useNavigate();
   const [look, setLook] = evaLookPreference.use();
+  const [dockIcon, setDockIcon] = dockIconPreference.use();
   const [moodIndex, setMoodIndex] = useState(0);
   const [isCycling, setIsCycling] = useState(true);
 
@@ -124,6 +126,18 @@ export function EvaSettingsView() {
               value={look.motion}
             />
             <span className="settings-quiet">{motion.hint}</span>
+          </div>
+          <div className="settings-look-inline">
+            <div className="settings-label">Dock icon</div>
+            <SegmentedControl
+              label="Dock icon"
+              onChange={(next) => setDockIcon({ icon: next })}
+              options={DOCK_ICONS}
+              value={dockIcon.icon}
+            />
+            <span className="settings-quiet">
+              Only the Dock changes; Finder and Launchpad keep the default icon.
+            </span>
           </div>
           <div className="settings-look-reset">
             <SettingsButton onClick={() => setLook(DEFAULT_EVA_LOOK)} variant="ghost">

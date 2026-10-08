@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Eva, English Trainer app icon</title>
+  <!-- Eva app icon: the idle mascot (src/components/eva/eva.css) on a macOS rounded square.
+       Content is inset 100 px of 1024 and the corner radius is 22.5% of the square, as in the macOS icon grid. -->
+  <defs>
+    <linearGradient id="plate" gradientUnits="userSpaceOnUse" x1="331.4" y1="15.5" x2="692.6" y2="1008.5">
+      <stop offset="0" stop-color="#2A2840"/>
+      <stop offset="1" stop-color="#111019"/>
+    </linearGradient>
+    <radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="512" cy="512" r="400">
+      <stop offset="0" stop-color="#9d8cff" stop-opacity="0.30"/>
+      <stop offset="0.7" stop-color="#9d8cff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pearl" cx="0.34" cy="0.22" r="1.022">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.34" stop-color="#eef0f7"/>
+      <stop offset="0.7" stop-color="#d2d7e5"/>
+      <stop offset="1" stop-color="#aab1c6"/>
+    </radialGradient>
+    <radialGradient id="underside" cx="0.5" cy="0.4" r="0.62">
+      <stop offset="0.7" stop-color="#46507a" stop-opacity="0"/>
+      <stop offset="1" stop-color="#46507a" stop-opacity="0.22"/>
+    </radialGradient>
+    <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#454650"/>
+      <stop offset="1" stop-color="#16171d"/>
+    </linearGradient>
+    <clipPath id="plate-clip"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+  </defs>
+  <!-- Soft shadow as stacked shapes: SVG filters are not rendered by every engine. -->
+  <g>
+    <rect x="86" y="107" width="852" height="852" rx="199" fill="#000000" fill-opacity="0.045"/>
+    <rect x="90" y="109" width="844" height="844" rx="195" fill="#000000" fill-opacity="0.045"/>
+    <rect x="94" y="111" width="836" height="836" rx="191" fill="#000000" fill-opacity="0.045"/>
+    <rect x="97" y="112" width="830" height="830" rx="188" fill="#000000" fill-opacity="0.045"/>
+  </g>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#plate)"/>
+  <g clip-path="url(#plate-clip)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#halo)"/>
+    <rect x="101.5" y="101.5" width="821" height="821" rx="183.5" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="3"/>
+  </g>
+  <circle cx="512" cy="512" r="368" fill="none" stroke="#9d8cff" stroke-opacity="0.4" stroke-width="3"/>
+  <g>
+    <circle cx="512" cy="532" r="278" fill="#0a0c1e" fill-opacity="0.07"/>
+    <circle cx="512" cy="532" r="270" fill="#0a0c1e" fill-opacity="0.07"/>
+    <circle cx="512" cy="532" r="262" fill="#0a0c1e" fill-opacity="0.07"/>
+    <circle cx="512" cy="532" r="255" fill="#0a0c1e" fill-opacity="0.07"/>
+  </g>
+  <circle cx="512" cy="512" r="250" fill="url(#pearl)"/>
+  <circle cx="512" cy="512" r="250" fill="url(#underside)"/>
+  <circle cx="512" cy="512" r="248.5" fill="none" stroke="#9d8cff" stroke-opacity="0.5" stroke-width="3"/>
+  <!-- Eyes: About 24 x 21 % of the sphere, bigger than the in-app 18 x 15, so they still read at 32 px. -->
+  <g>
+    <rect x="358" y="444" width="124" height="106" rx="53" fill="#ffffff" fill-opacity="0.55" transform="translate(0 4)"/>
+    <rect x="542" y="444" width="124" height="106" rx="53" fill="#ffffff" fill-opacity="0.55" transform="translate(0 4)"/>
+    <rect x="358" y="444" width="124" height="106" rx="53" fill="url(#eye)"/>
+    <rect x="542" y="444" width="124" height="106" rx="53" fill="url(#eye)"/>
+  </g>
+</svg>
