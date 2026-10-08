@@ -1,4 +1,5 @@
 use super::super::{ProviderError, ProviderErrorCode};
+use crate::api_usage::{self, UsageSource};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
@@ -91,13 +92,20 @@ pub(super) fn run_cli(
         "--model",
         options.model,
     ]);
-    run_process(&mut command, working_directory, options.timeout)
+    api_usage::record_request(UsageSource::Antigravity, options.model);
+    run_process(
+        &mut command,
+        working_directory,
+        options.timeout,
+        options.model,
+    )
 }
 
 pub(crate) fn run_process(
     command: &mut Command,
     working_directory: &Path,
     timeout: Duration,
+    model: &str,
 ) -> Result<String, ProviderError> {
     let stdout_path = working_directory.join("provider-output.json");
     let stdout_file = fs::File::create(&stdout_path).map_err(|_| {
@@ -152,7 +160,9 @@ pub(crate) fn run_process(
         }
     };
     if !status.success() {
-        if is_quota_exhausted(&stderr_path) || is_quota_exhausted(&stdout_path) {
+        let (stderr, stdout) = (read_head(&stderr_path), read_head(&stdout_path));
+        if let Some(text) = [stderr, stdout].iter().find(|text| mentions_quota(text)) {
+            record_quota_limit(model, text);
             return Err(quota_error());
         }
         return Err(ProviderError::new(
@@ -196,17 +206,26 @@ pub(crate) fn quota_error() -> ProviderError {
     )
 }
 
-/// True when the (bounded) head of a file mentions an exhausted quota.
-pub(crate) fn is_quota_exhausted(path: &Path) -> bool {
+/// The bounded head of a file, empty when it cannot be read.
+fn read_head(path: &Path) -> String {
     use std::io::Read;
     let mut text = Vec::new();
     let Ok(file) = fs::File::open(path) else {
-        return false;
+        return String::new();
     };
     if file.take(16 * 1024).read_to_end(&mut text).is_err() {
-        return false;
+        return String::new();
     }
-    mentions_quota(&String::from_utf8_lossy(&text))
+    String::from_utf8_lossy(&text).into_owned()
+}
+
+/// Notes a used-up quota in the usage log.
+pub(crate) fn record_quota_limit(model: &str, text: &str) {
+    api_usage::record(api_usage::antigravity_limit_event(
+        model,
+        text,
+        api_usage::now_ms(),
+    ));
 }
 
 pub(crate) fn mentions_quota(text: &str) -> bool {

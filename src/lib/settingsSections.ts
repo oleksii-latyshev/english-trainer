@@ -7,6 +7,7 @@ export const EVA_SETTINGS_PATH = '/settings/eva';
 export const SETTINGS_SECTIONS = [
   { id: 'microphone', label: 'Microphone' },
   { id: 'ai', label: 'Conversation AI' },
+  { id: 'usage', label: 'Usage' },
   { id: 'voice', label: 'Voice' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'eva', label: 'Eva' },

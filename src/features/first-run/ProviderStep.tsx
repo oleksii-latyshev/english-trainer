@@ -2,9 +2,9 @@ import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useGeminiKey } from '@/features/settings/useGeminiKey';
 import { type AiSettings, getAiSettings, saveAiSettings } from '@/lib/aiSettings';
+import { openExternal } from '@/lib/openExternal';
 import { isProviderError } from '@/lib/types';
 import { measureFirstWords } from './lib/providerSample';
-import { openExternal } from './openExternal';
 
 const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 

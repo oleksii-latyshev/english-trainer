@@ -7,6 +7,7 @@ use crate::providers::{AnswerProvider, AnsweredBy, AttemptComparison, TurnFeedba
 use rusqlite::{params, Connection, OptionalExtension};
 
 mod ai_settings;
+mod api_usage;
 mod coaching;
 pub(crate) use coaching::{CoachingProgress, UncoachedAnswer};
 mod daily_recall;
@@ -20,7 +21,7 @@ mod schema;
 pub(crate) mod session_wrapup;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 11;
+const SCHEMA_VERSION: i64 = 12;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;

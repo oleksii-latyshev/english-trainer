@@ -150,20 +150,20 @@ fn invalid_output() -> ProviderError {
     )
 }
 
+/// A reply that says the quota is used up is a rate limit, and is noted in the usage log.
+fn quota_or_invalid_output(output: &str) -> ProviderError {
+    if !mentions_quota(output) {
+        return invalid_output();
+    }
+    runner::record_quota_limit(AGY_DEFAULT_MODEL, output);
+    quota_error()
+}
+
 fn parse_envelope(output: &str) -> Result<RawBatch, ProviderError> {
-    let envelope: Envelope = serde_json::from_str(output).map_err(|_| {
-        if mentions_quota(output) {
-            quota_error()
-        } else {
-            invalid_output()
-        }
-    })?;
+    let envelope: Envelope =
+        serde_json::from_str(output).map_err(|_| quota_or_invalid_output(output))?;
     if envelope.status != "SUCCESS" {
-        return Err(if mentions_quota(output) {
-            quota_error()
-        } else {
-            invalid_output()
-        });
+        return Err(quota_or_invalid_output(output));
     }
     let payload = match envelope.structured_output {
         Some(Value::String(text)) => serde_json::from_str(&text).map_err(|_| invalid_output())?,

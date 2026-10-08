@@ -1,3 +1,4 @@
+mod api_usage;
 mod audio;
 mod conversation;
 mod dock_icon;
@@ -13,6 +14,19 @@ fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
         .resource_dir()
         .ok()
         .map(|path| path.join("binaries/apple-conversation"))
+}
+
+/// Counts requests and limit errors on a thread of their own, so noting one never delays a reply.
+fn start_usage_log(sessions: &conversation::SessionStore) {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    api_usage::install(sender);
+    let sessions = sessions.clone();
+    std::thread::spawn(move || {
+        for event in receiver {
+            // Best effort: a count that cannot be saved is lost, and nothing else depends on it.
+            let _ = sessions.record_api_usage(&event);
+        }
+    });
 }
 
 /// Delivers streamed reply text to the UI; a closed channel must not fail the turn.
@@ -65,6 +79,13 @@ async fn delete_gemini_api_key() -> Result<(), providers::ProviderError> {
         .map_err(conversation_task_failed(
             "Could not remove the Gemini API key.",
         ))?
+}
+
+#[tauri::command]
+fn get_api_usage(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<api_usage::ApiUsageOverview, providers::ProviderError> {
+    sessions.api_usage_overview()
 }
 
 #[tauri::command]
@@ -486,6 +507,7 @@ pub fn run() {
                     let _ = handle.emit("coaching-updated", event);
                 },
             ));
+            start_usage_log(&sessions);
             app.manage(sessions);
             app.manage(providers::AppleHelper::new(apple_binary(app)));
             Ok(())
@@ -496,6 +518,7 @@ pub fn run() {
             get_setup_diagnostics,
             get_ai_settings,
             set_dock_icon,
+            get_api_usage,
             save_ai_settings,
             prewarm_conversation_provider,
             get_gemini_key_status,

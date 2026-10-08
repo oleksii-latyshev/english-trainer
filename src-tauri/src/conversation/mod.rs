@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod ai_settings;
+mod api_usage;
 mod coaching;
 pub(crate) mod coaching_queue;
 mod context_builder;

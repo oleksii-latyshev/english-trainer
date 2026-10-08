@@ -1,6 +1,7 @@
 //! One Gemini streaming request, run as a leg of the reply race.
 
 use super::{client, network_error, wire};
+use crate::api_usage::{self, UsageSource};
 use crate::providers::race::{Event, Leg};
 use std::io::{BufRead, BufReader};
 
@@ -24,8 +25,10 @@ fn stream(request: &Request, emit: &dyn Fn(Event) -> bool) -> Result<(), Event> 
         error,
         is_retryable: false,
     };
-    let response = client()
-        .map_err(failed)?
+    let client = client().map_err(failed)?;
+    // Counted when sent, so a request that then fails still shows in the day's count.
+    api_usage::record_request(UsageSource::Gemini, request.model);
+    let response = client
         .post(format!(
             "{}/v1beta/models/{}:streamGenerateContent?alt=sse",
             request.base_url, request.model
@@ -40,6 +43,14 @@ fn stream(request: &Request, emit: &dyn Fn(Event) -> bool) -> Result<(), Event> 
     let status = response.status().as_u16();
     if status != 200 {
         let text = response.text().unwrap_or_default();
+        if status == 429 {
+            api_usage::record_limit(
+                UsageSource::Gemini,
+                request.model,
+                api_usage::gemini_error_message(&text),
+                None,
+            );
+        }
         return Err(Event::Failed {
             error: wire::error_for_status(status, &text),
             is_retryable: wire::is_retryable(status),

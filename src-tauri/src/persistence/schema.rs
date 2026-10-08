@@ -285,6 +285,30 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
         );",
         )?;
+        transaction.pragma_update(None, "user_version", 11)?;
+        transaction.commit()?;
+        version = 11;
+    }
+    if version < 12 {
+        let transaction = connection.unchecked_transaction()?;
+        // Requests are counted per Pacific day, source and model; only the last limit error per
+        // source is kept. Neither Gemini nor Antigravity can report its remaining quota.
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS api_usage_days (
+            day TEXT NOT NULL,
+            source TEXT NOT NULL,
+            model TEXT NOT NULL,
+            requests INTEGER NOT NULL CHECK(requests >= 0),
+            PRIMARY KEY(day, source, model)
+        );
+        CREATE TABLE IF NOT EXISTS api_usage_last_limit (
+            source TEXT PRIMARY KEY,
+            occurred_at_ms INTEGER NOT NULL,
+            model TEXT NOT NULL,
+            message TEXT NOT NULL,
+            resets_at_ms INTEGER
+        );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

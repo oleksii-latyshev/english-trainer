@@ -11,6 +11,7 @@ import { EvaSettingsLink } from './EvaSettingsLink';
 import { MicrophoneSettings } from './MicrophoneSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
+import { UsageSettings } from './UsageSettings';
 import { VoiceSettings } from './VoiceSettings';
 import './settings.css';
 
@@ -60,6 +61,7 @@ export function SettingsView() {
       <h1>Settings</h1>
       <MicrophoneSettings />
       <ConversationProviderSettings />
+      <UsageSettings />
       <VoiceSettings />
       <AppearanceSettings />
       <EvaSettingsLink />
