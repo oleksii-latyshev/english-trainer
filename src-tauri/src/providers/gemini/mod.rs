@@ -7,8 +7,8 @@ mod tests;
 mod wire;
 
 use super::{
-    agy::conversation::validate_context,
     answered_by::GEMINI_CONVERSATION_MODEL as CONVERSATION_MODEL,
+    context::validate_plain_context,
     race::{self, Backup},
     reply_text::plain_turn,
     AnsweredBy, ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
@@ -21,13 +21,16 @@ const BASE_URL: &str = "https://generativelanguage.googleapis.com";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 
+/// Total context the primary accepts: 20 full turns plus condensed history and asked questions.
+pub(crate) const MAX_CONTEXT_CHARS: usize = 24_000;
+
 /// Streams a reply; `backup` takes over if Gemini stalls or is overloaded before its first word.
 pub(super) fn generate_turn(
     context: &ConversationContext,
     backup: Option<Backup>,
     on_delta: &mut dyn FnMut(&str),
 ) -> Result<ConversationTurn, ProviderError> {
-    validate_context(context)?;
+    validate_plain_context(context, MAX_CONTEXT_CHARS)?;
     let api_key = key::resolve_key()?;
     let result = generate_from(BASE_URL, &api_key, context, backup, on_delta);
     if matches!(&result, Err(error) if error.code == ProviderErrorCode::Unauthorized) {

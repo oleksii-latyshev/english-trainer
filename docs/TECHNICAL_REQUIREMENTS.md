@@ -89,9 +89,18 @@ Current:
 
 ### 5.1 Contract (F1)
 
-- `ConversationContext`: `opening_question`, up to 8 `recent_turns` (learner, assistant reply,
-  assistant question), `latest_transcript` (1–4,000 characters), up to 2 `learning_targets`.
-  Total context at most 8,000 characters; the oldest turns are dropped first.
+- `ConversationContext`: `opening_question`, up to 20 `recent_turns` (learner, assistant reply,
+  assistant question), `latest_transcript` (1–4,000 characters), up to 2 `learning_targets`,
+  `earlier_answers` (the learner's answers older than the recent turns, each cut to about 160
+  characters at a word boundary) and `asked_questions` (the 40 most recent questions Eva asked, each
+  at most 200 characters; the prompt tells her never to repeat them or ask what is already answered).
+  One builder serves Conversation and Coach. Total context at most 24,000 characters; over budget,
+  condensed answers are dropped first (oldest first), then the oldest turns, then the oldest asked
+  questions. The latest transcript, opening question and targets are always kept. The context stays
+  inside the one Gemini request per turn. Each provider compacts its own copy
+  (`ConversationContext::compact`): the Apple backup gets the last 6 turns, at most 3,500
+  characters, the 10 latest asked questions and no condensed answers; legacy `agy` gets 8 turns and
+  8,000 characters.
 - `ConversationTurn`: `spoken_reply`, `question` (nullable), `provider_latency_ms`,
   `first_token_ms`, `answered_by` (`{ provider: gemini | apple | agy, model, is_backup }`; the race
   reports which leg won, `is_backup` is true when Apple answered for a stalled or failed Gemini).
@@ -124,7 +133,7 @@ Current:
   5 s connect and 20 s total timeout. Model IDs are tier constants inside the adapter:
   conversation `gemini-3.5-flash-lite`. The Apple on-device model is raced as a backup
   (`providers/race.rs`): it starts when Gemini fails with 429, 5xx or a network error, ends with no
-  text, or has produced no text after 1.2 s (the free tier can accept a request and stall for
+  text, or has produced no text after 2 s (the free tier can accept a request and stall for
   10–15 s). The first stream that produces text wins and the other is dropped; when both fail, the
   Gemini error is reported. Configuration errors (`unauthorized`, invalid request) are reported
   without a backup reply. `gemini-3.5-flash` is not used as a fallback: its free tier allows 20

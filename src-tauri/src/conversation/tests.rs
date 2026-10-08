@@ -1,3 +1,4 @@
+use super::rules::{MAX_CONTEXT_CHARS, MAX_TURNS};
 use super::*;
 use std::sync::mpsc;
 use std::thread;
@@ -401,17 +402,25 @@ fn concurrent_turn_is_rejected_without_holding_mutex_during_provider_call() {
 }
 
 #[test]
-fn context_history_is_bounded_to_eight_recent_turns() {
+fn context_history_is_bounded_to_the_recent_window_with_older_answers_condensed() {
     let store = SessionStore::default();
     let session = store.start().unwrap();
-    for index in 0..10 {
+    for index in 0..24 {
         store
             .send_turn(session.session_id, format!("answer {index}"), |context| {
                 assert!(context.recent_turns.len() <= MAX_TURNS);
-                if index == 9 {
+                if index == 23 {
                     assert_eq!(context.recent_turns.len(), MAX_TURNS);
-                    assert_eq!(context.recent_turns[0].learner, "answer 1");
-                    assert_eq!(context.recent_turns.last().unwrap().learner, "answer 8");
+                    assert_eq!(context.recent_turns[0].learner, "answer 3");
+                    assert_eq!(context.recent_turns.last().unwrap().learner, "answer 22");
+                    assert_eq!(
+                        context.earlier_answers,
+                        ["answer 0", "answer 1", "answer 2"]
+                    );
+                    assert!(context.asked_questions.contains(&"Question 0?".to_string()));
+                    assert!(context
+                        .asked_questions
+                        .contains(&"Question 22?".to_string()));
                 }
                 Ok(turn("Okay.", &format!("Question {index}?")))
             })
@@ -429,10 +438,10 @@ fn context_discards_oldest_turns_to_stay_within_character_budget() {
                 session.session_id,
                 format!("{index}{}", "x".repeat(2_900)),
                 |context| {
-                    let chars = context_char_count(context);
+                    let chars = context.char_count();
                     assert!(chars <= MAX_CONTEXT_CHARS);
                     if index == 3 {
-                        assert!(context.recent_turns.len() < 3);
+                        assert_eq!(context.recent_turns.len(), 3);
                     }
                     Ok(turn("Okay.", "Can you tell me more?"))
                 },
@@ -446,7 +455,7 @@ fn active_session_and_all_turns_resume_after_store_restart() {
     let path = temporary_database_path();
     let store = SessionStore::open(&path).unwrap();
     let session = store.start().unwrap();
-    for index in 0..10 {
+    for index in 0..22 {
         store
             .send_turn(session.session_id, format!("answer {index}"), |context| {
                 assert!(context.recent_turns.len() <= MAX_TURNS);
@@ -459,13 +468,14 @@ fn active_session_and_all_turns_resume_after_store_restart() {
     let resumed = SessionStore::open(&path).unwrap();
     let state = resumed.get_active().unwrap().unwrap();
     assert_eq!(state.session_id, session.session_id);
-    assert_eq!(state.turn_count, 10);
+    assert_eq!(state.turn_count, 22);
     assert_eq!(state.target_turns, DAILY_TARGET_TURNS);
-    assert_eq!(state.opening_question, "Question 9?");
+    assert_eq!(state.opening_question, "Question 21?");
     resumed
         .send_turn(state.session_id, "answer after restart".into(), |context| {
             assert_eq!(context.recent_turns.len(), MAX_TURNS);
             assert_eq!(context.recent_turns[0].learner, "answer 2");
+            assert_eq!(context.earlier_answers, ["answer 0", "answer 1"]);
             Ok(turn("Sure.", "What else?"))
         })
         .unwrap();

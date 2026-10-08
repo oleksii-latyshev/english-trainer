@@ -1,13 +1,14 @@
 use crate::persistence::SessionDatabase;
 use crate::providers::{
-    compare_attempts, AttemptComparison, ContextTurn, ConversationContext, ConversationTurn,
-    ProviderError, ProviderErrorCode, TurnFeedback,
+    compare_attempts, AttemptComparison, ConversationContext, ConversationTurn, ProviderError,
+    ProviderErrorCode, TurnFeedback,
 };
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod ai_settings;
 pub(crate) mod coach;
+mod context_builder;
 mod guided;
 pub(crate) mod memory_recall;
 pub(crate) mod recall;
@@ -21,8 +22,8 @@ pub use coach::{
 };
 pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
 use rules::{
-    context_char_count, validate_transcript, DAILY_TARGET_TURNS, MAX_CONTEXT_CHARS,
-    MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS, MAX_TURNS, OPENING_QUESTION,
+    validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS,
+    OPENING_QUESTION,
 };
 pub use scaffold::{question_scaffold, QuestionScaffold};
 pub use wrapup::{RecurringMistake, WrapupPhrase};
@@ -280,31 +281,12 @@ impl SessionStore {
             };
             let session = active_session_mut(&mut state, session_id)?;
             session.in_flight = true;
-            let mut context = ConversationContext {
-                opening_question: session.opening_question.clone(),
-                recent_turns: session
-                    .turns
-                    .iter()
-                    .rev()
-                    .take(MAX_TURNS)
-                    .map(|turn| ContextTurn {
-                        learner: turn.learner.clone(),
-                        assistant_reply: turn.assistant_reply.clone(),
-                        assistant_question: turn.assistant_question.clone(),
-                    })
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect(),
-                latest_transcript: transcript.trim().to_string(),
+            context_builder::build_context(
+                &session.opening_question,
+                &session.turns,
+                &transcript,
                 learning_targets,
-            };
-            while context_char_count(&context) > MAX_CONTEXT_CHARS
-                && !context.recent_turns.is_empty()
-            {
-                context.recent_turns.remove(0);
-            }
-            context
+            )
         };
 
         let result = generate(&context);

@@ -2,7 +2,7 @@
 //! speaking JSON lines over stdin/stdout.
 
 use super::{
-    agy::conversation::validate_context,
+    context::validate_plain_context,
     plain_prompt,
     race::{Event, Leg},
     reply_text::plain_turn,
@@ -22,6 +22,12 @@ use std::{
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
+
+// The on-device model has a small window and prefills slowly: more history makes its replies
+// slower and no better, so it gets only the last few turns and the questions to avoid repeating.
+const MAX_TURNS: usize = 6;
+const MAX_CONTEXT_CHARS: usize = 3_500;
+const MAX_ASKED_QUESTIONS: usize = 10;
 
 #[derive(Serialize)]
 struct HelperRequest<'a> {
@@ -120,7 +126,8 @@ impl AppleHelper {
         context: &ConversationContext,
         on_delta: &mut dyn FnMut(&str),
     ) -> Result<String, ProviderError> {
-        validate_context(context)?;
+        let context = &context.compact(MAX_TURNS, MAX_CONTEXT_CHARS, MAX_ASKED_QUESTIONS);
+        validate_plain_context(context, MAX_CONTEXT_CHARS)?;
         let instructions = plain_prompt::instructions(context);
         let prompt = plain_prompt::transcript_prompt(context);
         let mut running = self.lock();

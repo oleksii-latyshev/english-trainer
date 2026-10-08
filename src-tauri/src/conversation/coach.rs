@@ -156,8 +156,6 @@ impl super::SessionStore {
             &crate::providers::ConversationContext,
         ) -> Result<crate::providers::ConversationTurn, ProviderError>,
     {
-        use super::rules::{context_char_count, MAX_CONTEXT_CHARS, MAX_TURNS};
-        use crate::providers::{ContextTurn, ConversationContext};
         let context = {
             let mut state = self.lock();
             let session = state
@@ -193,30 +191,12 @@ impl super::SessionStore {
             };
             let session = super::active_session_mut(&mut state, session_id)?;
             session.in_flight = true;
-            let mut context = ConversationContext {
-                opening_question: session.opening_question.clone(),
-                recent_turns: session.turns[..session.turns.len() - 1]
-                    .iter()
-                    .rev()
-                    .take(MAX_TURNS)
-                    .map(|turn| ContextTurn {
-                        learner: turn.learner.clone(),
-                        assistant_reply: turn.assistant_reply.clone(),
-                        assistant_question: turn.assistant_question.clone(),
-                    })
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect(),
-                latest_transcript,
+            super::context_builder::build_context(
+                &session.opening_question,
+                &session.turns[..session.turns.len() - 1],
+                &latest_transcript,
                 learning_targets,
-            };
-            while context_char_count(&context) > MAX_CONTEXT_CHARS
-                && !context.recent_turns.is_empty()
-            {
-                context.recent_turns.remove(0);
-            }
-            context
+            )
         };
         let result = generate(&context);
         let mut state = self.lock();

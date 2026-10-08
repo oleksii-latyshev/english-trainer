@@ -1,6 +1,7 @@
 pub(crate) mod agy;
 mod answered_by;
 mod apple;
+mod context;
 mod gemini;
 mod plain_prompt;
 mod race;
@@ -17,7 +18,23 @@ use std::time::{Duration, Instant};
 
 // Gemini's measured first word is ~0.8 s median, ~1 s p90 when healthy. With no word by this
 // point the free tier is usually overloaded, so the on-device model starts answering in parallel.
-const APPLE_BACKUP_AFTER: Duration = Duration::from_millis(1_200);
+// 2 s, not less: the on-device answers are generic and slow, so a merely busy Gemini should win.
+const APPLE_BACKUP_AFTER: Duration = Duration::from_millis(2_000);
+
+/// The legacy `agy` window: its schema prompt embeds the whole context as JSON.
+const AGY_MAX_TURNS: usize = 8;
+const AGY_MAX_CHARS: usize = 8_000;
+const AGY_MAX_QUESTIONS: usize = 10;
+
+/// Characters of the system instruction plus dialogue a plain-text provider would receive.
+#[cfg(test)]
+pub(crate) fn primary_prompt_chars(context: &ConversationContext) -> usize {
+    plain_prompt::instructions(context).chars().count()
+        + plain_prompt::dialogue(context)
+            .iter()
+            .map(|line| line.text.chars().count())
+            .sum::<usize>()
+}
 
 pub(crate) fn resolve_agy_binary() -> Option<std::path::PathBuf> {
     agy::resolve_binary()
@@ -38,8 +55,9 @@ pub fn generate_configured_turn(
 ) -> Result<ConversationTurn, ProviderError> {
     measure_turn(on_delta, |forward| match settings.provider {
         ConversationProvider::Agy => {
+            let context = context.compact(AGY_MAX_TURNS, AGY_MAX_CHARS, AGY_MAX_QUESTIONS);
             let mut turn =
-                agy::conversation::generate_turn_with_model(context, settings.agy_model)?;
+                agy::conversation::generate_turn_with_model(&context, settings.agy_model)?;
             turn.answered_by = Some(AnsweredBy::agy(settings.agy_model));
             forward(&format!(
                 "{} {}",
@@ -240,12 +258,18 @@ pub enum FocusCategory {
     Interaction,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
 pub struct ConversationContext {
     pub opening_question: String,
     pub recent_turns: Vec<ContextTurn>,
     pub latest_transcript: String,
     pub learning_targets: Vec<LearningPromptTarget>,
+    /// The learner's answers older than `recent_turns`, each condensed, oldest first.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub earlier_answers: Vec<String>,
+    /// Questions Eva already asked this session, oldest first.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub asked_questions: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -328,6 +352,11 @@ impl ProviderError {
 #[cfg(test)]
 mod timing_tests {
     use super::*;
+
+    #[test]
+    fn the_on_device_backup_starts_after_two_seconds_without_a_word() {
+        assert_eq!(APPLE_BACKUP_AFTER, Duration::from_secs(2));
+    }
 
     #[test]
     fn provider_boundary_adds_latency_and_first_token_time_to_the_returned_turn() {

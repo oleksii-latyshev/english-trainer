@@ -61,7 +61,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Apple adapter: one long-lived helper process per app run (JSON lines over stdin/stdout),
   `prewarm()` when a session opens, `streamResponse` for output.
 - Gemini API adapter: HTTPS streaming (`streamGenerateContent`); key entered in Settings and stored
-  encrypted (see Decisions), never in SQLite or logs. When Gemini stalls for 1.2 s or is
+  encrypted (see Decisions), never in SQLite or logs. When Gemini stalls for 2 s or is
   overloaded, the on-device Apple model answers instead.
 - Replace the regex-heavy JSON schema with plain text plus light Rust checks (length cap, strip
   markdown). A long or imperfect reply is trimmed, not rejected.

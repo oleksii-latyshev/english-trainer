@@ -8,6 +8,7 @@ fn context() -> ConversationContext {
         recent_turns: Vec::new(),
         latest_transcript: "Hello".into(),
         learning_targets: Vec::new(),
+        ..Default::default()
     }
 }
 

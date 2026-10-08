@@ -12,6 +12,7 @@ fn live_conversation_benchmark() {
         latest_transcript:
             "I am working on a small English practice app. Today I want to improve the chat.".into(),
         learning_targets: Vec::new(),
+        ..Default::default()
     };
     let mut failures = 0;
     for model in [

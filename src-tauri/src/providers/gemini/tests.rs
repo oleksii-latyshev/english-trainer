@@ -23,6 +23,7 @@ fn context() -> ConversationContext {
             cue: "work".into(),
             target: "I work on".into(),
         }],
+        ..Default::default()
     }
 }
 

@@ -147,6 +147,7 @@ async fn generate_follow_up(
                 recent_turns: Vec::new(),
                 latest_transcript: transcript,
                 learning_targets: Vec::new(),
+                ..Default::default()
             },
             &settings,
             &apple,

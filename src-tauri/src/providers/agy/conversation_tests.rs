@@ -16,6 +16,7 @@ fn context(transcript: &str) -> ConversationContext {
         recent_turns: Vec::new(),
         latest_transcript: transcript.into(),
         learning_targets: Vec::new(),
+        ..Default::default()
     }
 }
 
