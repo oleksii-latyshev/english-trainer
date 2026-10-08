@@ -3,7 +3,7 @@ use super::super::{
     UsageReviewRequest, UsageReviewResponse,
 };
 use super::{
-    runner::{self, run_cli, AgyEnvelope, ScratchDirectory, TIMEOUT},
+    runner::{self, run_cli, AgyEnvelope, CliOptions, ScratchDirectory, TIMEOUT},
     AgyEngine,
 };
 use crate::learning::{
@@ -58,7 +58,7 @@ impl UsageReviewEngine for AgyEngine {
                 &schema_path,
                 &log_path,
                 &prompt,
-                TIMEOUT,
+                CliOptions::gemini(TIMEOUT),
             )?;
             let parsed =
                 parse_usage_envelope(&output).and_then(|raw| validate_usage_response(raw, request));

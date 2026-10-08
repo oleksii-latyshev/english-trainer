@@ -1,4 +1,5 @@
 import { type AnsweredBy, isOptionalAnsweredBy } from '@/lib/answeredBy';
+import { isTurnCoaching, type TurnCoaching } from './coachingTypes';
 
 export type PracticeDialogueTurn = {
   learner: string;
@@ -18,6 +19,8 @@ export type PracticeDialogue = {
   answer_durations_ms?: (number | null)[];
   /** Per turn: help was opened for the answer before it was sent. */
   help_used?: boolean[];
+  /** Per turn: where the background coaching of the learner's answer stands. */
+  coaching?: TurnCoaching[];
 };
 
 function isMillisecondsOrNull(value: unknown): boolean {
@@ -69,6 +72,7 @@ export function isPracticeDialogue(value: unknown): value is PracticeDialogue {
         ))) &&
     isPerTurnList(value, 'reply_times_ms', value.turns.length, isMillisecondsOrNull) &&
     isPerTurnList(value, 'answer_durations_ms', value.turns.length, isMillisecondsOrNull) &&
-    isPerTurnList(value, 'help_used', value.turns.length, (entry) => typeof entry === 'boolean')
+    isPerTurnList(value, 'help_used', value.turns.length, (entry) => typeof entry === 'boolean') &&
+    isPerTurnList(value, 'coaching', value.turns.length, isTurnCoaching)
   );
 }

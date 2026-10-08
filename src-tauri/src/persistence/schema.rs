@@ -268,6 +268,23 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             PRIMARY KEY(session_id, sequence)
         );",
         )?;
+        transaction.pragma_update(None, "user_version", 10)?;
+        transaction.commit()?;
+        version = 10;
+    }
+    if version < 11 {
+        let transaction = connection.unchecked_transaction()?;
+        // How often background coaching failed for an answer. An answer with feedback needs no row;
+        // an answer without feedback and under the attempt limit is still waiting in the queue.
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS coaching_failures (
+            session_id INTEGER NOT NULL,
+            sequence INTEGER NOT NULL,
+            failed_attempts INTEGER NOT NULL CHECK(failed_attempts >= 0),
+            PRIMARY KEY(session_id, sequence),
+            FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+        );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

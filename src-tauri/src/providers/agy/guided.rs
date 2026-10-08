@@ -18,7 +18,7 @@ pub fn generate_guided_answer(question: &str) -> Result<GuidedAnswer, ProviderEr
     generate(&binary, question)
 }
 
-fn generate(binary: &Path, question: &str) -> Result<GuidedAnswer, ProviderError> {
+pub(super) fn generate(binary: &Path, question: &str) -> Result<GuidedAnswer, ProviderError> {
     if question.trim().is_empty() || question.chars().count() > 500 {
         return Err(ProviderError::new(
             ProviderErrorCode::InvalidRequest,
@@ -49,10 +49,7 @@ fn generate(binary: &Path, question: &str) -> Result<GuidedAnswer, ProviderError
             &schema,
             &workspace.path().join("agy.log"),
             &prompt,
-            CliOptions {
-                timeout: deadline.saturating_duration_since(Instant::now()),
-                model: None,
-            },
+            CliOptions::gemini(deadline.saturating_duration_since(Instant::now())),
         )?;
         if let Ok(envelope) = serde_json::from_str::<AgyEnvelope>(&output) {
             if envelope.status == "SUCCESS" {

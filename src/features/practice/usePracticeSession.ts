@@ -3,26 +3,20 @@ import { useEffect, useState } from 'react';
 import {
   type AttemptComparison,
   type ConversationTurn,
+  type FinishedPracticeSession,
   isProviderError,
-  type SessionMode,
-  type TurnFeedback,
+  type PracticeSession,
 } from '@/lib/types';
-import type { InputSource } from './lib/inputSource';
 import {
-  advanceCoachTurn,
   advancePractice,
   type PracticeState,
-  recordCoachAnswer,
   recordRetryComparison,
   setTurnPending,
-  updateCoachFeedback,
+  updateSummary,
 } from './lib/practiceState';
 import {
-  continueCoachTurn,
   finishPracticeSession,
   getActivePracticeSession,
-  saveCoachAnswer,
-  savePracticeFeedback,
   startPracticeSession,
 } from './sessionApi';
 
@@ -37,6 +31,17 @@ function sessionError(cause: unknown, fallback: string): string {
   return isProviderError(cause) ? cause.message : fallback;
 }
 
+function activeState(session: PracticeSession): PracticeState {
+  return {
+    tag: 'active',
+    sessionId: session.session_id,
+    question: session.opening_question,
+    turnCount: session.turn_count,
+    targetTurns: session.target_turns,
+    retryEvidence: session.retry_evidence,
+  };
+}
+
 export function usePracticeSession(dependencies: Dependencies) {
   const [state, setState] = useState<PracticeState>(() =>
     isTauri() ? { tag: 'loading' } : { tag: 'idle' },
@@ -49,20 +54,7 @@ export function usePracticeSession(dependencies: Dependencies) {
     void getActivePracticeSession()
       .then((session) => {
         if (!isCurrent) return;
-        setState(
-          session
-            ? {
-                tag: 'active',
-                sessionId: session.session_id,
-                mode: session.mode ?? 'conversation',
-                question: session.opening_question,
-                turnCount: session.turn_count,
-                targetTurns: session.target_turns,
-                retryEvidence: session.retry_evidence,
-                coachState: session.coach_state,
-              }
-            : { tag: 'idle' },
-        );
+        setState(session ? activeState(session) : { tag: 'idle' });
       })
       .catch((cause) => {
         if (!isCurrent) return;
@@ -74,7 +66,7 @@ export function usePracticeSession(dependencies: Dependencies) {
     };
   }, []);
 
-  async function start(mode: SessionMode = 'conversation') {
+  async function start() {
     // "Talk more" on the wrap-up starts the next session straight from the summary.
     if ((state.tag !== 'idle' && state.tag !== 'completed') || !dependencies.canChangeSession)
       return;
@@ -85,20 +77,11 @@ export function usePracticeSession(dependencies: Dependencies) {
     setState({ tag: 'starting' });
     setError('');
     try {
-      const session = await startPracticeSession(mode);
+      const session = await startPracticeSession();
       dependencies.stopSpeech();
       dependencies.resetCapture();
-      setState({
-        tag: 'active',
-        sessionId: session.session_id,
-        mode: session.mode ?? mode,
-        question: session.opening_question,
-        turnCount: session.turn_count,
-        targetTurns: session.target_turns,
-        retryEvidence: session.retry_evidence,
-        coachState: session.coach_state,
-      });
-      if (!session.coach_state?.is_pending) dependencies.playQuestion(session.opening_question);
+      setState(activeState(session));
+      dependencies.playQuestion(session.opening_question);
     } catch (cause) {
       setState({ tag: 'idle' });
       setError(sessionError(cause, 'Could not start practice. Please try again.'));
@@ -131,50 +114,10 @@ export function usePracticeSession(dependencies: Dependencies) {
     finish,
     dismissSummary: () =>
       setState((current) => (current.tag === 'completed' ? { tag: 'idle' } : current)),
-    acceptTurn: (sessionId: number, transcript: string, turn: ConversationTurn) =>
-      setState((current) => advancePractice(current, sessionId, transcript, turn)),
-    saveCoachAnswer: async (
-      sessionId: number,
-      transcript: string,
-      inputSource?: InputSource,
-      answerDurationMs?: number,
-    ) => {
-      setState((current) => setTurnPending(current, true));
-      try {
-        const saved = await saveCoachAnswer(sessionId, transcript, inputSource, answerDurationMs);
-        setState((current) => recordCoachAnswer(current, sessionId, saved));
-        return saved;
-      } catch (cause) {
-        setState((current) => setTurnPending(current, false));
-        throw cause;
-      }
-    },
-    continueCoachTurn: async (
-      sessionId: number,
-      sequence: number,
-      onDelta?: (text: string) => void,
-    ) => {
-      setState((current) => setTurnPending(current, true));
-      try {
-        const turn = await continueCoachTurn(sessionId, sequence, onDelta);
-        setState((current) => advanceCoachTurn(current, sessionId, turn));
-        dependencies.resetCapture();
-        dependencies.playQuestion(turn.question ?? turn.spoken_reply);
-        return turn;
-      } catch (cause) {
-        setState((current) => setTurnPending(current, false));
-        throw cause;
-      }
-    },
-    saveFeedback: async (
-      sessionId: number,
-      sequence: number,
-      transcript: string,
-      feedback: TurnFeedback,
-    ) => {
-      await savePracticeFeedback(sessionId, sequence, transcript, feedback);
-      setState((current) => updateCoachFeedback(current, sessionId, sequence, feedback));
-    },
+    updateSummary: (summary: FinishedPracticeSession) =>
+      setState((current) => updateSummary(current, summary)),
+    acceptTurn: (sessionId: number, turn: ConversationTurn) =>
+      setState((current) => advancePractice(current, sessionId, turn)),
     acceptRetryComparison: (sessionId: number, comparison: AttemptComparison) =>
       setState((current) => recordRetryComparison(current, sessionId, comparison)),
     onTurnPendingChange: (isPending: boolean) =>

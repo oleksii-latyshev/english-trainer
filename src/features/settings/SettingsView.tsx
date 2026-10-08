@@ -59,9 +59,7 @@ export function SettingsView() {
     <div className="settings">
       <h1>Settings</h1>
       <MicrophoneSettings />
-      <ConversationProviderSettings
-        defaultModel={diagnostics.tag === 'ready' ? diagnostics.data.agy_default_model : undefined}
-      />
+      <ConversationProviderSettings />
       <VoiceSettings />
       <AppearanceSettings />
       <EvaSettingsLink />

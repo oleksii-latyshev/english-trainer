@@ -193,3 +193,14 @@
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* A recorder inside the coaching note's second-try box */
+.talk-card.talk-embedded {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.talk-note .talk-retry {
+  gap: 8px;
+}

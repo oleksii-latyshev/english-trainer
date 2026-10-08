@@ -61,14 +61,14 @@ impl SessionDatabase {
         rows.map(|row| super::to_u64_id(row?)).collect()
     }
 
-    /// Time since the session started, in ms.
+    /// Time from the start of the session to its end, or to now while it is still open.
     pub(crate) fn session_elapsed_ms(&self, session_id: u64) -> rusqlite::Result<u64> {
-        let started_at: i64 = self.connection.query_row(
-            "SELECT started_at FROM sessions WHERE id = ?1",
+        let (started_at, ended_at): (i64, Option<i64>) = self.connection.query_row(
+            "SELECT started_at, ended_at FROM sessions WHERE id = ?1",
             [to_sql_id(session_id)?],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )?;
-        Ok(u64::try_from(now_ms() - started_at).unwrap_or(0))
+        Ok(u64::try_from(ended_at.unwrap_or_else(now_ms) - started_at).unwrap_or(0))
     }
 
     /// Answers of the session whose coaching feedback was saved, in order.

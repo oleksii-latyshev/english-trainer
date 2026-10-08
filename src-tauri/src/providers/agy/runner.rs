@@ -11,6 +11,11 @@ use std::{
 };
 
 pub(crate) const TIMEOUT: Duration = Duration::from_secs(45);
+/// The Gemini model every Antigravity call runs on. Without `--model` agy falls back to its own
+/// default, which is a Claude model and spends the learner's Claude quota.
+pub(crate) const AGY_DEFAULT_MODEL: &str = "gemini-3.8-flash-medium";
+/// Output markers that mean the Antigravity quota is used up, so retrying right away cannot help.
+const QUOTA_MARKERS: [&str; 3] = ["RESOURCE_EXHAUSTED", "429", "quota"];
 const MAX_OUTPUT_BYTES: u64 = 64 * 1024;
 static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
@@ -42,16 +47,18 @@ pub(super) fn resolve_binary() -> Option<PathBuf> {
         .or_else(|| candidates.into_iter().find(|path| path.is_file()))
 }
 
+/// How one Antigravity call runs. The model is required, never optional: a call without one would
+/// run on agy's own default model.
 pub(super) struct CliOptions {
     pub timeout: Duration,
-    pub model: Option<&'static str>,
+    pub model: &'static str,
 }
 
-impl From<Duration> for CliOptions {
-    fn from(timeout: Duration) -> Self {
+impl CliOptions {
+    pub(super) fn gemini(timeout: Duration) -> Self {
         Self {
             timeout,
-            model: None,
+            model: AGY_DEFAULT_MODEL,
         }
     }
 }
@@ -62,9 +69,10 @@ pub(super) fn run_cli(
     schema_path: &Path,
     log_path: &Path,
     prompt: &str,
-    options: impl Into<CliOptions>,
+    options: CliOptions,
 ) -> Result<String, ProviderError> {
-    let options = options.into();
+    // agy stops waiting on its own a little before the process deadline so it can answer cleanly.
+    let print_timeout = format!("{}s", options.timeout.as_secs().saturating_sub(5).max(1));
     let mut command = Command::new(binary);
     command.current_dir(working_directory).args([
         "--print",
@@ -76,14 +84,13 @@ pub(super) fn run_cli(
         "--disable-slash-commands",
         "--sandbox",
         "--print-timeout",
-        "40s",
+        print_timeout.as_str(),
         "--log-file",
         log_path.to_string_lossy().as_ref(),
-    ]);
-    if let Some(model) = options.model {
         // These verified model IDs already encode effort. An extra low override conflicts with Flash High.
-        command.args(["--model", model]);
-    }
+        "--model",
+        options.model,
+    ]);
     run_process(&mut command, working_directory, options.timeout)
 }
 
@@ -99,8 +106,16 @@ pub(crate) fn run_process(
             "Could not prepare provider output storage.",
         )
     })?;
+    // stderr is kept (bounded) only to recognise an exhausted quota.
+    let stderr_path = working_directory.join("provider-error.txt");
+    let stderr_file = fs::File::create(&stderr_path).map_err(|_| {
+        ProviderError::new(
+            ProviderErrorCode::ProcessFailed,
+            "Could not prepare provider output storage.",
+        )
+    })?;
     let mut child = command.stdout(Stdio::from(stdout_file))
-        .stderr(Stdio::null())
+        .stderr(Stdio::from(stderr_file))
         .spawn()
         .map_err(|error| {
             let code = if error.kind() == io::ErrorKind::NotFound {
@@ -137,6 +152,9 @@ pub(crate) fn run_process(
         }
     };
     if !status.success() {
+        if is_quota_exhausted(&stderr_path) || is_quota_exhausted(&stdout_path) {
+            return Err(quota_error());
+        }
         return Err(ProviderError::new(
             ProviderErrorCode::ProcessFailed,
             "The AI provider could not respond. Check the selected model and Antigravity sign-in in Settings, then retry.",
@@ -168,6 +186,34 @@ pub(crate) fn run_process(
             "The conversation provider returned output that was not valid UTF-8.",
         )
     })
+}
+
+/// The error for a used-up Antigravity quota; coaching pauses on it instead of retrying.
+pub(crate) fn quota_error() -> ProviderError {
+    ProviderError::new(
+        ProviderErrorCode::RateLimited,
+        "Antigravity has run out of quota for now. Coaching is paused; talking is not affected.",
+    )
+}
+
+/// True when the (bounded) head of a file mentions an exhausted quota.
+pub(crate) fn is_quota_exhausted(path: &Path) -> bool {
+    use std::io::Read;
+    let mut text = Vec::new();
+    let Ok(file) = fs::File::open(path) else {
+        return false;
+    };
+    if file.take(16 * 1024).read_to_end(&mut text).is_err() {
+        return false;
+    }
+    mentions_quota(&String::from_utf8_lossy(&text))
+}
+
+pub(crate) fn mentions_quota(text: &str) -> bool {
+    let lowered = text.to_ascii_lowercase();
+    QUOTA_MARKERS
+        .iter()
+        .any(|marker| lowered.contains(&marker.to_ascii_lowercase()))
 }
 
 pub(crate) struct ScratchDirectory(PathBuf);

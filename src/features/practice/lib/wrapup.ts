@@ -48,3 +48,17 @@ export function trendLine(trend: Trend): TrendLine {
 export function savePhrasesLabel(count: number): string {
   return count === 1 ? 'Save 1 phrase to Memory' : `Save all ${count} phrases to Memory`;
 }
+
+/**
+ * The calm line while coaching of the last answers has not landed: they are still being checked,
+ * or checking is paused. Empty when every answer is checked.
+ */
+export function checkingLine(pendingAnswers: number, isPaused: boolean): string {
+  if (isPaused) {
+    return 'Coaching is paused because Antigravity has no quota left. Unchecked answers are not included.';
+  }
+  if (pendingAnswers === 0) return '';
+  return pendingAnswers === 1
+    ? 'Still checking 1 answer…'
+    : `Still checking ${pendingAnswers} answers…`;
+}

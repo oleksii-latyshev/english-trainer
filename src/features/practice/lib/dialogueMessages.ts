@@ -1,4 +1,5 @@
 import { answeredByLabel } from '@/lib/answeredBy';
+import type { TurnCoaching } from '@/lib/coachingTypes';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 
 export type DialogueMessage = {
@@ -17,6 +18,10 @@ export type DialogueMessage = {
   answerDurationMs?: number;
   /** The learner opened a help level before sending this answer. */
   usedHelp?: boolean;
+  /** Learner messages: which answer this is, counting from 1. */
+  sequence?: number;
+  /** Learner messages: where the background coaching of the answer stands. */
+  coaching?: TurnCoaching;
 };
 
 function turnMessages(dialogue: PracticeDialogue, index: number): DialogueMessage[] {
@@ -30,6 +35,8 @@ function turnMessages(dialogue: PracticeDialogue, index: number): DialogueMessag
       inputSource: dialogue.input_sources?.[index],
       answerDurationMs: dialogue.answer_durations_ms?.[index] ?? undefined,
       usedHelp: dialogue.help_used?.[index] === true,
+      sequence: index + 1,
+      coaching: dialogue.coaching?.[index],
     });
   }
   const reply = turn.assistant_reply.trim();

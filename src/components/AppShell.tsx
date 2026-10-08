@@ -26,7 +26,7 @@ const NAVIGATION: NavEntry[] = [
     path: '/',
     label: 'Talk',
     icon: MessageCircle,
-    matches: ['/', '/conversation', '/coach', '/summary'],
+    matches: ['/', '/conversation', '/summary'],
   },
   { path: '/memory', label: 'Memory', icon: Bookmark, matches: ['/memory', '/memory/review'] },
   {

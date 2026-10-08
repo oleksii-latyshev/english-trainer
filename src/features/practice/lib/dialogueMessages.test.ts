@@ -71,7 +71,7 @@ describe('buildDialogueMessages', () => {
     expect(msgs[0].id).toBe('msg-opening');
   });
 
-  it('omits empty pending assistant replies in coach mode', () => {
+  it('omits the empty reply of an answer an older Coach session never continued', () => {
     const msgs = buildDialogueMessages(
       {
         session_id: 1,
@@ -137,5 +137,21 @@ describe('buildDialogueMessages', () => {
     expect(msgs).toHaveLength(4);
     expect(msgs[3].id).toBe('msg-current-prompt');
     expect(msgs[3].text).toBe('What do you like about it?');
+  });
+
+  it('numbers each learner answer and carries where its coaching stands', () => {
+    const msgs = buildDialogueMessages({
+      session_id: 1,
+      opening_question: 'Q?',
+      turns: [
+        { learner: 'First', assistant_reply: 'Ok.', assistant_question: 'And?' },
+        { learner: 'Second', assistant_reply: 'Ok.', assistant_question: 'Why?' },
+      ],
+      coaching: [{ state: 'failed' }, { state: 'pending' }],
+    });
+    const learner = msgs.filter((message) => message.sender === 'learner');
+    expect(learner.map((message) => message.sequence)).toEqual([1, 2]);
+    expect(learner.map((message) => message.coaching?.state)).toEqual(['failed', 'pending']);
+    expect(msgs.filter((message) => message.sender === 'assistant')[0].sequence).toBeUndefined();
   });
 });

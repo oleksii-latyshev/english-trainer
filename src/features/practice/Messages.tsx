@@ -1,5 +1,6 @@
 import { Button } from '@heroui/react';
 import { CircleHelp, Smartphone, Volume2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { EvaMini } from '@/components/eva/Eva';
 import type { DialogueMessage } from './lib/dialogueMessages';
 import { inputSourceLabel } from './lib/inputSource';
@@ -72,7 +73,13 @@ export function EvaThinking() {
   );
 }
 
-export function LearnerMessage({ message }: { message: DialogueMessage }) {
+type LearnerProps = {
+  message: DialogueMessage;
+  /** The coaching note under the answer. */
+  note?: ReactNode;
+};
+
+export function LearnerMessage({ message, note }: LearnerProps) {
   const sourceLabel = inputSourceLabel(message.inputSource);
   const duration = formatAnswerDuration(message.answerDurationMs);
   const meta = [sourceLabel, duration].filter(Boolean).join(' · ');
@@ -90,6 +97,7 @@ export function LearnerMessage({ message }: { message: DialogueMessage }) {
           {meta && <span>{meta}</span>}
         </div>
       )}
+      {note}
     </article>
   );
 }

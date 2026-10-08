@@ -1,4 +1,4 @@
-import { Button, Chip, Tooltip } from '@heroui/react';
+import { Button, Tooltip } from '@heroui/react';
 import { Pause, Play } from 'lucide-react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { SpeechTiming } from '@/features/speech/TimingPanel';
@@ -6,9 +6,6 @@ import { TimingPopover } from '@/features/speech/TimingPanel';
 import type { PauseControl } from './lib/pauseControl';
 
 type Props = {
-  mode: 'conversation' | 'coach';
-  /** Where Coach is in its flow, e.g. "Feedback". */
-  coachStep?: string;
   mood: EvaMood;
   turnCount: number;
   targetTurns: number;
@@ -51,8 +48,6 @@ function PauseButton({ pause }: { pause: Props['pause'] }) {
 }
 
 export function TalkHeader({
-  mode,
-  coachStep,
   mood,
   turnCount,
   targetTurns,
@@ -68,14 +63,6 @@ export function TalkHeader({
       <div className="talk-header-eva">
         <Eva decorative mood={mood} size={44} />
       </div>
-      {mode === 'coach' && (
-        <div className="talk-mode">
-          <Chip color="accent" size="sm" variant="soft">
-            Coach
-          </Chip>
-          {coachStep && <span className="talk-mode-step">{coachStep}</span>}
-        </div>
-      )}
       <div className="talk-progress">
         <div
           aria-label="Answers so far"

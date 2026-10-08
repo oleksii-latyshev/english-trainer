@@ -1,6 +1,5 @@
 use super::super::{
-    ConversationContext, ConversationEngine, ConversationTurn, ProviderError, ProviderErrorCode,
-    ReplyStage,
+    ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode, ReplyStage,
 };
 use super::{
     runner::{self, run_cli, AgyEnvelope, CliOptions, ScratchDirectory, TIMEOUT},
@@ -20,19 +19,20 @@ struct RawTurn {
     is_complete: bool,
 }
 
-impl ConversationEngine for AgyEngine {
+#[cfg(test)]
+impl super::super::ConversationEngine for AgyEngine {
     fn generate_turn(
         &self,
         context: &ConversationContext,
     ) -> Result<ConversationTurn, ProviderError> {
-        generate_using_model(self, context, None)
+        generate_using_model(self, context, runner::AGY_DEFAULT_MODEL)
     }
 }
 
 fn generate_using_model(
     engine: &AgyEngine,
     context: &ConversationContext,
-    model: Option<&'static str>,
+    model: &'static str,
 ) -> Result<ConversationTurn, ProviderError> {
     validate_context(context)?;
     let workspace = ScratchDirectory::new().map_err(|_| {
@@ -88,10 +88,7 @@ pub(crate) fn generate_turn_with_model(
         )
     })?;
     let engine = AgyEngine { binary };
-    match model.cli_id() {
-        None => engine.generate_turn(context),
-        id => generate_using_model(&engine, context, id),
-    }
+    generate_using_model(&engine, context, model.cli_id())
 }
 
 pub(crate) fn validate_context(context: &ConversationContext) -> Result<(), ProviderError> {

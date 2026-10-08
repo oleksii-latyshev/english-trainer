@@ -1,52 +1,30 @@
 import { Button } from '@heroui/react';
-import { Bookmark, ChevronDown, ChevronUp, Mic, TriangleAlert, Volume2 } from 'lucide-react';
-import { useState } from 'react';
+import { Bookmark, ChevronDown, ChevronUp, Mic, Volume2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { TurnFeedback } from '@/lib/types';
+import type { NoteView } from './lib/note';
 import { highlightRewrite } from './lib/rewriteDiff';
 
 export type PhraseSaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-export type NoteState =
-  | { tag: 'idle' }
-  | { tag: 'loading' }
-  | { tag: 'ready'; feedback: TurnFeedback }
-  | { tag: 'error'; message: string };
-
 type Props = {
-  state: NoteState;
+  view: NoteView;
+  /** What the learner said, to show which words of the rewrite changed. */
   transcript: string;
-  isAnswerSent: boolean;
-  canReview: boolean;
-  isFeedbackSaved: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
   phraseSaveState: PhraseSaveState;
-  phraseSaveError: string | null;
-  persistError: string | null;
-  onReview: () => void;
-  onRetryPersist: () => void;
+  /** False when the phrase is too long for a Memory card. */
+  canSavePhrase: boolean;
   onSavePhrase: () => void;
-  onTryAgain?: () => void;
-  onSpeakRewrite?: (text: string) => void;
+  onSayAgain: () => void;
+  isSayAgainDisabled: boolean;
+  onSpeakRewrite: (text: string) => void;
+  /** Checking failed or coaching is paused: asks again. */
+  onRetryCoaching: () => void;
+  /** The second try, shown inside the note. */
+  secondTry?: ReactNode;
 };
-
-function Notice({
-  message,
-  action,
-}: {
-  message: string;
-  action?: { label: string; run: () => void };
-}) {
-  return (
-    <div className="talk-notice" role="alert">
-      <TriangleAlert aria-hidden="true" size={18} />
-      <span>{message}</span>
-      {action && (
-        <Button onPress={action.run} size="sm" variant="secondary">
-          {action.label}
-        </Button>
-      )}
-    </div>
-  );
-}
 
 function saveLabel(state: PhraseSaveState): string {
   switch (state) {
@@ -61,53 +39,47 @@ function saveLabel(state: PhraseSaveState): string {
   }
 }
 
-function idleHint(isAnswerSent: boolean, canReview: boolean): string | null {
-  if (!canReview)
-    return 'The first answer and its feedback stay anchored while you record the retry.';
-  if (!isAnswerSent) return 'Send this answer to Eva first, then ask for feedback.';
-  return null;
+function Rewrite({ feedback, transcript }: { feedback: TurnFeedback; transcript: string }) {
+  return (
+    <p className="talk-card-text">
+      {highlightRewrite(transcript, feedback.b2_rewrite).map((part, index) =>
+        part.isChanged ? (
+          // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
+          <mark className="talk-hl" key={index}>
+            {part.text}
+          </mark>
+        ) : (
+          // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
+          <span key={index}>{part.text}</span>
+        ),
+      )}
+    </p>
+  );
 }
 
-function NoteBody({ feedback, transcript }: { feedback: TurnFeedback; transcript: string }) {
+function Focus({ feedback }: { feedback: TurnFeedback }) {
   const focus = feedback.focus_feedback[0];
   return (
-    <>
-      <p className="talk-card-text">
-        {highlightRewrite(transcript, feedback.b2_rewrite).map((part, index) =>
-          part.isChanged ? (
-            // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
-            <mark className="talk-hl" key={index}>
-              {part.text}
-            </mark>
-          ) : (
-            // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
-            <span key={index}>{part.text}</span>
-          ),
-        )}
-      </p>
-      <div className="talk-focus">
-        {focus ? (
-          <>
-            <p>{focus.explanation}</p>
-            <p>
-              You said “{focus.original}” · try “{focus.improved}”
-            </p>
-          </>
-        ) : (
-          <p>No priority correction was found for this answer.</p>
-        )}
-      </div>
-    </>
+    <div className="talk-focus">
+      {focus ? (
+        <>
+          <p>{focus.explanation}</p>
+          <p>
+            You said “{focus.original}” · try “{focus.improved}”
+          </p>
+        </>
+      ) : (
+        <p>No priority correction was found for this answer.</p>
+      )}
+    </div>
   );
 }
 
 function ReadyNote(props: Props & { feedback: TurnFeedback }) {
   const { feedback } = props;
-  const [isOpen, setIsOpen] = useState(true);
-
-  if (!isOpen) {
+  if (!props.isOpen) {
     return (
-      <Button className="talk-collapsed" onPress={() => setIsOpen(true)} size="sm" variant="ghost">
+      <Button className="talk-collapsed" onPress={props.onToggle} size="sm" variant="ghost">
         <span className="talk-card-label">More natural</span>
         <span className="talk-collapsed-text">{feedback.b2_rewrite}</span>
         <ChevronDown aria-hidden="true" size={14} />
@@ -115,92 +87,64 @@ function ReadyNote(props: Props & { feedback: TurnFeedback }) {
     );
   }
   return (
-    <div className="talk-card" aria-live="polite">
+    <div className="talk-card talk-note" aria-live="polite">
       <div className="talk-card-header">
         <span className="talk-card-label">More natural</span>
         <Button
           aria-label="Collapse note"
           className="ml-auto"
           isIconOnly
-          onPress={() => setIsOpen(false)}
+          onPress={props.onToggle}
           size="sm"
           variant="ghost"
         >
           <ChevronUp aria-hidden="true" size={14} />
         </Button>
       </div>
-      <NoteBody feedback={feedback} transcript={props.transcript} />
+      <Rewrite feedback={feedback} transcript={props.transcript} />
+      <Focus feedback={feedback} />
+      {props.secondTry}
       <div className="talk-card-actions">
-        {props.onTryAgain && props.isFeedbackSaved && (
-          <Button onPress={props.onTryAgain} size="sm" variant="secondary">
-            <Mic aria-hidden="true" size={14} />
-            Say it again
-          </Button>
-        )}
         <Button
-          aria-pressed={props.phraseSaveState === 'saved'}
-          isDisabled={props.phraseSaveState === 'saving'}
-          onPress={props.onSavePhrase}
+          isDisabled={props.isSayAgainDisabled}
+          onPress={props.onSayAgain}
           size="sm"
           variant="secondary"
         >
-          <Bookmark
-            aria-hidden="true"
-            fill={props.phraseSaveState === 'saved' ? 'currentColor' : 'none'}
-            size={14}
-          />
-          {saveLabel(props.phraseSaveState)}
+          <Mic aria-hidden="true" size={14} />
+          Say it again
         </Button>
-        {props.onSpeakRewrite && (
+        {props.canSavePhrase && (
           <Button
-            onPress={() => props.onSpeakRewrite?.(feedback.b2_rewrite)}
+            aria-pressed={props.phraseSaveState === 'saved'}
+            isDisabled={props.phraseSaveState === 'saving'}
+            onPress={props.onSavePhrase}
             size="sm"
-            variant="ghost"
+            variant="secondary"
           >
-            <Volume2 aria-hidden="true" size={14} />
-            Hear it
+            <Bookmark
+              aria-hidden="true"
+              fill={props.phraseSaveState === 'saved' ? 'currentColor' : 'none'}
+              size={14}
+            />
+            {saveLabel(props.phraseSaveState)}
           </Button>
         )}
-        <Button
-          isDisabled={!props.isAnswerSent || !props.canReview}
-          onPress={props.onReview}
-          size="sm"
-          variant="ghost"
-        >
-          Review again
+        <Button onPress={() => props.onSpeakRewrite(feedback.b2_rewrite)} size="sm" variant="ghost">
+          <Volume2 aria-hidden="true" size={14} />
+          Hear it
         </Button>
       </div>
-      {props.phraseSaveError && <Notice message={props.phraseSaveError} />}
-      {props.persistError && (
-        <Notice
-          action={{ label: 'Retry save', run: props.onRetryPersist }}
-          message={`Could not save feedback to memory: ${props.persistError}`}
-        />
-      )}
     </div>
   );
 }
 
-/** The coaching note under the learner's answer: asked for, never blocking Eva. */
+/** The coaching note under the learner's answer: it appears by itself and never blocks Eva. */
 export function CoachingNote(props: Props) {
-  const { state } = props;
-  const hint = idleHint(props.isAnswerSent, props.canReview);
-  return (
-    <div className="talk-aside">
-      {state.tag === 'idle' && (
-        <>
-          {hint && <p className="talk-quiet-note">{hint}</p>}
-          <Button
-            isDisabled={!props.isAnswerSent || !props.canReview}
-            onPress={props.onReview}
-            size="sm"
-            variant="secondary"
-          >
-            Get feedback on this answer
-          </Button>
-        </>
-      )}
-      {state.tag === 'loading' && (
+  const { view } = props;
+  switch (view.tag) {
+    case 'checking':
+      return (
         <p className="talk-quiet-note" role="status">
           <span className="talk-dots">
             <i />
@@ -209,11 +153,26 @@ export function CoachingNote(props: Props) {
           </span>
           Checking your answer…
         </p>
-      )}
-      {state.tag === 'error' && (
-        <Notice action={{ label: 'Retry review', run: props.onReview }} message={state.message} />
-      )}
-      {state.tag === 'ready' && <ReadyNote {...props} feedback={state.feedback} />}
-    </div>
-  );
+      );
+    case 'paused':
+      return (
+        <p className="talk-quiet-note">
+          Coaching is paused for now because Antigravity has no quota left. Talking is not affected.{' '}
+          <Button onPress={props.onRetryCoaching} size="sm" variant="ghost">
+            Try again
+          </Button>
+        </p>
+      );
+    case 'failed':
+      return (
+        <p className="talk-quiet-note">
+          Couldn’t check this answer.{' '}
+          <Button onPress={props.onRetryCoaching} size="sm" variant="ghost">
+            Retry
+          </Button>
+        </p>
+      );
+    case 'ready':
+      return <ReadyNote {...props} feedback={view.feedback} />;
+  }
 }

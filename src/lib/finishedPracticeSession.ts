@@ -35,6 +35,10 @@ export type FinishedPracticeSession = {
   numbers: SessionNumbers;
   phrases: WrapupPhrase[];
   recurring_mistakes: RecurringMistake[];
+  /** Answers whose coaching has not landed yet; the lists grow when it does. */
+  pending_coaching: number;
+  /** Coaching is paused (Antigravity quota), so nothing more will land for now. */
+  is_coaching_paused: boolean;
 };
 
 const MAX_WRAPUP_PHRASES = 3;
@@ -151,6 +155,10 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     'recurring_mistakes' in value &&
     Array.isArray(value.recurring_mistakes) &&
     value.recurring_mistakes.length <= MAX_WRAPUP_MISTAKES &&
-    value.recurring_mistakes.every(isRecurringMistake)
+    value.recurring_mistakes.every(isRecurringMistake) &&
+    'pending_coaching' in value &&
+    isCount(value.pending_coaching) &&
+    'is_coaching_paused' in value &&
+    typeof value.is_coaching_paused === 'boolean'
   );
 }

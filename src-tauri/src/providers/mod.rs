@@ -91,8 +91,9 @@ pub fn prewarm_provider(settings: &AiSettings, apple: &AppleHelper) -> Result<()
     }
 }
 
-pub fn evaluate_turn_feedback(request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError> {
-    agy::evaluate_turn_feedback(request)
+/// Checks up to five answers with one background Antigravity call; see `agy::coaching`.
+pub fn coach_answers(answers: &[CoachingAnswer]) -> Result<Vec<CoachedAnswer>, ProviderError> {
+    agy::coaching::coach_answers(answers)
 }
 
 pub fn review_turn_usage(
@@ -123,15 +124,12 @@ fn elapsed_ms(started_at: Instant) -> u64 {
     u64::try_from(started_at.elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
+#[cfg(test)]
 pub trait ConversationEngine: Send + Sync {
     fn generate_turn(
         &self,
         context: &ConversationContext,
     ) -> Result<ConversationTurn, ProviderError>;
-}
-
-pub trait FeedbackEngine: Send + Sync {
-    fn evaluate_turn(&self, request: &FeedbackRequest) -> Result<TurnFeedback, ProviderError>;
 }
 
 pub trait UsageReviewEngine: Send + Sync {
@@ -155,10 +153,19 @@ pub struct UsageReviewResponse {
     pub findings: Vec<UsageFinding>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct FeedbackRequest {
+/// One of the learner's answers waiting to be coached, with the question it answered.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoachingAnswer {
+    pub sequence: usize,
     pub question: String,
     pub transcript: String,
+}
+
+/// The coaching a batch returned for one answer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoachedAnswer {
+    pub sequence: usize,
+    pub feedback: TurnFeedback,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

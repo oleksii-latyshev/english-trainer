@@ -9,7 +9,7 @@ type Props = {
   presentation: TurnPresentation;
   level: number;
   isHandsFree: boolean;
-  /** The composer is locked by the screen (recall or retry in progress, or a saved Coach answer). */
+  /** The composer is locked by the screen (recall or retry in progress). */
   isLocked: boolean;
   lockedReason?: string;
   /** Eva or the session is busy, so a new recording cannot start. */

@@ -1,62 +1,20 @@
 import { invoke } from '@tauri-apps/api/core';
 import { isPracticeDialogue, type PracticeDialogue } from '@/lib/dialogueTypes';
-import { createReplyChannel } from '@/lib/replyStream';
 import {
-  type ConversationTurn,
   type DailyRecallPlan,
   type FinishedPracticeSession,
   isAttemptComparison,
-  isConversationTurn,
   isDailyRecallPlan,
   isFinishedPracticeSession,
   isPracticeSession,
-  isSavedCoachState,
   isSpokenRecallResult,
   type PracticeSession,
-  type SavedCoachState,
-  type SessionMode,
   type SpokenRecallResult,
-  type TurnFeedback,
 } from '@/lib/types';
-import type { InputSource } from './lib/inputSource';
 
-export async function startPracticeSession(mode?: SessionMode): Promise<PracticeSession> {
-  const result = await invoke<unknown>('start_practice_session', { mode });
+export async function startPracticeSession(): Promise<PracticeSession> {
+  const result = await invoke<unknown>('start_practice_session');
   if (!isPracticeSession(result)) throw new Error('Unexpected practice session response.');
-  return result;
-}
-
-export async function saveCoachAnswer(
-  sessionId: number,
-  transcript: string,
-  inputSource: InputSource = 'text',
-  answerDurationMs?: number,
-): Promise<SavedCoachState> {
-  const result = await invoke<unknown>('save_coach_answer', {
-    sessionId,
-    transcript,
-    inputSource,
-    answerDurationMs,
-  });
-  if (!isSavedCoachState(result) || result.session_id !== sessionId) {
-    throw new Error('Unexpected coach answer response.');
-  }
-  return result;
-}
-
-export async function continueCoachTurn(
-  sessionId: number,
-  sequence: number,
-  onDelta: (text: string) => void = () => {},
-): Promise<ConversationTurn> {
-  const result = await invoke<unknown>('continue_coach_turn', {
-    sessionId,
-    sequence,
-    onReply: createReplyChannel(onDelta),
-  });
-  if (!isConversationTurn(result)) {
-    throw new Error('Unexpected coach continue response.');
-  }
   return result;
 }
 
@@ -93,18 +51,18 @@ export async function submitDailyRecall(
   return result;
 }
 
-export async function savePracticeFeedback(
-  sessionId: number,
-  sequence: number,
-  transcript: string,
-  feedback: TurnFeedback,
-): Promise<void> {
-  await invoke<void>('save_practice_feedback', {
-    sessionId,
-    sequence,
-    transcript,
-    feedback,
-  });
+/** Gives an answer that could not be checked another try and resumes paused coaching. */
+export async function retryAnswerCoaching(sessionId: number, sequence: number): Promise<void> {
+  await invoke<void>('retry_answer_coaching', { sessionId, sequence });
+}
+
+/** The wrap-up of a finished session as it stands now, after more coaching landed. */
+export async function getSessionWrapup(sessionId: number): Promise<FinishedPracticeSession> {
+  const result = await invoke<unknown>('get_session_wrapup', { sessionId });
+  if (!isFinishedPracticeSession(result) || result.session_id !== sessionId) {
+    throw new Error('Unexpected session wrap-up response.');
+  }
+  return result;
 }
 
 export async function retryPracticeTurn(sessionId: number, sequence: number, transcript: string) {

@@ -5,7 +5,7 @@ mod persistence;
 mod providers;
 mod setup;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
     app.path()
@@ -161,37 +161,6 @@ async fn generate_follow_up(
 }
 
 #[tauri::command]
-async fn get_turn_feedback(
-    question: String,
-    transcript: String,
-) -> Result<providers::TurnFeedback, providers::ProviderError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        providers::evaluate_turn_feedback(&providers::FeedbackRequest {
-            question,
-            transcript,
-        })
-    })
-    .await
-    .map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "The coaching task failed. Please retry.",
-        )
-    })?
-}
-
-#[tauri::command]
-fn save_practice_feedback(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    session_id: u64,
-    sequence: usize,
-    transcript: String,
-    feedback: providers::TurnFeedback,
-) -> Result<(), providers::ProviderError> {
-    sessions.save_feedback(session_id, sequence, &transcript, &feedback)
-}
-
-#[tauri::command]
 fn retry_practice_turn(
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
@@ -204,53 +173,16 @@ fn retry_practice_turn(
 #[tauri::command]
 fn start_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
-    mode: Option<conversation::SessionMode>,
 ) -> Result<conversation::PracticeSession, providers::ProviderError> {
-    sessions.start_session(mode)
+    sessions.start_session()
 }
 
-#[tauri::command]
-fn save_coach_answer(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    session_id: u64,
-    transcript: String,
-    input_source: Option<conversation::InputSource>,
-    answer_duration_ms: Option<u64>,
-) -> Result<conversation::SavedCoachState, providers::ProviderError> {
-    sessions.save_coach_answer_with_source(
-        session_id,
-        transcript,
-        input_source.unwrap_or_default(),
-        answer_duration_ms,
-    )
-}
-
-#[tauri::command]
-async fn continue_coach_turn(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    apple: tauri::State<'_, providers::AppleHelper>,
-    session_id: u64,
-    sequence: usize,
-    on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
-) -> Result<providers::ConversationTurn, providers::ProviderError> {
-    let settings = sessions.ai_settings()?;
-    let apple = apple.inner().clone();
-    let sessions = sessions.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        let mut forward = forward_deltas(on_reply);
-        sessions.continue_turn(session_id, sequence, |context| {
-            providers::generate_configured_turn(context, &settings, &apple, &mut forward)
-        })
-    })
-    .await
-    .map_err(conversation_task_failed(
-        "The conversation task failed. Please retry.",
-    ))?
-}
-
+// Tauri injects each managed state as its own argument, so the count is the command's contract.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 async fn send_practice_turn(
     sessions: tauri::State<'_, conversation::SessionStore>,
+    coaching: tauri::State<'_, conversation::CoachingQueue>,
     apple: tauri::State<'_, providers::AppleHelper>,
     session_id: u64,
     transcript: String,
@@ -261,7 +193,7 @@ async fn send_practice_turn(
     let settings = sessions.ai_settings()?;
     let apple = apple.inner().clone();
     let sessions = sessions.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || {
+    let turn = tauri::async_runtime::spawn_blocking(move || {
         let mut forward = forward_deltas(on_reply);
         sessions.send_turn_with_source(
             session_id,
@@ -274,7 +206,10 @@ async fn send_practice_turn(
     .await
     .map_err(conversation_task_failed(
         "The conversation task failed. Please retry.",
-    ))?
+    ))??;
+    // The answer is saved: coaching joins its queue and runs in the background.
+    coaching.answer_saved(session_id);
+    Ok(turn)
 }
 
 #[tauri::command]
@@ -288,9 +223,29 @@ fn get_practice_dialogue(
 #[tauri::command]
 fn finish_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
+    coaching: tauri::State<'_, conversation::CoachingQueue>,
     session_id: u64,
 ) -> Result<conversation::FinishedPracticeSession, providers::ProviderError> {
-    sessions.finish(session_id)
+    let summary = sessions.finish(session_id)?;
+    coaching.flush(session_id);
+    Ok(summary)
+}
+
+#[tauri::command]
+fn get_session_wrapup(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+) -> Result<conversation::FinishedPracticeSession, providers::ProviderError> {
+    sessions.session_wrapup(session_id)
+}
+
+#[tauri::command]
+fn retry_answer_coaching(
+    coaching: tauri::State<'_, conversation::CoachingQueue>,
+    session_id: u64,
+    sequence: usize,
+) -> Result<(), providers::ProviderError> {
+    coaching.retry(session_id, sequence)
 }
 
 #[tauri::command]
@@ -506,6 +461,17 @@ pub fn run() {
                     database_path.display()
                 ))
             })?;
+            let handle = app.handle().clone();
+            app.manage(conversation::CoachingQueue::start(
+                sessions.clone(),
+                providers::coach_answers,
+                conversation::IDLE_FLUSH,
+                conversation::QUOTA_PAUSE,
+                move |event| {
+                    // A closed window needs no news; the answers stay saved.
+                    let _ = handle.emit("coaching-updated", event);
+                },
+            ));
             app.manage(sessions);
             app.manage(providers::AppleHelper::new(apple_binary(app)));
             Ok(())
@@ -521,15 +487,13 @@ pub fn run() {
             save_gemini_api_key,
             delete_gemini_api_key,
             generate_follow_up,
-            get_turn_feedback,
-            save_practice_feedback,
             retry_practice_turn,
             start_practice_session,
             send_practice_turn,
             get_practice_dialogue,
-            save_coach_answer,
-            continue_coach_turn,
             finish_practice_session,
+            get_session_wrapup,
+            retry_answer_coaching,
             get_daily_recall_plan,
             submit_daily_recall,
             get_active_practice_session,

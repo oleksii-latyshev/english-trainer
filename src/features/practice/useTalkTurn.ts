@@ -13,12 +13,10 @@ type Options = {
   actions: PracticeActions;
   speech: ReturnType<typeof useSystemSpeech>;
   sendError?: SendFailure;
-  /** The composer is locked by the screen: no session, recall, a saved Coach answer or a retry. */
+  /** The composer is locked by the screen: no session, recall or a retry. */
   isLocked: boolean;
   isRetrying: boolean;
   isRecalling: boolean;
-  /** The next prompt is being fetched. */
-  isContinuing: boolean;
   pendingReply?: string;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onOpenSettings: () => void;
@@ -69,7 +67,6 @@ export function useTalkTurn(options: Options) {
     isThinking:
       model.practice.tag === 'waiting' ||
       composer.isSending ||
-      options.isContinuing ||
       (options.pendingReply !== undefined && !isEvaSpeaking),
     isEvaSpeaking,
     issue,

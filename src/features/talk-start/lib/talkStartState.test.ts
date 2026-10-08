@@ -27,15 +27,7 @@ describe('primaryAction', () => {
 
 describe('resumeDetail', () => {
   it('shows progress against the target', () => {
-    expect(resumeDetail({ mode: 'conversation', turnCount: 3, targetTurns: 8 })).toBe(
-      '3 of 8 answers so far',
-    );
-  });
-
-  it('names coach mode', () => {
-    expect(resumeDetail({ mode: 'coach', turnCount: 0, targetTurns: 6 })).toBe(
-      'Coach mode · 0 of 6 answers so far',
-    );
+    expect(resumeDetail({ turnCount: 3, targetTurns: 8 })).toBe('3 of 8 answers so far');
   });
 });
 

@@ -31,9 +31,9 @@ e2e/                    Playwright against Vite / Tauri, command layer faked (ad
 - Code starts in the feature that uses it and moves to `components/` or `lib/` when a second
   feature needs it — not before.
 - Features depend one way: `practice → conversation, coach, memory, speech`,
-  `coach → speech`, `memory → speech`, `talk-start → memory`, `first-run → settings, speech, memory`; features are leaves otherwise.
-  No cycles, and `components/`, `audio/` and `lib/` never import a feature. (The current
-  `coach → practice` imports are a known violation, removed in F5.) When two features
+  `memory → speech`, `talk-start → memory`, `first-run → settings, speech, memory`; features are leaves otherwise.
+  `coach` is a leaf: the presentational coaching note takes props and imports only `components/` and `lib/`.
+  No cycles, and `components/`, `audio/` and `lib/` never import a feature. When two features
   need each other, the shared part belongs in `components/` or `lib/`.
 - Import through `@/…`; only files in the same folder import each other relatively. No barrels.
 - Split growing modules and components by responsibility or job (`orchestrator/session.rs`),
@@ -87,8 +87,10 @@ e2e/                    Playwright against Vite / Tauri, command layer faked (ad
   user setting. Send the configured LLM provider only the transcript and prompt context needed.
 - LLM providers: Apple Foundation Models (bundled helper) and the Gemini API are the target
   real-time providers; API keys live in an encrypted, owner-only file in the app data folder, never in SQLite,
-  logs or the repository. The legacy Antigravity CLI (`agy`) runs only in private scratch directories with
-  bounded timeouts; never pass the repository as its working directory.
+  logs or the repository. The Antigravity CLI (`agy`) runs the background coaching, answer examples and
+  usage reviews, only in private scratch directories with bounded timeouts; never pass the repository
+  as its working directory. Every `agy` call names a Gemini model (`CliOptions.model` is required,
+  not optional): without `--model` agy runs its own default, a Claude model, on the learner's Claude quota.
 - macOS companion: Ambient prompts, notifications, and autostart are opt-in and respect quiet
   hours. Normal practice never requires Accessibility or Screen Recording permissions.
 - Honest metrics: Internal scores are CEFR-inspired trend indicators, never presented as official

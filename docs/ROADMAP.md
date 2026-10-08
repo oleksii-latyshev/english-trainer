@@ -22,8 +22,8 @@ Everything not needed for these five outcomes is deferred.
 | :--- | :--- |
 | Conversation language | English only. The interface may later be localised (e.g. Russian); practice content never is. Whisper stays English-only. |
 | Conversation provider | Two streaming adapters behind one interface: **Apple Foundation Models** (on-device, free, private; measured 1.6 s warm / 4.6 s cold for a whole non-streamed reply on 2026-10-06) and the **Gemini API** (Flash / Flash-Lite, API key from Google AI Studio). The default is chosen by measured time to first spoken word. |
-| Coaching, planning and wrap-up | Gemini API (better quality than the on-device model). Apple is the offline fallback where its quality is acceptable. |
-| Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured) and cannot stream. Kept only as an optional slow-tier fallback until the Gemini API adapter covers coaching; then removed. |
+| Coaching, planning and wrap-up | Coaching runs through Antigravity CLI with `gemini-3.8-flash-medium`, in batches of up to five answers (decided 2026-10-08 from a measurement on 66 real answers: Apple on-device rewrites whole answers, "corrects" recognition artefacts or finds nothing; one `agy` call per answer exhausted the Antigravity quota after about 54 calls; the Gemini API free quota is reserved for conversation). Planning (F6) stays on the Gemini API. |
+| Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured; 14–136 s for a batch of five) and cannot stream. It stays as the slow background tier (coaching, answer examples, usage review), always with an explicit Gemini model. |
 | TTS | macOS system voices (the standard voice is acceptable). Neural TTS only together with the avatar. |
 | Usage-review / mastery-streak subsystem | Frozen: keeps working, is not extended. F10 reuses its data; simplifying it is reconsidered after the MVP with real usage data. |
 | Gemini API key | Only the API key is needed (no client secret). Pasted in Settings and stored in an encrypted, owner-only file in the app data folder, bound to this computer (no system Keychain prompt, which looked alarming in the alpha). Developer override: environment variable `ENG_TRAINER_GEMINI_API_KEY` (not inherited by a Finder launch). Never in SQLite, logs or the repository. |
@@ -127,9 +127,9 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 
 **F5. One Talk screen with inline coaching** `[ ]`
 - Built to the design brief ([`ui/DESIGN_BRIEF.md`](ui/DESIGN_BRIEF.md)).
-- Merge Conversation and Coach into a single chat. After each user message, deep feedback runs in
-  parallel with the AI reply and appears under the message when ready: one natural rephrasing of
-  what the user meant plus at most one focus point. It never blocks the next AI turn.
+- Merge Conversation and Coach into a single chat. Deep feedback runs in the background, off the
+  turn path, and appears under the message when ready: one natural rephrasing of what the user
+  meant plus at most one focus point. It never blocks the next AI turn.
 - "Say it again" on any message records a second attempt and shows the comparison inline.
 - Remove the separate Coach session mode and the explicit Continue step; existing sessions stay
   readable. This also removes the `coach ↔ practice` feature dependency cycle.
@@ -137,6 +137,21 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   included), collapses when the next turn starts, and "Say it again" shows the second try inside the
   note (dashed teal box, "✓ You used …") instead of the separate comparison panel. The focus point
   is one sentence. The "Coach" chip and step name in the header go away.
+- Batch decision (measured 2026-10-08 on 66 real answers): coaching goes through `agy` with
+  `gemini-3.8-flash-medium`, up to five answers per call. It found as many real mistakes as one call
+  per answer (83 against 81 on 50 answers) in 14 calls instead of 66, with a median of about 40 s per
+  batch (14–136 s); one call per answer exhausted the Antigravity quota after about 54 calls. Apple
+  on-device was rejected (rewrites whole answers, "corrects" recognition artefacts, or finds nothing)
+  and the Gemini API is not used (its free quota is kept for conversation).
+- Built (still `[ ]` until accepted in the built app on a physical Mac): one Talk mode and route
+  (`/coach`, "Get feedback in Coach", the Coach chip and the Continue step are gone; older Coach
+  sessions are read as Talk sessions); a Rust coaching queue (a batch at 5 waiting answers, at
+  finish, and after 60 s of quiet; one batch at a time; one retry; a calm "couldn't check this
+  answer" with a manual Retry; a quota error pauses coaching with a notice); the inline note
+  (loading, "More natural" with changed words highlighted, one focus sentence, Say it again inside
+  the note, Save phrase with Undo, collapsed under older answers and when the next turn starts); the
+  wrap-up flushes the queue and shows "Still checking N answers…" until the last batch lands; every
+  `agy` call pins a Gemini model. See `TECHNICAL_REQUIREMENTS.md` §6.
 - Acceptance: a 10-turn session where feedback appears for every answer and the AI reply is never
   delayed by it.
 
@@ -193,10 +208,10 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Local fluency numbers for the session: speaking time, words per minute, average answer length.
   Presented as personal trends, never as CEFR levels.
 - Built with the wrap-up screen (design `Wrapup`): the numbers with trends against the last
-  session, up to three phrase cards from the session's Coach feedback, recurring mistakes, and
-  "Save all to Memory" with Undo. What is still open for F9: Conversation sessions have no
-  coaching, so their lists are empty and the screen says phrases appear when Eva coaches an
-  answer; F9 generates phrases and recurring mistakes in the background for every session, with
+  session, up to three phrase cards from the session's coaching, recurring mistakes, and
+  "Save all to Memory" with Undo. Since F5 the lists fill from the background coaching of every
+  answer, and the screen says "Still checking N answers…" while the last batch runs. What is
+  still open for F9: F9 generates phrases and recurring mistakes in the background for every session, with
   a short note per phrase ("The word you were looking for: normalise.") instead of the quoted
   original, and may offer the recurring mistakes themselves as savable items.
 - Design: the Memory footer reads "Mistakes that come up twice are added for you". Today every
@@ -235,7 +250,7 @@ Done as part of the feature that touches the code, not as separate commits.
 
 | Item | When |
 | :--- | :--- |
-| Features `coach` and `practice` import each other (violates the one-way rule in `CODE_REQUIREMENTS.md`); `src/context` imports features. | F5 |
+| `src/context` imports features (types only). The `coach ↔ practice` import cycle was removed in F5. | Later |
 | Session, database and validation errors are all returned as `ProviderError`; add typed `SessionError` / `PersistenceError` kinds across IPC. | F1 or F5 |
 | No pipeline integration test (`src-tauri/tests/`) and no Playwright `e2e/` yet; both are described as targets in `CODE_REQUIREMENTS.md`. | F1 adds the pipeline test against a fake streaming provider; e2e after F5 stabilises the Talk screen |
 | Conversation and STT processes poll `try_wait` every 50 ms and restart on every turn; long-lived workers and HTTP streaming remove this. | F1, F3 |

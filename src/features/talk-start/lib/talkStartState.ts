@@ -1,5 +1,3 @@
-import type { SessionMode } from '@/lib/types';
-
 export type PrimaryAction = 'restoring' | 'resume' | 'starting' | 'start';
 
 export function primaryAction(state: {
@@ -20,13 +18,8 @@ export const PRIMARY_ACTION_LABEL: Record<PrimaryAction, string> = {
   start: 'Start talking',
 };
 
-export function resumeDetail(session: {
-  mode: SessionMode;
-  turnCount: number;
-  targetTurns: number;
-}): string {
-  const answers = `${session.turnCount} of ${session.targetTurns} answers so far`;
-  return session.mode === 'coach' ? `Coach mode · ${answers}` : answers;
+export function resumeDetail(session: { turnCount: number; targetTurns: number }): string {
+  return `${session.turnCount} of ${session.targetTurns} answers so far`;
 }
 
 export function reviewTitle(dueCount: number): string {

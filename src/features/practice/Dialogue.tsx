@@ -1,9 +1,9 @@
 import { Button } from '@heroui/react';
 import { type ReactNode, useEffect, useRef } from 'react';
+import { TurnNotice } from '@/components/TurnNotice';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import { buildDialogueMessages } from './lib/dialogueMessages';
+import { buildDialogueMessages, type DialogueMessage } from './lib/dialogueMessages';
 import { EvaMessage, EvaThinking, LearnerMessage } from './Messages';
-import { TurnNotice } from './TurnNotice';
 
 type Props = {
   dialogue: PracticeDialogue | null;
@@ -14,6 +14,8 @@ type Props = {
   retryHistory?: () => void;
   /** Eva's reply while it streams in; an empty string means she is still thinking. */
   pendingReply?: string;
+  /** The coaching note shown under one of the learner's answers. */
+  renderNote?: (message: DialogueMessage) => ReactNode;
 };
 
 export function Dialogue({
@@ -24,6 +26,7 @@ export function Dialogue({
   historyError,
   retryHistory,
   pendingReply,
+  renderNote,
 }: Props) {
   const messages = buildDialogueMessages(dialogue, currentQuestion);
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
@@ -53,7 +56,7 @@ export function Dialogue({
           message.sender === 'assistant' ? (
             <EvaMessage key={message.id} message={message} onPlaySpeech={onPlaySpeech} />
           ) : (
-            <LearnerMessage key={message.id} message={message} />
+            <LearnerMessage key={message.id} message={message} note={renderNote?.(message)} />
           ),
         )}
         {pendingReply === '' && <EvaThinking />}

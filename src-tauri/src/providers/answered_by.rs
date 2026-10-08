@@ -61,7 +61,7 @@ impl AnsweredBy {
     pub fn agy(model: AgyModel) -> Self {
         Self {
             provider: AnswerProvider::Agy,
-            model: model.cli_id().unwrap_or("default").into(),
+            model: model.cli_id().into(),
             is_backup: false,
         }
     }
@@ -81,7 +81,10 @@ mod tests {
             AnsweredBy::agy(AgyModel::FlashLow).model,
             "gemini-3.8-flash-low"
         );
-        assert_eq!(AnsweredBy::agy(AgyModel::Default).model, "default");
+        assert_eq!(
+            AnsweredBy::agy(AgyModel::Default).model,
+            "gemini-3.8-flash-medium"
+        );
     }
 
     #[test]

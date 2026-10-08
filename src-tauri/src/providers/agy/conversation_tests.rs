@@ -1,6 +1,6 @@
-use super::super::runner::{run_cli, ScratchDirectory};
+use super::super::runner::{run_cli, CliOptions, ScratchDirectory};
 use super::*;
-use crate::providers::ContextTurn;
+use crate::providers::{ContextTurn, ConversationEngine};
 use std::{
     fs,
     path::PathBuf,
@@ -158,7 +158,7 @@ fn unavailable_cli_and_timeout_have_typed_errors() {
         &schema,
         &log,
         "prompt",
-        Duration::from_millis(60),
+        CliOptions::gemini(Duration::from_millis(60)),
     )
     .unwrap_err();
     assert_eq!(error.code, ProviderErrorCode::Timeout);
@@ -235,8 +235,8 @@ printf '%s' '{"status":"SUCCESS","structured_output":{"spoken_reply":"Hello.","q
     );
     let engine = AgyEngine { binary };
     let request = context("Hello");
-    assert!(generate_using_model(&engine, &request, Some("gemini-3.8-flash-low")).is_ok());
-    assert!(generate_using_model(&engine, &request, Some("gemini-3.8-flash-high")).is_ok());
+    assert!(generate_using_model(&engine, &request, "gemini-3.8-flash-low").is_ok());
+    assert!(generate_using_model(&engine, &request, "gemini-3.8-flash-high").is_ok());
     let prompt = make_prompt(&request, false);
     assert!(prompt.contains("Do not invent facts"));
     assert!(prompt.contains("exactly one simple question"));

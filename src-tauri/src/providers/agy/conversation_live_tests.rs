@@ -16,9 +16,9 @@ fn live_conversation_benchmark() {
     };
     let mut failures = 0;
     for model in [
-        None,
-        Some("gemini-3.8-flash-low"),
-        Some("gemini-3.8-flash-high"),
+        runner::AGY_DEFAULT_MODEL,
+        "gemini-3.8-flash-low",
+        "gemini-3.8-flash-high",
     ] {
         for run in 1..=3 {
             let started = std::time::Instant::now();
@@ -26,7 +26,7 @@ fn live_conversation_benchmark() {
             match result {
                 Ok(_) => println!(
                     "BENCH model={} run={} latency_ms={} outcome=success",
-                    model.unwrap_or("default"),
+                    model,
                     run,
                     started.elapsed().as_millis()
                 ),
@@ -34,7 +34,7 @@ fn live_conversation_benchmark() {
                     failures += 1;
                     println!(
                         "BENCH model={} run={} latency_ms={} outcome={:?} stage={:?}",
-                        model.unwrap_or("default"),
+                        model,
                         run,
                         started.elapsed().as_millis(),
                         error.code,

@@ -1,22 +1,20 @@
+pub(crate) mod coaching;
 pub(crate) mod conversation;
 mod feedback;
 pub(crate) mod guided;
 pub(crate) mod runner;
+#[cfg(test)]
+mod test_support;
 mod usage;
 
-use super::{
-    FeedbackRequest, ProviderError, TurnFeedback, UsageReviewRequest, UsageReviewResponse,
-};
+#[cfg(test)]
+mod model_pinning_tests;
+
+use super::{ProviderError, UsageReviewRequest, UsageReviewResponse};
 use std::path::PathBuf;
 
 pub(super) struct AgyEngine {
     pub(super) binary: PathBuf,
-}
-
-pub(super) fn evaluate_turn_feedback(
-    request: &FeedbackRequest,
-) -> Result<TurnFeedback, ProviderError> {
-    feedback::evaluate_turn_feedback(request)
 }
 
 pub(super) fn review_turn_usage(

@@ -28,6 +28,8 @@ const finished = {
       times: 2,
     },
   ],
+  pending_coaching: 0,
+  is_coaching_paused: false,
 };
 
 describe('session wrap-up payload', () => {
@@ -48,6 +50,15 @@ describe('session wrap-up payload', () => {
         recurring_mistakes: [],
       }),
     ).toBe(true);
+  });
+
+  it('accepts a wrap-up that is still waiting for coaching or paused', () => {
+    expect(isFinishedPracticeSession({ ...finished, pending_coaching: 3 })).toBe(true);
+    expect(isFinishedPracticeSession({ ...finished, is_coaching_paused: true })).toBe(true);
+    expect(isFinishedPracticeSession({ ...finished, pending_coaching: -1 })).toBe(false);
+    expect(isFinishedPracticeSession({ ...finished, is_coaching_paused: 'yes' })).toBe(false);
+    const { pending_coaching, ...withoutPending } = finished;
+    expect(isFinishedPracticeSession(withoutPending)).toBe(false);
   });
 
   it('rejects a missing or malformed wrap-up', () => {

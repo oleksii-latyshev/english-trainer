@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 mod ai_settings;
-pub(crate) mod coach;
+mod coaching;
+pub(crate) mod coaching_queue;
 mod context_builder;
 mod guided;
 pub(crate) mod memory_recall;
@@ -17,9 +18,8 @@ mod scaffold;
 pub(crate) mod usage;
 mod usage_support;
 mod wrapup;
-pub use coach::{
-    session_conflict_error, wrong_mode_error, SavedCoachState, SessionMode, COACH_TARGET_TURNS,
-};
+pub use coaching::TurnCoaching;
+pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
 pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
 use rules::{
     validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS,
@@ -28,15 +28,17 @@ use rules::{
 pub use scaffold::{question_scaffold, QuestionScaffold};
 pub use wrapup::{RecurringMistake, WrapupPhrase};
 
+/// The mode column of every new session. Conversation and Coach are one mode now; sessions saved
+/// as "coach" by older versions are read the same way.
+const SESSION_MODE: &str = "conversation";
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PracticeSession {
     pub session_id: u64,
-    pub mode: SessionMode,
     pub opening_question: String,
     pub turn_count: usize,
     pub target_turns: usize,
     pub retry_evidence: Vec<AttemptComparison>,
-    pub coach_state: Option<SavedCoachState>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -70,6 +72,8 @@ pub struct PracticeDialogue {
     pub answer_durations_ms: Vec<Option<u64>>,
     /// Per turn: the learner opened a help level for the answer before sending it.
     pub help_used: Vec<bool>,
+    /// Per turn: where the background coaching of the learner's answer stands.
+    pub coaching: Vec<TurnCoaching>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -85,12 +89,17 @@ pub struct FinishedPracticeSession {
     pub phrases: Vec<WrapupPhrase>,
     /// Up to two mistakes observed more than once in the session.
     pub recurring_mistakes: Vec<RecurringMistake>,
+    /// Answers whose coaching has not landed yet; the lists above grow when it does.
+    pub pending_coaching: usize,
+    /// Coaching is paused because the Antigravity quota ran out, so nothing more will land.
+    pub is_coaching_paused: bool,
 }
 
 #[derive(Clone)]
 pub struct SessionStore {
     state: Arc<Mutex<State>>,
     pub(crate) usage_in_flight: Arc<usage_support::UsageInFlightTracker>,
+    pub(crate) coaching: Arc<coaching::CoachingStatus>,
 }
 
 struct State {
@@ -119,20 +128,22 @@ impl StoredTurn {
 
 struct ActiveSession {
     id: u64,
-    mode: SessionMode,
     opening_question: String,
     turns: Vec<StoredTurn>,
     in_flight: bool,
 }
 
 impl ActiveSession {
-    fn has_pending_coach_answer(&self) -> bool {
-        self.mode == SessionMode::Coach
-            && self
-                .turns
-                .last()
-                .map(|turn| turn.assistant_reply.is_empty())
-                .unwrap_or(false)
+    /// What the learner answers next: the latest question asked. A turn without any (a Coach
+    /// answer saved by an older version and never continued) leaves the one before it open.
+    fn current_question(&self) -> String {
+        self.turns
+            .iter()
+            .rev()
+            .map(StoredTurn::prompt)
+            .find(|prompt| !prompt.is_empty())
+            .unwrap_or(&self.opening_question)
+            .to_string()
     }
 }
 
@@ -144,10 +155,9 @@ impl SessionStore {
 
     fn from_database(database: SessionDatabase) -> rusqlite::Result<Self> {
         let active = if let Some(stored) = database.active_session()? {
-            let mode = SessionMode::parse(&stored.mode);
+            // Sessions saved by older versions carry a mode; they continue as the one Talk mode.
             Some(ActiveSession {
                 id: stored.id,
-                mode,
                 opening_question: stored.opening_question,
                 turns: database.turns(stored.id)?,
                 in_flight: false,
@@ -158,30 +168,24 @@ impl SessionStore {
         Ok(Self {
             state: Arc::new(Mutex::new(State { database, active })),
             usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
+            coaching: Arc::new(coaching::CoachingStatus::default()),
         })
     }
 
     #[cfg(test)]
     pub fn start(&self) -> Result<PracticeSession, ProviderError> {
-        self.start_session(Some(SessionMode::Conversation))
+        self.start_session()
     }
 
-    pub fn start_session(
-        &self,
-        mode: Option<SessionMode>,
-    ) -> Result<PracticeSession, ProviderError> {
-        let requested_mode = mode.unwrap_or(SessionMode::Conversation);
+    pub fn start_session(&self) -> Result<PracticeSession, ProviderError> {
         let mut state = self.lock();
         if let Some(active) = &state.active {
-            if active.mode != requested_mode {
-                return Err(session_conflict_error(active.mode));
-            }
             return self.build_practice_session(&state, active);
         }
         let opening_question = OPENING_QUESTION.to_string();
         let session_id = state
             .database
-            .create_session_with_mode(requested_mode.as_str(), &opening_question)
+            .create_session_with_mode(SESSION_MODE, &opening_question)
             .map_err(database_error)?;
         if session_id > MAX_SAFE_SESSION_ID {
             let _ = state.database.finish_session(session_id);
@@ -189,7 +193,6 @@ impl SessionStore {
         }
         let active = ActiveSession {
             id: session_id,
-            mode: requested_mode,
             opening_question: opening_question.clone(),
             turns: Vec::new(),
             in_flight: false,
@@ -230,6 +233,7 @@ impl SessionStore {
             reply_times_ms: details.iter().map(|turn| turn.reply_ms).collect(),
             answer_durations_ms: details.iter().map(|turn| turn.answer_duration_ms).collect(),
             help_used: details.iter().map(|turn| turn.help_used).collect(),
+            coaching: self.turn_coaching(&state, session_id, session.turns.len())?,
         })
     }
 
@@ -265,9 +269,6 @@ impl SessionStore {
                 .as_ref()
                 .filter(|session| session.id == session_id)
                 .ok_or_else(invalid_session_error)?;
-            if session.mode != SessionMode::Conversation {
-                return Err(wrong_mode_error(SessionMode::Conversation));
-            }
             if session.in_flight {
                 return Err(busy_error());
             }
@@ -348,12 +349,9 @@ impl SessionStore {
         if session.in_flight {
             return Err(busy_error());
         }
-        let target_turns = match session.mode {
-            SessionMode::Conversation => DAILY_TARGET_TURNS,
-            SessionMode::Coach => COACH_TARGET_TURNS,
-        };
         let turn_count = session.turns.len();
-        let wrapup = wrapup::build(&state.database, session_id).map_err(database_error)?;
+        // Read first: a failure here leaves the session open.
+        let summary = self.finished_summary(&state, session_id, turn_count)?;
         if !state
             .database
             .finish_session(session_id)
@@ -362,15 +360,53 @@ impl SessionStore {
             return Err(invalid_session_error());
         }
         state.active = None;
+        Ok(summary)
+    }
+
+    /// The wrap-up of a finished session as it stands now; asked again when coaching lands.
+    pub fn session_wrapup(
+        &self,
+        session_id: u64,
+    ) -> Result<FinishedPracticeSession, ProviderError> {
+        let state = self.lock();
+        if state
+            .active
+            .as_ref()
+            .is_some_and(|active| active.id == session_id)
+        {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "This practice session is still open. Finish it to see its wrap-up.",
+            ));
+        }
+        let turn_count = state
+            .database
+            .turns(session_id)
+            .map_err(database_error)?
+            .len();
+        self.finished_summary(&state, session_id, turn_count)
+    }
+
+    fn finished_summary(
+        &self,
+        state: &State,
+        session_id: u64,
+        turn_count: usize,
+    ) -> Result<FinishedPracticeSession, ProviderError> {
+        let wrapup = wrapup::build(&state.database, session_id).map_err(database_error)?;
+        let waiting = self.waiting_coaching(state, session_id, turn_count)?;
+        let is_paused = self.coaching.is_paused() && waiting > 0;
         Ok(FinishedPracticeSession {
             session_id,
             finished: true,
             turn_count,
-            target_turns,
+            target_turns: DAILY_TARGET_TURNS,
             duration_ms: wrapup.duration_ms,
             numbers: wrapup.numbers,
             phrases: wrapup.phrases,
             recurring_mistakes: wrapup.recurring_mistakes,
+            pending_coaching: if is_paused { 0 } else { waiting },
+            is_coaching_paused: is_paused,
         })
     }
 
@@ -381,12 +417,6 @@ impl SessionStore {
             .as_ref()
             .filter(|item| item.id == session_id)
             .ok_or_else(invalid_session_error)?;
-        if session.mode != SessionMode::Conversation {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Daily phrase recall is only available for conversation sessions.",
-            ));
-        }
         if session.turns.len() < DAILY_TARGET_TURNS {
             return Err(ProviderError::new(
                 ProviderErrorCode::InvalidRequest,
@@ -418,12 +448,6 @@ impl SessionStore {
             .as_ref()
             .filter(|item| item.id == session_id)
             .ok_or_else(invalid_session_error)?;
-        if session.mode != SessionMode::Conversation {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Daily phrase recall is only available for conversation sessions.",
-            ));
-        }
         if session.in_flight {
             return Err(busy_error());
         }
@@ -445,6 +469,8 @@ impl SessionStore {
             })
     }
 
+    /// Stores the coaching for one answer and lets the learning engine observe its mistake.
+    /// Works after the session finished too: the last batch can land after the wrap-up opened.
     pub fn save_feedback(
         &self,
         session_id: u64,
@@ -468,9 +494,6 @@ impl SessionStore {
             return Err(invalid_retry_error());
         }
         let mut state = self.lock();
-        if active_session_mut(&mut state, session_id)?.in_flight {
-            return Err(busy_error());
-        }
         let original = state
             .database
             .turn(session_id, sequence)
@@ -641,6 +664,25 @@ impl SessionStore {
     }
 }
 
+impl SessionStore {
+    fn build_practice_session(
+        &self,
+        state: &State,
+        active: &ActiveSession,
+    ) -> Result<PracticeSession, ProviderError> {
+        Ok(PracticeSession {
+            session_id: active.id,
+            opening_question: active.current_question(),
+            turn_count: active.turns.len(),
+            target_turns: DAILY_TARGET_TURNS,
+            retry_evidence: state
+                .database
+                .comparisons(active.id)
+                .map_err(database_error)?,
+        })
+    }
+}
+
 impl Default for SessionStore {
     fn default() -> Self {
         Self::from_database(
@@ -703,8 +745,11 @@ fn invalid_retry_error() -> ProviderError {
     )
 }
 
+/// Longest stored coaching text; a whole-answer rewrite is the longest kind.
+const MAX_FEEDBACK_CHARS: usize = 600;
+
 fn bounded_feedback_text(value: &str) -> bool {
-    !value.trim().is_empty() && value.chars().count() <= 300
+    !value.trim().is_empty() && value.chars().count() <= MAX_FEEDBACK_CHARS
 }
 
 #[cfg(test)]

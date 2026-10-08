@@ -2,7 +2,6 @@ import { Button } from '@heroui/react';
 import { Bookmark, Clock, Mic, TriangleAlert } from 'lucide-react';
 import { Eva } from '@/components/eva/Eva';
 import type { DueCount } from '@/features/memory/useDuePhraseCount';
-import type { SessionMode } from '@/lib/types';
 import {
   PRIMARY_ACTION_LABEL,
   primaryAction,
@@ -18,7 +17,7 @@ type Props = {
   isRestoring: boolean;
   due: DueCount;
   /** Present while a session is open. */
-  openSession?: { mode: SessionMode; turnCount: number; targetTurns: number };
+  openSession?: { turnCount: number; targetTurns: number };
   onStartOrResume: () => void;
   onOpenMemory: () => void;
 };

@@ -1,5 +1,5 @@
-//! Builds the provider context for Conversation and Coach turns from the session's history.
-//! Pure: no session state, so both modes share one set of rules.
+//! Builds the provider context for the next turn from the session's history.
+//! Pure: no session state.
 
 use super::rules::{
     MAX_ASKED_QUESTIONS, MAX_ASKED_QUESTION_CHARS, MAX_CONTEXT_CHARS, MAX_EARLIER_ANSWER_CHARS,

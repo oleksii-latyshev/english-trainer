@@ -1,5 +1,4 @@
 use super::*;
-use crate::conversation::SessionMode;
 use crate::providers::{
     ConversationTurn, FocusCategory, FocusFeedback, TurnFeedback, UsageFinding, UsageOutcome,
     UsageReviewResponse,
@@ -9,9 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[test]
 fn empty_candidates_persists_empty_assessment_without_calling_provider() {
     let store = SessionStore::default();
-    let session = store
-        .start_session(Some(SessionMode::Conversation))
-        .unwrap();
+    let session = store.start_session().unwrap();
     let _ = store
         .send_turn(
             session.session_id,
@@ -53,9 +50,7 @@ fn empty_candidates_persists_empty_assessment_without_calling_provider() {
 #[test]
 fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_review() {
     let store = SessionStore::default();
-    let earlier = store
-        .start_session(Some(SessionMode::Conversation))
-        .unwrap();
+    let earlier = store.start_session().unwrap();
     let _ = store
         .send_turn(
             earlier.session_id,
@@ -92,9 +87,7 @@ fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_revi
     store.finish(earlier.session_id).unwrap();
     std::thread::sleep(std::time::Duration::from_millis(5));
 
-    let session = store
-        .start_session(Some(SessionMode::Conversation))
-        .unwrap();
+    let session = store.start_session().unwrap();
     let _ = store
         .send_turn(session.session_id, "I work there now.".into(), |_| {
             Ok(ConversationTurn {
@@ -166,9 +159,7 @@ fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_revi
 #[test]
 fn ended_saved_session_can_be_reviewed() {
     let store = SessionStore::default();
-    let session = store
-        .start_session(Some(SessionMode::Conversation))
-        .unwrap();
+    let session = store.start_session().unwrap();
     let _ = store
         .send_turn(session.session_id, "First turn answer here.".into(), |_| {
             Ok(ConversationTurn {

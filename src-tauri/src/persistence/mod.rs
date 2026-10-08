@@ -7,6 +7,8 @@ use crate::providers::{AnswerProvider, AnsweredBy, AttemptComparison, TurnFeedba
 use rusqlite::{params, Connection, OptionalExtension};
 
 mod ai_settings;
+mod coaching;
+pub(crate) use coaching::{CoachingProgress, UncoachedAnswer};
 mod daily_recall;
 mod learning_items;
 mod learning_reviews;
@@ -18,7 +20,7 @@ mod schema;
 pub(crate) mod session_wrapup;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 10;
+const SCHEMA_VERSION: i64 = 11;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;
@@ -74,14 +76,13 @@ impl SessionDatabase {
     pub fn active_session(&self) -> rusqlite::Result<Option<StoredSession>> {
         self.connection
             .query_row(
-                "SELECT id, mode, opening_question FROM sessions WHERE ended_at IS NULL LIMIT 1",
+                "SELECT id, opening_question FROM sessions WHERE ended_at IS NULL LIMIT 1",
                 [],
                 |row| {
                     Ok(StoredSession {
                         id: u64::try_from(row.get::<_, i64>(0)?)
                             .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, -1))?,
-                        mode: row.get(1)?,
-                        opening_question: row.get(2)?,
+                        opening_question: row.get(1)?,
                     })
                 },
             )
@@ -205,6 +206,7 @@ impl SessionDatabase {
         ).optional().map(|value| value.unwrap_or(false))
     }
 
+    #[cfg(test)]
     pub fn update_turn(
         &mut self,
         session_id: u64,
@@ -363,7 +365,6 @@ impl SessionDatabase {
 #[derive(Debug)]
 pub struct StoredSession {
     pub id: u64,
-    pub mode: String,
     pub opening_question: String,
 }
 

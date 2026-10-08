@@ -7,7 +7,6 @@ import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import type { SessionMode } from '@/lib/types';
 import { TrainerProvider } from './context/TrainerContext';
 import { router } from './router';
 import './App.css';
@@ -41,19 +40,14 @@ function App() {
     setMicActive(micActive);
   }, [micActive, setMicActive]);
 
-  const startPractice = useCallback(
-    (mode?: SessionMode) => {
-      void practice.start(mode);
-    },
-    [practice],
-  );
+  const startPractice = useCallback(() => {
+    void practice.start();
+  }, [practice]);
 
   const startOrResumePractice = useCallback(() => {
     if (isSessionOpen) {
       if (practice.state.tag === 'active' || practice.state.tag === 'waiting') {
-        void router.navigate({
-          to: practice.state.mode === 'coach' ? '/coach' : '/conversation',
-        });
+        void router.navigate({ to: '/conversation' });
       }
       return;
     }
@@ -90,12 +84,7 @@ function App() {
   useEffect(() => {
     const prev = previousPracticeTag.current;
     if ((prev === 'loading' || prev === 'starting') && practice.state.tag === 'active') {
-      void router.navigate({
-        to:
-          practice.state.tag === 'active' && practice.state.mode === 'coach'
-            ? '/coach'
-            : '/conversation',
-      });
+      void router.navigate({ to: '/conversation' });
     }
     if (prev === 'finishing' && practice.state.tag === 'completed') {
       void router.navigate({ to: '/summary' });

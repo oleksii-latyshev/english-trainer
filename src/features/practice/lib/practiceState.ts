@@ -1,20 +1,11 @@
-import type {
-  AttemptComparison,
-  ConversationTurn,
-  FinishedPracticeSession,
-  SavedCoachState,
-  SessionMode,
-  TurnFeedback,
-} from '@/lib/types';
+import type { AttemptComparison, ConversationTurn, FinishedPracticeSession } from '@/lib/types';
 
 export type SessionDetails = {
   sessionId: number;
-  mode: SessionMode;
   question: string;
   turnCount: number;
   targetTurns: number;
   retryEvidence: AttemptComparison[];
-  coachState?: SavedCoachState | null;
 };
 
 export type PracticeState =
@@ -38,77 +29,14 @@ export function sessionDetails(state: PracticeState): SessionDetails | undefined
 export function advancePractice(
   current: PracticeState,
   sessionId: number,
-  transcript: string,
-  turn: ConversationTurn,
-): PracticeState {
-  if (current.tag !== 'active' && current.tag !== 'waiting') return current;
-  if (current.sessionId !== sessionId) return current;
-  const newTurnCount = current.turnCount + 1;
-  return {
-    ...current,
-    question: turn.question ?? turn.spoken_reply,
-    turnCount: newTurnCount,
-    coachState: {
-      session_id: current.sessionId,
-      sequence: newTurnCount,
-      answered_question: current.question,
-      original_transcript: transcript,
-      feedback: null,
-      is_pending: false,
-    },
-  };
-}
-
-export function recordCoachAnswer(
-  current: PracticeState,
-  sessionId: number,
-  coachState: SavedCoachState,
-): PracticeState {
-  if (current.tag !== 'active' && current.tag !== 'waiting') return current;
-  if (current.sessionId !== sessionId) return current;
-  return {
-    ...current,
-    tag: 'active',
-    turnCount: coachState.sequence,
-    coachState,
-  };
-}
-
-export function advanceCoachTurn(
-  current: PracticeState,
-  sessionId: number,
   turn: ConversationTurn,
 ): PracticeState {
   if (current.tag !== 'active' && current.tag !== 'waiting') return current;
   if (current.sessionId !== sessionId) return current;
   return {
     ...current,
-    tag: 'active',
     question: turn.question ?? turn.spoken_reply,
-    coachState: current.coachState
-      ? {
-          ...current.coachState,
-          is_pending: false,
-        }
-      : null,
-  };
-}
-
-export function updateCoachFeedback(
-  current: PracticeState,
-  sessionId: number,
-  sequence: number,
-  feedback: TurnFeedback,
-): PracticeState {
-  if (current.tag !== 'active' && current.tag !== 'waiting') return current;
-  if (current.sessionId !== sessionId) return current;
-  if (!current.coachState || current.coachState.sequence !== sequence) return current;
-  return {
-    ...current,
-    coachState: {
-      ...current.coachState,
-      feedback,
-    },
+    turnCount: current.turnCount + 1,
   };
 }
 
@@ -132,4 +60,15 @@ export function recordRetryComparison(
       comparison,
     ].sort((a, b) => a.turn_sequence - b.turn_sequence),
   };
+}
+
+/** The wrap-up as it stands after more coaching landed; another session's update is ignored. */
+export function updateSummary(
+  current: PracticeState,
+  summary: FinishedPracticeSession,
+): PracticeState {
+  if (current.tag !== 'completed' || current.summary.session_id !== summary.session_id) {
+    return current;
+  }
+  return { tag: 'completed', summary };
 }

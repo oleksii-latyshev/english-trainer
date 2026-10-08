@@ -6,7 +6,7 @@ export type PauseSignals = {
   isTranscribing: boolean;
   /** Eva is replying or the session is busy. */
   isBusy: boolean;
-  /** The screen locked the composer (recall, retry or a saved Coach answer). */
+  /** The screen locked the composer (recall or retry). */
   isLocked: boolean;
 };
 

@@ -1,8 +1,7 @@
-import { Button } from '@heroui/react';
-import { ArrowRight } from 'lucide-react';
 import { MemoryUsageReview } from '@/features/memory/components/MemoryUsageReview';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
+import type { NoteTools } from './AnswerNote';
 import { DailyRecallPanel } from './DailyRecallPanel';
 import type { InputSource } from './lib/inputSource';
 import type { SessionDetails } from './lib/practiceState';
@@ -27,18 +26,19 @@ type Props = {
   pendingReply?: string;
   savedAnswer: SentAnswer | null;
   dialogue: PracticeDialogue | null;
+  noteTools: NoteTools | null;
+  isPhraseSaved: boolean;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onNavigate?: (screen: TalkScreenName) => void;
 };
 
 type ExtrasProps = Pick<
   Props,
-  'model' | 'actions' | 'recall' | 'isRetrying' | 'savedAnswer' | 'dialogue' | 'onNavigate'
+  'model' | 'actions' | 'recall' | 'isRetrying' | 'savedAnswer' | 'dialogue'
 > & { session: SessionDetails };
 
 function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasProps) {
-  const canUseRecall = session.mode === 'conversation' && session.turnCount >= session.targetTurns;
-  if (!canUseRecall) return null;
+  if (session.turnCount < session.targetTurns) return null;
   return (
     <>
       {recall.active && (
@@ -70,26 +70,9 @@ function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasPro
   );
 }
 
-function CoachGateway({ model, onNavigate }: Pick<ExtrasProps, 'model' | 'onNavigate'>) {
-  return (
-    <div className="talk-aside">
-      <Button
-        isDisabled={model.busy || !model.canChangeSession || model.practice.tag !== 'active'}
-        onPress={() => onNavigate?.('coach')}
-        size="sm"
-        variant="ghost"
-      >
-        Get feedback in Coach
-        <ArrowRight aria-hidden="true" size={14} />
-      </Button>
-    </div>
-  );
-}
-
-function ConversationExtras(props: ExtrasProps) {
-  const { model, recall, isRetrying, savedAnswer, dialogue, session } = props;
+function TalkExtras(props: ExtrasProps) {
+  const { recall, isRetrying, savedAnswer, dialogue } = props;
   const showUsageReview =
-    session.mode === 'conversation' &&
     savedAnswer !== null &&
     savedAnswer.sequence <= 2 &&
     dialogue?.input_sources?.[savedAnswer.sequence - 1] === 'voice' &&
@@ -101,21 +84,19 @@ function ConversationExtras(props: ExtrasProps) {
       {showUsageReview && (
         <MemoryUsageReview sequence={savedAnswer.sequence} sessionId={savedAnswer.sessionId} />
       )}
-      {(savedAnswer || model.transcript) && (
-        <CoachGateway model={model} onNavigate={props.onNavigate} />
-      )}
     </>
   );
 }
 
-export function PracticeConversationWorkspace(props: Props) {
+/** The one Talk screen: Eva's replies with a coaching note under each of the learner's answers. */
+export function TalkWorkspace(props: Props) {
   const { model, actions, session, recall, isRetrying } = props;
   if (!session) {
     return (
       <NoSession
         actionLabel="Start practice"
         isDisabled={model.busy}
-        onStart={() => actions.startPractice('conversation')}
+        onStart={() => actions.startPractice()}
         text="Start a conversation with Eva to begin."
         title="Your voice, in English."
       />
@@ -124,20 +105,21 @@ export function PracticeConversationWorkspace(props: Props) {
 
   return (
     <TalkScreen
+      actions={actions}
       dialogue={props.dialogue}
       historyError={props.historyError}
       isFinishDisabled={
         model.busy || !model.canChangeSession || model.practice.tag !== 'active' || recall.active
       }
+      isPhraseSaved={props.isPhraseSaved}
       isRecalling={recall.active}
       isRetrying={isRetrying}
       lock={{
         isLocked: recall.active || isRetrying,
-        reason: recall.active ? 'Spoken phrase recall is in progress above.' : undefined,
+        reason: lockReason(recall.active, isRetrying),
       }}
-      mode="conversation"
-      actions={actions}
       model={model}
+      noteTools={props.noteTools}
       onNavigate={props.onNavigate}
       onSend={props.onSend}
       pendingReply={props.pendingReply}
@@ -147,7 +129,13 @@ export function PracticeConversationWorkspace(props: Props) {
       session={session}
       speech={props.speech}
     >
-      <ConversationExtras {...props} session={session} />
+      <TalkExtras {...props} session={session} />
     </TalkScreen>
   );
+}
+
+function lockReason(isRecalling: boolean, isRetrying: boolean): string | undefined {
+  if (isRecalling) return 'Spoken phrase recall is in progress above.';
+  if (isRetrying) return 'Re-speaking in progress. Say it again in the note above, or cancel it.';
+  return undefined;
 }

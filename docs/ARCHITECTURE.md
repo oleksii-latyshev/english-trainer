@@ -20,27 +20,27 @@ differs, the **target** that the roadmap feature named in brackets delivers.
                 │ invoke() (typed)                         │ Channel (streamed chunks)
 ┌───────────────▼──────────────────────────────────────────┴───────────────┐
 │ Rust core                                                                 │
-│ conversation/  session orchestration, coaching, help, recall              │
+│ conversation/  session orchestration, coaching queue, help, recall        │
 │ learning/      normalisation, scheduling, usage and mastery rules         │
 │ persistence/   SQLite (single connection behind a mutex)                  │
 │ audio/         WAV validation, local Whisper                              │
-│ providers/     ConversationEngine, FeedbackEngine, UsageReviewEngine      │
+│ providers/     conversation engines, batch coaching, UsageReviewEngine    │
 │ setup/         diagnostics for local dependencies                         │
 └───────┬───────────────────────────┬──────────────────────────────────────┘
         │                           │
   Local Whisper              Conversation / evaluation providers
-  (whisper.cpp)              Apple Foundation Models helper · Gemini API · agy (legacy)
+  (whisper.cpp)              Apple Foundation Models helper · Gemini API · agy (coaching)
 ```
 
 ## 3. Frontend
 
-- **Routes:** `/` (home), `/conversation`, `/coach`, `/memory`, `/settings`, `/summary`. The sidebar
-  shows Talk, Memory and Settings. [F5] merges Conversation and Coach into one Talk route.
+- **Routes:** `/` (home), `/conversation` (the one Talk screen), `/memory`, `/settings`, `/summary`.
+  The sidebar shows Talk, Memory and Settings.
 - **State:** `TrainerContext` holds the speech, capture and practice hooks shared by routes.
   Lifecycle states are discriminated unions (`captureView.ts`, `practiceState.ts`).
 - **Shared audio** lives in `src/audio/` (recorder, device preference, signal diagnostics).
-- **Feature dependencies** are one-way (`practice → conversation, coach, memory, speech`). The
-  current `coach → practice` imports violate this and are removed in [F5].
+- **Feature dependencies** are one-way (`practice → conversation, coach, memory, speech`). `coach`
+  holds the presentational coaching note and imports no feature.
 
 ## 4. Audio and speech recognition
 
@@ -93,22 +93,24 @@ sequenceDiagram
     end
 ```
 
-Current: the reply is generated whole and returned by `send_practice_turn`; feedback is requested
-separately from the Coach flow. Target: [F1] streaming, [F4] sentence-level TTS, [F5] automatic
-parallel coaching, [F6] prefetched help.
+Current: the reply streams from `send_practice_turn`. Each saved answer joins a per-session coaching
+queue in Rust; batches of up to five answers run in the background through `agy` and the notes appear
+under the answers when a batch lands (`coaching-updated` event). Target: [F4] sentence-level TTS,
+[F6] prefetched help.
 
 ## 6. Providers
 
 | Engine | Purpose | Current adapters | Target |
 | :--- | :--- | :--- | :--- |
 | `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level speech from the stream [F4] |
-| `FeedbackEngine` | Rephrasing and focus points | `agy` | Gemini API [F5] |
+| Batch coaching (`coach_answers`) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, pinned to `gemini-3.8-flash-medium`; the Gemini API is not used (its free quota is reserved for conversation) | Same |
 | Guided answer | Model answer for the current question | `agy` | Gemini API, prefetched [F6] |
 | `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |
 
 Rules:
 
-- Call sites choose a **tier** (conversation, coaching), not a model ID.
+- Call sites choose a **tier** (conversation, coaching), not a model ID. Every `agy` call names a
+  Gemini model; `CliOptions.model` is mandatory and a test runs each entry point against a fake CLI.
 - Provider output is parsed into typed Rust values; invalid output is a recoverable typed error.
 - Only transcript and the minimum prompt context leave the Mac. API keys live in
   an encrypted, owner-only file in the app data folder, never in SQLite or logs.

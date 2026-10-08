@@ -101,7 +101,7 @@ fn split_question(text: &str) -> (String, Option<String>) {
         .map(|(_, part)| *part)
         .collect();
     if spoken.is_empty() {
-        // An empty reply would read as a pending Coach answer elsewhere.
+        // An empty reply would read as an unanswered turn elsewhere.
         return (text.to_string(), None);
     }
     (spoken.join(" "), Some(parts[position].to_string()))

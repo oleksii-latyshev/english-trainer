@@ -10,13 +10,16 @@ import type {
   WrapupPhrase,
 } from '@/lib/finishedPracticeSession';
 import { newlySavedCards } from '@/lib/savedPhrases';
-import { formatDuration, savePhrasesLabel, trendLine } from './lib/wrapup';
+import { checkingLine, formatDuration, savePhrasesLabel, trendLine } from './lib/wrapup';
+import { useWrapupUpdates } from './useWrapupUpdates';
 import './wrapup.css';
 
 type Props = {
   summary: FinishedPracticeSession;
   onDone: () => void;
   onTalkMore: () => void;
+  /** The wrap-up read again after more coaching landed. */
+  onSummaryUpdated: (summary: FinishedPracticeSession) => void;
 };
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -112,21 +115,28 @@ function MistakeCard({ mistake }: { mistake: RecurringMistake }) {
   );
 }
 
-export function PracticeCompletion({ summary, onDone, onTalkMore }: Props) {
+export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdated }: Props) {
+  useWrapupUpdates(summary, onSummaryUpdated);
   const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
+  const [saved, setSaved] = useState<ReadonlySet<string>>(new Set());
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const phrases = summary.phrases.filter((item) => !removed.has(item.phrase));
-  const isSaved = saveState === 'saved';
+  // Phrases that land after a save are still to be saved, so "saved" is tracked per phrase.
+  const toSave = phrases.filter((item) => !saved.has(item.phrase));
+  const isSaved = phrases.length > 0 && toSave.length === 0;
+  const checking = checkingLine(summary.pending_coaching, summary.is_coaching_paused);
 
   async function handleSaveAll() {
-    if (phrases.length === 0 || saveState === 'saving') return;
+    if (toSave.length === 0 || saveState === 'saving') return;
     setSaveState('saving');
     const requestedAtMs = Date.now();
     try {
       const cards = [];
-      for (const item of phrases) {
+      for (const item of toSave) {
         cards.push(await savePhraseCard(item.phrase, item.note, summary.session_id, item.sequence));
       }
+      const savedNow = toSave.map((item) => item.phrase);
+      setSaved((current) => new Set([...current, ...savedNow]));
       setSaveState('saved');
       const created = newlySavedCards(cards, requestedAtMs);
       showSavedToast({
@@ -134,6 +144,7 @@ export function PracticeCompletion({ summary, onDone, onTalkMore }: Props) {
           created.length > 0
             ? async () => {
                 await Promise.all(created.map((card) => deletePhraseCard(card.id)));
+                setSaved((current) => new Set([...current].filter((p) => !savedNow.includes(p))));
                 setSaveState('idle');
               }
             : undefined,
@@ -185,6 +196,7 @@ export function PracticeCompletion({ summary, onDone, onTalkMore }: Props) {
                 : 'All phrases removed. Nothing will be saved from this session.'}
             </p>
           )}
+          {checking && <p className="wrapup-note">{checking}</p>}
         </section>
 
         <section aria-labelledby="wrapup-mistakes" className="wrapup-section">
@@ -198,10 +210,16 @@ export function PracticeCompletion({ summary, onDone, onTalkMore }: Props) {
           ))}
           {summary.recurring_mistakes.length === 0 ? (
             <p className="wrapup-empty">
-              Nothing repeated in this session. Mistakes that come up twice or more show up here.
+              {checking ||
+                'Nothing repeated in this session. Mistakes that come up twice or more show up here.'}
             </p>
           ) : (
-            <p className="wrapup-note">These are already in Memory and will come back to review.</p>
+            <>
+              {checking && <p className="wrapup-note">{checking}</p>}
+              <p className="wrapup-note">
+                These are already in Memory and will come back to review.
+              </p>
+            </>
           )}
           {phrases.length > 0 && (
             <Button
@@ -215,7 +233,7 @@ export function PracticeCompletion({ summary, onDone, onTalkMore }: Props) {
               ) : (
                 <Bookmark aria-hidden="true" size={16} strokeWidth={2} />
               )}
-              {isSaved ? 'Saved to Memory' : savePhrasesLabel(phrases.length)}
+              {isSaved ? 'Saved to Memory' : savePhrasesLabel(toSave.length)}
             </Button>
           )}
           {saveState === 'error' && (

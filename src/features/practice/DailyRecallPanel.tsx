@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react';
-import { TurnNotice } from './TurnNotice';
+import { TurnNotice } from '@/components/TurnNotice';
 import type { useDailyRecall } from './useDailyRecall';
 
 type Recall = ReturnType<typeof useDailyRecall>;

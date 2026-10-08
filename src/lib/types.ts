@@ -102,7 +102,7 @@ function isBoundedText(value: unknown, maxLength: number): value is string {
 
 export function isTurnFeedback(value: unknown): value is TurnFeedback {
   if (typeof value !== 'object' || value === null) return false;
-  if (!('b2_rewrite' in value) || !isBoundedText(value.b2_rewrite, 300)) return false;
+  if (!('b2_rewrite' in value) || !isBoundedText(value.b2_rewrite, 600)) return false;
   if (!('focus_feedback' in value) || !Array.isArray(value.focus_feedback)) return false;
   return (
     value.focus_feedback.length <= 1 &&
@@ -122,14 +122,7 @@ export function isTurnFeedback(value: unknown): value is TurnFeedback {
   );
 }
 
-export {
-  isPracticeSession,
-  isSavedCoachState,
-  isSessionMode,
-  type PracticeSession,
-  type SavedCoachState,
-  type SessionMode,
-} from './practiceSessionTypes';
+export { isPracticeSession, type PracticeSession } from './practiceSessionTypes';
 
 export type QuestionScaffold = {
   sentence_starters: string[];

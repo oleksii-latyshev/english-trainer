@@ -1,10 +1,9 @@
 import { Button } from '@heroui/react';
 import { MicButton } from '@/components/MicControl';
+import { TurnNotice } from '@/components/TurnNotice';
 import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
 import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
-import { sessionDetails } from './lib/practiceState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
-import { TurnNotice } from './TurnNotice';
 
 type Props = {
   model: PracticeViewModel;
@@ -17,6 +16,8 @@ type Props = {
   isRetrying?: boolean;
   /** Recording is locked while an attempt is being saved or shown. */
   isLocked?: boolean;
+  /** Sits inside another card (the coaching note) instead of being a card itself. */
+  isEmbedded?: boolean;
 };
 
 function formatDuration(durationMs: number): string {
@@ -74,18 +75,16 @@ export function ManualRecorder({
   surface,
   isRetrying = false,
   isLocked = false,
+  isEmbedded = false,
 }: Props) {
   const { status, error, elapsedMs, durationMs, playbackUrl, transcript, transcribing } = model;
   const isRecording = status === 'recording';
-  // A saved Coach answer waits for Continue, so the retry take is started for the learner instead.
-  const isWaiting =
-    model.practice.tag === 'waiting' ||
-    (surface === 'retry' && sessionDetails(model.practice)?.coachState?.is_pending === true);
+  const isWaiting = model.practice.tag === 'waiting';
   const failure = model.transcriptionFailure;
   const playbackId = `${surface}-recording-playback`;
 
   return (
-    <section aria-label={kicker} className="talk-card">
+    <section aria-label={kicker} className={isEmbedded ? 'talk-card talk-embedded' : 'talk-card'}>
       <div className="talk-card-label" data-tone="accent">
         {kicker}
       </div>

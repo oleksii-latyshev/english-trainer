@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CoachWorkspace } from '@/features/coach/CoachWorkspace';
+import { latestPausedSequence } from '@/features/coach/lib/note';
 import {
   type FollowUpState,
   followUpError,
@@ -7,52 +7,43 @@ import {
   spokenTurn,
 } from '@/features/conversation/FollowUpPanel';
 import { withTurnReset } from '@/features/practice/lib/controlActions';
-import { sessionDetails } from '@/features/practice/lib/practiceState';
+import { type SessionDetails, sessionDetails } from '@/features/practice/lib/practiceState';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import { isConversationTurn, type TurnFeedback } from '@/lib/types';
+import { type ConversationTurn, isConversationTurn } from '@/lib/types';
+import type { NoteTools } from './AnswerNote';
 import type { InputSource } from './lib/inputSource';
 import { spokenDurationMs } from './lib/messageMeta';
 import {
   canSendAnswer,
   matchingSentAnswer,
   recallSessionId,
-  restoredCoachAnswer,
-  restoredRetryAnchor,
   sendFailure,
 } from './lib/practiceViewState';
-import { PracticeConversationWorkspace } from './PracticeConversationWorkspace';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { retryAnswerCoaching } from './sessionApi';
 import type { TalkScreenName } from './TalkScreen';
+import { TalkWorkspace } from './TalkWorkspace';
 import { useAutoListen } from './useAutoListen';
-import { useCoachContinue } from './useCoachContinue';
+import { useCoachingUpdates } from './useCoachingUpdates';
 import { useDailyRecall } from './useDailyRecall';
 import { usePracticeDialogue } from './usePracticeDialogue';
 import { usePrewarmProvider } from './usePrewarmProvider';
+import { useSecondTry } from './useSecondTry';
 import { useStreamingReply } from './useStreamingReply';
 
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
   speech: ReturnType<typeof useSystemSpeech>;
-  activeScreen?: 'conversation' | 'coach';
   onNavigate?: (screen: TalkScreenName) => void;
 };
 
 const IDLE_FOLLOW_UP: FollowUpState = { tag: 'idle' };
 
-export function PracticeView({
-  model,
-  actions,
-  speech,
-  activeScreen = 'conversation',
-  onNavigate,
-}: Props) {
+export function PracticeView({ model, actions, speech, onNavigate }: Props) {
   const [sentAnswer, setSentAnswer] = useState<SentAnswer | null>(null);
-  const [retryAnchor, setRetryAnchor] = useState<(SentAnswer & { feedback: TurnFeedback }) | null>(
-    null,
-  );
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [phraseSavedSequence, setPhraseSavedSequence] = useState<number | null>(null);
   const [followUpRecord, setFollowUpRecord] = useState<{
     requestId: number;
     state: FollowUpState;
@@ -62,15 +53,11 @@ export function PracticeView({
   const pending = useRef(false);
 
   const { transcript, practice, currentRequestId } = model;
-  const { handlePracticeTurn, isCurrent, onTurnPendingChange, startRecording } = actions;
+  const { handlePracticeTurn, isCurrent, onTurnPendingChange } = actions;
   const session = sessionDetails(practice);
   const recallId = recallSessionId(session);
   const recall = useDailyRecall(recallId);
-  const persistedAnswer = restoredCoachAnswer(session);
-  const savedAnswer =
-    persistedAnswer ?? matchingSentAnswer(sentAnswer, currentRequestId, transcript);
-  const activeRetryAnchor =
-    retryAnchor ?? restoredRetryAnchor(persistedAnswer, session?.coachState?.feedback);
+  const savedAnswer = matchingSentAnswer(sentAnswer, currentRequestId, transcript);
 
   const {
     dialogue,
@@ -81,6 +68,17 @@ export function PracticeView({
     turnCount: session?.turnCount,
     question: session?.question,
   });
+  useCoachingUpdates(session?.sessionId, retryHistory);
+
+  const secondTry = useSecondTry({
+    sessionId: session?.sessionId,
+    transcript,
+    currentRequestId,
+    onCompared: actions.handleRetryComparison,
+    resetCapture: actions.resetCapture,
+    startRecording: actions.startRecording,
+  });
+  const isRetrying = secondTry.sequence !== null;
 
   useEffect(() => {
     return () => {
@@ -91,22 +89,9 @@ export function PracticeView({
   const activeSessionId = session?.sessionId;
   const streamingReply = useStreamingReply(activeSessionId, dialogue?.turns.length ?? 0);
   usePrewarmProvider(activeSessionId);
-  const coachContinue = useCoachContinue({
-    session,
-    practiceTag: practice.tag,
-    isBusy: model.busy,
-    canChangeSession: model.canChangeSession,
-    continueCoachTurn: actions.continueCoachTurn,
-    streamingReply,
-    onContinued: () => {
-      resetTurnState();
-      setFollowUpRecord({ requestId: currentRequestId, state: IDLE_FOLLOW_UP });
-    },
-  });
 
   const listenAfterReply = useAutoListen(
-    activeScreen === 'conversation' &&
-      practice.tag === 'active' &&
+    practice.tag === 'active' &&
       !model.busy &&
       model.canChangeSession &&
       !recall.active &&
@@ -142,47 +127,21 @@ export function PracticeView({
   function resetTurnState() {
     streamingReply.clear();
     setSentAnswer(null);
-    setRetryAnchor(null);
-    setIsRetrying(false);
+    secondTry.cancel();
   }
 
-  async function handleSendTurn(customText?: string, source?: InputSource) {
-    if (
-      !canSendAnswer({
-        practiceTag: practice.tag,
-        isBusy: model.busy,
-        canChangeSession: model.canChangeSession,
-        isPending: pending.current,
-        isRetrying,
-        isRecalling: recall.active,
-      })
-    ) {
-      throw new Error('The current answer cannot be sent yet.');
-    }
-    const textToSend = customText ?? transcript;
-    const spokenMs = spokenDurationMs(source, model.durationMs);
-    if (!textToSend?.trim()) throw new Error('The answer is empty.');
+  function acceptReply(open: SessionDetails, answer: string, turn: ConversationTurn) {
+    handlePracticeTurn(open.sessionId, turn);
+    setSentAnswer({
+      sessionId: open.sessionId,
+      sequence: open.turnCount + 1,
+      originalTranscript: answer,
+      requestId: currentRequestId,
+    });
+  }
 
-    if (session?.mode === 'coach') {
-      if (session.coachState?.is_pending)
-        throw new Error('Review the saved answer before continuing.');
-      if (!session.coachState?.is_pending) {
-        pending.current = true;
-        try {
-          setFollowUpRecord({ requestId: currentRequestId, state: IDLE_FOLLOW_UP });
-          await actions.saveCoachAnswer(session.sessionId, textToSend, source ?? 'text', spokenMs);
-          actions.resetCapture();
-        } catch (cause) {
-          failSend(++generation.current, cause);
-          throw cause;
-        } finally {
-          pending.current = false;
-        }
-      }
-      return;
-    }
-
-    const reqId = ++generation.current;
+  /** Marks a send as started and returns its request id. */
+  function beginSend(): number {
     pending.current = true;
     onTurnPendingChange(true);
     setFollowUpRecord({ requestId: currentRequestId, state: { tag: 'thinking' } });
@@ -192,6 +151,27 @@ export function PracticeView({
         savedTurnCount: session.turnCount + 1,
       });
     }
+    return ++generation.current;
+  }
+
+  function canSendNow(): boolean {
+    return canSendAnswer({
+      practiceTag: practice.tag,
+      isBusy: model.busy,
+      canChangeSession: model.canChangeSession,
+      isPending: pending.current,
+      isRetrying,
+      isRecalling: recall.active,
+    });
+  }
+
+  async function handleSendTurn(customText?: string, source?: InputSource) {
+    if (!canSendNow()) throw new Error('The current answer cannot be sent yet.');
+    const textToSend = customText ?? transcript;
+    const spokenMs = spokenDurationMs(source, model.durationMs);
+    if (!textToSend?.trim()) throw new Error('The answer is empty.');
+
+    const reqId = beginSend();
     const sentAtMs = performance.now();
     try {
       const onDelta = (text: string) => {
@@ -200,16 +180,7 @@ export function PracticeView({
       const result = await requestTurn(session?.sessionId, textToSend, source, onDelta, spokenMs);
       const replyAtMs = performance.now();
       if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
-      if (session) {
-        handlePracticeTurn(session.sessionId, textToSend, result);
-        setSentAnswer({
-          sessionId: session.sessionId,
-          sequence: session.turnCount + 1,
-          originalTranscript: textToSend,
-          answeredQuestion: session.question,
-          requestId: currentRequestId,
-        });
-      }
+      if (session) acceptReply(session, textToSend, result);
       if (!isLatestSend(reqId)) return;
       setFollowUpRecord({
         requestId: currentRequestId,
@@ -219,7 +190,7 @@ export function PracticeView({
       speech.play(
         spokenTurn(result),
         (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs),
-        session?.mode === 'conversation' ? () => listenAfterReply(reqId) : undefined,
+        () => listenAfterReply(reqId),
       );
     } catch (cause) {
       failSend(reqId, cause);
@@ -230,71 +201,61 @@ export function PracticeView({
     }
   }
 
-  function startRetry() {
-    setIsRetrying(true);
-    startRecording();
-  }
-
   const controlActions = withTurnReset(actions, {
-    session,
     isRetrying,
-    startRetry,
+    startRetry: () => {
+      if (secondTry.sequence !== null) secondTry.start(secondTry.sequence);
+    },
     resetTurnState,
   });
 
+  const noteTools: NoteTools | null = session
+    ? {
+        sessionId: session.sessionId,
+        turnCount: session.turnCount,
+        retryEvidence: session.retryEvidence,
+        secondTrySequence: secondTry.sequence,
+        secondTryStatus: secondTry.status,
+        latestPausedSequence: latestPausedSequence(dialogue?.coaching),
+        model,
+        actions: controlActions,
+        onSayAgain: secondTry.start,
+        onCancelSecondTry: secondTry.cancel,
+        onRetryCoaching: (sequence) => {
+          // The queue reports back through the update event; asking again only needs the screen to follow.
+          void retryAnswerCoaching(session.sessionId, sequence)
+            .catch((cause: unknown) =>
+              console.warn('Could not ask for the coaching of this answer again.', cause),
+            )
+            .finally(retryHistory);
+        },
+        onSpeak: speech.play,
+        onPhraseSaved: setPhraseSavedSequence,
+        onPhraseSaveUndone: (sequence) =>
+          setPhraseSavedSequence((current) => (current === sequence ? null : current)),
+      }
+    : null;
+
   return (
     <div className="practice-screen">
-      {activeScreen === 'conversation' && (
-        <PracticeConversationWorkspace
-          actions={controlActions}
-          dialogue={dialogue}
-          sendError={sendFailure(followUpState)}
-          historyError={historyError}
-          retryHistory={retryHistory}
-          pendingReply={streamingReply.pendingReply}
-          isRetrying={isRetrying}
-          model={model}
-          onNavigate={onNavigate}
-          onSend={handleSendTurn}
-          recall={recall}
-          savedAnswer={savedAnswer}
-          session={session}
-          speech={speech}
-        />
-      )}
-
-      {activeScreen === 'coach' && (
-        <CoachWorkspace
-          actions={controlActions}
-          continueError={coachContinue.error}
-          dialogue={dialogue}
-          sendError={sendFailure(followUpState)}
-          historyError={historyError}
-          retryHistory={retryHistory}
-          pendingReply={streamingReply.pendingReply}
-          isContinuingCoach={coachContinue.isContinuing}
-          isCurrent={isCurrent}
-          isRetrying={isRetrying}
-          model={model}
-          onCancelRetry={() => {
-            actions.resetCapture();
-            setIsRetrying(false);
-          }}
-          onContinueCoach={() => void coachContinue.continueCoach()}
-          onContinueFromRetry={() => {
-            resetTurnState();
-            actions.resetCapture();
-          }}
-          onNavigate={onNavigate}
-          onRetryAnchor={setRetryAnchor}
-          onSend={handleSendTurn}
-          onTryAgain={startRetry}
-          retryAnchor={activeRetryAnchor}
-          savedAnswer={savedAnswer}
-          session={session}
-          speech={speech}
-        />
-      )}
+      <TalkWorkspace
+        actions={controlActions}
+        dialogue={dialogue}
+        historyError={historyError}
+        isPhraseSaved={session !== undefined && phraseSavedSequence === session.turnCount}
+        isRetrying={isRetrying}
+        model={model}
+        noteTools={noteTools}
+        onNavigate={onNavigate}
+        onSend={handleSendTurn}
+        pendingReply={streamingReply.pendingReply}
+        recall={recall}
+        retryHistory={retryHistory}
+        savedAnswer={savedAnswer}
+        sendError={sendFailure(followUpState)}
+        session={session}
+        speech={speech}
+      />
     </div>
   );
 }

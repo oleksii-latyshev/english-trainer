@@ -94,7 +94,7 @@ Current:
   `earlier_answers` (the learner's answers older than the recent turns, each cut to about 160
   characters at a word boundary) and `asked_questions` (the 40 most recent questions Eva asked, each
   at most 200 characters; the prompt tells her never to repeat them or ask what is already answered).
-  One builder serves Conversation and Coach. Total context at most 24,000 characters; over budget,
+  One builder serves every turn. Total context at most 24,000 characters; over budget,
   condensed answers are dropped first (oldest first), then the oldest turns, then the oldest asked
   questions. The latest transcript, opening question and targets are always kept. The context stays
   inside the one Gemini request per turn. Each provider compacts its own copy
@@ -109,7 +109,7 @@ Current:
 - Settings (`ai_settings` table): provider `gemini | apple | agy` (default `gemini`); `agy_model`
   `default | gemini-3.8-flash-low | gemini-3.8-flash-high`. Model IDs already encode effort; never
   also pass `--effort`.
-- Streaming: `send_practice_turn`, `continue_coach_turn` and `generate_follow_up` take a Tauri
+- Streaming: `send_practice_turn` and `generate_follow_up` take a Tauri
   `Channel` that receives `{ kind: "delta", text }` chunks while the reply is generated; the command
   still returns the final `ConversationTurn`. `agy` sends its whole reply as one delta at the end.
 - Plain-text shaping (`providers/reply_text.rs`, shared by Gemini and Apple): strip markdown,
@@ -157,22 +157,48 @@ Current:
   never returned to the UI, logged, put in a URL or in an error message. Commands:
   `get_gemini_key_status` (`{ configured, source: settings | environment | null }`),
   `save_gemini_api_key`, `delete_gemini_api_key`.
-- Tiers, not model IDs, at call sites: `conversation` (fast) and `coaching` (quality, not yet on
-  Gemini).
+- Tiers, not model IDs, at call sites: `conversation` (fast) and `coaching` (background, batched,
+  `agy` with `gemini-3.8-flash-medium`; the Gemini API is not used for coaching).
 
 ## 6. Coaching, help and review providers
 
-- `get_turn_feedback(question, transcript)` → `TurnFeedback { focus_feedback[], b2_rewrite }`
-  parsed with `deny_unknown_fields`.
+- **Coaching queue** (`conversation/coaching_queue.rs`, F5). Every saved learner answer waits for
+  coaching. The queue is derived from SQLite: answers without a `turn_feedback` row and with fewer
+  than 2 failed attempts (`coaching_failures`, schema version 11), so a restart resumes it. One
+  worker thread runs one batch at a time. A batch of the oldest waiting answers, at most 5, starts
+  when 5 answers wait, when the session finishes (`flush`), when the learner has been quiet for 60 s
+  with anything waiting (`IDLE_FLUSH`, restarted by every saved answer), or at once for an answer that
+  failed once (its single retry). A failed, empty or invalid batch counts one failed attempt for every
+  answer it missed; an answer with 2 failed attempts shows "Couldn't check this answer" with a manual
+  Retry (`retry_answer_coaching`, which also resumes a paused queue). A quota error (`RESOURCE_EXHAUSTED`
+  or 429 in agy's stderr, stdout or envelope, `ProviderErrorCode::RateLimited`) pauses coaching without
+  spending attempts; talking is never blocked. The pause lasts 30 minutes (`QUOTA_PAUSE`, in memory only),
+  then one batch probes again, and a still-limited probe pauses another 30 minutes; Retry resumes at once. Results are saved through `SessionStore::save_feedback`,
+  the same path as before, so the learning engine records the mistake (one per answer, deduplicated by
+  normalised key) and typed or edited answers keep their evidence rules. Saving works after the
+  session finished. After every batch Rust emits the Tauri event `coaching-updated` `{ session_id }`;
+  the UI re-reads the dialogue or wrap-up and never polls.
+- **Batch call** (`providers/agy/coaching.rs`): one `agy` call with `--model gemini-3.8-flash-medium`
+  (measured on 66 real answers: 14–136 s per batch of 5, median about 40 s, as many real mistakes found
+  as one answer per call; one answer per call exhausted the quota after about 54 calls). The process
+  budget is 170 s. The prompt ("do not use any tools or commands") gets `{ n: sequence, question,
+  transcript }` per answer and the JSON schema returns `answers[{ n, mistakes[0..2]{ original,
+  improved, explanation, category }, rewrite }]`. The reply is read from `structured_output` (an
+  object or text; the `response` text is the fallback). Each answer is validated on its own: the
+  rewrite is plain text of at most 600 characters; the first mistake whose quote really occurs in the
+  transcript, with texts within bounds and a different `improved`, becomes the one focus point
+  (`TurnFeedback.focus_feedback` has at most one, as the learning model records one mistake per
+  answer); a bad entry costs only its own answer.
+- `get_practice_dialogue` returns `coaching[]`, one entry per turn: `{ state: pending | paused |
+  failed }` or `{ state: ready, feedback }`. `get_session_wrapup(session_id)` rebuilds the wrap-up of
+  a finished session; `FinishedPracticeSession` has `pending_coaching` and `is_coaching_paused`.
+  `TurnFeedback` is stored and shown; the note's "Say it again" uses `retry_practice_turn`.
 - `retry_practice_turn` saves a second attempt and returns a local `AttemptComparison`
   (`target_evidence`: `already_present_in_both | newly_observed_in_retry | partially_observed |
   not_observed | uncertain`, word-count change).
 - `get_guided_answer(session_id, sequence, question)` → `{ model_answer, adaptation }` for the
-  active unanswered prompt only. Rust checks session, sequence, exact question and pending Coach
-  review. The cue exposure is saved **before** generation; a stale result cannot supply help for
+  active unanswered prompt only. Rust checks session, sequence and exact question. The cue exposure is saved **before** generation; a stale result cannot supply help for
   another turn. Failure does not change the session.
-- **Target [F5]:** feedback runs automatically after each saved answer, in parallel with the reply,
-  and returns a natural rephrasing plus at most one focus point.
 - **Target [F6]:** a help bundle `{ frame[3], phrases[3..5], model_answer, adaptation }` is
   prefetched when a question appears. Opening any level records a cue exposure.
 - **Target [F7]:** rescue requests carry the partial transcript and return one suggestion; they
@@ -180,11 +206,12 @@ Current:
 
 ## 7. Sessions and input provenance
 
-- Modes: `conversation` (eight-answer goal; target [F8] is time-based) and `coach` (four answers,
-  explicit Continue). Target [F5] retires `coach` as a separate mode; saved sessions stay readable.
+- One Talk mode with an eight-answer goal (target [F8] is time-based). New sessions are stored with
+  mode `conversation`; sessions saved as `coach` by older versions are read the same way (an answer
+  that Coach saved but never continued stays in the dialogue without a reply). No mode crosses IPC.
 - `get_practice_dialogue(session_id)` returns `{ session_id, opening_question, turns,
-  input_sources, reply_times_ms, answer_durations_ms, help_used }` for the active session only; a
-  pending Coach answer has empty assistant fields. The last three are aligned with `turns`:
+  input_sources, reply_times_ms, answer_durations_ms, help_used, coaching }` for the active session
+  only. The three lists after `input_sources` are aligned with `turns`:
   time to Eva's first words (falls back to total provider latency; `null` for older turns), spoken
   answer length (`null` for typed or older answers) and whether help was opened for that answer.
   Schema version 10 adds nullable `turns.reply_ms` and `turns.answer_duration_ms` and the
@@ -192,7 +219,7 @@ Current:
   `answer_duration_ms` (voice and edited answers only). `record_answer_help_used(session_id,
   sequence)` is idempotent and rejects other sessions and any sequence but the pending answer; it
   records only and changes no learning or mastery rule.
-- `send_practice_turn` and `save_coach_answer` take an optional `input_source`
+- `send_practice_turn` takes an optional `input_source`
   (`voice | edited | text`; omitted means `text`), saved atomically with the answer in
   `turn_input_sources`. Failed provider calls save nothing.
 - Voice auto-send applies only to a new successful transcription and only when enabled. Drafts stay
@@ -236,7 +263,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 
 ### 9.2 Usage review and mastery (frozen subsystem)
 
-1. **Eligibility:** saved first-pass `conversation` answers 1 and 2 only; Coach answers, retries and
+1. **Eligibility:** saved first-pass answers 1 and 2 only; retries and
    drills are excluded. Typed or edited answers are excluded. At most 3 non-archived candidates
    created before the session start (mistakes with earlier occurrences, phrases with provenance
    outside the session), 2+ words, ≤ 300 characters.
@@ -272,8 +299,8 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 - Current commands: `transcribe_audio`, `get_setup_diagnostics`, `get_ai_settings`,
   `save_ai_settings`, `prewarm_conversation_provider`, `get_gemini_key_status`,
   `save_gemini_api_key`, `delete_gemini_api_key`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
-  `send_practice_turn`, `save_coach_answer`, `continue_coach_turn`, `get_practice_dialogue`,
-  `finish_practice_session`, `get_turn_feedback`, `save_practice_feedback`, `retry_practice_turn`,
+  `send_practice_turn`, `get_practice_dialogue`, `finish_practice_session`, `get_session_wrapup`,
+  `retry_answer_coaching`, `retry_practice_turn`,
   `get_question_scaffold`, `get_guided_answer`, `record_answer_help_used`, `get_daily_recall_plan`, `submit_daily_recall`,
   `save_phrase_card`, `delete_phrase_card`, `delete_mistake`, `archive_learning_item`,
   `get_learning_memory`, `view_learning_memory`,

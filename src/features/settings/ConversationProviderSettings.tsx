@@ -48,7 +48,7 @@ function actionableError(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export function ConversationProviderSettings({ defaultModel }: { defaultModel?: string }) {
+export function ConversationProviderSettings() {
   const [loadState, setLoadState] = useState<LoadState>({ tag: 'loading' });
   const [saveState, setSaveState] = useState<SaveState>({ tag: 'idle' });
   // What is saved; the test and the radio cards both follow it.
@@ -161,11 +161,7 @@ export function ConversationProviderSettings({ defaultModel }: { defaultModel?: 
 
           {settings.provider === 'agy' && (
             <SettingsRow
-              description={
-                settings.agy_model === 'default'
-                  ? `Antigravity's own setting: ${defaultModel ?? 'not specified in its local settings file'}. It follows Antigravity if you change it there.`
-                  : undefined
-              }
+              description="Every Antigravity request names a Gemini model, so Antigravity's own default is never used."
               htmlFor="agy-model"
               title="Antigravity model"
             >
@@ -176,7 +172,7 @@ export function ConversationProviderSettings({ defaultModel }: { defaultModel?: 
                 onChange={handleModelChange}
                 value={settings.agy_model}
               >
-                <option value="default">Use Antigravity setting (recommended)</option>
+                <option value="default">Gemini 3.8 Flash Medium (recommended)</option>
                 <option value="gemini-3.8-flash-low">Gemini 3.8 Flash Low</option>
                 <option value="gemini-3.8-flash-high">Gemini 3.8 Flash High</option>
               </select>
@@ -189,9 +185,10 @@ export function ConversationProviderSettings({ defaultModel }: { defaultModel?: 
 
           <SettingsBlock tone="quiet">
             <p>
-              Detailed coaching, answer examples and memory checks still use Antigravity, which is
-              slower, whichever conversation provider you choose. Replies use simple English and ask
-              one short question.
+              Coaching under your answers runs in the background through Antigravity with Gemini 3.8
+              Flash, whichever conversation provider you choose, so it never slows Eva down. Answer
+              examples and memory checks use Antigravity too. Replies use simple English and ask one
+              short question.
             </p>
           </SettingsBlock>
         </>

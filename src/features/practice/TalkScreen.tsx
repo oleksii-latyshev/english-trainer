@@ -2,9 +2,11 @@ import { Button, Kbd } from '@heroui/react';
 import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
+import { TurnNotice } from '@/components/TurnNotice';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { setConversationFlow } from '@/lib/conversationFlowPreferences';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
+import { AnswerNote, type NoteTools } from './AnswerNote';
 import { Composer } from './Composer';
 import { Dialogue } from './Dialogue';
 import { EvaStage } from './EvaStage';
@@ -18,7 +20,6 @@ import { evaMoodFor } from './lib/turnState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { recordAnswerHelpUsed } from './sessionApi';
 import { TalkHeader } from './TalkHeader';
-import { TurnNotice } from './TurnNotice';
 import { useTalkKeyboard } from './useTalkKeyboard';
 import { useTalkTurn } from './useTalkTurn';
 import './talk.css';
@@ -31,14 +32,12 @@ import './talkStage.css';
 export type TalkScreenName =
   | 'home'
   | 'practice'
-  | 'coach'
   | 'memory'
   | 'summary'
   | 'settings'
   | 'settings-microphone';
 
 type Props = {
-  mode: 'conversation' | 'coach';
   model: PracticeViewModel;
   actions: PracticeActions;
   speech: ReturnType<typeof useSystemSpeech>;
@@ -53,10 +52,10 @@ type Props = {
   lock: { isLocked: boolean; reason?: string };
   isRetrying: boolean;
   isRecalling?: boolean;
-  isContinuing?: boolean;
   isFinishDisabled: boolean;
   isPhraseSaved?: boolean;
-  coachStep?: string;
+  /** Everything the notes under the learner's answers need; absent before a session exists. */
+  noteTools: NoteTools | null;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onNavigate?: (screen: TalkScreenName) => void;
   /** Extra material after the messages: recall, coaching notes, retry comparison. */
@@ -67,9 +66,9 @@ function helpAvailable(question: string, isRetrying: boolean, isRecalling: boole
   return question !== '' && !isRetrying && !isRecalling;
 }
 
-/** The Talk screen shared by Conversation and Coach: header, Eva's stage, dialogue and composer. */
+/** The Talk screen: header, Eva's stage, dialogue with coaching notes, and the composer. */
 export function TalkScreen(props: Props) {
-  const { mode, model, actions, speech, session, question, lock, isRetrying } = props;
+  const { model, actions, speech, session, question, lock, isRetrying } = props;
   const isRecalling = props.isRecalling ?? false;
   const { actualInput } = usePreferredMicrophone();
   const turn = useTalkTurn({
@@ -80,7 +79,6 @@ export function TalkScreen(props: Props) {
     isLocked: lock.isLocked,
     isRetrying,
     isRecalling,
-    isContinuing: props.isContinuing ?? false,
     pendingReply: props.pendingReply,
     onSend: props.onSend,
     onOpenSettings: () => props.onNavigate?.('settings'),
@@ -136,15 +134,10 @@ export function TalkScreen(props: Props) {
   const fixes = state.tag === 'error' ? state.issue.fixes.map((fix) => turn.fixes[fix]) : [];
 
   return (
-    <section
-      aria-label={mode === 'coach' ? 'Coach workspace' : 'Conversation workspace'}
-      className="talk"
-    >
+    <section aria-label="Talk workspace" className="talk">
       <TalkHeader
-        coachStep={props.coachStep}
         isFinishDisabled={props.isFinishDisabled}
         isFinishing={model.practice.tag === 'finishing'}
-        mode={mode}
         mood={mood}
         onFinish={actions.finishPractice}
         pause={pause}
@@ -168,6 +161,18 @@ export function TalkScreen(props: Props) {
             historyError={props.historyError}
             onPlaySpeech={speech.play}
             pendingReply={props.pendingReply}
+            renderNote={(message) =>
+              props.noteTools &&
+              message.sequence !== undefined &&
+              message.coaching && (
+                <AnswerNote
+                  coaching={message.coaching}
+                  sequence={message.sequence}
+                  tools={props.noteTools}
+                  transcript={message.text}
+                />
+              )
+            }
             retryHistory={props.retryHistory}
           >
             {model.practiceError && <TurnNotice message={model.practiceError} />}

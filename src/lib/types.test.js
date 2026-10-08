@@ -7,8 +7,6 @@ import {
   isPracticeSession,
   isProviderError,
   isQuestionScaffold,
-  isSavedCoachState,
-  isSessionMode,
   isSpokenRecallResult,
   isTurnFeedback,
 } from './types';
@@ -90,6 +88,8 @@ describe('conversation IPC payloads', () => {
       },
       phrases: [],
       recurring_mistakes: [],
+      pending_coaching: 0,
+      is_coaching_paused: false,
     };
     expect(isFinishedPracticeSession(finished)).toBe(true);
     expect(isFinishedPracticeSession({ ...finished, turn_count: -1 })).toBe(false);
@@ -148,6 +148,8 @@ describe('conversation IPC payloads', () => {
       }),
     ).toBe(false);
     expect(isTurnFeedback({ ...feedback, b2_rewrite: '' })).toBe(false);
+    expect(isTurnFeedback({ ...feedback, b2_rewrite: 'word '.repeat(110).trim() })).toBe(true);
+    expect(isTurnFeedback({ ...feedback, b2_rewrite: 'word '.repeat(130).trim() })).toBe(false);
     expect(isTurnFeedback({ ...feedback, focus_feedback: [] })).toBe(true);
   });
 
@@ -163,73 +165,5 @@ describe('conversation IPC payloads', () => {
     };
     expect(isAttemptComparison(comparison)).toBe(true);
     expect(isAttemptComparison({ ...comparison, target_evidence: 'fixed' })).toBe(false);
-  });
-
-  it('accepts valid session modes and saved coach states', () => {
-    expect(isSessionMode('conversation')).toBe(true);
-    expect(isSessionMode('coach')).toBe(true);
-    expect(isSessionMode('drills')).toBe(false);
-
-    const validCoachState = {
-      session_id: 1,
-      sequence: 1,
-      answered_question: 'What did you build?',
-      original_transcript: 'I built a microservice.',
-      feedback: null,
-      is_pending: true,
-    };
-    expect(isSavedCoachState(validCoachState)).toBe(true);
-    expect(
-      isSavedCoachState({
-        ...validCoachState,
-        feedback: {
-          focus_feedback: [
-            {
-              category: 'grammar',
-              original: 'more fast',
-              improved: 'faster',
-              explanation: 'Use comparative adjective.',
-            },
-          ],
-          b2_rewrite: 'It was significantly faster.',
-        },
-      }),
-    ).toBe(true);
-    expect(isSavedCoachState({ ...validCoachState, session_id: 0 })).toBe(false);
-    expect(isSavedCoachState({ ...validCoachState, is_pending: 'yes' })).toBe(false);
-    expect(
-      isPracticeSession({
-        session_id: 1,
-        mode: 'coach',
-        opening_question: 'Tell me about a trade-off.',
-        turn_count: 1,
-        target_turns: 4,
-        retry_evidence: [],
-        coach_state: { ...validCoachState, sequence: 2 },
-      }),
-    ).toBe(false);
-
-    expect(
-      isPracticeSession({
-        session_id: 1,
-        mode: 'coach',
-        opening_question: 'Tell me about a trade-off.',
-        turn_count: 1,
-        target_turns: 4,
-        retry_evidence: [],
-        coach_state: validCoachState,
-      }),
-    ).toBe(true);
-    expect(
-      isPracticeSession({
-        session_id: 2,
-        mode: 'coach',
-        opening_question: 'Tell me about a trade-off.',
-        turn_count: 1,
-        target_turns: 4,
-        retry_evidence: [],
-        coach_state: validCoachState,
-      }),
-    ).toBe(false);
   });
 });

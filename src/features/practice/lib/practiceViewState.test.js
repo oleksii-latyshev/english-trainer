@@ -1,71 +1,53 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  coachPromptQuestion,
-  practicePromptSequence,
+  canSendAnswer,
+  matchingSentAnswer,
   recallSessionId,
-  restoredCoachAnswer,
-  restoredRetryAnchor,
   sendFailure,
 } from './practiceViewState';
 
 describe('saved practice projection', () => {
-  const coachSession = {
+  const session = {
     tag: 'active',
     sessionId: 12,
-    mode: 'coach',
     question: 'What changed next?',
     turnCount: 1,
-    targetTurns: 4,
+    targetTurns: 8,
     retryEvidence: [],
-    coachState: {
-      session_id: 12,
-      sequence: 1,
-      answered_question: 'What did you build?',
-      original_transcript: 'I built an internal dashboard.',
-      feedback: { focus_feedback: [], b2_rewrite: 'I developed an internal dashboard.' },
-      is_pending: true,
-    },
   };
 
-  it('restores the saved answer by session and sequence without capture identity', () => {
-    const answer = restoredCoachAnswer(coachSession);
-    expect(answer).toEqual({
-      sessionId: 12,
-      sequence: 1,
-      answeredQuestion: 'What did you build?',
-      originalTranscript: 'I built an internal dashboard.',
-      requestId: -1,
-    });
-    expect(restoredRetryAnchor(answer, coachSession.coachState.feedback)?.feedback).toEqual(
-      coachSession.coachState.feedback,
-    );
+  it('offers daily phrase recall once the speaking goal is reached', () => {
+    expect(recallSessionId(session)).toBeUndefined();
+    expect(recallSessionId({ ...session, turnCount: 8 })).toBe(12);
+    expect(recallSessionId(undefined)).toBeUndefined();
   });
 
-  it('keeps daily phrase recall restricted to conversation sessions', () => {
-    expect(recallSessionId(coachSession)).toBeUndefined();
-    expect(recallSessionId({ ...coachSession, mode: 'conversation', targetTurns: 1 })).toBe(12);
+  it('keeps a sent answer only for the capture it was sent from', () => {
+    const answer = { sessionId: 12, sequence: 1, originalTranscript: 'Hello', requestId: 3 };
+    expect(matchingSentAnswer(answer, 3, 'Hello')).toBe(answer);
+    expect(matchingSentAnswer(answer, 4, 'Hello')).toBeNull();
+    expect(matchingSentAnswer(answer, 3, 'Other')).toBeNull();
+    expect(matchingSentAnswer(null, 3, 'Hello')).toBeNull();
   });
+});
 
-  it('numbers the saved pending Coach answer, then the next prompt after Continue', () => {
-    expect(practicePromptSequence(coachSession)).toBe(1);
-    expect(
-      practicePromptSequence({
-        ...coachSession,
-        coachState: { ...coachSession.coachState, is_pending: false },
-      }),
-    ).toBe(2);
-    expect(practicePromptSequence({ ...coachSession, mode: 'conversation' })).toBe(2);
-  });
+describe('canSendAnswer', () => {
+  const ready = {
+    practiceTag: 'active',
+    isBusy: false,
+    canChangeSession: true,
+    isPending: false,
+    isRetrying: false,
+    isRecalling: false,
+  };
 
-  it('keeps Try Again on its saved question after Coach has continued', () => {
-    const anchor = restoredCoachAnswer(coachSession);
-    const continued = {
-      ...coachSession,
-      question: 'What changed next?',
-      coachState: { ...coachSession.coachState, is_pending: false },
-    };
-    expect(coachPromptQuestion(anchor, anchor, continued, true)).toBe('What did you build?');
-    expect(coachPromptQuestion(anchor, anchor, continued, false)).toBe('What changed next?');
+  it('sends only when nothing else is going on', () => {
+    expect(canSendAnswer(ready)).toBe(true);
+    for (const blocker of ['isPending', 'isRetrying', 'isRecalling', 'isBusy']) {
+      expect(canSendAnswer({ ...ready, [blocker]: true })).toBe(false);
+    }
+    expect(canSendAnswer({ ...ready, practiceTag: 'waiting' })).toBe(false);
+    expect(canSendAnswer({ ...ready, canChangeSession: false })).toBe(false);
   });
 });
 

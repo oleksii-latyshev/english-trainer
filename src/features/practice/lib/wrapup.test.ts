@@ -1,6 +1,6 @@
 // @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, it } from 'bun:test';
-import { formatDuration, savePhrasesLabel, trendLine } from './wrapup';
+import { checkingLine, formatDuration, savePhrasesLabel, trendLine } from './wrapup';
 
 describe('formatDuration', () => {
   it('writes minutes and seconds without empty units', () => {
@@ -45,5 +45,21 @@ describe('savePhrasesLabel', () => {
   it('counts the phrases left', () => {
     expect(savePhrasesLabel(1)).toBe('Save 1 phrase to Memory');
     expect(savePhrasesLabel(3)).toBe('Save all 3 phrases to Memory');
+  });
+});
+
+describe('checkingLine', () => {
+  it('stays quiet once every answer is checked', () => {
+    expect(checkingLine(0, false)).toBe('');
+  });
+
+  it('counts the answers still being checked', () => {
+    expect(checkingLine(1, false)).toBe('Still checking 1 answer…');
+    expect(checkingLine(4, false)).toBe('Still checking 4 answers…');
+  });
+
+  it('says calmly that coaching is paused instead of waiting', () => {
+    expect(checkingLine(0, true)).toContain('paused');
+    expect(checkingLine(3, true)).toContain('paused');
   });
 });

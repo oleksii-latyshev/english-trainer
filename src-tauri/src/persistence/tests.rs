@@ -681,7 +681,15 @@ fn session_mode_persists_and_turn_can_be_updated_in_place() {
         .unwrap();
     let active = db.active_session().unwrap().unwrap();
     assert_eq!(active.id, session_id);
-    assert_eq!(active.mode, "coach");
+    let mode: String = db
+        .connection
+        .query_row(
+            "SELECT mode FROM sessions WHERE id = ?1",
+            [session_id as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(mode, "coach");
     assert_eq!(active.opening_question, "What did you build?");
 
     let initial_turn = StoredTurn {

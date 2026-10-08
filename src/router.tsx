@@ -78,62 +78,10 @@ export const conversationRoute = createRoute({
           startPractice,
           finishPractice: practice.finish,
           handlePracticeTurn: practice.acceptTurn,
-          saveCoachAnswer: practice.saveCoachAnswer,
-          continueCoachTurn: practice.continueCoachTurn,
-          saveFeedback: practice.saveFeedback,
           handleRetryComparison: practice.acceptRetryComparison,
           isCurrent: () => capture.isCurrentRequest(capture.view.currentRequestId),
           onTurnPendingChange: practice.onTurnPendingChange,
         }}
-        activeScreen="conversation"
-        key={sessionDetails(practice.state)?.sessionId ?? 'no-session'}
-        model={{
-          ...capture.view,
-          practice: practice.state,
-          practiceError: practice.error,
-          busy:
-            practice.isBusy ||
-            capture.view.status === 'requesting' ||
-            capture.view.status === 'stopping',
-          canChangeSession: capture.canChangeSession,
-        }}
-        onNavigate={(screen) => void navigate(talkScreenLocation(screen))}
-        speech={speech}
-      />
-    );
-  },
-});
-
-export const coachRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/coach',
-  component: function CoachComponent() {
-    const { practice, capture, speech, mic, startPractice } = useTrainer();
-    const navigate = coachRoute.useNavigate();
-
-    return (
-      <PracticeView
-        actions={{
-          startRecording: capture.startRecording,
-          stopRecording: capture.stopRecording,
-          startAutoListen: capture.startAutoListen,
-          cancelRecording: capture.cancelRecording,
-          holdListening: capture.holdListening,
-          pauseMic: mic.pause,
-          resumeMic: mic.resume,
-          transcribeRecording: capture.transcribeRecording,
-          resetCapture: capture.reset,
-          startPractice,
-          finishPractice: practice.finish,
-          handlePracticeTurn: practice.acceptTurn,
-          saveCoachAnswer: practice.saveCoachAnswer,
-          continueCoachTurn: practice.continueCoachTurn,
-          saveFeedback: practice.saveFeedback,
-          handleRetryComparison: practice.acceptRetryComparison,
-          isCurrent: () => capture.isCurrentRequest(capture.view.currentRequestId),
-          onTurnPendingChange: practice.onTurnPendingChange,
-        }}
-        activeScreen="coach"
         key={sessionDetails(practice.state)?.sessionId ?? 'no-session'}
         model={{
           ...capture.view,
@@ -221,6 +169,7 @@ export const summaryRoute = createRoute({
           practice.dismissSummary();
           void navigate({ to: '/' });
         }}
+        onSummaryUpdated={practice.updateSummary}
         onTalkMore={() => startPractice()}
         summary={practice.state.summary}
       />
@@ -232,7 +181,6 @@ export const summaryRoute = createRoute({
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   conversationRoute,
-  coachRoute,
   memoryRoute,
   memoryReviewRoute,
   settingsRoute,

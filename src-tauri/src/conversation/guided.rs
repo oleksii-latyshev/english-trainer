@@ -19,15 +19,10 @@ impl SessionStore {
                 .as_ref()
                 .filter(|active| active.id == session_id)
                 .ok_or_else(invalid_session_error)?;
-            if active.in_flight || active.has_pending_coach_answer() {
+            if active.in_flight {
                 return Err(busy_error());
             }
-            let expected = active
-                .turns
-                .last()
-                .map(|turn| turn.prompt())
-                .unwrap_or(&active.opening_question);
-            if sequence != active.turns.len() + 1 || question != expected {
+            if sequence != active.turns.len() + 1 || question != active.current_question() {
                 return Err(stale_example());
             }
             // Conservatively exclude later answers from spontaneous mastery after an example request.
