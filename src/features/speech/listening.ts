@@ -4,6 +4,7 @@ import { listenForTurn } from '@/audio/turnListening';
 import type { MicrophoneController } from '@/audio/useMicrophoneSession';
 import { getConversationFlow } from '@/lib/conversationFlowPreferences';
 import { preRollMsFor, type RecordingMode } from './captureView';
+import { startLiveTranscript } from './liveTranscript';
 import type { useSystemSpeech } from './useSystemSpeech';
 import { startWarmRecording } from './warmRecorder';
 
@@ -51,15 +52,24 @@ export type TurnWatch = {
 };
 
 /**
- * Watches the warm session for the end of the user's turn. Auto-listening also gives up quietly
- * if nobody speaks for a while.
+ * Watches the warm session for the end of the user's turn, and shows the words heard so far
+ * (only the practice conversation does; other recordings are read once, after the fact).
+ * Auto-listening also gives up quietly if nobody speaks for a while.
  */
 export function watchTurn(
   session: MicrophoneSession,
+  recorder: PcmRecorder,
   mode: RecordingMode,
-  handlers: { onSpeechStarted: () => void; onTurnEnded: () => void; onIdleTimeout: () => void },
+  handlers: {
+    onSpeechStarted: () => void;
+    onTurnEnded: () => void;
+    onIdleTimeout: () => void;
+    onLiveText: (text: string) => void;
+  },
   isCurrent: () => boolean,
 ): TurnWatch {
+  let hasHeardSpeech = false;
+  const stopLiveText = startLiveTranscript(recorder, () => hasHeardSpeech, handlers.onLiveText);
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   const clearIdle = () => {
     if (idleTimer) clearTimeout(idleTimer);
@@ -73,6 +83,7 @@ export function watchTurn(
     },
     {
       onSpeechStarted: () => {
+        hasHeardSpeech = true;
         clearIdle();
         handlers.onSpeechStarted();
       },
@@ -90,6 +101,7 @@ export function watchTurn(
     setHold: listening.setHold,
     dispose: () => {
       clearIdle();
+      stopLiveText();
       listening.dispose();
     },
   };

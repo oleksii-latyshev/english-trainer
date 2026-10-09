@@ -120,15 +120,17 @@ fn save_ai_settings(
 async fn get_setup_diagnostics(
     app: tauri::AppHandle,
     sessions: tauri::State<'_, conversation::SessionStore>,
+    engine: tauri::State<'_, std::sync::Arc<audio::SpeechEngine>>,
 ) -> Result<setup::SetupDiagnostics, providers::ProviderError> {
-    let model_file = sessions.speech_settings()?.model_file;
     let app_data = app.path().app_data_dir().map_err(|_| {
         providers::ProviderError::new(
             providers::ProviderErrorCode::ProcessFailed,
             "Cannot locate application data directory.",
         )
     })?;
-    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data, &model_file))
+    let model_file = sessions.speech_settings()?.resolved(&app_data).model_file;
+    let server = engine.server_status();
+    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data, &model_file, &server))
         .await
         .map_err(|_| {
             providers::ProviderError::new(
@@ -481,14 +483,21 @@ pub fn run() {
             ));
             start_usage_log(&sessions);
             app.manage(sessions);
+            app.manage(std::sync::Arc::new(audio::SpeechEngine::new(Some(
+                app_data.join("whisper-server.pid"),
+            ))));
             app.manage(providers::AppleHelper::new(apple_binary(app)));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             audio::commands::transcribe_audio,
+            audio::commands::transcribe_partial,
             audio::commands::get_speech_settings,
             audio::commands::save_speech_model,
+            audio::commands::save_live_transcript,
+            audio::commands::warm_speech_engine,
+            audio::commands::get_speech_engine_status,
             audio::commands::save_keep_raw_audio,
             audio::commands::list_speech_models,
             audio::commands::get_glossary,
@@ -537,6 +546,14 @@ pub fn run() {
             get_practice_memory_usage,
             get_memory_usage_evidence,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // The model server is a child process; it must not outlive the app.
+            if let tauri::RunEvent::Exit = event {
+                if let Some(engine) = app.try_state::<std::sync::Arc<audio::SpeechEngine>>() {
+                    engine.shutdown();
+                }
+            }
+        });
 }

@@ -9,6 +9,8 @@ export type ComponentCheck = {
 export type SetupDiagnostics = {
   whisper_cli: ComponentCheck;
   whisper_model: ComponentCheck;
+  /** Optional: keeps the model loaded; without it answers use one-off whisper-cli runs. */
+  whisper_server: ComponentCheck;
   agy_cli: ComponentCheck;
   database_path: string;
   agy_default_model?: string;
@@ -33,6 +35,8 @@ export function isSetupDiagnostics(value: unknown): value is SetupDiagnostics {
     isComponentCheck(value.whisper_cli) &&
     'whisper_model' in value &&
     isComponentCheck(value.whisper_model) &&
+    'whisper_server' in value &&
+    isComponentCheck(value.whisper_server) &&
     'agy_cli' in value &&
     isComponentCheck(value.agy_cli) &&
     'database_path' in value &&

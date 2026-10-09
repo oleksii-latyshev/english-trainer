@@ -17,6 +17,7 @@ import { pauseControl } from './lib/pauseControl';
 import type { SessionDetails } from './lib/practiceState';
 import type { SendFailure } from './lib/turnIssue';
 import { evaMoodFor } from './lib/turnState';
+import { LiveTranscriptBubble } from './Messages';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { recordAnswerHelpUsed } from './sessionApi';
 import { TalkHeader } from './TalkHeader';
@@ -176,6 +177,9 @@ export function TalkScreen(props: Props) {
             retryHistory={props.retryHistory}
           >
             {model.practiceError && <TurnNotice message={model.practiceError} />}
+            {model.status === 'recording' && model.heardSpeech && model.liveText && (
+              <LiveTranscriptBubble text={model.liveText} />
+            )}
             {props.children}
           </Dialogue>
           <div className="talk-composer-zone">

@@ -7,12 +7,13 @@ impl SessionDatabase {
         let stored = self
             .connection
             .query_row(
-                "SELECT model_file, keep_raw_audio FROM speech_settings WHERE id = 1",
+                "SELECT model_file, keep_raw_audio, live_transcript FROM speech_settings WHERE id = 1",
                 [],
                 |row| {
                     Ok(SpeechSettings {
                         model_file: row.get(0)?,
                         keep_raw_audio: row.get(1)?,
+                        live_transcript: row.get(2)?,
                     })
                 },
             )
@@ -22,9 +23,14 @@ impl SessionDatabase {
 
     pub fn save_speech_settings(&self, settings: &SpeechSettings) -> rusqlite::Result<()> {
         self.connection.execute(
-            "INSERT INTO speech_settings(id, model_file, keep_raw_audio) VALUES(1, ?1, ?2)
-             ON CONFLICT(id) DO UPDATE SET model_file = excluded.model_file, keep_raw_audio = excluded.keep_raw_audio",
-            rusqlite::params![settings.model_file, settings.keep_raw_audio],
+            "INSERT INTO speech_settings(id, model_file, keep_raw_audio, live_transcript) VALUES(1, ?1, ?2, ?3)
+             ON CONFLICT(id) DO UPDATE SET model_file = excluded.model_file,
+                keep_raw_audio = excluded.keep_raw_audio, live_transcript = excluded.live_transcript",
+            rusqlite::params![
+                settings.model_file,
+                settings.keep_raw_audio,
+                settings.live_transcript
+            ],
         )?;
         Ok(())
     }
@@ -57,11 +63,12 @@ mod tests {
     use crate::audio::SEED_GLOSSARY;
 
     #[test]
-    fn settings_default_to_base_model_with_raw_audio_discarded() {
+    fn settings_default_to_no_model_choice_with_raw_audio_discarded_and_live_text_on() {
         let db = SessionDatabase::open_in_memory().unwrap();
         let settings = db.speech_settings().unwrap();
-        assert_eq!(settings.model_file, "ggml-base.en.bin");
+        assert_eq!(settings.model_file, "");
         assert!(!settings.keep_raw_audio);
+        assert!(settings.live_transcript);
     }
 
     #[test]
@@ -70,6 +77,7 @@ mod tests {
         let settings = SpeechSettings {
             model_file: "ggml-small.en.bin".into(),
             keep_raw_audio: true,
+            live_transcript: false,
         };
         db.save_speech_settings(&settings).unwrap();
         assert_eq!(db.speech_settings().unwrap(), settings);
@@ -109,5 +117,37 @@ mod tests {
         let db = SessionDatabase::open(&path).unwrap();
         assert_eq!(db.glossary_terms().unwrap().len(), SEED_GLOSSARY.len());
         assert_eq!(db.speech_settings().unwrap(), SpeechSettings::default());
+    }
+
+    #[test]
+    fn version_thirteen_forgets_the_old_base_default_but_keeps_other_choices() {
+        let directory = crate::providers::agy::runner::ScratchDirectory::new().unwrap();
+        for (stored, expected) in [
+            ("ggml-base.en.bin", ""),
+            ("ggml-small.en.bin", "ggml-small.en.bin"),
+        ] {
+            let path = directory.path().join(format!("{expected}-upgrade.sqlite3"));
+            let db = SessionDatabase::open(&path).unwrap();
+            db.connection
+                .execute_batch(
+                    "ALTER TABLE speech_settings DROP COLUMN live_transcript;
+                     PRAGMA user_version = 13;",
+                )
+                .unwrap();
+            db.connection
+                .execute(
+                    "INSERT INTO speech_settings(id, model_file, keep_raw_audio) VALUES(1, ?1, 1)",
+                    [stored],
+                )
+                .unwrap();
+            drop(db);
+            let settings = SessionDatabase::open(&path)
+                .unwrap()
+                .speech_settings()
+                .unwrap();
+            assert_eq!(settings.model_file, expected);
+            assert!(settings.keep_raw_audio);
+            assert!(settings.live_transcript);
+        }
     }
 }

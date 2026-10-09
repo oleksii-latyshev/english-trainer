@@ -100,6 +100,40 @@ fn reports_non_executable_and_available_cli_files() {
     ));
 }
 
+fn idle_server() -> crate::audio::ServerStatus {
+    crate::audio::ServerStatus {
+        state: crate::audio::ServerState::NotRunning,
+        failure: None,
+    }
+}
+
+#[test]
+fn the_server_line_says_when_one_off_runs_are_used() {
+    let missing = check_server(None, &idle_server());
+    assert!(matches!(missing.status, ComponentStatus::Missing));
+    assert!(missing.message.contains("one-off whisper-cli runs"));
+
+    let temp = TempDir::new();
+    let server = temp.path().join("whisper-server");
+    fs::write(&server, b"#!/bin/sh\n").unwrap();
+    set_mode(&server, 0o700);
+    let failed = crate::audio::ServerStatus {
+        state: crate::audio::ServerState::NotRunning,
+        failure: Some("the model did not load".into()),
+    };
+    let message = check_server(Some(server.clone()), &failed).message;
+    assert!(message.contains("the model did not load"));
+    assert!(message.contains("one-off whisper-cli runs"));
+
+    let ready = crate::audio::ServerStatus {
+        state: crate::audio::ServerState::Ready,
+        failure: None,
+    };
+    let check = check_server(Some(server), &ready);
+    assert!(matches!(check.status, ComponentStatus::Available));
+    assert_eq!(check.message, "Running with the model kept loaded.");
+}
+
 #[test]
 fn serializes_diagnostics_with_snake_case_statuses() {
     let temp = TempDir::new();
@@ -108,6 +142,7 @@ fn serializes_diagnostics_with_snake_case_statuses() {
         agy_default_model: None,
         whisper_cli: check_cli(None),
         whisper_model: check_model(&data.join("model.bin")),
+        whisper_server: check_server(None, &idle_server()),
         agy_cli: check_cli(None),
         database_path: data
             .join("english-trainer.sqlite3")

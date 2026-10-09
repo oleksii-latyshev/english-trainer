@@ -4,23 +4,63 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub const DEFAULT_MODEL_FILE: &str = "ggml-base.en.bin";
+/// Measured on the learner's recordings (F3): the most accurate model that is also fast enough
+/// to answer in well under 1.5 s with the model kept loaded.
+const PREFERRED_MODEL_FILE: &str = "ggml-small.en.bin";
+const FALLBACK_MODEL_FILE: &str = "ggml-base.en.bin";
 
-/// Where the learner's choice and the speech settings live: Whisper model and raw-audio retention.
+/// Where the learner's choices live: Whisper model, raw-audio retention, live transcript.
+/// An empty `model_file` means the learner has not chosen; `effective_model_file` picks one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SpeechSettings {
     pub model_file: String,
     pub keep_raw_audio: bool,
+    pub live_transcript: bool,
 }
 
 impl Default for SpeechSettings {
     fn default() -> Self {
         Self {
-            model_file: DEFAULT_MODEL_FILE.into(),
+            model_file: String::new(),
             keep_raw_audio: false,
+            live_transcript: true,
         }
     }
+}
+
+/// The model file to use: the learner's choice, else small.en when installed, else base.en.
+pub fn effective_model_file(app_data: &Path, chosen: &str) -> String {
+    if !chosen.is_empty() {
+        return chosen.to_string();
+    }
+    let has_preferred = models_dir(app_data).join(PREFERRED_MODEL_FILE).is_file();
+    if has_preferred {
+        PREFERRED_MODEL_FILE
+    } else {
+        FALLBACK_MODEL_FILE
+    }
+    .to_string()
+}
+
+impl SpeechSettings {
+    /// The same settings with the model choice resolved, as the rest of the app should see them.
+    pub fn resolved(self, app_data: &Path) -> Self {
+        Self {
+            model_file: effective_model_file(app_data, &self.model_file),
+            ..self
+        }
+    }
+}
+
+/// Live partial transcripts re-run the model every ~1.5 s, which only the small models do fast
+/// enough on a Mac (measured: small.en 0.3 s warm, large-v3-turbo 1.2 s).
+pub fn is_light_model(model_file: &str) -> bool {
+    let name = model_file.strip_prefix("ggml-").unwrap_or(model_file);
+    ["tiny", "base", "small"].iter().any(|size| {
+        name.strip_prefix(size)
+            .is_some_and(|rest| rest.starts_with(['.', '-', '_']))
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -114,6 +154,46 @@ mod tests {
             .collect();
         assert_eq!(files, ["ggml-base.en.bin", "ggml-small.en.bin"]);
         assert!(list_models(&directory.path().join("missing")).is_empty());
+    }
+
+    #[test]
+    fn an_unchosen_model_is_small_when_installed_and_base_otherwise() {
+        let directory = crate::providers::agy::runner::ScratchDirectory::new().unwrap();
+        assert_eq!(
+            effective_model_file(directory.path(), ""),
+            "ggml-base.en.bin"
+        );
+        let models = models_dir(directory.path());
+        fs::create_dir(&models).unwrap();
+        fs::write(models.join("ggml-small.en.bin"), b"x").unwrap();
+        assert_eq!(
+            effective_model_file(directory.path(), ""),
+            "ggml-small.en.bin"
+        );
+        assert_eq!(
+            effective_model_file(directory.path(), "ggml-base.en.bin"),
+            "ggml-base.en.bin"
+        );
+    }
+
+    #[test]
+    fn only_the_small_models_are_light() {
+        for light in [
+            "ggml-tiny.en.bin",
+            "ggml-base.en.bin",
+            "ggml-small.en.bin",
+            "ggml-small.bin",
+            "ggml-base-q5_1.bin",
+        ] {
+            assert!(is_light_model(light), "{light}");
+        }
+        for heavy in [
+            "ggml-medium.en.bin",
+            "ggml-large-v3-turbo-q5_0.bin",
+            "ggml-basement.bin",
+        ] {
+            assert!(!is_light_model(heavy), "{heavy}");
+        }
     }
 
     #[test]

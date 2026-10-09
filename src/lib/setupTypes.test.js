@@ -4,6 +4,7 @@ import { isSetupDiagnostics } from './setupTypes';
 const diagnostics = {
   whisper_cli: { status: 'available', path: '/usr/local/bin/whisper', message: 'Found.' },
   whisper_model: { status: 'missing', path: null, message: 'Model is missing.' },
+  whisper_server: { status: 'missing', path: null, message: 'Using one-off runs.' },
   agy_cli: { status: 'unreadable', path: '/usr/local/bin/agy', message: 'Cannot read file.' },
   database_path: '/tmp/english-trainer.sqlite',
 };

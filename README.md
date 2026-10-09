@@ -77,6 +77,11 @@ The expected SHA-1 is `137c40403d78fd54d454da0f9bd998f78703390c`. Set
 `ENG_TRAINER_WHISPER_BIN` or `ENG_TRAINER_WHISPER_MODEL` before `bun run dev` to use other
 local paths. Automatic model provisioning is planned for a later phase.
 
+The same Homebrew package installs `whisper-server`, which the app starts to keep the model loaded
+(`ENG_TRAINER_WHISPER_SERVER_BIN` overrides its path); without it every answer runs `whisper-cli`
+and reloads the model. `ggml-small.en.bin` (same folder and URL pattern as above) is more accurate
+on technical words and becomes the default as soon as it is installed.
+
 ## Documentation
 
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — current priorities, MVP features (one feature per commit), decisions.

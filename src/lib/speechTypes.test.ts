@@ -3,6 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   isKeptRecordings,
   isSpeechCheckStatus,
+  isSpeechEngineStatus,
   isSpeechModels,
   isSpeechSettings,
   speechErrorMessage,
@@ -40,7 +41,16 @@ describe('speech payloads', () => {
     expect(
       isSpeechCheckStatus({ ...status, results: { runs: [{ ...run, term_accuracy: null }] } }),
     ).toBe(true);
-    expect(isSpeechSettings({ model_file: 'ggml-base.en.bin', keep_raw_audio: false })).toBe(true);
+    expect(
+      isSpeechSettings({
+        model_file: 'ggml-base.en.bin',
+        keep_raw_audio: false,
+        live_transcript: true,
+      }),
+    ).toBe(true);
+    expect(
+      isSpeechEngineStatus({ server: 'ready', failure: null, is_live_transcript_available: true }),
+    ).toBe(true);
     expect(isSpeechModels({ models: [{ file: 'a', size_bytes: 3 }], override_path: null })).toBe(
       true,
     );
@@ -53,6 +63,14 @@ describe('speech payloads', () => {
       false,
     );
     expect(isSpeechSettings({ model_file: 'x' })).toBe(false);
+    expect(isSpeechSettings({ model_file: 'x', keep_raw_audio: false })).toBe(false);
+    expect(
+      isSpeechEngineStatus({
+        server: 'starting',
+        failure: null,
+        is_live_transcript_available: true,
+      }),
+    ).toBe(false);
     expect(isSpeechModels({ models: [], override_path: 5 })).toBe(false);
     expect(isKeptRecordings(null)).toBe(false);
   });

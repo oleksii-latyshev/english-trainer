@@ -3,7 +3,21 @@ import { isRecord } from './localPreference';
 import { isProviderError, isTranscriptionError } from './types';
 
 /** Mirrors `SpeechSettings` in Rust `audio/models.rs`. */
-export type SpeechSettings = { model_file: string; keep_raw_audio: boolean };
+export type SpeechSettings = {
+  /** The model in use: the learner's choice, or the best installed one when none was made. */
+  model_file: string;
+  keep_raw_audio: boolean;
+  live_transcript: boolean;
+};
+
+/** Mirrors `SpeechEngineStatus` in Rust `audio/commands.rs`. */
+export type SpeechServerState = 'ready' | 'loading' | 'not_running';
+export type SpeechEngineStatus = {
+  server: SpeechServerState;
+  /** Why the model is not kept loaded, when starting it failed. */
+  failure: string | null;
+  is_live_transcript_available: boolean;
+};
 
 /** Mirrors `SpeechModels` in Rust `audio/commands.rs`. */
 export type SpeechModel = { file: string; size_bytes: number };
@@ -65,8 +79,22 @@ export function isSpeechSettings(value: unknown): value is SpeechSettings {
   return (
     isRecord(value) &&
     typeof value.model_file === 'string' &&
-    typeof value.keep_raw_audio === 'boolean'
+    typeof value.keep_raw_audio === 'boolean' &&
+    typeof value.live_transcript === 'boolean'
   );
+}
+
+export function isSpeechEngineStatus(value: unknown): value is SpeechEngineStatus {
+  return (
+    isRecord(value) &&
+    (value.server === 'ready' || value.server === 'loading' || value.server === 'not_running') &&
+    (value.failure === null || typeof value.failure === 'string') &&
+    typeof value.is_live_transcript_available === 'boolean'
+  );
+}
+
+function isNothing(value: unknown): value is null {
+  return value === null;
 }
 
 function isSpeechModel(value: unknown): value is SpeechModel {
@@ -171,6 +199,11 @@ export const saveSpeechModel = (modelFile: string) =>
   call('save_speech_model', isSpeechSettings, { model_file: modelFile });
 export const saveKeepRawAudio = (keepRawAudio: boolean) =>
   call('save_keep_raw_audio', isSpeechSettings, { keep_raw_audio: keepRawAudio });
+export const saveLiveTranscript = (liveTranscript: boolean) =>
+  call('save_live_transcript', isSpeechSettings, { live_transcript: liveTranscript });
+export const getSpeechEngineStatus = () => call('get_speech_engine_status', isSpeechEngineStatus);
+/** Loads the model ahead of the first answer; the status says how it went. */
+export const warmSpeechEngine = () => call('warm_speech_engine', isNothing);
 export const getGlossary = () => call('get_glossary', isStringList);
 export const saveGlossary = (terms: string[]) => call('save_glossary', isStringList, { terms });
 export const getKeptRecordings = () => call('get_kept_recordings', isKeptRecordings);

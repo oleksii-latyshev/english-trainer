@@ -1,19 +1,25 @@
 //! IPC commands of speech recognition: transcription, models, the speech check, the glossary and
 //! the answers kept on request.
 use super::{
+    answer_prompt,
     glossary::normalize_terms,
+    is_light_model,
     kept::{self, KeptRecordings},
     models::{is_model_file_name, list_models, model_path, SpeechModel},
     require_binary,
     speech_check::{self, SpeechCheckProgress, SpeechCheckResults, SpeechCheckStatus},
-    transcribe, SpeechSettings, Transcript, TranscriptionError, TranscriptionErrorCode,
+    ServerState, SpeechEngine, SpeechSettings, Transcript, TranscriptionError,
+    TranscriptionErrorCode,
 };
 use crate::conversation::SessionStore;
 use crate::providers::{ProviderError, ProviderErrorCode};
 use serde::Serialize;
 use std::{
     path::PathBuf,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use tauri::Manager;
 
@@ -52,21 +58,37 @@ fn raw_body<'a>(request: &'a tauri::ipc::Request<'_>) -> Result<&'a [u8], Transc
     }
 }
 
+fn settings_unreadable() -> TranscriptionError {
+    TranscriptionError::new(
+        TranscriptionErrorCode::IoFailure,
+        "Cannot read the speech settings. Please restart the app and retry.",
+    )
+}
+
+/// What Whisper is told before it hears the answer being recorded now: the question, names from
+/// the last answers, and the glossary. A glossary that cannot be read costs accuracy, not the turn.
+fn prompt_for_current_answer(sessions: &SessionStore) -> Option<String> {
+    let glossary = sessions.glossary_terms().unwrap_or_default();
+    let context = sessions.answer_context().unwrap_or_default();
+    answer_prompt(&glossary, &context)
+}
+
 #[tauri::command]
 pub(crate) async fn transcribe_audio(
     app: tauri::AppHandle,
     sessions: tauri::State<'_, SessionStore>,
+    engine: tauri::State<'_, Arc<SpeechEngine>>,
     request: tauri::ipc::Request<'_>,
 ) -> Result<Transcript, TranscriptionError> {
     let wav = raw_body(&request)?.to_vec();
     let app_data = app_data(&app)?;
-    let settings = sessions.speech_settings().map_err(|_| {
-        TranscriptionError::new(
-            TranscriptionErrorCode::IoFailure,
-            "Cannot read the speech settings. Please restart the app and retry.",
-        )
-    })?;
+    let settings = sessions
+        .speech_settings()
+        .map_err(|_| settings_unreadable())?
+        .resolved(&app_data);
+    let prompt = prompt_for_current_answer(&sessions);
     let slot = sessions.next_turn_slot();
+    let engine = Arc::clone(&engine);
     tauri::async_runtime::spawn_blocking(move || {
         if settings.keep_raw_audio {
             // Keeping is the learner's extra, so a full disk must not block the conversation.
@@ -74,22 +96,79 @@ pub(crate) async fn transcribe_audio(
                 eprintln!("Could not keep the recording: {error}");
             }
         }
-        transcribe(wav, &model_path(&app_data, &settings.model_file), None)
+        engine.transcribe(
+            wav,
+            &model_path(&app_data, &settings.model_file),
+            prompt.as_deref(),
+        )
     })
     .await
     .map_err(|_| task_failed())?
 }
 
+/// The words heard so far in the recording in progress (the WAV is the raw body), for the live
+/// transcript. `None` means no update this time; the answer is still transcribed in full.
+#[tauri::command]
+pub(crate) async fn transcribe_partial(
+    app: tauri::AppHandle,
+    sessions: tauri::State<'_, SessionStore>,
+    engine: tauri::State<'_, Arc<SpeechEngine>>,
+    request: tauri::ipc::Request<'_>,
+) -> Result<Option<String>, TranscriptionError> {
+    let app_data = app_data(&app)?;
+    let settings = sessions
+        .speech_settings()
+        .map_err(|_| settings_unreadable())?
+        .resolved(&app_data);
+    if !settings.live_transcript || !is_light_model(&settings.model_file) {
+        return Ok(None);
+    }
+    let wav = raw_body(&request)?.to_vec();
+    let prompt = prompt_for_current_answer(&sessions);
+    let engine = Arc::clone(&engine);
+    tauri::async_runtime::spawn_blocking(move || {
+        engine.transcribe_partial(
+            &model_path(&app_data, &settings.model_file),
+            &wav,
+            prompt.as_deref(),
+        )
+    })
+    .await
+    .map_err(|_| task_failed())
+}
+
+fn resolved_settings(
+    app: &tauri::AppHandle,
+    settings: SpeechSettings,
+) -> Result<SpeechSettings, ProviderError> {
+    Ok(settings.resolved(&provider_app_data(app)?))
+}
+
 #[tauri::command]
 pub(crate) fn get_speech_settings(
+    app: tauri::AppHandle,
     sessions: tauri::State<'_, SessionStore>,
 ) -> Result<SpeechSettings, ProviderError> {
-    sessions.speech_settings()
+    resolved_settings(&app, sessions.speech_settings()?)
+}
+
+/// Loads the chosen model in the background so the first answer does not wait for it.
+fn warm_in_background(
+    app: &tauri::AppHandle,
+    engine: &Arc<SpeechEngine>,
+    settings: &SpeechSettings,
+) -> Result<(), ProviderError> {
+    let model = model_path(&provider_app_data(app)?, &settings.model_file);
+    let engine = Arc::clone(engine);
+    tauri::async_runtime::spawn_blocking(move || engine.warm(&model));
+    Ok(())
 }
 
 #[tauri::command(rename_all = "snake_case")]
 pub(crate) fn save_speech_model(
+    app: tauri::AppHandle,
     sessions: tauri::State<'_, SessionStore>,
+    engine: tauri::State<'_, Arc<SpeechEngine>>,
     model_file: String,
 ) -> Result<SpeechSettings, ProviderError> {
     if !is_model_file_name(&model_file) {
@@ -98,7 +177,60 @@ pub(crate) fn save_speech_model(
             "That is not a Whisper model file name. Choose a model from the list.",
         ));
     }
-    sessions.update_speech_settings(|settings| settings.model_file = model_file)
+    let settings = resolved_settings(
+        &app,
+        sessions.update_speech_settings(|settings| settings.model_file = model_file)?,
+    )?;
+    warm_in_background(&app, &engine, &settings)?;
+    Ok(settings)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn save_live_transcript(
+    app: tauri::AppHandle,
+    sessions: tauri::State<'_, SessionStore>,
+    live_transcript: bool,
+) -> Result<SpeechSettings, ProviderError> {
+    resolved_settings(
+        &app,
+        sessions.update_speech_settings(|settings| settings.live_transcript = live_transcript)?,
+    )
+}
+
+/// Loads the model when a practice session opens; the status says how it went.
+#[tauri::command]
+pub(crate) fn warm_speech_engine(
+    app: tauri::AppHandle,
+    sessions: tauri::State<'_, SessionStore>,
+    engine: tauri::State<'_, Arc<SpeechEngine>>,
+) -> Result<(), ProviderError> {
+    let settings = resolved_settings(&app, sessions.speech_settings()?)?;
+    warm_in_background(&app, &engine, &settings)
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct SpeechEngineStatus {
+    pub server: ServerState,
+    /// Why the model is not kept loaded, when starting it failed.
+    pub failure: Option<String>,
+    /// The live transcript is switched on and the chosen model is small enough for it.
+    pub is_live_transcript_available: bool,
+}
+
+#[tauri::command]
+pub(crate) fn get_speech_engine_status(
+    app: tauri::AppHandle,
+    sessions: tauri::State<'_, SessionStore>,
+    engine: tauri::State<'_, Arc<SpeechEngine>>,
+) -> Result<SpeechEngineStatus, ProviderError> {
+    let settings = resolved_settings(&app, sessions.speech_settings()?)?;
+    let status = engine.server_status();
+    Ok(SpeechEngineStatus {
+        server: status.state,
+        failure: status.failure,
+        is_live_transcript_available: settings.live_transcript
+            && is_light_model(&settings.model_file),
+    })
 }
 
 #[tauri::command(rename_all = "snake_case")]

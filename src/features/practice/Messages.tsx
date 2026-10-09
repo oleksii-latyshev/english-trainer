@@ -101,3 +101,18 @@ export function LearnerMessage({ message, note }: LearnerProps) {
     </article>
   );
 }
+
+/** What speech recognition has heard so far, while the learner is still speaking. */
+export function LiveTranscriptBubble({ text }: { text: string }) {
+  return (
+    <article aria-label="Live transcript" className="talk-msg-me">
+      <div className="talk-bubble talk-bubble-me talk-bubble-live">
+        {text}
+        <span aria-hidden="true" className="talk-caret talk-caret-me" />
+      </div>
+      <div className="talk-marks">
+        <span>Live transcript</span>
+      </div>
+    </article>
+  );
+}

@@ -49,8 +49,17 @@ Current:
 ```text
 record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
   → WAV in memory → invoke(raw bytes) → validate WAV
-  → temp dir → spawn whisper-cli (ggml-base.en) → JSON → transcript → delete temp dir
+  → POST to the whisper-server child (model kept loaded) → JSON → transcript
+    (fallback: temp dir → spawn whisper-cli → JSON → transcript → delete temp dir)
 ```
+
+`audio/server.rs` owns the `whisper-server` child process: one per app run for the chosen model,
+bound to 127.0.0.1 on a free port, started when a practice session opens or on the first answer,
+restarted once if it dies, replaced when the model changes, stopped on app exit (and, through a pid
+note in the app data folder, after a crash). It is the only long-lived process on the speech path;
+Rust builds the initial prompt (question, recent names, glossary) and the UI never talks to it.
+While an answer is recorded, `transcribe_partial` re-runs the same loaded model on the audio so far
+for the live transcript; the final transcription is separate.
 
 Practice keeps one warm microphone session open (`audio/microphoneSession.ts`, owned by
 `audio/microphoneManager.ts` and the `useMicrophoneSession` hook): the three-second input warm-up
@@ -59,11 +68,10 @@ not per answer. Recording starts at once with a 300 ms pre-roll, `audio/turnDete
 turn after a pause, and `useSpeechCapture` falls back to a one-shot session where no warm one is
 provided (recall drill, Settings test).
 
-Target [F3]:
-
-- one long-lived Whisper worker per app run keeps the model loaded (Metal);
-- a larger English model chosen by measurement;
-- initial prompt = current question + recent turns + personal glossary.
+F3 part 2 built (awaiting a check in the app): the model is kept loaded by the `whisper-server`
+child, `small.en` is the default when installed (chosen by measurement), the initial prompt is the
+question + names from recent answers + the glossary, and a live transcript follows the learner
+while they speak.
 
 Raw audio is never written outside the temporary directory and is deleted after transcription.
 

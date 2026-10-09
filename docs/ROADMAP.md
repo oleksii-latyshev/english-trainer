@@ -89,7 +89,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   listening starts within 200 ms of the request or of the end of AI speech; a 10-minute
   conversation without touching the keyboard or mouse.
 
-**F3. Accurate speech recognition** `[ ]` (part 1 built 2026-10-08: tools to choose the model and the glossary; part 2 below is next)
+**F3. Accurate speech recognition** `[ ]` (part 1 built 2026-10-08: tools to choose the model and the glossary; part 2 built 2026-10-09; both await a check in the app on a physical Mac)
 - **Part 1 (built, awaiting a check in the app on a physical Mac).** Settings > Speech recognition: the
   speech check (12 fixed sentences read aloud, kept in `<app data>/speech-check/` as the learner's own
   test set, "Delete recordings" removes them), measurement of every `ggml-*.bin` model in
@@ -100,18 +100,32 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   glossary, seeded once with 27 words. Settings > Privacy: the "Keep raw audio" switch (off by
   default) with "Delete kept recordings". The glossary does not yet reach the live transcription:
   that is part 2.
-- **Part 2 (next).** The decision on the model from the measurements, keeping it loaded, and the
-  initial prompt in the live path.
-- Keep the Whisper model loaded between answers (in-process `whisper-rs` with Metal, or a bundled
-  `whisper-server` sidecar) and upgrade the default English model (e.g. `small.en`, `medium.en`,
-  or a quantised `large-v3-turbo`); decide by a measured accuracy/latency comparison on the user's
-  recordings.
-- Pass an initial prompt built from the current question, recent turns, and a personal glossary
-  (editable in Settings: employer stack, tools, names).
+- **Part 2 (built 2026-10-09, awaiting a check in the app on a physical Mac).** Decision from the
+  measurements below: `small.en` is the default model when installed (base.en otherwise; a model
+  the learner chose is never replaced). A `whisper-server` child keeps the model loaded (started
+  when a practice session opens, restarted once if it dies, replaced on a model change, stopped on
+  exit; falls back to `whisper-cli`, and Setup details say so). Every answer carries an initial
+  prompt: the question being answered, names from the last answers, the glossary (500 characters at
+  most). A live transcript (dashed bubble, caret, "Live transcript") re-transcribes the audio so
+  far every 1.5 s while the learner speaks, only with base/small models and a ready server;
+  the final transcription is unchanged. Settings > Speech recognition shows "Kept loaded · ready" /
+  "Loading…" / "Not running (using one-off runs)" and a Live transcript switch (on by default).
+  Not done: the live bubble for the spoken Memory review answer (it still shows the result after
+  the answer).
+- **Measured on the learner's 12 speech-check recordings (2026-10-09).** Glossary terms recognised
+  (of 23), without / with the glossary prompt, whisper-cli including model load: base.en 13 / 19
+  (0.4 s); small.en 17 / **21 (91%)** (1.0 s); medium.en 17 / 20 (3.3 s, deleted);
+  large-v3-turbo-q5_0 17 / 19 (1.7 s; better word error rate overall, 7% against 11%). With the
+  model kept loaded in `whisper-server`: small.en loads in 0.7 s and answers in 0.32 s (median);
+  large-v3-turbo loads in 0.4 s and answers in 1.15 s, too slow to follow speech live. Through the
+  new code (ignored test `the_real_server_transcribes_a_speech_check_recording_quickly`): first
+  answer 0.99 s including the load, then 0.28 to 0.30 s. This meets the acceptance (at least 90%
+  of terms; a 15 s answer in under 1.5 s) with small.en, the prompt and the warm server; the
+  30-term list and a spoken 15 s answer still need the check in the app.
 - Design (Settings > Personalisation): the row "Personal glossary" ("Words speech recognition
   should know: Tauri, Kubernetes, idempotent, Oleksii…") with an "Edit · 18" button that opens an
   editable word list; the list feeds the initial prompt above. Built in part 1 (the list is stored
-  and edited; the prompt is part 2). "About you" stays hidden until F8.
+  and edited) and part 2 (it reaches every transcription). "About you" stays hidden until F8.
 - Design (Settings > Privacy): the "Keep raw audio" switch (off by default; "Off: audio is deleted
   right after transcription"). Built in part 1: a stored setting, answers kept under
   `<app data>/recordings/<session>/<sequence>.wav` only when it is on, and "Delete kept recordings".

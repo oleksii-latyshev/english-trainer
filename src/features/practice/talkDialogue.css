@@ -50,6 +50,15 @@
   overflow-wrap: anywhere;
 }
 
+.talk-bubble-live {
+  border-style: dashed;
+  color: var(--et-live-text);
+}
+
+.talk-caret-me {
+  background: var(--et-me);
+}
+
 .talk-bubble-reply {
   margin: 0;
   color: var(--et-eva-text);

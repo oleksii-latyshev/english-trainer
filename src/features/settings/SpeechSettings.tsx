@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useTrainer } from '@/context/TrainerContext';
-import { saveSpeechModel, speechErrorMessage } from '@/lib/speechTypes';
+import { saveLiveTranscript, saveSpeechModel, speechErrorMessage } from '@/lib/speechTypes';
+import { engineLabel, engineProblem, liveTranscriptDescription } from './lib/engineStatus';
 import { modelOptionLabel, plainRun } from './lib/speechCheck';
+import { Switch } from './SettingsControls';
 import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
 import { SpeechCheckRecorder } from './SpeechCheckRecorder';
 import { SpeechMeasurement } from './SpeechMeasurement';
+import { useSpeechEngineStatus } from './useSpeechEngineStatus';
 import { useSpeechRecognition } from './useSpeechRecognition';
 import './settingsSpeech.css';
 
@@ -25,6 +28,16 @@ export function SpeechSettings() {
     }
   }
 
+  async function handleLiveTranscript(isOn: boolean) {
+    setSaveError(undefined);
+    try {
+      const settings = await saveLiveTranscript(isOn);
+      if (state.tag === 'ready') update({ settings });
+    } catch (cause) {
+      setSaveError(speechErrorMessage(cause, 'The live transcript setting could not be saved.'));
+    }
+  }
+
   return (
     <SettingsGroup id="speech" title="Speech recognition">
       {state.tag === 'loading' && (
@@ -41,6 +54,7 @@ export function SpeechSettings() {
         <ReadyBody
           deviceId={selectedDeviceId}
           isMicrophoneBusy={!capture.canChangeSession}
+          onLiveTranscript={(isOn) => void handleLiveTranscript(isOn)}
           onSelectModel={(file) => void handleSelectModel(file)}
           saveError={saveError}
           state={state}
@@ -60,6 +74,7 @@ function ReadyBody({
   isMicrophoneBusy,
   saveError,
   onSelectModel,
+  onLiveTranscript,
 }: {
   state: ReadyState;
   update: ReturnType<typeof useSpeechRecognition>['update'];
@@ -67,8 +82,10 @@ function ReadyBody({
   isMicrophoneBusy: boolean;
   saveError: string | undefined;
   onSelectModel: (file: string) => void;
+  onLiveTranscript: (isOn: boolean) => void;
 }) {
   const { settings, models, check } = state.data;
+  const engine = useSpeechEngineStatus(`${settings.model_file}|${settings.live_transcript}`);
   const chosenIsMissing = !models.models.some((model) => model.file === settings.model_file);
   const recordedCount = check.sentences.filter((sentence) => sentence.is_recorded).length;
   return (
@@ -102,6 +119,29 @@ function ReadyBody({
             </option>
           ))}
         </select>
+      </SettingsRow>
+      {engine && (
+        <SettingsRow
+          description="The model stays in memory between answers, so an answer is transcribed in a fraction of a second."
+          title="Model in memory"
+        >
+          <span role="status">{engineLabel(engine)}</span>
+        </SettingsRow>
+      )}
+      {engine && engineProblem(engine) && (
+        <SettingsBlock role="status" tone="warn">
+          {engineProblem(engine)}
+        </SettingsBlock>
+      )}
+      <SettingsRow
+        description={liveTranscriptDescription(settings, engine)}
+        title="Live transcript"
+      >
+        <Switch
+          checked={settings.live_transcript}
+          label="Live transcript"
+          onChange={onLiveTranscript}
+        />
       </SettingsRow>
       {saveError && (
         <SettingsBlock role="alert" tone="error">

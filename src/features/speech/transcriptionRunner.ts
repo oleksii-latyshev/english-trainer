@@ -1,3 +1,4 @@
+import { isTauri } from '@tauri-apps/api/core';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ActualAudioInput } from '@/audio/types';
 import type { CaptureState, Recording } from './captureView';
@@ -23,6 +24,10 @@ export function createTranscriptionRunner(deps: Deps) {
     wav: Blob,
     actualInput?: ActualAudioInput,
   ) {
+    if (!isTauri()) {
+      setState({ ...recording, tag: 'ready', actualInput, failure: BROWSER_ONLY_FAILURE });
+      return;
+    }
     transcribingRef.current = true;
     setState({
       tag: 'transcribing',

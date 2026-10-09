@@ -342,6 +342,29 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 rusqlite::params![position as i64, term],
             )?;
         }
+        transaction.pragma_update(None, "user_version", 13)?;
+        transaction.commit()?;
+        version = 13;
+    }
+    if version < 14 {
+        let transaction = connection.unchecked_transaction()?;
+        // An empty model_file means "no choice": the app picks the best installed model. Until
+        // now base.en was the stored default, so a stored base.en is not a deliberate choice.
+        let has_live_transcript: bool = transaction.query_row(
+            "SELECT COUNT(*) > 0 FROM pragma_table_info('speech_settings') WHERE name = 'live_transcript'",
+            [],
+            |row| row.get(0),
+        )?;
+        if !has_live_transcript {
+            transaction.execute_batch(
+                "ALTER TABLE speech_settings
+                    ADD COLUMN live_transcript INTEGER NOT NULL DEFAULT 1 CHECK(live_transcript IN (0, 1));",
+            )?;
+        }
+        transaction.execute(
+            "UPDATE speech_settings SET model_file = '' WHERE model_file = 'ggml-base.en.bin'",
+            [],
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

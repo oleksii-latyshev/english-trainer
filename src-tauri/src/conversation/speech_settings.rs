@@ -1,5 +1,5 @@
 use super::SessionStore;
-use crate::audio::SpeechSettings;
+use crate::audio::{AnswerContext, SpeechSettings};
 use crate::providers::{ProviderError, ProviderErrorCode};
 
 impl SessionStore {
@@ -49,6 +49,19 @@ impl SessionStore {
             .as_ref()
             .map(|session| (session.id, session.turns.len() + 1))
     }
+
+    /// The question being answered and what the learner said earlier in the open session, so
+    /// speech recognition can be told what the answer is likely about. `None` outside a session.
+    pub fn answer_context(&self) -> Option<AnswerContext> {
+        self.lock().active.as_ref().map(|session| AnswerContext {
+            question: session.current_question(),
+            recent_answers: session
+                .turns
+                .iter()
+                .map(|turn| turn.learner.clone())
+                .collect(),
+        })
+    }
 }
 
 fn settings_error(_: rusqlite::Error) -> ProviderError {
@@ -73,6 +86,16 @@ mod tests {
             .unwrap();
         assert!(settings.keep_raw_audio);
         assert_eq!(store.speech_settings().unwrap(), settings);
+    }
+
+    #[test]
+    fn the_answer_context_is_the_open_question_and_the_earlier_answers() {
+        let store = SessionStore::default();
+        assert_eq!(store.answer_context(), None);
+        let session = store.start().unwrap();
+        let context = store.answer_context().unwrap();
+        assert_eq!(context.question, session.opening_question);
+        assert!(context.recent_answers.is_empty());
     }
 
     #[test]

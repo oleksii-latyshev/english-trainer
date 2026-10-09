@@ -3,6 +3,20 @@ import { describe, expect, it } from 'bun:test';
 import { isCapturing, PRE_ROLL_MS, preRollMsFor, stopMeansCancel, viewFor } from './captureView';
 
 describe('capture view', () => {
+  it('exposes the live transcript only while recording or stopping', () => {
+    const listening = {
+      elapsedMs: 900,
+      level: 0.2,
+      mode: 'manual' as const,
+      held: false,
+      heardSpeech: true,
+      liveText: 'We wrote a small converter',
+    };
+    expect(viewFor({ tag: 'recording', ...listening }, {}, 1).liveText).toBe(listening.liveText);
+    expect(viewFor({ tag: 'stopping', ...listening }, {}, 1).liveText).toBe(listening.liveText);
+    expect(viewFor({ tag: 'idle' }, {}, 1).liveText).toBe('');
+  });
+
   it('exposes listening details only while recording or stopping', () => {
     const recording = viewFor(
       {
@@ -12,6 +26,7 @@ describe('capture view', () => {
         mode: 'auto',
         held: true,
         heardSpeech: true,
+        liveText: '',
       },
       {},
       3,

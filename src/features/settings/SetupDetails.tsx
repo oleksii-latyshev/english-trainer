@@ -45,6 +45,7 @@ export function SetupDetails({
         {state.tag === 'ready' && (
           <>
             <DiagnosticLine check={state.data.whisper_cli} label="Whisper command" />
+            <DiagnosticLine check={state.data.whisper_server} label="Whisper server" />
             <DiagnosticLine check={state.data.whisper_model} label="Whisper model" />
             <DiagnosticLine check={state.data.agy_cli} label="agy command" />
             <div>

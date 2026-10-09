@@ -8,6 +8,8 @@ import type { ActualAudioInput } from './types';
 export type { RecordedAudio };
 
 export type PcmRecorder = {
+  /** The audio so far as a WAV, for the live transcript; null when there is none to show. */
+  snapshot: () => Promise<Blob | null>;
   stop: () => Promise<RecordedAudio>;
   cancel: () => Promise<void>;
   actualInput: ActualAudioInput;
@@ -44,6 +46,7 @@ export async function startPcmRecording(
     return {
       actualInput,
       level: active.level,
+      snapshot: active.snapshot,
       stop: async () => {
         try {
           return await active.stop();

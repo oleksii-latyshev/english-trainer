@@ -86,19 +86,28 @@ pub fn normalize_terms(raw: &[String]) -> Result<Vec<String>, GlossaryError> {
 
 /// The initial prompt that tells Whisper which words to expect; empty when there are no terms.
 pub fn prompt_from_terms(terms: &[String]) -> Option<String> {
+    vocabulary(terms, PROMPT_MAX_CHARS)
+}
+
+/// `Vocabulary: a, b.` using as many of the terms, in order, as fit in `max_chars` in total.
+pub(super) fn vocabulary(terms: &[String], max_chars: usize) -> Option<String> {
     let mut prompt = String::from("Vocabulary:");
+    let mut length = prompt.chars().count() + 1; // the closing period
     let mut count = 0;
     for term in terms {
         let extra = term.chars().count() + 2;
-        if prompt.chars().count() + extra > PROMPT_MAX_CHARS {
+        if length + extra > max_chars {
             break;
         }
         prompt.push_str(if count == 0 { " " } else { ", " });
         prompt.push_str(term);
+        length += extra;
         count += 1;
     }
     (count > 0).then(|| prompt + ".")
 }
+
+pub(super) const WHISPER_PROMPT_MAX_CHARS: usize = PROMPT_MAX_CHARS;
 
 #[cfg(test)]
 mod tests {

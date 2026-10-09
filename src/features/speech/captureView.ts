@@ -18,6 +18,8 @@ export type ListeningState = {
   /** "Keep listening" is on: the turn does not end by silence. */
   held: boolean;
   heardSpeech: boolean;
+  /** What speech recognition has heard so far, while the recording goes on; empty if nothing yet. */
+  liveText: string;
 };
 
 export type CaptureState =
@@ -56,6 +58,7 @@ export type CaptureView = {
   recordingMode?: RecordingMode;
   held: boolean;
   heardSpeech: boolean;
+  liveText: string;
   /** `unmanaged` when no warm microphone session is attached (each recording opens its own). */
   micStatus: MicrophoneStatus | 'unmanaged';
   micError: string;
@@ -91,6 +94,7 @@ function listeningFields(state: CaptureState) {
     recordingMode: listening?.mode,
     held: listening?.held ?? false,
     heardSpeech: listening?.heardSpeech ?? false,
+    liveText: listening?.liveText ?? '',
   };
 }
 

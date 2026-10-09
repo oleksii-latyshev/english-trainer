@@ -1,4 +1,3 @@
-import { isTauri } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import type { MicrophoneSession } from '@/audio/microphoneSession';
 import type { PcmRecorder } from '@/audio/recordPcm';
@@ -21,7 +20,7 @@ import {
 } from './listening';
 import { microphoneError } from './microphoneError';
 import type { SpeechTiming } from './TimingPanel';
-import { BROWSER_ONLY_FAILURE, createTranscriptionRunner } from './transcriptionRunner';
+import { createTranscriptionRunner } from './transcriptionRunner';
 import type { useSystemSpeech } from './useSystemSpeech';
 
 export type { CaptureView, RecordingStatus } from './captureView';
@@ -90,29 +89,41 @@ export function useSpeechCapture(
     turnWatchRef.current = null;
   }
 
-  function deviceLost() {
-    const recorder = recorderRef.current;
-    if (!recorder) return;
-    const requestId = requestIdRef.current;
-    recorderRef.current = null;
-    stopListening();
-    clearElapsedTimer();
+  /** Releases a recorder; a failure to release it is shown unless a newer request took over. */
+  function releaseRecorder(recorder: PcmRecorder, requestId: number) {
     void recorder.cancel().catch((cause) => {
       if (requestId === requestIdRef.current) {
         setState({ tag: 'error', message: microphoneError(cause) });
       }
     });
+  }
+
+  function deviceLost() {
+    const recorder = recorderRef.current;
+    if (!recorder) return;
+    recorderRef.current = null;
+    stopListening();
+    clearElapsedTimer();
+    releaseRecorder(recorder, requestIdRef.current);
     setState({
       tag: 'error',
       message: 'The microphone disconnected during recording. Reconnect it and try again.',
     });
   }
 
-  function watchActiveTurn(session: MicrophoneSession, mode: RecordingMode, requestId: number) {
+  function watchActiveTurn(
+    session: MicrophoneSession,
+    recorder: PcmRecorder,
+    mode: RecordingMode,
+    requestId: number,
+  ) {
     turnWatchRef.current = watchTurn(
       session,
+      recorder,
       mode,
       {
+        onLiveText: (liveText) =>
+          setState((current) => (current.tag === 'recording' ? { ...current, liveText } : current)),
         onSpeechStarted: () =>
           setState((current) =>
             current.tag === 'recording' ? { ...current, heardSpeech: true } : current,
@@ -141,7 +152,7 @@ export function useSpeechCapture(
     timerRef.current = startElapsedTimer(recorder, startedAt, (elapsedMs, level) =>
       setState((state) => (state.tag === 'recording' ? { ...state, elapsedMs, level } : state)),
     );
-    if (session) watchActiveTurn(session, mode, requestId);
+    if (session) watchActiveTurn(session, recorder, mode, requestId);
     setState({
       tag: 'recording',
       elapsedMs: 0,
@@ -149,6 +160,7 @@ export function useSpeechCapture(
       mode,
       held: false,
       heardSpeech: false,
+      liveText: '',
       actualInput: recorder.actualInput,
     });
   }
@@ -215,16 +227,6 @@ export function useSpeechCapture(
         speechStoppedAtMs,
       };
 
-      if (!isTauri()) {
-        setState({
-          ...recording,
-          tag: 'ready',
-          actualInput,
-          failure: BROWSER_ONLY_FAILURE,
-        });
-        return;
-      }
-
       await runTranscription(requestId, recording, result.wav, actualInput);
     } catch (cause) {
       if (requestId === requestIdRef.current) {
@@ -243,11 +245,7 @@ export function useSpeechCapture(
     stopListening();
     clearElapsedTimer();
     setState({ tag: 'idle' });
-    void recorder?.cancel().catch((cause) => {
-      if (requestId === requestIdRef.current) {
-        setState({ tag: 'error', message: microphoneError(cause) });
-      }
-    });
+    if (recorder) releaseRecorder(recorder, requestId);
   }
 
   function holdListening(held: boolean) {
@@ -267,13 +265,6 @@ export function useSpeechCapture(
 
   async function transcribeRecording() {
     if (state.tag !== 'ready' || transcribingRef.current || !recordedWavRef.current) return;
-    if (!isTauri()) {
-      setState({
-        ...state,
-        failure: BROWSER_ONLY_FAILURE,
-      });
-      return;
-    }
     await runTranscription(requestIdRef.current, state, recordedWavRef.current, state.actualInput);
   }
 

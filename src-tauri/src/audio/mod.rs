@@ -4,7 +4,11 @@ mod glossary;
 pub(crate) mod kept;
 mod models;
 mod private_files;
+mod prompt;
 mod scoring;
+mod server;
+#[cfg(test)]
+mod server_tests;
 mod speech_check;
 mod temp;
 #[cfg(test)]
@@ -12,7 +16,10 @@ mod tests;
 
 pub use error::{TranscriptionError, TranscriptionErrorCode};
 pub use glossary::SEED_GLOSSARY;
-pub use models::{model_path, SpeechSettings};
+pub use models::{is_light_model, model_path, SpeechSettings};
+pub use prompt::{answer_prompt, AnswerContext};
+use server::WhisperServer;
+pub use server::{ServerState, ServerStatus};
 use temp::TemporaryDirectory;
 
 use serde::{Deserialize, Serialize};
@@ -20,6 +27,7 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    sync::atomic::{AtomicBool, Ordering},
     thread,
     time::{Duration, Instant},
 };
@@ -150,13 +158,24 @@ fn validate_wav(wav: &[u8]) -> Result<u64, TranscriptionError> {
 }
 
 pub(crate) fn resolve_whisper_binary() -> Option<PathBuf> {
-    resolve_whisper_binary_from(
+    resolve_binary_from(
+        "whisper-cli",
         std::env::var_os("ENG_TRAINER_WHISPER_BIN"),
         std::env::var_os("PATH"),
     )
 }
 
-fn resolve_whisper_binary_from(
+/// The `whisper-server` that keeps the model loaded; `ENG_TRAINER_WHISPER_SERVER_BIN` overrides.
+pub(crate) fn resolve_server_binary() -> Option<PathBuf> {
+    resolve_binary_from(
+        "whisper-server",
+        std::env::var_os("ENG_TRAINER_WHISPER_SERVER_BIN"),
+        std::env::var_os("PATH"),
+    )
+}
+
+fn resolve_binary_from(
+    name: &str,
     configured: Option<std::ffi::OsString>,
     path: Option<std::ffi::OsString>,
 ) -> Option<PathBuf> {
@@ -165,13 +184,13 @@ fn resolve_whisper_binary_from(
     }
     let path_match = path.and_then(|directories| {
         std::env::split_paths(&directories)
-            .map(|directory| directory.join("whisper-cli"))
+            .map(|directory| directory.join(name))
             .find(|candidate| is_executable(candidate))
     });
     path_match.or_else(|| {
         [
-            PathBuf::from("/opt/homebrew/bin/whisper-cli"),
-            PathBuf::from("/usr/local/bin/whisper-cli"),
+            PathBuf::from("/opt/homebrew/bin").join(name),
+            PathBuf::from("/usr/local/bin").join(name),
         ]
         .into_iter()
         .find(|candidate| is_executable(candidate))
@@ -196,15 +215,121 @@ fn is_executable(path: &Path) -> bool {
     }
 }
 
-/// Transcribes a recording with the Whisper model at `model`. `prompt` is Whisper's initial prompt.
-pub fn transcribe(
-    wav: Vec<u8>,
+/// The speech engine of the app run: one `whisper-server` holding the chosen model, with the
+/// one-off `whisper-cli` as the fallback when the server cannot be used.
+pub struct SpeechEngine {
+    server: WhisperServer,
+    /// One live update at a time: a tick that finds the previous one still running is skipped.
+    partial_running: AtomicBool,
+}
+
+/// The executables the engine runs; resolved from the environment in the app, injected in tests.
+pub(crate) struct Binaries {
+    pub server: Option<PathBuf>,
+    pub cli: Option<PathBuf>,
+}
+
+impl Binaries {
+    fn resolve() -> Self {
+        Self {
+            server: resolve_server_binary(),
+            cli: resolve_whisper_binary(),
+        }
+    }
+}
+
+impl SpeechEngine {
+    pub fn new(pid_file: Option<PathBuf>) -> Self {
+        Self {
+            server: WhisperServer::new(pid_file),
+            partial_running: AtomicBool::new(false),
+        }
+    }
+
+    pub fn server_status(&self) -> ServerStatus {
+        self.server.status()
+    }
+
+    /// Stops the model server; the app calls this on exit.
+    pub fn shutdown(&self) {
+        self.server.shutdown();
+    }
+
+    /// Loads the model ahead of the first answer. Failures are not reported here: the server
+    /// status says so and the first transcription falls back to one-off runs.
+    pub fn warm(&self, model: &Path) {
+        let Some(binary) = resolve_server_binary() else {
+            return;
+        };
+        let Ok(model) = ready_model(model) else {
+            return;
+        };
+        // The outcome is in `server_status`.
+        let _ = self.server.ensure(&binary, &model, true);
+    }
+
+    /// Transcribes a recording with the Whisper model at `model`. `prompt` is Whisper's initial prompt.
+    pub fn transcribe(
+        &self,
+        wav: Vec<u8>,
+        model: &Path,
+        prompt: Option<&str>,
+    ) -> Result<Transcript, TranscriptionError> {
+        self.transcribe_with(&Binaries::resolve(), wav, model, prompt)
+    }
+
+    pub(crate) fn transcribe_with(
+        &self,
+        binaries: &Binaries,
+        wav: Vec<u8>,
+        model: &Path,
+        prompt: Option<&str>,
+    ) -> Result<Transcript, TranscriptionError> {
+        let duration_ms = validate_wav(&wav)?;
+        let model = ready_model(model)?;
+        if let Some(server_binary) = &binaries.server {
+            match self
+                .server
+                .transcribe(server_binary, &model, &wav, prompt, duration_ms)
+            {
+                Ok(transcript) => return Ok(transcript),
+                Err(server::ServerError::Failed(error)) => return Err(error),
+                Err(server::ServerError::Unavailable(reason)) => {
+                    eprintln!("whisper-server is not used, running whisper-cli instead: {reason}");
+                }
+            }
+        }
+        let cli = binaries.cli.clone().ok_or_else(missing_binary_error)?;
+        transcribe_once(&cli, &model, &wav, prompt, duration_ms)
+    }
+
+    /// The text of the audio recorded so far, for the live transcript. `None` when the model is
+    /// not loaded, is busy with the previous update, or heard nothing it can use; the answer
+    /// itself is always transcribed from the full recording.
+    pub fn transcribe_partial(
+        &self,
+        model: &Path,
+        wav: &[u8],
+        prompt: Option<&str>,
+    ) -> Option<String> {
+        validate_wav(wav).ok()?;
+        let model = ready_model(model).ok()?;
+        if self.partial_running.swap(true, Ordering::AcqRel) {
+            return None;
+        }
+        let text = self.server.transcribe_partial(&model, wav, prompt);
+        self.partial_running.store(false, Ordering::Release);
+        text
+    }
+}
+
+fn transcribe_once(
+    binary: &Path,
     model: &Path,
+    wav: &[u8],
     prompt: Option<&str>,
+    duration_ms: u64,
 ) -> Result<Transcript, TranscriptionError> {
-    let duration_ms = validate_wav(&wav)?;
-    let binary = require_binary()?;
-    let model = ready_model(model)?;
     let directory = TemporaryDirectory::new().map_err(|_| {
         TranscriptionError::new(
             TranscriptionErrorCode::IoFailure,
@@ -218,23 +343,18 @@ pub fn transcribe(
             "Cannot write temporary audio for transcription. Please retry.",
         )
     })?;
-    transcribe_file(
-        &binary,
-        &model,
-        &input,
-        prompt,
-        directory.path(),
-        duration_ms,
+    transcribe_file(binary, model, &input, prompt, directory.path(), duration_ms)
+}
+
+fn missing_binary_error() -> TranscriptionError {
+    TranscriptionError::new(
+        TranscriptionErrorCode::EngineMissing,
+        "whisper-cli was not found. Install whisper.cpp or set ENG_TRAINER_WHISPER_BIN to its executable, then restart the app.",
     )
 }
 
 pub(crate) fn require_binary() -> Result<PathBuf, TranscriptionError> {
-    resolve_whisper_binary().ok_or_else(|| {
-        TranscriptionError::new(
-            TranscriptionErrorCode::EngineMissing,
-            "whisper-cli was not found. Install whisper.cpp or set ENG_TRAINER_WHISPER_BIN to its executable, then restart the app.",
-        )
-    })
+    resolve_whisper_binary().ok_or_else(missing_binary_error)
 }
 
 /// The canonical path of a model that exists, so a relative or linked path cannot surprise the CLI.

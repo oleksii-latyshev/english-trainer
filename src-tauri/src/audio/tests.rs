@@ -1,6 +1,6 @@
 use super::*;
 
-fn valid_wav() -> Vec<u8> {
+pub(super) fn valid_wav() -> Vec<u8> {
     let mut wav = Vec::new();
     wav.extend_from_slice(b"RIFF");
     wav.extend_from_slice(&36_u32.to_le_bytes());
@@ -98,7 +98,7 @@ fn whisper_resolver_honors_explicit_path_without_fallback() {
     let configured = std::ffi::OsString::from("/configured/whisper-cli");
     let path = std::ffi::OsString::from("/unused");
     assert_eq!(
-        resolve_whisper_binary_from(Some(configured), Some(path)),
+        resolve_binary_from("whisper-cli", Some(configured), Some(path)),
         Some(PathBuf::from("/configured/whisper-cli"))
     );
 }
@@ -131,7 +131,7 @@ fn whisper_resolver_finds_executable_from_injected_path() {
     }
     let search_path = std::env::join_paths([&directory]).unwrap();
     assert_eq!(
-        resolve_whisper_binary_from(None, Some(search_path)),
+        resolve_binary_from("whisper-cli", None, Some(search_path)),
         Some(binary)
     );
     let _ = fs::remove_dir_all(directory);

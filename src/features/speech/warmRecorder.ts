@@ -14,6 +14,7 @@ export async function startWarmRecording(
   return {
     actualInput,
     level: capture.level,
+    snapshot: capture.snapshot,
     stop: capture.stop,
     cancel: async () => capture.cancel(),
   };

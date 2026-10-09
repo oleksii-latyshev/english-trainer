@@ -38,6 +38,20 @@ fn sample_feedback() -> TurnFeedback {
 }
 
 #[test]
+fn the_answer_context_follows_the_conversation() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "We use Vercel.".into(), |_| {
+            Ok(turn("Next?", "Follow up?"))
+        })
+        .unwrap();
+    let context = store.answer_context().unwrap();
+    assert_eq!(context.question, "Follow up?");
+    assert_eq!(context.recent_answers, ["We use Vercel."]);
+}
+
+#[test]
 fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
     let path = temporary_database_path();
     let store = SessionStore::open(&path).unwrap();

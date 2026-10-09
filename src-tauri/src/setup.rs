@@ -5,6 +5,7 @@ use std::{fs, path::Path, path::PathBuf};
 pub(crate) struct SetupDiagnostics {
     pub whisper_cli: ComponentCheck,
     pub whisper_model: ComponentCheck,
+    pub whisper_server: ComponentCheck,
     pub agy_cli: ComponentCheck,
     pub database_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -26,13 +27,19 @@ pub(crate) enum ComponentStatus {
     Unreadable,
 }
 
-pub(crate) fn collect(app_data: &Path, model_file: &str) -> SetupDiagnostics {
+pub(crate) fn collect(
+    app_data: &Path,
+    model_file: &str,
+    server: &crate::audio::ServerStatus,
+) -> SetupDiagnostics {
     let whisper_cli = check_cli(crate::audio::resolve_whisper_binary());
+    let whisper_server = check_server(crate::audio::resolve_server_binary(), server);
     let whisper_model = check_model(&crate::audio::model_path(app_data, model_file));
     let agy_cli = check_cli(crate::providers::resolve_agy_binary());
     SetupDiagnostics {
         whisper_cli,
         whisper_model,
+        whisper_server,
         agy_cli,
         agy_default_model: std::env::var_os("HOME")
             .map(PathBuf::from)
@@ -119,6 +126,22 @@ fn check_cli(path: Option<PathBuf>) -> ComponentCheck {
         displayed_path,
         "Readable executable file found; CLI authentication and runtime behavior were not tested.",
     )
+}
+
+/// The model server is optional: without it answers are transcribed by one-off `whisper-cli`
+/// runs, which work but reload the model every time.
+fn check_server(path: Option<PathBuf>, server: &crate::audio::ServerStatus) -> ComponentCheck {
+    use crate::audio::ServerState;
+    let mut check = check_cli(path);
+    check.message = match (&check.status, &server.failure, server.state) {
+        (ComponentStatus::Missing, _, _) => "whisper-server was not found, so answers are transcribed by one-off whisper-cli runs, which reload the model every time. Install whisper.cpp with Homebrew to keep it loaded.".into(),
+        (ComponentStatus::Unreadable, _, _) => "whisper-server cannot be run, so answers are transcribed by one-off whisper-cli runs. Check its permissions.".into(),
+        (_, Some(reason), _) => format!("whisper-server could not be used ({reason}); answers are transcribed by one-off whisper-cli runs."),
+        (_, None, ServerState::Ready) => "Running with the model kept loaded.".into(),
+        (_, None, ServerState::Loading) => "Loading the model.".into(),
+        (_, None, ServerState::NotRunning) => "Found; it starts when a practice session opens or with the first answer.".into(),
+    };
+    check
 }
 
 fn check_model(path: &Path) -> ComponentCheck {

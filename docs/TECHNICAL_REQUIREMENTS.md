@@ -63,13 +63,42 @@ Current:
 
 - `transcribe_audio` receives raw WAV bytes; Rust validates RIFF/WAVE, mono, 16-bit, 16 kHz, at most
   60 MB.
-- `whisper-cli` is resolved from `ENG_TRAINER_WHISPER_BIN`, `PATH`, then Homebrew paths. The model
-  is `<app data>/models/<model_file>` where `model_file` is the learner's choice in Settings >
-  Speech recognition (default `ggml-base.en.bin`; any plain `ggml-*.bin` name, never a path).
-  `ENG_TRAINER_WHISPER_MODEL` overrides the choice and Settings says so.
-- Each call runs in a private temporary directory, has a 120 s timeout and maps failures to typed
+- The model is `<app data>/models/<model_file>` where `model_file` is the learner's choice in
+  Settings > Speech recognition (any plain `ggml-*.bin` name, never a path). With no choice stored
+  (`speech_settings.model_file` is empty) the app uses `ggml-small.en.bin` when it is installed and
+  `ggml-base.en.bin` otherwise; Rust resolves this (`SpeechSettings::resolved`) so the UI always
+  sees the model in use. `ENG_TRAINER_WHISPER_MODEL` overrides the choice and Settings says so.
+- **Model kept loaded (F3 part 2, `audio/server.rs`).** One `whisper-server` child per app run holds
+  the model. It is resolved like `whisper-cli` (`ENG_TRAINER_WHISPER_SERVER_BIN`, `PATH`, Homebrew
+  paths), started with `-m <model> --host 127.0.0.1 --port <free port>` when a practice session opens
+  (`warm_speech_engine`), when the model is changed, or on the first transcription. Transcription is
+  `POST /inference` as multipart (`file` = the WAV, `prompt`, `language=en`,
+  `response_format=json`) with the existing blocking `reqwest` client (no proxy; the multipart body
+  is written by hand, so no extra crate feature). A server that has died is restarted once; after two
+  deaths with no answer in between, or if it cannot start, it is not started again for that model
+  until the model changes or the next session opens, and the call falls back to `whisper-cli`.
+  Settings > Speech recognition shows "Kept loaded · ready", "Loading…" or "Not running (using
+  one-off runs)" (`get_speech_engine_status`), and Setup details gain a Whisper server line with the
+  reason when it is not used. The child is stopped on app exit (`RunEvent::Exit`) and on drop; its
+  pid is noted in `<app data>/whisper-server.pid` so a server left by a crashed run is stopped
+  before the next start.
+- Without the server, each call runs `whisper-cli` (`ENG_TRAINER_WHISPER_BIN`, `PATH`, Homebrew
+  paths) in a private temporary directory with a 120 s timeout. Failures map to typed
   `TranscriptionError` codes (`model_missing`, `engine_missing`, `engine_failed`, `timeout`,
-  `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`).
+  `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`); a silent recording is `no_speech`
+  on either path and is not retried on the other.
+- **Initial prompt (`audio/prompt.rs`).** Rust builds it for each answer from the open session:
+  `<question being answered> Vocabulary: <names from the last three answers>, <glossary>.`, at most
+  500 characters (the question is cut at a word after 160; the vocabulary keeps as many terms as fit,
+  session names first). Names are words with a capital inside a sentence or inside the word
+  (`CS2`, `TypeScript`) that the glossary does not hold. Outside a session (the memory review) it is
+  the glossary alone.
+- **Live transcript (F3 part 2).** While a practice answer is being recorded the UI asks for
+  `transcribe_partial` every 1.5 s with a WAV of the audio so far (copied from the capture buffer;
+  capture is not interrupted; no more than 30 s). Rust runs it on the loaded model only when the
+  setting is on, the model is small (tiny, base or small) and the server is ready; it never starts a
+  server, handles one update at a time, gives up after 5 s and returns nothing otherwise. The
+  partial audio is not kept. The final transcription after recording is separate and authoritative.
 
 - Speech check (F3 part 1, `src-tauri/src/audio/speech_check.rs`): 12 fixed sentences; the learner
   reads them in Settings and each reading is stored as the same 16 kHz mono WAV as `NN.wav` with
@@ -84,15 +113,14 @@ Current:
   `speech-check/results.json`. Scoring is pure code in `audio/scoring.rs`.
 - The personal glossary and the settings below are stored in SQLite (section 8).
 
-**Target [F3, part 2]:**
+Measured on the learner's 12 speech-check recordings (2026-10-09, glossary terms recognised of 23,
+without / with the glossary prompt): base.en 13 / 19, small.en 17 / 21 (91%), medium.en 17 / 20,
+large-v3-turbo-q5_0 17 / 19 (better word error rate, 7% against 11%). Per recording with the
+model kept loaded: small.en loads in 0.7 s and answers in 0.32 s (median); large-v3-turbo loads in
+0.4 s and answers in 1.15 s. Hence small.en is the default and the live transcript is limited to the
+small models.
 
-- A long-lived worker keeps the model loaded (Metal). Model choice (English-only) is made from a
-  measured comparison on the learner's recordings; record word accuracy on a fixed list of
-  technical terms and latency for 5 s and 15 s answers.
-- The request carries an initial prompt built from the current question, the last turns and the
-  personal glossary, bounded to Whisper's prompt length (`prompt_from_terms` builds the glossary
-  part and the speech check already measures it).
-- Recognition uncertainty is never presented as a pronunciation or knowledge error.
+Recognition uncertainty is never presented as a pronunciation or knowledge error.
 
 ## 4. Speech output
 
@@ -259,7 +287,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 | Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
-| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file and `keep_raw_audio`, default off), `glossary_terms` (ordered personal glossary), the last two added by schema version 13; the glossary is seeded there once with 27 words |
+| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), the last two added by schema version 13 (`live_transcript` and the empty model default by 14); the glossary is seeded there once with 27 words |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
 
 - Migrations are additive and idempotent; tests cover upgrade from older schemas.
@@ -361,7 +389,8 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 
 ## 11. Setup diagnostics
 
-`get_setup_diagnostics` reports paths and readability of `whisper-cli`, the Whisper model and
+`get_setup_diagnostics` reports paths and readability of `whisper-cli`, `whisper-server` (with whether
+the model is kept loaded and why not), the Whisper model and
 `agy`, the database path, and the bounded, plain-text default model name read from the local `agy`
 settings file (no other settings exposed). **Target [F1]:** Apple model availability and Gemini
 key presence (never the key itself). Detection never proves authentication, transcription quality or
