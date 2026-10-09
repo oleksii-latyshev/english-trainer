@@ -78,6 +78,16 @@ pending or unavailable state remains visible. The learner can finish early or re
 Repeating the questions is cued practice; it does not establish independent mastery. Recurring
 mistakes continue into the existing spoken Memory review.
 
+### 4.2 Translate a word
+
+On demand, the learner can select one English word in Talk, an inline coaching note or Memory
+and request its translation into the native language chosen in Settings (Russian by default).
+The original text stays in English. A keyboard word field offers the same lookup. Translation
+runs through macOS Translation; a short English explanation uses local Apple Intelligence.
+If the explanation is unavailable, the translation remains visible with a recovery message.
+Looking up a word never pauses speech or waits in the conversation reply queue. Missing language
+models are prepared only after an explicit action and macOS download consent.
+
 ## 5. Help with structuring an answer
 
 Help is prepared in the background as soon as a question appears, so it opens instantly.
@@ -141,7 +151,7 @@ the background; the drill is cued practice and does not establish independent ma
 
 Microphone choice with a short record/playback check; conversation provider and API key; system
 voice and rate; personal glossary and profile; hands-free pause length; local data and privacy
-notes.
+notes; native language for on-demand word translation.
 
 ## 10. Later (after the MVP)
 

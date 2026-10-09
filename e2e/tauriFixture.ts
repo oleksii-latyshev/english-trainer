@@ -4,6 +4,7 @@ import type { FixtureOptions, HarnessState } from './harnessTypes';
 import { installMistakePracticeFixture } from './mistakePracticeFixture';
 import { installSpeechFixture } from './speechFixture';
 import { installTauriCommands } from './tauriCommands';
+import { installTranslationFixture } from './translationFixture';
 
 export async function installTauriFixture(page: Page, options: FixtureOptions = {}): Promise<void> {
   await installSpeechFixture(page);
@@ -45,4 +46,5 @@ export async function installTauriFixture(page: Page, options: FixtureOptions = 
   }, harness);
   await installTauriCommands(page);
   await installMistakePracticeFixture(page);
+  await installTranslationFixture(page, options.translation);
 }

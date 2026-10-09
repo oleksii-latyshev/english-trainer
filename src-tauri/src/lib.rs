@@ -6,6 +6,7 @@ mod learning;
 mod persistence;
 mod providers;
 mod setup;
+mod translation;
 
 pub use conversation::{
     FinishedPracticeSession, InputSource, PracticeMode, PracticePhase, PracticeSession,
@@ -20,6 +21,13 @@ fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
         .resource_dir()
         .ok()
         .map(|path| path.join("binaries/apple-conversation"))
+}
+
+fn apple_translation_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
+    app.path()
+        .resource_dir()
+        .ok()
+        .map(|path| path.join("binaries/apple-translation"))
 }
 
 /// Counts requests and limit errors on a thread of their own, so noting one never delays a reply.
@@ -546,6 +554,9 @@ pub fn run() {
                 app_data.join("whisper-server.pid"),
             ))));
             app.manage(providers::AppleHelper::new(apple_binary(app)));
+            app.manage(translation::TranslationService::new(
+                apple_translation_binary(app),
+            ));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
@@ -567,6 +578,11 @@ pub fn run() {
             audio::commands::save_speech_check_recording,
             audio::commands::delete_speech_check_recordings,
             audio::commands::run_speech_check,
+            translation::commands::get_translation_settings,
+            translation::commands::save_translation_settings,
+            translation::commands::get_translation_status,
+            translation::commands::prepare_translation_languages,
+            translation::commands::translate_word,
             get_setup_diagnostics,
             get_ai_settings,
             set_dock_icon,

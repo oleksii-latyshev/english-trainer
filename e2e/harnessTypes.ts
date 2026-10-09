@@ -5,6 +5,7 @@ import type { LearningMemoryView } from '../src/lib/learningTypes';
 import type { PracticeOptions } from '../src/lib/practiceOptions';
 import type { PracticeSession } from '../src/lib/practiceSessionTypes';
 import type { AudioEdgeCounts } from './speechFixture';
+import type { TranslationFixtureOptions } from './translationFixture';
 
 export type FixtureOptions = {
   activeSession?: PracticeSession | null;
@@ -15,6 +16,7 @@ export type FixtureOptions = {
   failNextMistakePractice?: boolean;
   mistakePreparationDelayMs?: number;
   learningMemory?: LearningMemoryView;
+  translation?: TranslationFixtureOptions;
 };
 
 export type IpcCall = { command: string; args: Record<string, unknown> };

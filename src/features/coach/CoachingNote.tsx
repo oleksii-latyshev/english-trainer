@@ -41,7 +41,7 @@ function saveLabel(state: PhraseSaveState): string {
 
 function Rewrite({ feedback, transcript }: { feedback: TurnFeedback; transcript: string }) {
   return (
-    <p className="talk-card-text">
+    <p className="talk-card-text" data-word-lookup>
       {highlightRewrite(transcript, feedback.b2_rewrite).map((part, index) =>
         part.isChanged ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
@@ -63,8 +63,8 @@ function Focus({ feedback }: { feedback: TurnFeedback }) {
     <div className="talk-focus">
       {focus ? (
         <>
-          <p>{focus.explanation}</p>
-          <p>
+          <p data-word-lookup>{focus.explanation}</p>
+          <p data-word-lookup>
             You said “{focus.original}” · try “{focus.improved}”
           </p>
         </>

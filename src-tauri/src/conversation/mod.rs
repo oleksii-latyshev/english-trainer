@@ -22,6 +22,7 @@ mod rules;
 mod scaffold;
 mod speech_settings;
 mod topics;
+mod translation;
 pub(crate) mod usage;
 mod usage_support;
 mod wrapup;

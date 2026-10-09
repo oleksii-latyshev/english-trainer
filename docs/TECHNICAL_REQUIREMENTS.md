@@ -343,6 +343,38 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
   transcription/retention policy. Practice evidence never advances independent-use mastery; the
   existing mastery subsystem and scheduled Memory review are unchanged.
 
+### 7.3 On-demand word translation (F13)
+
+- English stays the source language. A locally persisted native language defaults to `ru`; the
+  allowed choices are `ru`, `uk`, `de`, `fr`, `es`, `it`, `pt`, `ja`, `ko`, `zh-Hans`, and `ar`.
+  Pair support and installed-model status are checked through macOS, not assumed from this list.
+- Typed commands: `get_translation_settings`, `save_translation_settings(settings)`,
+  `get_translation_status`, `prepare_translation_languages`, and `translate_word(request)`.
+  Settings and status requests do not expose help or call a cloud provider.
+- `translate_word` accepts one English word (up to 64 characters, internal apostrophes/hyphens)
+  and optional surrounding English text bounded to 500 characters. Sentences, empty words,
+  non-English letters and unsafe controls are rejected. The selected word and returned target
+  language must match the request snapshot.
+- The response contains `word`, `native_language`, `translation` (nonblank, up to 300 characters),
+  and either `english_explanation` or `explanation_error` (up to 500 characters). An unavailable
+  English explanation does not discard a successful translation. Errors have typed codes and
+  recovery text; no translated text replaces practice content or enters conversation history.
+- `apple-translation` is compiled and signed with the app, separate from `apple-conversation`.
+  Its direct TranslationSession API needs macOS 26 or later; earlier systems return an actionable
+  unavailable result. English explanations require Apple Intelligence. No Gemini or Antigravity
+  call or API-usage count is involved.
+- One child per operation, bounded input/output and concurrency; status times out after 15 seconds,
+  lookup after 45 seconds and explicit language preparation after 300 seconds. Failed/timed-out
+  children are reaped. No session/database lock is held during native work.
+- Preparing missing language models requires an explicit action; a native SwiftUI window lets
+  macOS ask for consent. Supported, installed, unsupported and unavailable states remain visible.
+  Settings changes do not silently download models.
+- A valid lookup conservatively records cue exposure for the active session before native work,
+  using the existing help/mastery exclusion. It never changes learning rules or scores an answer.
+- Selection alone performs no lookup. Talk, notes and Memory offer the same panel and keyboard
+  input path; multiword/editable/unmarked selections are excluded. Requests are invalidated when
+  the selected word changes, the panel closes or the route changes. Practice audio remains usable.
+
 ## 8. Persistence
 
 SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
@@ -352,7 +384,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 | Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions` (F12 snapshots, schema version 17) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
-| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15); F11 session columns are added by schema version 16; F12 adds `is_mistake_practice` with a false default in version 17; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
+| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15), `translation_settings` (F13 native language, schema version 18); F11 session columns are added by schema version 16; F12 adds `is_mistake_practice` with a false default in version 17; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
 
 - Migrations are additive and idempotent; tests cover upgrade from older schemas.
@@ -498,5 +530,9 @@ Synthetic benchmarks record timings and error categories only, never personal tr
   boundary and synthetic browser audio edges. Unknown fixture commands fail the scenario, including
   commands whose errors the app handles. CI requires these flows before packaging; failures retain
   screenshots, traces and an HTML report.
+- F13 also has an opt-in bundled-helper check: `cargo test --manifest-path src-tauri/Cargo.toml
+  real_bundled_helper_translates_a_word_on_device -- --ignored --nocapture`. It requires macOS 26+,
+  installed English/Russian translation models and Apple Intelligence; it uses synthetic text and
+  does not download models. Native download consent and translation relevance need physical checks.
 - Manual checks on a physical Mac are required for microphone, STT quality, TTS and perceived
   latency; a green automated suite does not prove them.

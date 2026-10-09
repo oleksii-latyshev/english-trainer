@@ -13,6 +13,7 @@ import { PersonalProfileSettings } from './PersonalProfileSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
 import { SpeechSettings } from './SpeechSettings';
+import { TranslationSettings } from './TranslationSettings';
 import { UsageSettings } from './UsageSettings';
 import { VoiceSettings } from './VoiceSettings';
 import './settings.css';
@@ -64,6 +65,7 @@ export function SettingsView() {
       <MicrophoneSettings />
       <SpeechSettings />
       <ConversationProviderSettings />
+      <TranslationSettings />
       <UsageSettings />
       <VoiceSettings />
       <AppearanceSettings />

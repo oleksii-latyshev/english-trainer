@@ -8,6 +8,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'microphone', label: 'Microphone' },
   { id: 'speech', label: 'Speech recognition' },
   { id: 'ai', label: 'Conversation AI' },
+  { id: 'translation', label: 'Translation' },
   { id: 'usage', label: 'Usage' },
   { id: 'voice', label: 'Voice' },
   { id: 'appearance', label: 'Appearance' },

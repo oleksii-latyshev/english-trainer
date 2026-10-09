@@ -419,8 +419,9 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 ))?;
             }
         }
-        transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        transaction.pragma_update(None, "user_version", 16)?;
         transaction.commit()?;
+        version = 16;
     }
     if version < 17 {
         let transaction = connection.unchecked_transaction()?;
@@ -441,6 +442,19 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             );
             CREATE INDEX IF NOT EXISTS idx_mistake_practice_questions_session
                 ON mistake_practice_questions(session_id);",
+        )?;
+        transaction.pragma_update(None, "user_version", 17)?;
+        transaction.commit()?;
+        version = 17;
+    }
+    if version < 18 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS translation_settings (
+                id INTEGER PRIMARY KEY CHECK(id = 1),
+                native_language TEXT NOT NULL DEFAULT 'ru'
+            );
+            INSERT OR IGNORE INTO translation_settings (id, native_language) VALUES (1, 'ru');",
         )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;

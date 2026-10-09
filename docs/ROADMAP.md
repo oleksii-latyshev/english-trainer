@@ -1,8 +1,8 @@
 # Roadmap: English Trainer
 
 Updated 2026-10-09. The learner checked the new Whisper model in the app and reported that it
-works well. F8, F11 and F12 are built and awaiting the learner’s check in the app.
-The learner deferred that check; the next implementation priority is F13.
+works well. F8, F11, F12 and F13 are built and awaiting the learner’s check in the app.
+The learner deferred that check; the remaining core MVP work is listed below.
 
 ## Goal
 
@@ -312,11 +312,22 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   restore, browser launch/retry/audio boundaries and completion. Run `bun run verify`.
   Acceptance still needs the built app with a real microphone, Whisper, TTS and question relevance.
 
-**F13. Translate a word** `[ ]`
+**F13. Translate a word** `[~]` (built; physical Mac acceptance deferred by the learner)
 - Select a word in Talk, in notes or in Memory to see its translation into the native language
   chosen in Settings (Russian for this user) next to a simple English explanation.
 - The translation uses the on-device macOS Translation framework, never the Gemini API. An approved,
   on-demand exception to "practice content is English only" (see `PRODUCT_SPEC.md`).
+- Built: explicit selected-word lookup in Talk, coaching notes and Memory, a keyboard word field,
+  a persisted native-language preference (Russian default), status and explicit preparation for
+  native language models, retry and stale-result protection. Original practice text stays English.
+- The separately bundled Swift helper uses macOS Translation (macOS 26+) and local Apple
+  Intelligence for a simple English explanation. Translation stays visible when the explanation
+  is unavailable; the conversation does not wait for lookup and no cloud request is made.
+- Automated checks cover word/output validation, migration and preference persistence, cue
+  exposure, native process errors/timeouts/concurrency, selection, keyboard/retry/preparation,
+  language changes and late results. The real helper was checked on this Mac with a synthetic
+  English-to-Russian word and English explanation. Built-app selection, translation relevance
+  and the native missing-model download consent still await physical acceptance.
 
 ### MVP acceptance
 

@@ -25,6 +25,7 @@ differs, the **target** that the roadmap feature named in brackets delivers.
 │ persistence/   SQLite (single connection behind a mutex)                  │
 │ audio/         WAV validation, local Whisper                              │
 │ providers/     conversation engines, batch coaching, UsageReviewEngine    │
+│ translation/   on-device word lookup and bundled helper control          │
 │ setup/         diagnostics for local dependencies                         │
 └───────┬───────────────────────────┬──────────────────────────────────────┘
         │                           │
@@ -123,6 +124,14 @@ Rules:
 - Only transcript and the minimum prompt context leave the Mac. API keys live in
   an encrypted, owner-only file in the app data folder, never in SQLite or logs.
 - `agy` runs only in a private temporary directory, never in the repository.
+
+F13 word lookup uses a separate one-shot bundled Swift helper (`apple-translation`). macOS
+Translation handles the native-language word; an independent local Foundation Models session
+provides a simple English explanation. Its process never uses the conversation helper's queue,
+Gemini or Antigravity. Rust owns the native-language preference, request/output validation,
+concurrency guard and bounded process lifetime. Explicit language preparation opens a small native
+SwiftUI window so macOS can obtain download consent. React observes selection only within marked
+English content and requires an explicit lookup action; stale results cannot replace newer ones.
 
 ## 7. Learning engine
 

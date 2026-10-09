@@ -38,6 +38,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["binaries/apple-conversation"]
+    "resources": ["binaries/apple-conversation", "binaries/apple-translation"]
   }
 }

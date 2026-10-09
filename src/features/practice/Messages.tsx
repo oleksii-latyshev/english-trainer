@@ -23,12 +23,16 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: EvaPr
       <div className="talk-msg-col">
         <div className="talk-bubble talk-bubble-eva">
           {message.text && (
-            <p className="talk-bubble-reply">
+            <p className="talk-bubble-reply" data-word-lookup={!isStreaming ? '' : undefined}>
               {message.text}
               {isStreaming && <span aria-hidden="true" className="talk-caret" />}
             </p>
           )}
-          {message.question && <p className="talk-bubble-question">{message.question}</p>}
+          {message.question && (
+            <p className="talk-bubble-question" data-word-lookup={!isStreaming ? '' : undefined}>
+              {message.question}
+            </p>
+          )}
         </div>
         {!isStreaming && (
           <div className="talk-msg-meta">
@@ -85,7 +89,9 @@ export function LearnerMessage({ message, note }: LearnerProps) {
   const meta = [sourceLabel, duration].filter(Boolean).join(' · ');
   return (
     <article aria-label="You said" className="talk-msg-me">
-      <div className="talk-bubble talk-bubble-me">{message.text}</div>
+      <div className="talk-bubble talk-bubble-me" data-word-lookup>
+        {message.text}
+      </div>
       {(meta || message.usedHelp) && (
         <div className="talk-marks">
           {message.usedHelp && (

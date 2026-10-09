@@ -12,6 +12,7 @@ import {
   type SettingsSectionId,
 } from '@/lib/settingsSections';
 import { micStatusBox } from './lib/micStatusBox';
+import { WordTranslationLayer } from './WordTranslationLayer';
 
 type NavEntry = {
   path: string;
@@ -139,6 +140,7 @@ export function AppShell() {
       <main className="screen-content">
         <Outlet />
       </main>
+      <WordTranslationLayer />
     </div>
   );
 }

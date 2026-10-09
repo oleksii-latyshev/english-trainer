@@ -1,6 +1,6 @@
 import { Button } from '@heroui/react';
 import { Archive, ChevronDown, Trash2 } from 'lucide-react';
-import { useId } from 'react';
+import { type MouseEvent, useId } from 'react';
 import {
   formatDueText,
   mistakeSourceLine,
@@ -31,9 +31,14 @@ type Props = {
 };
 
 function EntryText({ entry }: { entry: MemoryEntry }) {
-  if (entry.kind === 'phrase') return <span className="memory-phrase">{entry.card.phrase}</span>;
+  if (entry.kind === 'phrase')
+    return (
+      <span className="memory-phrase" data-word-lookup>
+        {entry.card.phrase}
+      </span>
+    );
   return (
-    <span className="memory-mistake">
+    <span className="memory-mistake" data-word-lookup>
       <span className="memory-strike">{entry.mistake.original_example}</span> →{' '}
       <span className="memory-hl">{entry.mistake.corrected_example}</span>
     </span>
@@ -62,7 +67,9 @@ function EntryDetail({ entry }: { entry: MemoryEntry }) {
         )}
       </dl>
       {entry.kind === 'mistake' && entry.mistake.explanation && (
-        <p className="memory-explanation">{entry.mistake.explanation}</p>
+        <p className="memory-explanation" data-word-lookup>
+          {entry.mistake.explanation}
+        </p>
       )}
       <UsageEvidenceSection
         itemId={item.id}
@@ -79,6 +86,27 @@ export function MemoryRow({ entry, isOpen, onToggle, onArchive, onDelete }: Prop
     entry.kind === 'phrase' ? phraseSourceLine(entry.card) : mistakeSourceLine(entry.mistake);
   const label = entryLabel(entry);
 
+  function handleToggle(event: MouseEvent<HTMLButtonElement>) {
+    if (event.detail === 0) {
+      onToggle();
+      return;
+    }
+    const selection = window.getSelection();
+    const rowButton = event.currentTarget;
+    if (
+      selection &&
+      !selection.isCollapsed &&
+      selection.anchorNode &&
+      selection.focusNode &&
+      rowButton.contains(selection.anchorNode) &&
+      rowButton.contains(selection.focusNode)
+    ) {
+      event.preventDefault();
+      return;
+    }
+    onToggle();
+  }
+
   return (
     <li className="memory-item">
       <div className="memory-row">
@@ -86,14 +114,16 @@ export function MemoryRow({ entry, isOpen, onToggle, onArchive, onDelete }: Prop
           aria-controls={detailId}
           aria-expanded={isOpen}
           className="memory-row-main"
-          onClick={onToggle}
+          onClick={handleToggle}
           type="button"
         >
           <span className="memory-row-title">
             <EntryText entry={entry} />
             <ChevronDown aria-hidden="true" className="memory-row-chevron" size={16} />
           </span>
-          <span className="memory-source">{source}</span>
+          <span className="memory-source" data-word-lookup>
+            {source}
+          </span>
         </button>
         <StatusChip status={item.status} />
         <div className="memory-actions">
