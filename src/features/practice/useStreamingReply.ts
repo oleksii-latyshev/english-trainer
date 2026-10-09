@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 // savedTurnCount is the turn count at which the saved history contains this reply.
 type StreamingReply = { sessionId: number; text: string; savedTurnCount: number };
@@ -9,13 +9,17 @@ export function useStreamingReply(sessionId: number | undefined, savedTurnCount:
   const isUnsaved =
     reply !== null && reply.sessionId === sessionId && savedTurnCount < reply.savedTurnCount;
 
-  return {
-    pendingReply: isUnsaved ? reply.text : undefined,
-    begin: (next: { sessionId: number; savedTurnCount: number }) => setReply({ ...next, text: '' }),
-    append: (id: number, text: string) =>
+  const begin = useCallback((next: { sessionId: number; savedTurnCount: number }) => {
+    setReply({ ...next, text: '' });
+  }, []);
+  const append = useCallback(
+    (id: number, text: string) =>
       setReply((current) =>
         current?.sessionId === id ? { ...current, text: current.text + text } : current,
       ),
-    clear: () => setReply(null),
-  };
+    [],
+  );
+  const clear = useCallback(() => setReply(null), []);
+
+  return { pendingReply: isUnsaved ? reply.text : undefined, begin, append, clear };
 }

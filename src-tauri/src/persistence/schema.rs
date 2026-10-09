@@ -402,6 +402,23 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
              WHERE ended_at IS NOT NULL AND active_duration_ms = 0",
             [],
         )?;
+        transaction.pragma_update(None, "user_version", 15)?;
+        transaction.commit()?;
+        version = 15;
+    }
+    if version < 16 {
+        let transaction = connection.unchecked_transaction()?;
+        for (column, kind, default_val) in [
+            ("practice_mode", "TEXT NOT NULL", "'voice'"),
+            ("practice_phase", "TEXT NOT NULL", "'speaking'"),
+            ("written_turn_count", "INTEGER NOT NULL", "0"),
+        ] {
+            if !has_column(&transaction, "sessions", column)? {
+                transaction.execute_batch(&format!(
+                    "ALTER TABLE sessions ADD COLUMN {column} {kind} DEFAULT {default_val};"
+                ))?;
+            }
+        }
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

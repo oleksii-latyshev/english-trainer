@@ -66,10 +66,20 @@ export const conversationRoute = createRoute({
     const { practice, capture, speech, mic, startPractice } = useTrainer();
     const navigate = conversationRoute.useNavigate();
     const session = sessionDetails(practice.state);
+    const isSessionActive =
+      session !== undefined &&
+      (practice.state.tag === 'active' || practice.state.tag === 'waiting') &&
+      (session.practiceMode === 'voice' ||
+        (session.practiceMode === 'text_chat' && session.practicePhase === 'writing') ||
+        (session.practiceMode === 'write_then_speak' &&
+          (session.practicePhase === 'writing' || session.practicePhase === 'speaking')));
     useSessionClock({
       sessionId: session?.sessionId,
-      isSessionActive: practice.state.tag === 'active' || practice.state.tag === 'waiting',
-      isMicPaused: mic.status === 'paused',
+      isSessionActive,
+      isMicPaused:
+        session !== undefined &&
+        (session.practiceMode === 'voice' || session.practicePhase === 'speaking') &&
+        mic.status === 'paused',
       onSnapshot: practice.updateClock,
       onError: practice.reportClockError,
     });
@@ -88,6 +98,7 @@ export const conversationRoute = createRoute({
           resetCapture: capture.reset,
           startPractice,
           finishPractice: practice.finish,
+          transitionPracticePhase: (phase) => void practice.transitionPhase(phase),
           handlePracticeTurn: practice.acceptTurn,
           handleRetryComparison: practice.acceptRetryComparison,
           isCurrent: () => capture.isCurrentRequest(capture.view.currentRequestId),

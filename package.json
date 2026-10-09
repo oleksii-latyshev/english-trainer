@@ -16,6 +16,9 @@
     "check:rust": "sh ./scripts/check-rust.sh",
     "typecheck": "tsc --noEmit",
     "test": "bun test --pass-with-no-tests",
+    "test:e2e": "playwright test",
+    "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json",
+    "verify": "sh ./scripts/verify.sh",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "prepare": "lefthook install"
   },
@@ -33,6 +36,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",

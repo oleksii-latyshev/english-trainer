@@ -5,7 +5,7 @@ export type MicStatusBox = { isOn: boolean; title: string; hint: string };
 function offHint(status: MicrophoneStatus): string {
   if (status === 'paused') return 'Released while paused.';
   if (status === 'error') return 'Not available right now.';
-  return 'Opens when a conversation starts.';
+  return 'Opens for spoken practice.';
 }
 
 /**

@@ -37,6 +37,13 @@ fn sample_feedback() -> TurnFeedback {
     }
 }
 
+fn write_then_speak_options() -> StartPracticeOptions {
+    StartPracticeOptions {
+        practice_mode: Some(PracticeMode::WriteThenSpeak),
+        ..Default::default()
+    }
+}
+
 #[test]
 fn the_answer_context_follows_the_conversation() {
     let store = SessionStore::default();
@@ -171,6 +178,7 @@ fn practice_start_options_persist_and_active_reopen_starts_paused() {
     let store = SessionStore::open(&path).unwrap();
     let session = store
         .start_practice_session(Some(StartPracticeOptions {
+            practice_mode: None,
             topic_id: Some(topics::TOPIC_PLANS_STORIES.into()),
             topic_custom: None,
             duration_goal_seconds: Some(300),
@@ -226,6 +234,7 @@ fn finishing_a_new_session_keeps_its_zero_active_duration() {
     let store = SessionStore::default();
     let session = store
         .start_practice_session(Some(StartPracticeOptions {
+            practice_mode: None,
             topic_id: Some(topics::TOPIC_DAILY_LIFE.into()),
             topic_custom: None,
             duration_goal_seconds: Some(600),
@@ -233,6 +242,421 @@ fn finishing_a_new_session_keeps_its_zero_active_duration() {
         .unwrap();
     let finished = store.finish(session.session_id).unwrap();
     assert_eq!(finished.duration_ms, 0);
+}
+
+#[test]
+fn write_then_speak_replays_saved_questions_without_calling_generator_and_records_exposure() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store
+        .start_practice_session(Some(write_then_speak_options()))
+        .unwrap();
+    let opening = session.opening_question.clone();
+    let writing_snapshot = store.get_active().unwrap().unwrap();
+    assert_eq!(writing_snapshot.practice_phase, PracticePhase::Writing);
+    assert_eq!(writing_snapshot.written_turn_count, 0);
+    assert_eq!(writing_snapshot.spoken_turn_count, 0);
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Written answer one".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("A short reply.", "What would you add?")),
+        )
+        .unwrap();
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Written answer two".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("Another reply.", "A later question?")),
+        )
+        .unwrap();
+    let reviewed = store
+        .transition_practice_phase(session.session_id, PracticePhase::WritingReview)
+        .unwrap();
+    assert_eq!(reviewed.written_turn_count, 2);
+    assert_eq!(reviewed.spoken_turn_count, 0);
+    let speaking = store
+        .transition_practice_phase(session.session_id, PracticePhase::Speaking)
+        .unwrap();
+    assert_eq!(speaking.opening_question, opening);
+    assert_eq!(speaking.practice_phase, PracticePhase::Speaking);
+
+    let generator_called = AtomicBool::new(false);
+    let replay_one = store
+        .send_turn_with_source(
+            session.session_id,
+            "Spoken answer one".into(),
+            InputSource::Voice,
+            Some(1_250),
+            |_| {
+                generator_called.store(true, Ordering::SeqCst);
+                Ok(turn("wrong", "wrong"))
+            },
+        )
+        .unwrap();
+    assert!(!generator_called.load(Ordering::SeqCst));
+    assert_eq!(replay_one.question.as_deref(), Some("What would you add?"));
+    assert!(replay_one.answered_by.is_none());
+    let replay_two = store
+        .send_turn_with_source(
+            session.session_id,
+            "Spoken answer two".into(),
+            InputSource::Edited,
+            Some(900),
+            |_| panic!("replay must bypass the conversation generator"),
+        )
+        .unwrap();
+    assert!(replay_two.is_complete);
+    assert!(replay_two.question.is_none());
+
+    let dialogue = store.dialogue(session.session_id).unwrap();
+    assert_eq!(dialogue.opening_question, opening);
+    assert_eq!(dialogue.turns.len(), 4);
+    assert_eq!(dialogue.input_sources, ["text", "text", "voice", "edited"]);
+    assert_eq!(
+        dialogue.answer_durations_ms,
+        [None, None, Some(1_250), Some(900)]
+    );
+    let waiting = store
+        .lock()
+        .database
+        .coaching_queue(session.session_id)
+        .unwrap();
+    assert_eq!(waiting[2].question, opening);
+    assert_eq!(waiting[3].question, "What would you add?");
+    let connection = rusqlite::Connection::open(&path).unwrap();
+    let broad_exposures: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM session_cue_exposures WHERE session_id = ?1 AND item_type IS NULL AND item_id IS NULL",
+            [session.session_id as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(broad_exposures, 1);
+    drop(connection);
+    drop(store);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn write_then_speak_rejects_wrong_sources_reviews_and_skipped_transitions_without_mutation() {
+    let store = SessionStore::default();
+    let session = store
+        .start_practice_session(Some(write_then_speak_options()))
+        .unwrap();
+    let called = std::cell::Cell::new(false);
+    let rejected = store.send_turn_with_source(
+        session.session_id,
+        "Typed is required here".into(),
+        InputSource::Voice,
+        None,
+        |_| {
+            called.set(true);
+            Ok(turn("Reply", "Question?"))
+        },
+    );
+    assert!(rejected.is_err());
+    assert!(!called.get());
+    assert!(store
+        .transition_practice_phase(session.session_id, PracticePhase::Speaking)
+        .is_err());
+    assert_eq!(
+        store.get_active().unwrap().unwrap().practice_phase,
+        PracticePhase::Writing
+    );
+
+    assert!(store
+        .send_turn_with_source(
+            session.session_id,
+            "First answer".into(),
+            InputSource::Text,
+            None,
+            |_| { Err(ProviderError::new(ProviderErrorCode::Unavailable, "retry")) }
+        )
+        .is_err());
+    let after_provider_error = store.get_active().unwrap().unwrap();
+    assert_eq!(after_provider_error.turn_count, 0);
+    assert_eq!(after_provider_error.practice_phase, PracticePhase::Writing);
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "First answer".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("Reply", "Follow-up?")),
+        )
+        .unwrap();
+    store
+        .transition_practice_phase(session.session_id, PracticePhase::WritingReview)
+        .unwrap();
+    assert!(store
+        .send_turn_with_source(
+            session.session_id,
+            "Not during review".into(),
+            InputSource::Text,
+            None,
+            |_| { panic!("review phases must reject answers before generation") }
+        )
+        .is_err());
+    assert!(store.set_practice_clock(session.session_id, true).is_err());
+    let after_guard = store.get_active().unwrap().unwrap();
+    assert_eq!(after_guard.practice_phase, PracticePhase::WritingReview);
+    assert_eq!(after_guard.turn_count, 1);
+}
+
+#[test]
+fn phase_transition_during_provider_request_is_busy_and_preserves_the_in_flight_session() {
+    let store = SessionStore::default();
+    let session = store
+        .start_practice_session(Some(write_then_speak_options()))
+        .unwrap();
+    let during_generation = store.clone();
+    let attempted_transition = std::cell::RefCell::new(None);
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Writing while the model responds".into(),
+            InputSource::Text,
+            None,
+            |_| {
+                *attempted_transition.borrow_mut() = Some(
+                    during_generation
+                        .transition_practice_phase(session.session_id, PracticePhase::WritingReview)
+                        .unwrap_err()
+                        .code,
+                );
+                Ok(turn("Reply", "Next?"))
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        attempted_transition.into_inner(),
+        Some(ProviderErrorCode::Busy)
+    );
+    let active = store.get_active().unwrap().unwrap();
+    assert_eq!(active.practice_phase, PracticePhase::Writing);
+    assert_eq!(active.turn_count, 1);
+    assert_eq!(active.spoken_turn_count, 0);
+}
+
+#[test]
+fn early_finish_while_writing_reports_the_written_answers_and_no_spoken_answers() {
+    let store = SessionStore::default();
+    let session = store
+        .start_practice_session(Some(write_then_speak_options()))
+        .unwrap();
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Written answer before finishing early".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("Reply", "Follow-up?")),
+        )
+        .unwrap();
+    let finished = store.finish(session.session_id).unwrap();
+    assert_eq!(finished.practice_phase, PracticePhase::Writing);
+    assert_eq!(finished.written_turn_count, 1);
+    assert_eq!(finished.spoken_turn_count, 0);
+}
+
+#[test]
+fn failed_speaking_transition_rolls_back_phase_and_replay_exposure_together() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store
+        .start_practice_session(Some(write_then_speak_options()))
+        .unwrap();
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Written answer".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("Reply", "Follow-up?")),
+        )
+        .unwrap();
+    store
+        .transition_practice_phase(session.session_id, PracticePhase::WritingReview)
+        .unwrap();
+    let connection = rusqlite::Connection::open(&path).unwrap();
+    connection
+        .execute_batch(
+            "CREATE TRIGGER reject_replay_exposure BEFORE INSERT ON session_cue_exposures
+             BEGIN SELECT RAISE(ABORT, 'blocked for transaction test'); END;",
+        )
+        .unwrap();
+    drop(connection);
+
+    assert!(store
+        .transition_practice_phase(session.session_id, PracticePhase::Speaking)
+        .is_err());
+    let active = store.get_active().unwrap().unwrap();
+    assert_eq!(active.practice_phase, PracticePhase::WritingReview);
+    assert_eq!(active.written_turn_count, 1);
+    let connection = rusqlite::Connection::open(&path).unwrap();
+    let (phase, exposure_count): (String, i64) = connection
+        .query_row(
+            "SELECT practice_phase, (SELECT COUNT(*) FROM session_cue_exposures WHERE session_id = ?1) FROM sessions WHERE id = ?1",
+            [session.session_id as i64],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(phase, "writing_review");
+    assert_eq!(exposure_count, 0);
+    drop(connection);
+    drop(store);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn write_then_speak_restores_next_original_question_and_final_completion_state() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store
+        .start_practice_session(Some(write_then_speak_options()))
+        .unwrap();
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Written one".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("Reply", "Original follow-up?")),
+        )
+        .unwrap();
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Written two".into(),
+            InputSource::Text,
+            None,
+            |_| Ok(turn("Reply", "Later follow-up?")),
+        )
+        .unwrap();
+    store
+        .transition_practice_phase(session.session_id, PracticePhase::WritingReview)
+        .unwrap();
+    store
+        .transition_practice_phase(session.session_id, PracticePhase::Speaking)
+        .unwrap();
+    store
+        .send_turn_with_source(
+            session.session_id,
+            "Spoken one".into(),
+            InputSource::Voice,
+            Some(500),
+            |_| panic!("replay must bypass the conversation generator"),
+        )
+        .unwrap();
+    drop(store);
+
+    let reopened = SessionStore::open(&path).unwrap();
+    let resumed = reopened.get_active().unwrap().unwrap();
+    assert_eq!(resumed.practice_phase, PracticePhase::Speaking);
+    assert_eq!(resumed.practice_mode, PracticeMode::WriteThenSpeak);
+    assert_eq!(resumed.written_turn_count, 2);
+    assert_eq!(resumed.spoken_turn_count, 1);
+    assert_eq!(resumed.turn_count, 3);
+    assert_eq!(resumed.opening_question, "Original follow-up?");
+    reopened
+        .send_turn_with_source(
+            session.session_id,
+            "Spoken two".into(),
+            InputSource::Voice,
+            Some(600),
+            |_| panic!("replay must bypass the conversation generator"),
+        )
+        .unwrap();
+    let complete = reopened.get_active().unwrap().unwrap();
+    assert_eq!(
+        complete.opening_question,
+        "The spoken replay is complete. Review your answers."
+    );
+    assert_eq!(complete.spoken_turn_count, 2);
+    assert!(reopened
+        .send_turn_with_source(
+            session.session_id,
+            "Extra answer".into(),
+            InputSource::Voice,
+            None,
+            |_| { panic!("completed replay must reject extra answers") }
+        )
+        .is_err());
+    let reviewed = reopened
+        .transition_practice_phase(session.session_id, PracticePhase::SpeakingReview)
+        .unwrap();
+    assert_eq!(reviewed.practice_phase, PracticePhase::SpeakingReview);
+    assert_eq!(
+        reviewed.opening_question,
+        "The spoken replay is complete. Review your answers."
+    );
+    drop(reopened);
+    let reviewed_after_restart = SessionStore::open(&path).unwrap();
+    let snapshot = reviewed_after_restart.get_active().unwrap().unwrap();
+    assert_eq!(snapshot.practice_phase, PracticePhase::SpeakingReview);
+    assert_eq!(snapshot.written_turn_count, 2);
+    assert_eq!(snapshot.spoken_turn_count, 2);
+    assert_eq!(snapshot.turn_count, 4);
+    assert_eq!(
+        snapshot.opening_question,
+        "The spoken replay is complete. Review your answers."
+    );
+    assert!(reviewed_after_restart
+        .send_turn_with_source(
+            session.session_id,
+            "No turn in review".into(),
+            InputSource::Voice,
+            None,
+            |_| panic!("review phase rejects answers before generation")
+        )
+        .is_err());
+    drop(reviewed_after_restart);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn standalone_text_chat_keeps_written_answers_and_can_finish_from_review() {
+    let store = SessionStore::default();
+    let session = store
+        .start_practice_session(Some(StartPracticeOptions {
+            practice_mode: Some(PracticeMode::TextChat),
+            ..Default::default()
+        }))
+        .unwrap();
+    assert_eq!(session.practice_phase, PracticePhase::Writing);
+    assert!(store
+        .send_turn_with_source(
+            session.session_id,
+            "Typed answer".into(),
+            InputSource::Text,
+            None,
+            |_| { Ok(turn("Reply", "Next?")) }
+        )
+        .is_ok());
+    assert!(store
+        .send_turn_with_source(
+            session.session_id,
+            "Voice answer".into(),
+            InputSource::Voice,
+            None,
+            |_| { panic!("text chat accepts text input only") }
+        )
+        .is_err());
+    store
+        .transition_practice_phase(session.session_id, PracticePhase::WritingReview)
+        .unwrap();
+    let finished = store.finish(session.session_id).unwrap();
+    assert_eq!(finished.practice_mode, PracticeMode::TextChat);
+    assert_eq!(finished.practice_phase, PracticePhase::WritingReview);
+    assert_eq!(finished.written_turn_count, 1);
+    assert_eq!(finished.spoken_turn_count, 0);
 }
 
 #[test]

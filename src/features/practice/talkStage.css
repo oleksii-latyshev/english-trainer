@@ -12,6 +12,52 @@
   overflow-y: auto;
 }
 
+.talk-writing-stage {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  width: 240px;
+  padding: 28px 24px;
+  border-right: 1px solid var(--et-line2);
+}
+
+.talk-writing-stage h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.talk-writing-stage p {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.talk-original-question {
+  flex: none;
+  margin: 18px 40px 0;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in oklab, var(--et-accent) 38%, transparent);
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--et-accent) 8%, var(--et-surface));
+}
+
+.talk-original-question span {
+  color: var(--et-faint);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.talk-original-question p {
+  margin: 4px 0 0;
+  color: var(--et-fg);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .talk-stage-copy {
   display: flex;
   flex-direction: column;
@@ -153,6 +199,10 @@
 
 @media (max-width: 1180px) {
   .talk-stage {
+    display: none;
+  }
+
+  .talk-writing-stage {
     display: none;
   }
 }

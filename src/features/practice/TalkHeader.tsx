@@ -4,8 +4,14 @@ import { useEffect, useState } from 'react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { SpeechTiming } from '@/features/speech/TimingPanel';
 import { TimingPopover } from '@/features/speech/TimingPanel';
-import { elapsedSessionMs, formatElapsedClock } from '@/lib/practiceOptions';
+import {
+  elapsedSessionMs,
+  formatElapsedClock,
+  practiceModeLabel,
+  practicePhaseLabel,
+} from '@/lib/practiceOptions';
 import type { PauseControl } from './lib/pauseControl';
+import type { SessionDetails } from './lib/practiceState';
 
 type Props = {
   mood: EvaMood;
@@ -15,6 +21,10 @@ type Props = {
     activeDurationMs: number;
     isClockRunning: boolean;
     clockSnapshotAtMs: number;
+    practiceMode: SessionDetails['practiceMode'];
+    practicePhase: SessionDetails['practicePhase'];
+    writtenTurnCount: number;
+    spokenTurnCount: number;
   };
   timing: SpeechTiming;
   /** Pause or Resume; when `disabledReason` is set the control is disabled and says why. */
@@ -22,6 +32,8 @@ type Props = {
   isFinishing: boolean;
   isFinishDisabled: boolean;
   onFinish: () => void;
+  stageAction?: { label: string; onPress: () => void; isDisabled: boolean };
+  isAudioStage: boolean;
 };
 
 function PauseButton({ pause }: { pause: Props['pause'] }) {
@@ -62,6 +74,8 @@ export function TalkHeader({
   isFinishing,
   isFinishDisabled,
   onFinish,
+  stageAction,
+  isAudioStage,
 }: Props) {
   const [now, setNow] = useState(performance.now());
   useEffect(() => {
@@ -87,7 +101,15 @@ export function TalkHeader({
         <div className="talk-mode">
           <div className="talk-mode-label">{session.topicLabel}</div>
           <div className="talk-mode-step">
-            {elapsedText} of {goalText}
+            {elapsedText} of {goalText} · {practiceModeLabel(session.practiceMode)}
+            {session.practiceMode === 'write_then_speak' && (
+              <>
+                {' · '}
+                {practicePhaseLabel(session.practicePhase)}
+                {session.practicePhase === 'speaking' &&
+                  ` · ${Math.min(session.spokenTurnCount, session.writtenTurnCount)} of ${session.writtenTurnCount}`}
+              </>
+            )}
           </div>
         </div>
         <div
@@ -103,7 +125,17 @@ export function TalkHeader({
       </div>
       <div className="talk-header-actions">
         <TimingPopover timing={timing} />
-        <PauseButton pause={pause} />
+        {isAudioStage && <PauseButton pause={pause} />}
+        {stageAction && (
+          <Button
+            isDisabled={stageAction.isDisabled}
+            onPress={stageAction.onPress}
+            size="sm"
+            variant="secondary"
+          >
+            {stageAction.label}
+          </Button>
+        )}
         <Button isDisabled={isFinishDisabled} onPress={onFinish} size="sm" variant="secondary">
           {isFinishing ? 'Finishing…' : 'Finish'}
         </Button>

@@ -9,6 +9,12 @@ import type {
   Trend,
   WrapupPhrase,
 } from '@/lib/finishedPracticeSession';
+import {
+  DEFAULT_PRACTICE_MODE,
+  defaultPracticePhase,
+  practiceModeLabel,
+  practicePhaseLabel,
+} from '@/lib/practiceOptions';
 import { newlySavedCards } from '@/lib/savedPhrases';
 import { checkingLine, formatDuration, savePhrasesLabel, trendLine } from './lib/wrapup';
 import { useWrapupUpdates } from './useWrapupUpdates';
@@ -125,6 +131,8 @@ export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdat
   const toSave = phrases.filter((item) => !saved.has(item.phrase));
   const isSaved = phrases.length > 0 && toSave.length === 0;
   const checking = checkingLine(summary.pending_coaching, summary.is_coaching_paused);
+  const practiceMode = summary.practice_mode ?? DEFAULT_PRACTICE_MODE;
+  const practicePhase = summary.practice_phase ?? defaultPracticePhase(practiceMode);
 
   async function handleSaveAll() {
     if (toSave.length === 0 || saveState === 'saving') return;
@@ -160,7 +168,8 @@ export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdat
       <header className="wrapup-header">
         <div className="wrapup-header-copy">
           <div className="wrapup-subtitle">
-            {summary.topic_label} · {formatDuration(summary.duration_ms)}
+            {summary.topic_label} · {practiceModeLabel(practiceMode)} ·{' '}
+            {practicePhaseLabel(practicePhase)} · {formatDuration(summary.duration_ms)}
           </div>
           <h1>Nice session. Here’s what to keep.</h1>
         </div>

@@ -2,6 +2,7 @@ import { Button, Kbd } from '@heroui/react';
 import { Keyboard } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { LevelMeter, MicButton } from '@/components/MicControl';
+import { type ComposerInteraction, canEditDraft, canOfferTypeInstead } from './lib/composerDraft';
 import { canPressMic, type TurnPresentation, type TurnState } from './lib/turnState';
 
 type Props = {
@@ -26,15 +27,10 @@ type Props = {
   onHold: (isHeld: boolean) => void;
   onResume: () => void;
   onStopEva: () => void;
+  interaction?: ComposerInteraction;
 };
 
 type ListeningState = Extract<TurnState, { tag: 'listening' | 'auto-listen' }>;
-
-function canEditDraft(state: TurnState, hasDraft: boolean, isTyping: boolean): boolean {
-  if (state.tag === 'review') return true;
-  if (state.tag === 'idle') return hasDraft || isTyping;
-  return state.tag === 'error' && hasDraft;
-}
 
 function DraftField({
   label,
@@ -110,12 +106,18 @@ function sendLabel(state: TurnState, isSending: boolean): string {
   return state.tag === 'review' && state.sendingLabel ? 'Send now' : 'Send';
 }
 
-function EditingActions({ props }: { props: Props }) {
+function EditingActions({
+  props,
+  interaction,
+}: {
+  props: Props;
+  interaction: ComposerInteraction;
+}) {
   const { state, draft, isSending, isLocked, isBusy } = props;
   const isUnavailable = isLocked || isBusy;
   return (
     <>
-      {state.tag !== 'idle' && (
+      {state.tag !== 'idle' && interaction !== 'writing' && (
         <Button isDisabled={isUnavailable} onPress={props.onStart} size="sm" variant="ghost">
           Re-record
         </Button>
@@ -135,11 +137,62 @@ function EditingActions({ props }: { props: Props }) {
   );
 }
 
+function TurnActions({
+  props,
+  interaction,
+  isEditing,
+  listening,
+  canTypeInstead,
+  onTypeInstead,
+}: {
+  props: Props;
+  interaction: ComposerInteraction;
+  isEditing: boolean;
+  listening: ListeningState | null;
+  canTypeInstead: boolean;
+  onTypeInstead: () => void;
+}) {
+  const { state } = props;
+  return (
+    <div className="talk-composer-actions">
+      {listening && <ListeningActions props={props} state={listening} />}
+      {isEditing && <EditingActions interaction={interaction} props={props} />}
+      {interaction !== 'writing' && state.tag === 'speaking' && (
+        <Button onPress={props.onStopEva} size="sm" variant="ghost">
+          <Kbd>Esc</Kbd>
+          Stop Eva
+        </Button>
+      )}
+      {canTypeInstead && (
+        <Button
+          isDisabled={props.isLocked || props.isBusy}
+          onPress={onTypeInstead}
+          size="sm"
+          variant="ghost"
+        >
+          <Keyboard aria-hidden="true" size={16} />
+          Type instead
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function Composer(props: Props) {
-  const { state, presentation, isLocked, lockedReason, isBusy, draft, isSending } = props;
+  const {
+    state,
+    presentation,
+    isLocked,
+    lockedReason,
+    isBusy,
+    draft,
+    isSending,
+    interaction = 'voice',
+  } = props;
   const [isTyping, setIsTyping] = useState(false);
-  const isEditing = canEditDraft(state, draft.trim().length > 0, isTyping);
+  const isEditing = canEditDraft(state, draft.trim().length > 0, isTyping, interaction);
   const listening = state.tag === 'listening' || state.tag === 'auto-listen' ? state : null;
+  const canTypeInstead = canOfferTypeInstead(state, isEditing, interaction);
 
   function handlePressMic() {
     if (listening) props.onStop();
@@ -153,7 +206,13 @@ export function Composer(props: Props) {
       {isEditing && (
         <DraftField
           isDisabled={isLocked || isBusy || isSending}
-          label={state.tag === 'review' ? 'What we heard — edit if needed' : 'Your answer to Eva'}
+          label={
+            interaction === 'writing'
+              ? 'Your answer to Eva'
+              : state.tag === 'review'
+                ? 'What we heard — edit if needed'
+                : 'Your answer to Eva'
+          }
           onChange={props.onChangeDraft}
           onSend={props.onSend}
           shouldFocus={isTyping}
@@ -162,42 +221,33 @@ export function Composer(props: Props) {
       )}
 
       <div className="talk-composer-main">
-        <MicButton
-          icon={presentation.micIcon}
-          isDisabled={!canPressMic(state, isLocked || isBusy)}
-          name={presentation.micName}
-          onPress={handlePressMic}
-          variant={presentation.micVariant}
+        {interaction !== 'writing' && (
+          <>
+            <MicButton
+              icon={presentation.micIcon}
+              isDisabled={!canPressMic(state, isLocked || isBusy)}
+              name={presentation.micName}
+              onPress={handlePressMic}
+              variant={presentation.micVariant}
+            />
+            <div className="talk-mic-copy" role="status">
+              <span className="talk-mic-title">
+                {presentation.micTitle}
+                {state.tag === 'auto-listen' && <span className="talk-auto-cue">Auto</span>}
+              </span>
+              <span className="talk-mic-hint">{presentation.micHint}</span>
+            </div>
+            <LevelMeter isActive={listening?.isLive === true} level={props.level} />
+          </>
+        )}
+        <TurnActions
+          canTypeInstead={canTypeInstead}
+          interaction={interaction}
+          isEditing={isEditing}
+          listening={interaction === 'writing' ? null : listening}
+          onTypeInstead={() => setIsTyping(true)}
+          props={props}
         />
-        <div className="talk-mic-copy" role="status">
-          <span className="talk-mic-title">
-            {presentation.micTitle}
-            {state.tag === 'auto-listen' && <span className="talk-auto-cue">Auto</span>}
-          </span>
-          <span className="talk-mic-hint">{presentation.micHint}</span>
-        </div>
-        <LevelMeter isActive={listening?.isLive === true} level={props.level} />
-        <div className="talk-composer-actions">
-          {listening && <ListeningActions props={props} state={listening} />}
-          {isEditing && <EditingActions props={props} />}
-          {state.tag === 'speaking' && (
-            <Button onPress={props.onStopEva} size="sm" variant="ghost">
-              <Kbd>Esc</Kbd>
-              Stop Eva
-            </Button>
-          )}
-          {state.tag === 'idle' && !isEditing && (
-            <Button
-              isDisabled={isLocked || isBusy}
-              onPress={() => setIsTyping(true)}
-              size="sm"
-              variant="ghost"
-            >
-              <Keyboard aria-hidden="true" size={16} />
-              Type instead
-            </Button>
-          )}
-        </div>
       </div>
 
       {isLocked && lockedReason && (

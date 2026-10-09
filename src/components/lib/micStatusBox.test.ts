@@ -18,7 +18,7 @@ describe('micStatusBox', () => {
     expect(micStatusBox('error').hint).toBe('Not available right now.');
     expect(micStatusBox('off')).toMatchObject({
       isOn: false,
-      hint: 'Opens when a conversation starts.',
+      hint: 'Opens for spoken practice.',
     });
   });
 });

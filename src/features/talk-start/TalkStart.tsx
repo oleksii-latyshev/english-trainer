@@ -1,24 +1,25 @@
 import { Button } from '@heroui/react';
-import { Bookmark, Clock, Mic, TriangleAlert } from 'lucide-react';
+import { Bookmark, Clock, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { Eva } from '@/components/eva/Eva';
 import type { DueCount } from '@/features/memory/useDuePhraseCount';
 import {
   DEFAULT_PRACTICE_OPTIONS,
   type DurationGoalSeconds,
+  type PracticeMode,
   type PracticeOptions,
+  practiceModeLabel,
   TOPICS,
   type TopicId,
   topicLabel,
 } from '@/lib/practiceOptions';
-import {
-  PRIMARY_ACTION_LABEL,
-  primaryAction,
-  resumeDetail,
-  reviewHint,
-  reviewTitle,
-} from './lib/talkStartState';
+import { primaryAction, resumeDetail, reviewHint, reviewTitle } from './lib/talkStartState';
+import { PracticeModeChooser } from './PracticeModeChooser';
+import { introduction } from './practiceModeCopy';
+import { StartActions } from './StartActions';
+import { TopicSpecificFields } from './TopicSpecificFields';
 import './talkStart.css';
+import './talkStartModes.css';
 
 type Props = {
   isBusy: boolean;
@@ -53,6 +54,9 @@ export function TalkStart({
   const [duration, setDuration] = useState<DurationGoalSeconds>(
     DEFAULT_PRACTICE_OPTIONS.duration_goal_seconds,
   );
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>(
+    DEFAULT_PRACTICE_OPTIONS.practice_mode ?? 'voice',
+  );
   const action = primaryAction({
     isRestoring,
     isBusy,
@@ -64,12 +68,13 @@ export function TalkStart({
     topicId !== 'free_topic' ||
     (customTopic.trim().length > 0 && Array.from(customTopic.trim()).length <= 150);
 
-  function start(selectedId: TopicId) {
+  function start(selectedId: TopicId = effectiveTopicId) {
     const useCustom = selectedId === 'free_topic';
     onStart({
       topic_id: selectedId,
       topic_custom: useCustom ? customTopic.trim() : null,
       duration_goal_seconds: duration,
+      practice_mode: practiceMode,
     });
   }
 
@@ -79,10 +84,7 @@ export function TalkStart({
         <Eva decorative mood="happy" size={88} />
         <div className="talk-start-greeting-copy">
           <h1>What shall we talk about?</h1>
-          <p>
-            Choose a topic and a suggested length. Eva will ask short questions; answer out loud and
-            get quiet notes as you go.
-          </p>
+          <p>{introduction(practiceMode)}</p>
         </div>
       </header>
 
@@ -126,6 +128,7 @@ export function TalkStart({
       {!openSession && (
         <fieldset className="talk-start-options" disabled={isBusy || isRestoring}>
           <legend className="talk-start-section-title">Choose a topic</legend>
+          <PracticeModeChooser onChange={setPracticeMode} value={practiceMode} />
           <div className="talk-topic-grid">
             {VISIBLE_TOPICS.map((topic) => (
               <button
@@ -152,43 +155,13 @@ export function TalkStart({
             </button>
           </div>
 
-          {topicId === 'job_interview_hr' && (
-            <label className="talk-start-inline-field">
-              Interview focus
-              <select
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (
-                    value === 'job_interview_hr' ||
-                    value === 'job_interview_behavioural' ||
-                    value === 'job_interview_technical'
-                  )
-                    setInterviewTopic(value);
-                }}
-                value={interviewTopic}
-              >
-                <option value="job_interview_hr">HR</option>
-                <option value="job_interview_behavioural">Behavioural</option>
-                <option value="job_interview_technical">Technical</option>
-              </select>
-            </label>
-          )}
-
-          {topicId === 'free_topic' && (
-            <label className="talk-start-free-topic">
-              What would you like to talk about?
-              <input
-                maxLength={150}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setCustomTopic(value);
-                }}
-                placeholder="For example, a book you enjoyed"
-                value={customTopic}
-              />
-              <span>{Array.from(customTopic).length}/150 characters</span>
-            </label>
-          )}
+          <TopicSpecificFields
+            customTopic={customTopic}
+            interviewTopic={interviewTopic}
+            setCustomTopic={setCustomTopic}
+            setInterviewTopic={setInterviewTopic}
+            topicId={topicId}
+          />
 
           <div className="talk-start-length">
             <div>
@@ -211,28 +184,16 @@ export function TalkStart({
           </div>
 
           <div className="talk-start-summary" aria-live="polite">
-            Topic: <strong>{chosenLabel}</strong> · Suggested length:{' '}
+            {practiceModeLabel(practiceMode)} · <strong>{chosenLabel}</strong> · Suggested length:{' '}
             <strong>{duration / 60} minutes</strong>
           </div>
-          <div className="talk-start-primary">
-            <Button
-              className="talk-start-cta"
-              isDisabled={isBusy || !isCustomTopicValid}
-              onPress={() => start(effectiveTopicId)}
-              variant="primary"
-            >
-              <Mic aria-hidden="true" size={18} strokeWidth={2.2} />
-              {PRIMARY_ACTION_LABEL[action]}
-            </Button>
-            <Button
-              className="talk-start-random"
-              isDisabled={isBusy}
-              onPress={() => start('random')}
-              variant="secondary"
-            >
-              Random topic
-            </Button>
-          </div>
+          <StartActions
+            action={action}
+            isCustomTopicValid={isCustomTopicValid}
+            isDisabled={isBusy}
+            onStart={start}
+            practiceMode={practiceMode}
+          />
         </fieldset>
       )}
 

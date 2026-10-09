@@ -38,9 +38,55 @@ pub struct TopicSelection {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct StartPracticeOptions {
+    #[serde(default)]
+    pub practice_mode: Option<PracticeMode>,
     pub topic_id: Option<String>,
     pub topic_custom: Option<String>,
     pub duration_goal_seconds: Option<u32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PracticeMode {
+    #[default]
+    Voice,
+    TextChat,
+    WriteThenSpeak,
+}
+
+impl PracticeMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Voice => "voice",
+            Self::TextChat => "text_chat",
+            Self::WriteThenSpeak => "write_then_speak",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PracticePhase {
+    Writing,
+    WritingReview,
+    #[default]
+    Speaking,
+    SpeakingReview,
+}
+
+impl PracticePhase {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Writing => "writing",
+            Self::WritingReview => "writing_review",
+            Self::Speaking => "speaking",
+            Self::SpeakingReview => "speaking_review",
+        }
+    }
+
+    pub fn is_review(self) -> bool {
+        matches!(self, Self::WritingReview | Self::SpeakingReview)
+    }
 }
 
 pub fn topic_label(topic_id: &str) -> &'static str {
@@ -291,6 +337,7 @@ mod tests {
     #[test]
     fn validates_topic_duration_and_free_text_bounds() {
         let valid = StartPracticeOptions {
+            practice_mode: None,
             topic_id: Some(TOPIC_FREE_TOPIC.into()),
             topic_custom: Some("  Open source software  ".into()),
             duration_goal_seconds: Some(900),

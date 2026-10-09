@@ -1,6 +1,16 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PracticeOptions } from '@/lib/practiceOptions';
+import {
+  canTransitionPracticePhase,
+  type PracticeOptions,
+  type PracticePhase,
+} from '@/lib/practiceOptions';
+import {
+  practiceModeOf,
+  practicePhaseOf,
+  spokenTurnCountOf,
+  writtenTurnCountOf,
+} from '@/lib/practiceSessionTypes';
 import {
   type AttemptComparison,
   type ConversationTurn,
@@ -19,6 +29,7 @@ import {
 import {
   finishPracticeSession,
   getActivePracticeSession,
+  transitionPracticePhase as requestPracticePhaseTransition,
   startPracticeSession,
 } from './sessionApi';
 
@@ -48,6 +59,10 @@ function activeState(session: PracticeSession): PracticeState {
     activeDurationMs: session.active_duration_ms,
     startedAt: session.started_at,
     isClockRunning: session.is_clock_running,
+    practiceMode: practiceModeOf(session),
+    practicePhase: practicePhaseOf(session),
+    writtenTurnCount: writtenTurnCountOf(session),
+    spokenTurnCount: spokenTurnCountOf(session),
     clockSnapshotAtMs: performance.now(),
   };
 }
@@ -90,13 +105,13 @@ export function usePracticeSession(dependencies: Dependencies) {
     };
   }, []);
 
-  async function start(options?: PracticeOptions) {
+  async function start(options?: PracticeOptions): Promise<boolean> {
     // The start screen owns the options for the next conversation.
     if ((state.tag !== 'idle' && state.tag !== 'completed') || !dependencies.canChangeSession)
-      return;
+      return false;
     if (!isTauri()) {
       setError('Open the desktop app with bun run dev to start a conversation.');
-      return;
+      return false;
     }
     setState({ tag: 'starting' });
     setError('');
@@ -105,10 +120,14 @@ export function usePracticeSession(dependencies: Dependencies) {
       dependencies.stopSpeech();
       dependencies.resetCapture();
       setState(activeState(session));
-      dependencies.playQuestion(session.opening_question);
+      if (practiceModeOf(session) === 'voice') {
+        dependencies.playQuestion(session.opening_question);
+      }
+      return true;
     } catch (cause) {
       setState({ tag: 'idle' });
       setError(sessionError(cause, 'Could not start practice. Please try again.'));
+      return false;
     }
   }
 
@@ -128,6 +147,33 @@ export function usePracticeSession(dependencies: Dependencies) {
     }
   }
 
+  async function transitionPhase(phase: PracticePhase) {
+    if (state.tag !== 'active' || !dependencies.canChangeSession) return;
+    const previous = state;
+    if (
+      !canTransitionPracticePhase({
+        mode: previous.practiceMode,
+        phase: previous.practicePhase,
+        next: phase,
+        writtenCount: previous.writtenTurnCount,
+        spokenCount: previous.spokenTurnCount,
+      })
+    )
+      return;
+    dependencies.stopSpeech();
+    dependencies.resetCapture();
+    setState({ ...previous, tag: 'waiting' });
+    setError('');
+    try {
+      const session = await requestPracticePhaseTransition(previous.sessionId, phase);
+      setState(activeState(session));
+      if (phase === 'speaking') dependencies.playQuestion(session.opening_question);
+    } catch (cause) {
+      setState(previous);
+      setError(sessionError(cause, 'Could not move to the next practice stage. Please retry.'));
+    }
+  }
+
   const isBusy = state.tag === 'loading' || state.tag === 'starting' || state.tag === 'finishing';
 
   return {
@@ -136,6 +182,7 @@ export function usePracticeSession(dependencies: Dependencies) {
     isBusy,
     start,
     finish,
+    transitionPhase,
     dismissSummary: () =>
       setState((current) => (current.tag === 'completed' ? { tag: 'idle' } : current)),
     updateSummary: (summary: FinishedPracticeSession) =>

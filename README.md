@@ -60,6 +60,28 @@ to reinstall the hook in an existing checkout. `bun run check:rust` uses the sam
 Rust checks as CI. On macOS it uses Command Line Tools when installed and
 `DEVELOPER_DIR` is unset, without changing the system Xcode selection.
 
+### Automated regression checks
+
+```bash
+bun install --frozen-lockfile
+bunx playwright install chromium  # once on each development machine
+bun run verify
+```
+
+`verify` runs frontend type/lint/unit checks, Rust format/Clippy/tests and browser flows.
+`bun run test:e2e` runs just the browser scenarios against Vite. The scenarios exercise the real
+UI with typed fixtures at the Tauri IPC boundary, without provider keys or real microphone audio.
+CI runs the same checks before packaging the app. A failed browser scenario keeps its screenshot
+and trace in `test-results/`, with an HTML report in `playwright-report/`:
+
+```bash
+bunx playwright show-report
+```
+
+The Rust pipeline tests use a temporary SQLite database and a fake provider. These checks catch
+state, persistence and UI regressions; microphone permissions, Whisper recognition quality, system
+speech and perceived latency still need a check on the physical Mac.
+
 ### Local transcription setup
 
 The current Whisper prototype uses a local `whisper-cli` executable and an English `base.en`

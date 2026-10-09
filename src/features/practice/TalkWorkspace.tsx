@@ -4,11 +4,13 @@ import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { NoteTools } from './AnswerNote';
 import { DailyRecallPanel } from './DailyRecallPanel';
 import type { InputSource } from './lib/inputSource';
+import { canSendPracticeStage } from './lib/practiceStage';
 import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
 import type { SendFailure } from './lib/turnIssue';
 import { ManualRecorder } from './ManualRecorder';
 import { NoSession } from './NoSession';
+import { PracticeReview } from './PracticeReview';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { TalkScreen, type TalkScreenName } from './TalkScreen';
 import type { useDailyRecall } from './useDailyRecall';
@@ -38,6 +40,7 @@ type ExtrasProps = Pick<
 > & { session: SessionDetails };
 
 function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasProps) {
+  if (session.practiceMode !== 'voice' || session.practicePhase !== 'speaking') return null;
   if (session.turnCount < session.targetTurns) return null;
   return (
     <>
@@ -73,6 +76,7 @@ function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasPro
 function TalkExtras(props: ExtrasProps) {
   const { recall, isRetrying, savedAnswer, dialogue } = props;
   const showUsageReview =
+    props.session.practiceMode === 'voice' &&
     savedAnswer !== null &&
     savedAnswer.sequence <= 2 &&
     dialogue?.input_sources?.[savedAnswer.sequence - 1] === 'voice' &&
@@ -103,6 +107,22 @@ export function TalkWorkspace(props: Props) {
     );
   }
 
+  if (session.practicePhase === 'writing_review' || session.practicePhase === 'speaking_review') {
+    return (
+      <PracticeReview
+        actions={actions}
+        dialogue={props.dialogue}
+        historyError={props.historyError}
+        model={model}
+        noteTools={props.noteTools}
+        onRetryHistory={props.retryHistory}
+        session={session}
+      />
+    );
+  }
+
+  const isStageLocked = !canSendPracticeStage(session);
+
   return (
     <TalkScreen
       actions={actions}
@@ -115,8 +135,8 @@ export function TalkWorkspace(props: Props) {
       isRecalling={recall.active}
       isRetrying={isRetrying}
       lock={{
-        isLocked: recall.active || isRetrying,
-        reason: lockReason(recall.active, isRetrying),
+        isLocked: recall.active || isRetrying || isStageLocked,
+        reason: lockReason(recall.active, isRetrying, isStageLocked),
       }}
       model={model}
       noteTools={props.noteTools}
@@ -134,8 +154,14 @@ export function TalkWorkspace(props: Props) {
   );
 }
 
-function lockReason(isRecalling: boolean, isRetrying: boolean): string | undefined {
+function lockReason(
+  isRecalling: boolean,
+  isRetrying: boolean,
+  isStageLocked: boolean,
+): string | undefined {
   if (isRecalling) return 'Spoken phrase recall is in progress above.';
   if (isRetrying) return 'Re-speaking in progress. Say it again in the note above, or cancel it.';
+  if (isStageLocked)
+    return 'All original questions have been answered. Review this stage to continue.';
   return undefined;
 }

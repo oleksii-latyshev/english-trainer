@@ -7,6 +7,7 @@ type UsePracticeDialogueProps = {
   sessionId?: number;
   turnCount?: number;
   question?: string;
+  phaseKey?: string;
 };
 
 export type UsePracticeDialogueResult = {
@@ -20,6 +21,7 @@ export function usePracticeDialogue({
   sessionId,
   turnCount,
   question,
+  phaseKey,
 }: UsePracticeDialogueProps): UsePracticeDialogueResult {
   const [dialogue, setDialogue] = useState<PracticeDialogue | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +65,7 @@ export function usePracticeDialogue({
     return () => {
       isCurrent = false;
     };
-  }, [sessionId, turnCount, question, fetchIndex]);
+  }, [sessionId, turnCount, question, phaseKey, fetchIndex]);
 
   return {
     dialogue,

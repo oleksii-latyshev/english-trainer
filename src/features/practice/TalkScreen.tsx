@@ -1,4 +1,3 @@
-import { Button, Kbd } from '@heroui/react';
 import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
@@ -7,19 +6,21 @@ import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { setConversationFlow } from '@/lib/conversationFlowPreferences';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { AnswerNote, type NoteTools } from './AnswerNote';
-import { Composer } from './Composer';
 import { Dialogue } from './Dialogue';
 import { EvaStage } from './EvaStage';
-import { HelpBar } from './HelpBar';
 import type { HelpLevel } from './lib/helpLevels';
 import type { InputSource } from './lib/inputSource';
 import { pauseControl } from './lib/pauseControl';
+import { practiceStageIsWriting, practiceStageUsesAudio } from './lib/practiceStage';
+import { practiceStageAction } from './lib/practiceStageAction';
 import type { SessionDetails } from './lib/practiceState';
 import type { SendFailure } from './lib/turnIssue';
 import { evaMoodFor } from './lib/turnState';
 import { LiveTranscriptBubble } from './Messages';
+import { OriginalQuestionPrompt } from './OriginalQuestionPrompt';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { recordAnswerHelpUsed } from './sessionApi';
+import { TalkComposerPanel } from './TalkComposerPanel';
 import { TalkHeader } from './TalkHeader';
 import { useTalkKeyboard } from './useTalkKeyboard';
 import { useTalkTurn } from './useTalkTurn';
@@ -72,6 +73,13 @@ export function TalkScreen(props: Props) {
   const { model, actions, speech, session, question, lock, isRetrying } = props;
   const isRecalling = props.isRecalling ?? false;
   const { actualInput } = usePreferredMicrophone();
+  const isWritingStage = practiceStageIsWriting(session);
+  const isAudioStage = practiceStageUsesAudio(session);
+  const isSpokenReplay =
+    session.practiceMode === 'write_then_speak' && session.practicePhase === 'speaking';
+  const isReplayComplete = isSpokenReplay && session.spokenTurnCount >= session.writtenTurnCount;
+  const showLiveTranscript =
+    isAudioStage && model.status === 'recording' && model.heardSpeech && Boolean(model.liveText);
   const turn = useTalkTurn({
     model,
     actions,
@@ -118,10 +126,10 @@ export function TalkScreen(props: Props) {
     onPause: actions.pauseMic,
     onResume: actions.resumeMic,
   };
-  const isHelpAvailable = helpAvailable(question, isRetrying, isRecalling);
+  const isHelpAvailable = !isWritingStage && helpAvailable(question, isRetrying, isRecalling);
   useTalkKeyboard({
     state,
-    canPressMic: turn.canPressMic,
+    canPressMic: isAudioStage && turn.canPressMic,
     isHelpAvailable,
     helpLevel,
     onHelpLevelChange: changeHelpLevel,
@@ -132,7 +140,14 @@ export function TalkScreen(props: Props) {
     onHoldListening: actions.holdListening,
     onStopEva: speech.stop,
   });
-  const fixes = state.tag === 'error' ? state.issue.fixes.map((fix) => turn.fixes[fix]) : [];
+  const stageAction = practiceStageAction({
+    mode: session.practiceMode,
+    phase: session.practicePhase,
+    writtenCount: session.writtenTurnCount,
+    spokenCount: session.spokenTurnCount,
+    isDisabled: turn.isBusy || model.practice.tag !== 'active' || isRetrying,
+    transition: actions.transitionPracticePhase,
+  });
 
   return (
     <section aria-label="Talk workspace" className="talk">
@@ -143,23 +158,40 @@ export function TalkScreen(props: Props) {
         onFinish={actions.finishPractice}
         pause={pause}
         session={session}
+        stageAction={stageAction}
+        isAudioStage={isAudioStage}
         timing={model.timing}
       />
       <div className="talk-body">
-        <EvaStage
-          flow={flow}
-          inputLabel={actualInput?.label}
-          isSendLocked={lock.isLocked}
-          mood={mood}
-          onFlowChange={setConversationFlow}
-          presentation={presentation}
-        />
+        {isWritingStage ? (
+          <aside aria-label="Writing practice" className="talk-writing-stage">
+            <h2>Write your answer</h2>
+            <p>Take your time. Eva’s replies will stay on screen.</p>
+          </aside>
+        ) : (
+          <EvaStage
+            flow={flow}
+            inputLabel={actualInput?.label}
+            isSendLocked={lock.isLocked}
+            mood={mood}
+            onFlowChange={setConversationFlow}
+            presentation={presentation}
+          />
+        )}
         <div className="talk-main">
+          {isSpokenReplay && (
+            <OriginalQuestionPrompt
+              isComplete={isReplayComplete}
+              question={question}
+              spokenTurnCount={session.spokenTurnCount}
+              writtenTurnCount={session.writtenTurnCount}
+            />
+          )}
           <Dialogue
-            currentQuestion={question}
+            currentQuestion={isReplayComplete ? undefined : question}
             dialogue={props.dialogue}
             historyError={props.historyError}
-            onPlaySpeech={speech.play}
+            onPlaySpeech={isAudioStage ? speech.play : undefined}
             pendingReply={props.pendingReply}
             renderNote={(message) =>
               props.noteTools &&
@@ -176,77 +208,23 @@ export function TalkScreen(props: Props) {
             retryHistory={props.retryHistory}
           >
             {model.practiceError && <TurnNotice message={model.practiceError} />}
-            {model.status === 'recording' && model.heardSpeech && model.liveText && (
-              <LiveTranscriptBubble text={model.liveText} />
-            )}
+            {showLiveTranscript && <LiveTranscriptBubble text={model.liveText} />}
             {props.children}
           </Dialogue>
-          <div className="talk-composer-zone">
-            <div className="talk-composer-inner">
-              {isHelpAvailable && (
-                <HelpBar
-                  disabled={
-                    turn.isBusy ||
-                    composer.isSending ||
-                    model.status === 'recording' ||
-                    model.transcribing ||
-                    lock.isLocked
-                  }
-                  key={helpKey}
-                  level={helpLevel}
-                  onLevelChange={changeHelpLevel}
-                  question={question}
-                  sequence={session.turnCount + 1}
-                  sessionId={session.sessionId}
-                />
-              )}
-              <Composer
-                draft={composer.draft}
-                isBusy={turn.isBusy}
-                isHandsFree={flow.handsFree}
-                isLocked={lock.isLocked}
-                isSending={composer.isSending}
-                level={model.level}
-                lockedReason={lock.reason}
-                notice={
-                  state.tag === 'error' && (
-                    <TurnNotice message={state.issue.message}>
-                      {fixes.map((fix, index) => (
-                        <Button
-                          key={fix.label}
-                          onPress={fix.run}
-                          size="sm"
-                          variant={index === 0 ? 'secondary' : 'ghost'}
-                        >
-                          {fix.label}
-                        </Button>
-                      ))}
-                    </TurnNotice>
-                  )
-                }
-                onCancel={actions.cancelRecording}
-                onChangeDraft={composer.changeDraft}
-                onHold={actions.holdListening}
-                onResume={actions.resumeMic}
-                onSend={composer.sendDraft}
-                onStart={composer.startRecording}
-                onStop={actions.stopRecording}
-                onStopEva={speech.stop}
-                presentation={presentation}
-                state={state}
-              />
-              <div className="talk-hints">
-                <span>
-                  <Kbd>Space</Kbd>
-                  hold to talk
-                </span>
-                <span>
-                  <Kbd>Esc</Kbd>
-                  cancel / stop Eva
-                </span>
-              </div>
-            </div>
-          </div>
+          <TalkComposerPanel
+            actions={actions}
+            helpKey={helpKey}
+            helpLevel={helpLevel}
+            isAudioStage={isAudioStage}
+            isHelpAvailable={isHelpAvailable}
+            lock={lock}
+            model={model}
+            onHelpLevelChange={changeHelpLevel}
+            question={question}
+            session={session}
+            speech={speech}
+            turn={turn}
+          />
         </div>
       </div>
     </section>

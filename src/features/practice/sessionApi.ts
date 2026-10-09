@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { isPracticeDialogue, type PracticeDialogue } from '@/lib/dialogueTypes';
-import type { PracticeOptions } from '@/lib/practiceOptions';
+import type { PracticeOptions, PracticePhase } from '@/lib/practiceOptions';
 import {
   type DailyRecallPlan,
   type FinishedPracticeSession,
@@ -28,6 +28,17 @@ export async function setPracticeClock(
   const result = await invoke<unknown>('set_practice_clock', { sessionId, running });
   if (!isPracticeSession(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected practice clock response.');
+  }
+  return result;
+}
+
+export async function transitionPracticePhase(
+  sessionId: number,
+  phase: PracticePhase,
+): Promise<PracticeSession> {
+  const result = await invoke<unknown>('transition_practice_phase', { sessionId, phase });
+  if (!isPracticeSession(result) || result.session_id !== sessionId) {
+    throw new Error('Unexpected practice phase transition response.');
   }
   return result;
 }

@@ -1,10 +1,10 @@
 use super::topics;
 use super::{
     active_session_mut, database_error, database_error_message, invalid_session_error,
-    ActiveSession, PersonalProfile, PracticeSession, ProviderError, SessionStore,
-    StartPracticeOptions, State, MAX_SAFE_SESSION_ID, SESSION_MODE,
+    ActiveSession, PersonalProfile, PracticeMode, PracticePhase, PracticeSession, ProviderError,
+    SessionStore, StartPracticeOptions, State, MAX_SAFE_SESSION_ID, SESSION_MODE,
 };
-use crate::persistence::session_metadata::NewSession;
+use crate::persistence::session_metadata::{NewSession, PracticePhaseTransition};
 use std::time::Instant;
 
 impl SessionStore {
@@ -22,6 +22,14 @@ impl SessionStore {
             return self.build_practice_session(&state, active);
         }
         let session_count = state.database.session_count().map_err(database_error)?;
+        let practice_mode = options
+            .as_ref()
+            .and_then(|options| options.practice_mode)
+            .unwrap_or_default();
+        let practice_phase = match practice_mode {
+            PracticeMode::Voice => PracticePhase::Speaking,
+            PracticeMode::TextChat | PracticeMode::WriteThenSpeak => PracticePhase::Writing,
+        };
         let (topic, duration_goal_seconds, opening_question) =
             topics::resolve_start_options(options, session_count)?;
         let session_id = state
@@ -33,6 +41,9 @@ impl SessionStore {
                 topic_label: &topic.topic_label,
                 topic_custom: topic.topic_custom.as_deref(),
                 duration_goal_seconds,
+                practice_mode: practice_mode.as_str(),
+                practice_phase: practice_phase.as_str(),
+                written_turn_count: 0,
             })
             .map_err(database_error)?;
         if session_id > MAX_SAFE_SESSION_ID {
@@ -56,6 +67,9 @@ impl SessionStore {
                 .ok_or_else(database_error_message)?
                 .started_at,
             clock_anchor: None,
+            practice_mode,
+            practice_phase,
+            written_turn_count: 0,
         };
         let practice_session = self.build_practice_session(&state, &active)?;
         state.active = Some(active);
@@ -82,6 +96,9 @@ impl SessionStore {
         let mut state = self.lock();
         checkpoint_clock(&mut state, session_id)?;
         let active = active_session_mut(&mut state, session_id)?;
+        if running && active.practice_phase.is_review() {
+            return Err(super::invalid_phase_transition_error());
+        }
         if running && active.clock_anchor.is_none() {
             active.clock_anchor = Some(Instant::now());
         } else if !running {
@@ -91,6 +108,87 @@ impl SessionStore {
             &state,
             state.active.as_ref().ok_or_else(invalid_session_error)?,
         )
+    }
+
+    pub fn transition_practice_phase(
+        &self,
+        session_id: u64,
+        phase: PracticePhase,
+    ) -> Result<PracticeSession, ProviderError> {
+        let mut state = self.lock();
+        let active = state
+            .active
+            .as_ref()
+            .filter(|active| active.id == session_id)
+            .ok_or_else(invalid_session_error)?;
+        if active.in_flight {
+            return Err(super::busy_error());
+        }
+        let turn_count = active.turns.len();
+        let mode = active.practice_mode;
+        let current = active.practice_phase;
+        let frozen_count = active.written_turn_count;
+        let spoken_count = turn_count.saturating_sub(frozen_count);
+        let (next_written_count, expose_session_cues) = match (mode, current, phase) {
+            (
+                PracticeMode::WriteThenSpeak,
+                PracticePhase::Writing,
+                PracticePhase::WritingReview,
+            )
+            | (PracticeMode::TextChat, PracticePhase::Writing, PracticePhase::WritingReview)
+                if turn_count > 0 =>
+            {
+                (turn_count, false)
+            }
+            (
+                PracticeMode::WriteThenSpeak,
+                PracticePhase::WritingReview,
+                PracticePhase::Speaking,
+            ) => (frozen_count, true),
+            (
+                PracticeMode::WriteThenSpeak,
+                PracticePhase::Speaking,
+                PracticePhase::SpeakingReview,
+            ) if spoken_count == frozen_count => (frozen_count, false),
+            _ => return Err(super::invalid_phase_transition_error()),
+        };
+        let now = Instant::now();
+        let target_is_review = phase.is_review();
+        let elapsed = if target_is_review && active.clock_anchor.is_some() {
+            Some(elapsed_snapshot_at(active, now))
+        } else {
+            None
+        };
+        state
+            .database
+            .transition_practice_phase(PracticePhaseTransition {
+                session_id,
+                phase: phase.as_str(),
+                written_turn_count: next_written_count,
+                expose_session_cues,
+                active_duration_ms: elapsed,
+            })
+            .map_err(database_error)?
+            .then_some(())
+            .ok_or_else(invalid_session_error)?;
+        let active = state
+            .active
+            .as_mut()
+            .filter(|active| active.id == session_id)
+            .ok_or_else(invalid_session_error)?;
+        active.practice_phase = phase;
+        active.written_turn_count = next_written_count;
+        if let Some(elapsed) = elapsed {
+            active.active_duration_ms = elapsed;
+        }
+        if target_is_review {
+            active.clock_anchor = None;
+        }
+        let practice_session = self.build_practice_session(
+            &state,
+            state.active.as_ref().ok_or_else(invalid_session_error)?,
+        )?;
+        Ok(practice_session)
     }
 
     pub fn checkpoint_on_exit(&self) -> Result<(), ProviderError> {

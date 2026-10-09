@@ -1,3 +1,4 @@
+import type { PracticeMode, PracticePhase } from '@/lib/practiceOptions';
 import type { AttemptComparison, ConversationTurn, FinishedPracticeSession } from '@/lib/types';
 
 export type SessionDetails = {
@@ -14,6 +15,10 @@ export type SessionDetails = {
   startedAt: number;
   isClockRunning: boolean;
   clockSnapshotAtMs: number;
+  practiceMode: PracticeMode;
+  practicePhase: PracticePhase;
+  writtenTurnCount: number;
+  spokenTurnCount: number;
 };
 
 export type PracticeState =
@@ -45,6 +50,16 @@ export function advancePractice(
     ...current,
     question: turn.question ?? turn.spoken_reply,
     turnCount: current.turnCount + 1,
+    writtenTurnCount:
+      current.practiceMode === 'text_chat' ||
+      (current.practiceMode === 'write_then_speak' && current.practicePhase === 'writing')
+        ? current.writtenTurnCount + 1
+        : current.writtenTurnCount,
+    spokenTurnCount:
+      current.practiceMode === 'voice' ||
+      (current.practiceMode === 'write_then_speak' && current.practicePhase === 'speaking')
+        ? current.spokenTurnCount + 1
+        : current.spokenTurnCount,
   };
 }
 

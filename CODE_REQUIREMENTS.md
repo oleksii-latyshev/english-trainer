@@ -24,8 +24,8 @@ src/
     lib/                that feature's pure logic, tests beside it
 src-tauri/src/          session orchestrator, local STT, providers, learning engine, SQLite
 src-tauri/apple/        Swift helper for Apple Foundation Models, compiled at build time
-src-tauri/tests/        pipeline integration tests against a temp database and a fake provider (added with F1)
-e2e/                    Playwright against Vite / Tauri, command layer faked (added after F5)
+src-tauri/tests/        pipeline integration tests against a temp database and a fake provider (F11)
+e2e/                    Playwright against Vite, typed command/audio edges faked (F11)
 ```
 
 - Code starts in the feature that uses it and moves to `components/` or `lib/` when a second
@@ -129,8 +129,8 @@ e2e/                    Playwright against Vite / Tauri, command layer faked (ad
 |---|---|---|
 | Pure TS logic | `*.test.ts` beside it in a `lib/`, no DOM | `bun test` |
 | Rust logic | `#[cfg(test)] mod tests` beside the code | `bun run test:rust` |
-| End-to-end pipeline (from F1) | `src-tauri/tests/pipeline.rs` | `bun run test:rust` |
-| User flows (after F5) | `e2e/*.e2e.ts` | `bun run test:e2e` |
+| End-to-end pipeline | `src-tauri/tests/pipeline.rs` | `bun run test:rust` |
+| User flows | `e2e/*.e2e.ts` | `bun run test:e2e` |
 
 - To test logic, move it out of the component into a `lib/` or Rust. Needing a DOM for a unit
   test means the logic is in the wrong place.

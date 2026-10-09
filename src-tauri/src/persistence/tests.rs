@@ -90,6 +90,10 @@ fn migrates_existing_version_two_database_to_current_version() {
         .unwrap();
     assert_eq!(version, SCHEMA_VERSION);
     assert_eq!(db.turns(1).unwrap()[0].learner, "Original");
+    let restored = db.active_session().unwrap().unwrap();
+    assert_eq!(restored.practice_mode, "voice");
+    assert_eq!(restored.practice_phase, "speaking");
+    assert_eq!(restored.written_turn_count, 0);
     let comparisons = db.comparisons(1).unwrap();
     assert_eq!(comparisons.len(), 1);
     assert_eq!(comparisons[0].retry_transcript, "Retry");

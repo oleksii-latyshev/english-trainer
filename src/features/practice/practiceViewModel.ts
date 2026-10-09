@@ -1,4 +1,5 @@
 import type { CaptureView } from '@/features/speech/useSpeechCapture';
+import type { PracticePhase } from '@/lib/practiceOptions';
 import type { AttemptComparison, ConversationTurn } from '@/lib/types';
 import type { PracticeState } from './lib/practiceState';
 
@@ -24,6 +25,7 @@ export type PracticeActions = {
   resetCapture: () => void;
   startPractice: () => void;
   finishPractice: () => void;
+  transitionPracticePhase: (phase: PracticePhase) => void;
   handlePracticeTurn: (sessionId: number, turn: ConversationTurn) => void;
   handleRetryComparison: (sessionId: number, comparison: AttemptComparison) => void;
   isCurrent: () => boolean;

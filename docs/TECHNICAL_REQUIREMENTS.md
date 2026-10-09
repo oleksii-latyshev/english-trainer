@@ -262,7 +262,7 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
   never finishes the session or blocks another answer. The eight-answer field remains only for
   compatibility with the existing daily recall gate. New sessions are stored with
   mode `conversation`; sessions saved as `coach` by older versions are read the same way (an answer
-  that Coach saved but never continued stays in the dialogue without a reply). No mode crosses IPC.
+  that Coach saved but never continued stays in the dialogue without a reply). The legacy database mode stays internal; F11 practice modes cross IPC separately.
 - `get_practice_dialogue(session_id)` returns `{ session_id, opening_question, turns,
   input_sources, reply_times_ms, answer_durations_ms, help_used, coaching }` for the active session
   only. The three lists after `input_sources` are aligned with `turns`:
@@ -295,6 +295,31 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
 - Memory phrase records carry optional `session_topic`; the source line shows topic and date
   when provenance exists, preserving the saved note.
 
+### 7.1 Write, then speak (F11)
+
+- `start_practice_session` also accepts `practice_mode`: `voice` (default), `text_chat`, or
+  `write_then_speak`. Mode, phase and the frozen written-answer count are persisted locally.
+- `PracticeSession` and `FinishedPracticeSession` add `practice_mode`, `practice_phase`,
+  `written_turn_count` and `spoken_turn_count`. Phases are `writing`, `writing_review`,
+  `speaking` and `speaking_review`; ordinary voice sessions start in `speaking`.
+- `transition_practice_phase(session_id, phase)` returns the updated session. Writing must have
+  at least one answer before review. Write-then-speak proceeds from writing review to speaking,
+  then to speaking review after every original question has been answered aloud. Other transitions,
+  transitions during a pending answer, and answers submitted during review are rejected.
+- Writing uses text input and the existing conversation provider without microphone capture,
+  automatic listening or TTS. Entering review flushes the background coaching queue; pending,
+  failed and quota-paused corrections remain visible and do not block the transition.
+- The spoken stage rehearses the exact original questions in order. Rust derives them from the
+  saved written conversation and returns a neutral acknowledgement and the next original question,
+  without another conversation-provider call. It never asks an extra question after the final
+  answer. Rehearsal is cued practice, not independent mastery evidence.
+- Both stages retain absolute answer sequences and existing voice/edited/text provenance. Review
+  presents the written and spoken corrections separately; unfinished coaching is never counted as
+  a clean answer or proof of improvement. Repeated mistakes use the existing Memory and spoken
+  review path. No mastery rules are extended.
+- Reviews stop the active clock and release the warm microphone. An explicit “Say it again”
+  remains available to repeat a correction. Restoring a session retains its phase and next question.
+
 ## 8. Persistence
 
 SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
@@ -304,7 +329,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 | Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
-| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15); speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
+| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15); F11 session columns are added by schema version 16; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
 
 - Migrations are additive and idempotent; tests cover upgrade from older schemas.
@@ -442,8 +467,13 @@ Synthetic benchmarks record timings and error categories only, never personal tr
 ## 14. Testing
 
 - Rust unit tests beside the code for parsers, validation, scheduling, migrations and transactions.
-- Fake providers at the edge: `ENG_TRAINER_AGY_BIN` for `agy`; **target [F1]** a fake streaming
-  engine for a pipeline test in `src-tauri/tests/`.
+- Fake providers at the edge: `ENG_TRAINER_AGY_BIN` for `agy`; a fake conversation provider and temporary
+  SQLite database for the pipeline test in `src-tauri/tests/`.
 - Live provider checks are `#[ignore]` and run explicitly with synthetic input only.
+- `bun run verify` runs frontend types/lint/unit tests, Rust format/Clippy/tests and Playwright
+  browser scenarios. `bun run test:e2e` exercises the real UI with typed fixtures at the Tauri IPC
+  boundary and synthetic browser audio edges. Unknown fixture commands fail the scenario, including
+  commands whose errors the app handles. CI requires these flows before packaging; failures retain
+  screenshots, traces and an HTML report.
 - Manual checks on a physical Mac are required for microphone, STT quality, TTS and perceived
-  latency; a green unit test does not prove them.
+  latency; a green automated suite does not prove them.

@@ -1,6 +1,7 @@
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { useConversationFlow } from '@/lib/conversationFlowPreferences';
 import { composerTranscript, type InputSource } from './lib/inputSource';
+import { canSendPracticeStage } from './lib/practiceStage';
 import { sessionDetails } from './lib/practiceState';
 import { type SendFailure, type TurnFix, turnIssue } from './lib/turnIssue';
 import { canPressMic, deriveTurnState, describeTurn } from './lib/turnState';
@@ -31,15 +32,18 @@ export function useTalkTurn(options: Options) {
   const isEvaSpeaking = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
   const isBusy = model.busy || model.practice.tag !== 'active';
   const answerTranscript = composerTranscript(model.transcript, isRetrying);
+  const session = sessionDetails(model.practice);
+  const canSendInStage = session !== undefined && canSendPracticeStage(session);
 
   const composer = useAnswerComposer({
-    sessionId: sessionDetails(model.practice)?.sessionId,
+    sessionId: session?.sessionId,
+    draftScope: session ? `${session.practiceMode}:${session.practicePhase}` : undefined,
     currentRequestId: model.currentRequestId,
     transcript: answerTranscript,
     isRecording: model.status === 'recording',
     transcribing: model.transcribing,
     busy: isBusy,
-    disabled: isLocked,
+    disabled: isLocked || !canSendInStage,
     isRetrying,
     recallActive: isRecalling,
     onSend: options.onSend,

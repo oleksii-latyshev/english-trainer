@@ -34,6 +34,12 @@ impl SessionDatabase {
             [to_sql_id(session_id)?],
             |row| row.get(0),
         )?;
+        let (practice_mode, written_turn_count): (String, i64) = self.connection.query_row(
+            "SELECT COALESCE(practice_mode, 'voice'), COALESCE(written_turn_count, 0) FROM sessions WHERE id = ?1",
+            [to_sql_id(session_id)?],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )?;
+        let written_turn_count = usize::try_from(written_turn_count).unwrap_or(0);
         let mut statement = self.connection.prepare(
             "SELECT t.sequence, COALESCE(c.failed_attempts, 0)
              FROM turns t
@@ -52,9 +58,20 @@ impl SessionDatabase {
             let Some(turn) = sequence.checked_sub(1).and_then(|index| turns.get(index)) else {
                 continue;
             };
-            let question = match sequence.checked_sub(2).and_then(|index| turns.get(index)) {
-                Some(previous) => previous.prompt().to_string(),
-                None => opening.clone(),
+            let question = if practice_mode == "write_then_speak" && sequence > written_turn_count {
+                let spoken_index = sequence - written_turn_count - 1;
+                match spoken_index
+                    .checked_sub(1)
+                    .and_then(|index| turns.get(index))
+                {
+                    Some(original) => original.prompt().to_string(),
+                    None => opening.clone(),
+                }
+            } else {
+                match sequence.checked_sub(2).and_then(|index| turns.get(index)) {
+                    Some(previous) => previous.prompt().to_string(),
+                    None => opening.clone(),
+                }
             };
             answers.push(UncoachedAnswer {
                 sequence,

@@ -39,6 +39,25 @@ describe('practice prompt progression', () => {
     });
   });
 
+  it('derives written and spoken counts as answers are accepted in each stage', () => {
+    const writing = {
+      ...active,
+      turnCount: 0,
+      practiceMode: 'write_then_speak',
+      practicePhase: 'writing',
+      writtenTurnCount: 0,
+      spokenTurnCount: 0,
+    };
+    const afterWriting = advancePractice(writing, 7, turn);
+    expect(afterWriting).toMatchObject({ turnCount: 1, writtenTurnCount: 1, spokenTurnCount: 0 });
+    const speaking = { ...afterWriting, practicePhase: 'speaking' };
+    expect(advancePractice(speaking, 7, turn)).toMatchObject({
+      turnCount: 2,
+      writtenTurnCount: 1,
+      spokenTurnCount: 1,
+    });
+  });
+
   it('ignores a reply from an older session', () => {
     expect(advancePractice(active, 6, turn)).toBe(active);
   });
@@ -76,7 +95,13 @@ describe('practice prompt progression', () => {
   });
 
   it('keeps topic and suggested time across replies and updates only clock fields from snapshots', () => {
-    const next = advancePractice(active, 7, turn);
+    const next = {
+      ...advancePractice(active, 7, turn),
+      practiceMode: 'write_then_speak',
+      practicePhase: 'writing',
+      writtenTurnCount: 1,
+      spokenTurnCount: 0,
+    };
     expect(next).toMatchObject({
       topicId: 'daily_life',
       topicLabel: 'Daily life',
@@ -92,10 +117,17 @@ describe('practice prompt progression', () => {
       active_duration_ms: 65000,
       started_at: 1780000000000,
       is_clock_running: false,
+      practice_mode: 'write_then_speak',
+      practice_phase: 'writing',
+      written_turn_count: 0,
+      spoken_turn_count: 0,
     };
     expect(updatePracticeClock(next, snapshot)).toMatchObject({
       question: 'What happened next?',
       turnCount: 2,
+      writtenTurnCount: 1,
+      spokenTurnCount: 0,
+      practicePhase: 'writing',
       topicLabel: 'Plans & stories',
       activeDurationMs: 65000,
       isClockRunning: false,

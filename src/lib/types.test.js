@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  practiceModeOf,
+  practicePhaseOf,
+  spokenTurnCountOf,
+  writtenTurnCountOf,
+} from './practiceSessionTypes';
+import {
   isAttemptComparison,
   isConversationTurn,
   isDailyRecallPlan,
@@ -67,6 +73,44 @@ describe('conversation IPC payloads', () => {
       is_clock_running: false,
     };
     expect(isPracticeSession(validSession)).toBe(true);
+    expect(practiceModeOf(validSession)).toBe('voice');
+    expect(practicePhaseOf(validSession)).toBe('speaking');
+    expect(writtenTurnCountOf(validSession)).toBe(0);
+    expect(spokenTurnCountOf(validSession)).toBe(2);
+    expect(
+      isPracticeSession({
+        ...validSession,
+        practice_mode: 'text_chat',
+        practice_phase: 'writing',
+        written_turn_count: 0,
+        spoken_turn_count: 0,
+      }),
+    ).toBe(true);
+    expect(
+      writtenTurnCountOf({
+        ...validSession,
+        practice_mode: 'text_chat',
+        practice_phase: 'writing',
+        written_turn_count: 0,
+        spoken_turn_count: 0,
+      }),
+    ).toBe(2);
+    expect(
+      isPracticeSession({
+        ...validSession,
+        practice_mode: 'write_then_speak',
+        practice_phase: 'writing',
+      }),
+    ).toBe(true);
+    expect(
+      isPracticeSession({
+        ...validSession,
+        practice_mode: 'text_chat',
+        practice_phase: 'speaking',
+      }),
+    ).toBe(false);
+    expect(isPracticeSession({ ...validSession, practice_phase: 'unknown' })).toBe(false);
+    expect(isPracticeSession({ ...validSession, spoken_turn_count: 'two' })).toBe(false);
     expect(isPracticeSession({ ...validSession, topic_id: 'unknown' })).toBe(false);
     expect(isPracticeSession({ ...validSession, duration_goal_seconds: 420 })).toBe(false);
     expect(isPracticeSession({ ...validSession, active_duration_ms: -1 })).toBe(false);

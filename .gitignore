@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.playwright/
+playwright-report/
+test-results/
 .codebase-memory/
 
 # Editor directories and files

@@ -54,9 +54,43 @@ jobs:
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
 
+  e2e:
+    name: Browser flows (Playwright)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Chromium
+        run: bunx playwright install chromium
+
+      - name: Typecheck browser tests
+        run: bun run typecheck:e2e
+
+      - name: Run browser flows
+        run: bun run test:e2e
+
+      - name: Upload Playwright report and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
   macos-build:
     name: Installable macOS alpha (Apple Silicon)
-    needs: [frontend, rust]
+    needs: [frontend, rust, e2e]
     if: github.event_name != 'pull_request'
     runs-on: macos-26
     timeout-minutes: 30

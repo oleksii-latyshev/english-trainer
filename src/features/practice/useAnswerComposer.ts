@@ -12,6 +12,7 @@ import { useAutoSendCountdown } from './useAutoSendCountdown';
 
 type Options = {
   sessionId?: number;
+  draftScope?: string;
   currentRequestId: number;
   transcript?: string;
   isRecording: boolean;
@@ -30,6 +31,7 @@ type Options = {
  */
 export function useAnswerComposer({
   sessionId,
+  draftScope,
   currentRequestId,
   transcript,
   isRecording,
@@ -46,6 +48,7 @@ export function useAnswerComposer({
   const [isNewVoice, setIsNewVoice] = useState(false);
   const { preferences: flow } = useConversationFlow();
   const [isSending, setIsSending] = useState(false);
+  const previousDraftScope = useRef(draftScope);
 
   const sendingRef = useRef(false);
   const processedRequestIdRef = useRef<number | undefined>(undefined);
@@ -75,6 +78,16 @@ export function useAnswerComposer({
   };
 
   const autoSend = useAutoSendCountdown((text) => sendRef.current(text, 'voice'));
+
+  useEffect(() => {
+    if (previousDraftScope.current === draftScope) return;
+    previousDraftScope.current = draftScope;
+    autoSend.cancel();
+    clearSessionDraft(sessionId);
+    setDraft('');
+    setLastRecognizedVoice(undefined);
+    setIsNewVoice(false);
+  }, [autoSend.cancel, draftScope, sessionId]);
 
   // Restore existing in-memory draft if returning to the same active session
   useEffect(() => {

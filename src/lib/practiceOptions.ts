@@ -52,17 +52,96 @@ export function isTopicId(value: unknown): value is TopicId {
   return TOPIC_IDS.some((topicId) => topicId === value);
 }
 
+export type PracticeMode = 'voice' | 'text_chat' | 'write_then_speak';
+export const PRACTICE_MODES: readonly PracticeMode[] = ['voice', 'text_chat', 'write_then_speak'];
+
+export function isPracticeMode(value: unknown): value is PracticeMode {
+  return value === 'voice' || value === 'text_chat' || value === 'write_then_speak';
+}
+
+export const DEFAULT_PRACTICE_MODE: PracticeMode = 'voice';
+
+export type PracticePhase = 'writing' | 'writing_review' | 'speaking' | 'speaking_review';
+
+export function isPracticePhase(value: unknown): value is PracticePhase {
+  return (
+    value === 'writing' ||
+    value === 'writing_review' ||
+    value === 'speaking' ||
+    value === 'speaking_review'
+  );
+}
+
+export function defaultPracticePhase(mode: PracticeMode): PracticePhase {
+  return mode === 'voice' ? 'speaking' : 'writing';
+}
+
+export function practicePhaseLabel(phase: PracticePhase): string {
+  switch (phase) {
+    case 'writing':
+      return 'Writing';
+    case 'writing_review':
+      return 'Review writing';
+    case 'speaking':
+      return 'Speaking';
+    case 'speaking_review':
+      return 'Review speaking';
+  }
+}
+
+export function phaseAllowsAudio(mode: PracticeMode, phase: PracticePhase): boolean {
+  return phase === 'speaking' && (mode === 'voice' || mode === 'write_then_speak');
+}
+
+export function phaseAllowsText(mode: PracticeMode, phase: PracticePhase): boolean {
+  return phase === 'writing' && (mode === 'text_chat' || mode === 'write_then_speak');
+}
+
+export function canTransitionPracticePhase({
+  mode,
+  phase,
+  next,
+  writtenCount,
+  spokenCount,
+}: {
+  mode: PracticeMode;
+  phase: PracticePhase;
+  next: PracticePhase;
+  writtenCount: number;
+  spokenCount: number;
+}): boolean {
+  if (mode === 'text_chat')
+    return phase === 'writing' && next === 'writing_review' && writtenCount > 0;
+  if (mode !== 'write_then_speak') return false;
+  if (phase === 'writing') return next === 'writing_review' && writtenCount > 0;
+  if (phase === 'writing_review') return next === 'speaking';
+  return phase === 'speaking' && next === 'speaking_review' && spokenCount === writtenCount;
+}
+
+export function practiceModeLabel(mode: PracticeMode): string {
+  switch (mode) {
+    case 'voice':
+      return 'Speak';
+    case 'text_chat':
+      return 'Text chat';
+    case 'write_then_speak':
+      return 'Write, then speak';
+  }
+}
+
 export type DurationGoalSeconds = 300 | 600 | 900;
 export type PracticeOptions = {
   topic_id: TopicId;
   topic_custom: string | null;
   duration_goal_seconds: DurationGoalSeconds;
+  practice_mode?: PracticeMode;
 };
 
 export const DEFAULT_PRACTICE_OPTIONS: PracticeOptions = {
   topic_id: 'work_technology',
   topic_custom: null,
   duration_goal_seconds: 600,
+  practice_mode: 'voice',
 };
 
 export function topicLabel(topicId: string, customTopic: string | null = null): string {

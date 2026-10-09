@@ -7,6 +7,12 @@ mod persistence;
 mod providers;
 mod setup;
 
+pub use conversation::{
+    FinishedPracticeSession, InputSource, PracticeMode, PracticePhase, PracticeSession,
+    SessionStore, StartPracticeOptions,
+};
+pub use providers::{ConversationContext, ConversationTurn, ProviderError};
+
 use tauri::{Emitter, Manager};
 
 fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
@@ -194,6 +200,20 @@ fn set_practice_clock(
     running: bool,
 ) -> Result<conversation::PracticeSession, providers::ProviderError> {
     sessions.set_practice_clock(session_id, running)
+}
+
+#[tauri::command]
+fn transition_practice_phase(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    coaching: tauri::State<'_, conversation::CoachingQueue>,
+    session_id: u64,
+    phase: conversation::PracticePhase,
+) -> Result<conversation::PracticeSession, providers::ProviderError> {
+    let session = sessions.transition_practice_phase(session_id, phase)?;
+    if phase.is_review() {
+        coaching.flush(session_id);
+    }
+    Ok(session)
 }
 
 #[tauri::command]
@@ -546,6 +566,7 @@ pub fn run() {
             retry_practice_turn,
             start_practice_session,
             set_practice_clock,
+            transition_practice_phase,
             get_personal_profile,
             save_personal_profile,
             send_practice_turn,

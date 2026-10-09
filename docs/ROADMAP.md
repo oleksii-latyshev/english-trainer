@@ -1,7 +1,8 @@
 # Roadmap: English Trainer
 
 Updated 2026-10-09. The learner checked the new Whisper model in the app and reported that it
-works well. F8 (with topics) is in progress, then F11, F12 and F13.
+works well. F8 and F11 are built and awaiting the learner’s check in the app.
+The learner deferred that check; the next implementation priorities are F12 and F13.
 
 ## Goal
 
@@ -38,7 +39,9 @@ Everything not needed for these five outcomes is deferred.
   tested by speaking into the app. Refactors ride along with the feature that needs them; no
   commits that only move a few lines.
 - A feature is done when its acceptance checks pass in the built app on a physical Mac, not when
-  code or an interface exists. Automated tests cover parsers, state machines, and persistence.
+  code or an interface exists. `bun run verify` covers typed contracts, state machines,
+  persistence and browser flows; CI keeps failure traces and screenshots. Physical audio checks
+  can be grouped and performed later, as the learner requested on 2026-10-09.
 - Measure before and after any latency or STT change and record the numbers in the commit body.
 
 ## Diagnosis of the alpha (2026-10-06)
@@ -276,7 +279,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 
 ### Stage 4 — Plan of 2026-10-08 (after F3 and F8)
 
-**F11. Write it, then say it** `[ ]` (the learner's idea)
+**F11. Write it, then say it** `[~]` (built; physical Mac acceptance deferred by the learner)
 - A text chat with Eva on a topic; also available as a standalone "text chat" mode for social
   practice.
 - After writing, the learner first reviews the corrections of what they wrote and repeats them. On
@@ -284,6 +287,15 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   answers are reviewed again, with the aim of fewer mistakes than in writing.
 - A mistake that repeats several times goes into the spoken review (F10).
 - Coaching goes through Antigravity (Gemini, batched) like F5; the Gemini API is not used for it.
+- Built: Speak, standalone Text chat, and Write, then speak choices; writing → written review →
+  replay of the exact original questions → spoken review, all saved in one session. Restore
+  preserves the phase and counts. Writing and review do not automatically open audio; Ready to
+  speak enables it. Feedback remains asynchronous and shows pending, paused and failed states.
+  Rehearsal is recorded as cued practice rather than independent mastery evidence.
+- Automated checks cover phase/source guards, migration, atomic cue exposure, question provenance,
+  reopening a real SQLite session, stale clock snapshots, navigation, send/transition retries,
+  and browser audio boundaries. Run `bun run verify`; browser failure reports include traces and
+  screenshots. Acceptance still needs a built-app run with real microphone, Whisper and TTS.
 
 **F12. Practice my usual mistakes** `[ ]`
 - From the recurring mistakes in Memory (for example "the most part of" → "most of", "Just I want"
@@ -309,7 +321,7 @@ Done as part of the feature that touches the code, not as separate commits.
 | :--- | :--- |
 | `src/context` imports features (types only). The `coach ↔ practice` import cycle was removed in F5. | Later |
 | Session, database and validation errors are all returned as `ProviderError`; add typed `SessionError` / `PersistenceError` kinds across IPC. | F1 or F5 |
-| No pipeline integration test (`src-tauri/tests/`) and no Playwright `e2e/` yet; both are described as targets in `CODE_REQUIREMENTS.md`. | F1 adds the pipeline test against a fake streaming provider; e2e after F5 stabilises the Talk screen |
+| Pipeline integration and browser regression tests are implemented with F11: temporary SQLite plus a fake provider, and real React flows with typed IPC/audio edge fixtures. | Extend alongside affected features; `bun run verify` and CI |
 | Conversation and STT processes poll `try_wait` every 50 ms and restart on every turn; long-lived workers and HTTP streaming remove this. | F1, F3 |
 | Seven Biome complexity warnings (e.g. `buildDialogueMessages`). | Whichever feature edits the file |
 

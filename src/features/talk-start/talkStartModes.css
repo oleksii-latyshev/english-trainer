@@ -1,0 +1,26 @@
+.talk-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.talk-start-mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.talk-mode-grid .talk-topic-option {
+  min-height: 68px;
+  padding: 10px 12px;
+}
+
+@media (max-width: 800px) {
+  .talk-mode-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,3 +1,12 @@
+import {
+  DEFAULT_PRACTICE_MODE,
+  defaultPracticePhase,
+  isPracticeMode,
+  isPracticePhase,
+  type PracticeMode,
+  type PracticePhase,
+} from './practiceOptions';
+
 /** How a number moved against the last earlier session that has it. */
 export type Trend =
   | { kind: 'first' }
@@ -41,6 +50,10 @@ export type FinishedPracticeSession = {
   pending_coaching: number;
   /** Coaching is paused (Antigravity quota), so nothing more will land for now. */
   is_coaching_paused: boolean;
+  practice_mode?: PracticeMode;
+  practice_phase?: PracticePhase;
+  written_turn_count?: number;
+  spoken_turn_count?: number;
 };
 
 const MAX_WRAPUP_PHRASES = 3;
@@ -129,6 +142,47 @@ function isSummaryText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && Array.from(value).length <= 300;
 }
 
+function hasValidOptionalStage(value: object): boolean {
+  const hasMode = 'practice_mode' in value;
+  const hasPhase = 'practice_phase' in value;
+  if (
+    !hasMode &&
+    !hasPhase &&
+    !('written_turn_count' in value) &&
+    !('spoken_turn_count' in value)
+  ) {
+    return true;
+  }
+  const rawMode: unknown = hasMode ? Reflect.get(value, 'practice_mode') : DEFAULT_PRACTICE_MODE;
+  if (!isPracticeMode(rawMode)) return false;
+  const rawPhase: unknown = hasPhase
+    ? Reflect.get(value, 'practice_phase')
+    : defaultPracticePhase(rawMode);
+  if (!isPracticePhase(rawPhase)) return false;
+  const mode = rawMode;
+  const phase = rawPhase;
+  const isCompatible =
+    (mode === 'voice' && phase === 'speaking') ||
+    (mode === 'text_chat' && (phase === 'writing' || phase === 'writing_review')) ||
+    (mode === 'write_then_speak' &&
+      (phase === 'writing' ||
+        phase === 'writing_review' ||
+        phase === 'speaking' ||
+        phase === 'speaking_review'));
+  const written: unknown =
+    'written_turn_count' in value ? Reflect.get(value, 'written_turn_count') : 0;
+  const spoken: unknown =
+    'spoken_turn_count' in value ? Reflect.get(value, 'spoken_turn_count') : 0;
+  const total: unknown = Reflect.get(value, 'turn_count');
+  return (
+    isCompatible &&
+    isCount(written) &&
+    isCount(spoken) &&
+    isCount(total) &&
+    written + spoken <= total
+  );
+}
+
 export function isFinishedPracticeSession(value: unknown): value is FinishedPracticeSession {
   if (typeof value !== 'object' || value === null) return false;
   return (
@@ -167,6 +221,7 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     'pending_coaching' in value &&
     isCount(value.pending_coaching) &&
     'is_coaching_paused' in value &&
-    typeof value.is_coaching_paused === 'boolean'
+    typeof value.is_coaching_paused === 'boolean' &&
+    hasValidOptionalStage(value)
   );
 }

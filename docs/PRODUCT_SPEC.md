@@ -66,6 +66,18 @@ One chat-style screen replaces the former separate Conversation and Coach modes.
 Sessions are time-based (default 10 minutes, suggested, not enforced) and can be finished at any
 moment. Closing the app keeps the session resumable.
 
+### 4.1 Write, then speak
+
+The start screen also offers Text chat and Write, then speak on the same topics. Text chat is
+standalone social practice. Writing does not open the microphone or automatically play Eva's replies.
+
+Write, then speak has four saved stages: write a conversation, review and repeat the written
+corrections, answer the original questions aloud, then review the spoken corrections alongside the
+written ones. “Ready to speak” starts the spoken rehearsal. Corrections stay asynchronous and their
+pending or unavailable state remains visible. The learner can finish early or resume a saved stage.
+Repeating the questions is cued practice; it does not establish independent mastery. Recurring
+mistakes continue into the existing spoken Memory review.
+
 ## 5. Help with structuring an answer
 
 Help is prepared in the background as soon as a question appears, so it opens instantly.

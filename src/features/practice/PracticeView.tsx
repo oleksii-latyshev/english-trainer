@@ -7,13 +7,17 @@ import {
   spokenTurn,
 } from '@/features/conversation/FollowUpPanel';
 import { withTurnReset } from '@/features/practice/lib/controlActions';
+import {
+  canSendPracticeStage,
+  practiceStageUsesAudio,
+} from '@/features/practice/lib/practiceStage';
 import { type SessionDetails, sessionDetails } from '@/features/practice/lib/practiceState';
+import { preparePracticeTurn } from '@/features/practice/lib/preparePracticeTurn';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { type ConversationTurn, isConversationTurn } from '@/lib/types';
 import type { NoteTools } from './AnswerNote';
 import type { InputSource } from './lib/inputSource';
-import { spokenDurationMs } from './lib/messageMeta';
 import {
   canSendAnswer,
   matchingSentAnswer,
@@ -67,6 +71,7 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
     sessionId: session?.sessionId,
     turnCount: session?.turnCount,
     question: session?.question,
+    phaseKey: session ? `${session.practiceMode}:${session.practicePhase}` : undefined,
   });
   useCoachingUpdates(session?.sessionId, retryHistory);
 
@@ -88,10 +93,25 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
 
   const activeSessionId = session?.sessionId;
   const streamingReply = useStreamingReply(activeSessionId, dialogue?.turns.length ?? 0);
-  usePrewarmProvider(activeSessionId);
+  usePrewarmProvider(activeSessionId, session?.practiceMode, session?.practicePhase);
+  const phaseKey = session ? `${session.practiceMode}:${session.practicePhase}` : undefined;
+  const previousPhaseKey = useRef(phaseKey);
+  useEffect(() => {
+    if (previousPhaseKey.current === phaseKey) return;
+    previousPhaseKey.current = phaseKey;
+    generation.current += 1;
+    pending.current = false;
+    secondTry.cancel();
+    streamingReply.clear();
+    setSentAnswer(null);
+    setFollowUpRecord({ requestId: model.currentRequestId, state: IDLE_FOLLOW_UP });
+  }, [phaseKey, model.currentRequestId, secondTry.cancel, streamingReply.clear]);
 
   const listenAfterReply = useAutoListen(
     practice.tag === 'active' &&
+      session !== undefined &&
+      practiceStageUsesAudio(session) &&
+      canSendPracticeStage(session) &&
       !model.busy &&
       model.canChangeSession &&
       !recall.active &&
@@ -166,32 +186,39 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
   }
 
   async function handleSendTurn(customText?: string, source?: InputSource) {
-    if (!canSendNow()) throw new Error('The current answer cannot be sent yet.');
-    const textToSend = customText ?? transcript;
-    const spokenMs = spokenDurationMs(source, model.durationMs);
-    if (!textToSend?.trim()) throw new Error('The answer is empty.');
+    const prepared = preparePracticeTurn({
+      canSend: canSendNow(),
+      session,
+      customText,
+      transcript,
+      source,
+      durationMs: model.durationMs,
+    });
+    const { session: openSession, text, inputSource, spokenMs } = prepared;
 
     const reqId = beginSend();
     const sentAtMs = performance.now();
     try {
       const onDelta = (text: string) => {
-        if (session && isLatestSend(reqId)) streamingReply.append(session.sessionId, text);
+        if (isLatestSend(reqId)) streamingReply.append(openSession.sessionId, text);
       };
-      const result = await requestTurn(session?.sessionId, textToSend, source, onDelta, spokenMs);
+      const result = await requestTurn(openSession.sessionId, text, inputSource, onDelta, spokenMs);
       const replyAtMs = performance.now();
       if (!isConversationTurn(result)) throw new Error('Unexpected conversation response');
-      if (session) acceptReply(session, textToSend, result);
+      acceptReply(openSession, text, result);
       if (!isLatestSend(reqId)) return;
       setFollowUpRecord({
         requestId: currentRequestId,
         state: { tag: 'ready', turn: result, sentAtMs, replyAtMs },
       });
       actions.resetCapture();
-      speech.play(
-        spokenTurn(result),
-        (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs),
-        () => listenAfterReply(reqId),
-      );
+      if (practiceStageUsesAudio(openSession)) {
+        speech.play(
+          spokenTurn(result),
+          (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs),
+          () => listenAfterReply(reqId),
+        );
+      }
     } catch (cause) {
       failSend(reqId, cause);
       throw cause;

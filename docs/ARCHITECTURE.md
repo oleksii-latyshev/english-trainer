@@ -145,6 +145,13 @@ is closed is excluded. React displays and extrapolates the returned snapshot whi
 The profile reaches the conversation as bounded JSON data and contributes terms to the effective
 Whisper glossary without changing the editable glossary.
 
+F11 adds a persisted practice mode, phase and frozen written-answer count. Rust validates phase
+transitions and derives the spoken replay from the original questions; no second conversation
+provider call is needed to rehearse them. The written and spoken answers share the same session and
+absolute sequence numbers, including coaching and phrase provenance. Entering spoken rehearsal
+records cue exposure, preserving the distinction from independent mastery. React controls audio
+from the returned phase and presents corrections without waiting for the coaching queue.
+
 SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in
 `persistence/schema.rs`. Provider calls run on blocking worker threads and never hold the lock.
 Tables are listed in TECHNICAL_REQUIREMENTS §8.

@@ -17,6 +17,7 @@ mod lifecycle;
 pub(crate) mod memory_recall;
 mod profile;
 pub(crate) mod recall;
+mod rehearsal;
 mod rules;
 mod scaffold;
 mod speech_settings;
@@ -28,9 +29,13 @@ pub use coaching::TurnCoaching;
 pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
 pub use profile::PersonalProfile;
 pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
+use rehearsal::{
+    invalid_phase_transition_error, parse_practice_mode, parse_practice_phase, replay_questions,
+    spoken_turn_count, validate_answer_source,
+};
 use rules::{validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS};
 pub use scaffold::{question_scaffold, QuestionScaffold};
-pub use topics::StartPracticeOptions;
+pub use topics::{PracticeMode, PracticePhase, StartPracticeOptions};
 pub use wrapup::{RecurringMistake, WrapupPhrase};
 
 /// The mode column of every new session. Conversation and Coach are one mode now; sessions saved
@@ -51,6 +56,10 @@ pub struct PracticeSession {
     pub active_duration_ms: u64,
     pub started_at: i64,
     pub is_clock_running: bool,
+    pub practice_mode: PracticeMode,
+    pub practice_phase: PracticePhase,
+    pub written_turn_count: usize,
+    pub spoken_turn_count: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -107,6 +116,10 @@ pub struct FinishedPracticeSession {
     pub pending_coaching: usize,
     /// Coaching is paused because the Antigravity quota ran out, so nothing more will land.
     pub is_coaching_paused: bool,
+    pub practice_mode: PracticeMode,
+    pub practice_phase: PracticePhase,
+    pub written_turn_count: usize,
+    pub spoken_turn_count: usize,
 }
 
 #[derive(Clone)]
@@ -152,12 +165,28 @@ struct ActiveSession {
     active_duration_ms: u64,
     started_at: i64,
     clock_anchor: Option<Instant>,
+    practice_mode: PracticeMode,
+    practice_phase: PracticePhase,
+    written_turn_count: usize,
 }
 
 impl ActiveSession {
     /// What the learner answers next: the latest question asked. A turn without any (a Coach
     /// answer saved by an older version and never continued) leaves the one before it open.
     fn current_question(&self) -> String {
+        if self.practice_mode == PracticeMode::WriteThenSpeak
+            && matches!(
+                self.practice_phase,
+                PracticePhase::Speaking | PracticePhase::SpeakingReview
+            )
+        {
+            return replay_questions(&self.opening_question, &self.turns, self.written_turn_count)
+                .get(self.turns.len().saturating_sub(self.written_turn_count))
+                .cloned()
+                .unwrap_or_else(|| {
+                    "The spoken replay is complete. Review your answers.".to_string()
+                });
+        }
         self.turns
             .iter()
             .rev()
@@ -189,6 +218,9 @@ impl SessionStore {
                 active_duration_ms: stored.active_duration_ms,
                 started_at: stored.started_at,
                 clock_anchor: None,
+                practice_mode: parse_practice_mode(&stored.practice_mode),
+                practice_phase: parse_practice_phase(&stored.practice_phase),
+                written_turn_count: stored.written_turn_count,
             })
         } else {
             None
@@ -256,7 +288,7 @@ impl SessionStore {
         F: FnOnce(&ConversationContext) -> Result<ConversationTurn, ProviderError>,
     {
         validate_transcript(&transcript)?;
-        let context = {
+        let (context, replay_question, replay_next_question, replay_is_final) = {
             let mut state = self.lock();
             let session = state
                 .active
@@ -265,6 +297,35 @@ impl SessionStore {
                 .ok_or_else(invalid_session_error)?;
             if session.in_flight {
                 return Err(busy_error());
+            }
+            validate_answer_source(session, input_source)?;
+            let is_replay = session.practice_mode == PracticeMode::WriteThenSpeak
+                && session.practice_phase == PracticePhase::Speaking;
+            let questions = if is_replay {
+                replay_questions(
+                    &session.opening_question,
+                    &session.turns,
+                    session.written_turn_count,
+                )
+            } else {
+                Vec::new()
+            };
+            let spoken_count = session
+                .turns
+                .len()
+                .saturating_sub(session.written_turn_count);
+            let replay_question =
+                is_replay.then(|| questions.get(spoken_count).cloned().unwrap_or_default());
+            let replay_is_final = replay_question.is_some() && spoken_count + 1 == questions.len();
+            let replay_next_question = replay_question
+                .as_ref()
+                .and_then(|_| questions.get(spoken_count + 1).cloned());
+            if session.practice_phase.is_review()
+                || (is_replay
+                    && (spoken_count >= session.written_turn_count
+                        || replay_question.as_deref().unwrap_or_default().is_empty()))
+            {
+                return Err(invalid_phase_transition_error());
             }
             let learning_targets = if session.turns.len() == 1 || session.turns.len() == 5 {
                 state
@@ -280,17 +341,39 @@ impl SessionStore {
                 .map_err(database_error)?;
             let session = active_session_mut(&mut state, session_id)?;
             session.in_flight = true;
-            context_builder::build_context(context_builder::ContextInput {
+            let context = context_builder::build_context(context_builder::ContextInput {
                 opening_question: &session.opening_question,
                 prior_turns: &session.turns,
                 latest_transcript: &transcript,
                 learning_targets,
                 profile: Some(profile),
                 topic: Some(session.topic_label.clone()),
-            })
+            });
+            (
+                context,
+                replay_question,
+                replay_next_question,
+                replay_is_final,
+            )
         };
 
-        let result = generate(&context);
+        let result = if replay_question.is_some() {
+            Ok(ConversationTurn {
+                spoken_reply: if replay_is_final {
+                    "Thanks for practicing those answers.".to_string()
+                } else {
+                    "Thanks for sharing that.".to_string()
+                },
+                question: replay_next_question,
+                session_phase: "rehearsal".to_string(),
+                is_complete: replay_is_final,
+                provider_latency_ms: None,
+                first_token_ms: None,
+                answered_by: None,
+            })
+        } else {
+            generate(&context)
+        };
         let mut state = self.lock();
         let turn = match result {
             Ok(turn) => turn,
@@ -398,6 +481,18 @@ impl SessionStore {
         let wrapup = wrapup::build(&state.database, session_id).map_err(database_error)?;
         let waiting = self.waiting_coaching(state, session_id, turn_count)?;
         let is_paused = self.coaching.is_paused() && waiting > 0;
+        let metadata = state
+            .database
+            .session_metadata(session_id)
+            .map_err(database_error)?
+            .ok_or_else(invalid_session_error)?;
+        let practice_mode = parse_practice_mode(&metadata.practice_mode);
+        let practice_phase = parse_practice_phase(&metadata.practice_phase);
+        let written_turn_count = if practice_phase == PracticePhase::Writing {
+            turn_count
+        } else {
+            metadata.written_turn_count
+        };
         Ok(FinishedPracticeSession {
             session_id,
             finished: true,
@@ -407,24 +502,22 @@ impl SessionStore {
                 .database
                 .session_elapsed_ms(session_id)
                 .map_err(database_error)?,
-            topic_label: state
-                .database
-                .session_metadata(session_id)
-                .map_err(database_error)?
-                .map_or_else(
-                    || "Free conversation".to_string(),
-                    |session| session.topic_label,
-                ),
-            duration_goal_seconds: state
-                .database
-                .session_metadata(session_id)
-                .map_err(database_error)?
-                .map_or(600, |session| session.duration_goal_seconds),
+            topic_label: metadata.topic_label,
+            duration_goal_seconds: metadata.duration_goal_seconds,
             numbers: wrapup.numbers,
             phrases: wrapup.phrases,
             recurring_mistakes: wrapup.recurring_mistakes,
             pending_coaching: if is_paused { 0 } else { waiting },
             is_coaching_paused: is_paused,
+            practice_mode,
+            practice_phase,
+            written_turn_count,
+            spoken_turn_count: spoken_turn_count(
+                practice_mode,
+                practice_phase,
+                turn_count,
+                written_turn_count,
+            ),
         })
     }
 
@@ -704,6 +797,15 @@ impl SessionStore {
             active_duration_ms: lifecycle::elapsed_snapshot_at(active, Instant::now()),
             started_at: active.started_at,
             is_clock_running: active.clock_anchor.is_some(),
+            practice_mode: active.practice_mode,
+            practice_phase: active.practice_phase,
+            written_turn_count: active.written_turn_count,
+            spoken_turn_count: spoken_turn_count(
+                active.practice_mode,
+                active.practice_phase,
+                active.turns.len(),
+                active.written_turn_count,
+            ),
         })
     }
 }

@@ -63,6 +63,22 @@ describe('session wrap-up payload', () => {
     expect(isFinishedPracticeSession(withoutPending)).toBe(false);
   });
 
+  it('accepts practice-stage metadata and rejects malformed optional stage fields', () => {
+    expect(
+      isFinishedPracticeSession({
+        ...finished,
+        turn_count: 4,
+        practice_mode: 'write_then_speak',
+        practice_phase: 'speaking_review',
+        written_turn_count: 2,
+        spoken_turn_count: 2,
+      }),
+    ).toBe(true);
+    expect(isFinishedPracticeSession({ ...finished, practice_mode: 'invalid' })).toBe(false);
+    expect(isFinishedPracticeSession({ ...finished, practice_phase: 'writing' })).toBe(false);
+    expect(isFinishedPracticeSession({ ...finished, spoken_turn_count: -1 })).toBe(false);
+  });
+
   it('rejects a missing or malformed wrap-up', () => {
     const { numbers, ...withoutNumbers } = finished;
     expect(isFinishedPracticeSession(withoutNumbers)).toBe(false);

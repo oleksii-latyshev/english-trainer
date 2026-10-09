@@ -35,15 +35,21 @@ function App() {
     hasSession: isSessionOpen,
   });
 
-  const micActive = practice.state.tag === 'active' || practice.state.tag === 'waiting';
+  const micActive =
+    (practice.state.tag === 'active' || practice.state.tag === 'waiting') &&
+    (practice.state.practiceMode === 'voice' ||
+      (practice.state.practiceMode === 'write_then_speak' &&
+        practice.state.practicePhase === 'speaking'));
   const { setActive: setMicActive } = mic;
   useEffect(() => {
     setMicActive(micActive);
   }, [micActive, setMicActive]);
 
   const startPractice = useCallback(
-    (options?: PracticeOptions) => {
-      void practice.start(options);
+    async (options?: PracticeOptions) => {
+      if (await practice.start(options)) {
+        await router.navigate({ to: '/conversation' });
+      }
     },
     [practice],
   );
@@ -55,8 +61,8 @@ function App() {
       }
       return;
     }
-    practice.start();
-  }, [isSessionOpen, practice]);
+    void startPractice();
+  }, [isSessionOpen, practice.state, startPractice]);
 
   const trainerContext = useMemo(
     () => ({
@@ -83,17 +89,16 @@ function App() {
     ],
   );
 
-  const previousPracticeTag = useRef(practice.state.tag);
+  const completedSessionId = useRef<number | null>(null);
 
   useEffect(() => {
-    const prev = previousPracticeTag.current;
-    if (prev === 'starting' && practice.state.tag === 'active') {
-      void router.navigate({ to: '/conversation' });
-    }
-    if (prev === 'finishing' && practice.state.tag === 'completed') {
+    if (
+      practice.state.tag === 'completed' &&
+      completedSessionId.current !== practice.state.summary.session_id
+    ) {
+      completedSessionId.current = practice.state.summary.session_id;
       void router.navigate({ to: '/summary' });
     }
-    previousPracticeTag.current = practice.state.tag;
   }, [practice.state]);
 
   return (

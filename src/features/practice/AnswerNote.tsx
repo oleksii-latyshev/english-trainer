@@ -36,10 +36,12 @@ type Props = {
   transcript: string;
   coaching: TurnCoaching;
   tools: NoteTools;
+  /** Reviews keep every answer's coaching visible at once. */
+  isPinnedOpen?: boolean;
 };
 
 /** The coaching note under one answer, with its own open state and phrase saving. */
-export function AnswerNote({ sequence, transcript, coaching, tools }: Props) {
+export function AnswerNote({ sequence, transcript, coaching, tools, isPinnedOpen = false }: Props) {
   // The learner's choice holds only until the next turn starts, which collapses every note.
   const [choice, setChoice] = useState<{ turnCount: number; isOpen: boolean } | null>(null);
   const [phraseSaveState, setPhraseSaveState] = useState<PhraseSaveState>('idle');
@@ -47,7 +49,7 @@ export function AnswerNote({ sequence, transcript, coaching, tools }: Props) {
   if (view.tag === 'paused' && tools.latestPausedSequence !== sequence) return null;
 
   const override = choice?.turnCount === tools.turnCount ? choice.isOpen : undefined;
-  const isOpen = isNoteOpen(override, sequence, tools.turnCount);
+  const isOpen = override ?? (isPinnedOpen || isNoteOpen(undefined, sequence, tools.turnCount));
   const toSave = view.tag === 'ready' ? phraseToSave(view.feedback) : null;
   const evidence = tools.retryEvidence.find((item) => item.turn_sequence === sequence);
 

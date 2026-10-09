@@ -1,5 +1,5 @@
 import { isTauri } from '@tauri-apps/api/core';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type AttemptComparison, isProviderError } from '@/lib/types';
 import { retryPracticeTurn } from './sessionApi';
 
@@ -64,11 +64,8 @@ export function useSecondTry(options: Options) {
     );
   }, [sequence, sessionId, transcript, currentRequestId]);
 
-  return {
-    /** The answer being re-spoken, if any. */
-    sequence,
-    status,
-    start: (answerSequence: number) => {
+  const start = useCallback(
+    (answerSequence: number) => {
       comparedKey.current = '';
       generation.current += 1;
       setStatus({ tag: 'listening' });
@@ -76,11 +73,14 @@ export function useSecondTry(options: Options) {
       options.resetCapture();
       options.startRecording();
     },
-    cancel: () => {
-      if (sequence === null) return;
-      generation.current += 1;
-      setSequence(null);
-      options.resetCapture();
-    },
-  };
+    [options.resetCapture, options.startRecording],
+  );
+  const cancel = useCallback(() => {
+    if (sequence === null) return;
+    generation.current += 1;
+    setSequence(null);
+    options.resetCapture();
+  }, [options.resetCapture, sequence]);
+
+  return { sequence, status, start, cancel };
 }
