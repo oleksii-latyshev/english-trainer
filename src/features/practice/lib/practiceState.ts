@@ -19,6 +19,7 @@ export type SessionDetails = {
   practicePhase: PracticePhase;
   writtenTurnCount: number;
   spokenTurnCount: number;
+  isMistakePractice: boolean;
 };
 
 export type PracticeState =
@@ -115,6 +116,7 @@ export function updatePracticeClock(
     activeDurationMs: session.active_duration_ms,
     startedAt: session.started_at,
     isClockRunning: session.is_clock_running,
+    isMistakePractice: session.is_mistake_practice ?? current.isMistakePractice,
     clockSnapshotAtMs: performance.now(),
   };
 }

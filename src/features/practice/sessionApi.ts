@@ -21,6 +21,14 @@ export async function startPracticeSession(options?: PracticeOptions): Promise<P
   return result;
 }
 
+export async function startMistakePractice(): Promise<PracticeSession> {
+  const result = await invoke<unknown>('start_mistake_practice');
+  if (!isPracticeSession(result) || result.is_mistake_practice !== true) {
+    throw new Error('Unexpected mistake practice response.');
+  }
+  return result;
+}
+
 export async function setPracticeClock(
   sessionId: number,
   running: boolean,

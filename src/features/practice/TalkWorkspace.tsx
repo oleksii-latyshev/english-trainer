@@ -40,6 +40,7 @@ type ExtrasProps = Pick<
 > & { session: SessionDetails };
 
 function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasProps) {
+  if (session.isMistakePractice) return null;
   if (session.practiceMode !== 'voice' || session.practicePhase !== 'speaking') return null;
   if (session.turnCount < session.targetTurns) return null;
   return (
@@ -76,6 +77,7 @@ function RecallExtras({ model, actions, recall, isRetrying, session }: ExtrasPro
 function TalkExtras(props: ExtrasProps) {
   const { recall, isRetrying, savedAnswer, dialogue } = props;
   const showUsageReview =
+    !props.session.isMistakePractice &&
     props.session.practiceMode === 'voice' &&
     savedAnswer !== null &&
     savedAnswer.sequence <= 2 &&
@@ -136,7 +138,7 @@ export function TalkWorkspace(props: Props) {
       isRetrying={isRetrying}
       lock={{
         isLocked: recall.active || isRetrying || isStageLocked,
-        reason: lockReason(recall.active, isRetrying, isStageLocked),
+        reason: lockReason(recall.active, isRetrying, isStageLocked, session.isMistakePractice),
       }}
       model={model}
       noteTools={props.noteTools}
@@ -158,10 +160,14 @@ function lockReason(
   isRecalling: boolean,
   isRetrying: boolean,
   isStageLocked: boolean,
+  isMistakePractice: boolean,
 ): string | undefined {
   if (isRecalling) return 'Spoken phrase recall is in progress above.';
   if (isRetrying) return 'Re-speaking in progress. Say it again in the note above, or cancel it.';
-  if (isStageLocked)
-    return 'All original questions have been answered. Review this stage to continue.';
+  if (isStageLocked) {
+    return isMistakePractice
+      ? 'Practice complete. Finish when you are ready.'
+      : 'All original questions have been answered. Review this stage to continue.';
+  }
   return undefined;
 }

@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { DeleteMemoryDialog } from '@/features/memory/components/DeleteMemoryDialog';
 import type { MemoryEntry } from '@/features/memory/components/MemoryRow';
 import { MemoryTabs } from '@/features/memory/components/MemoryTabs';
+import { MistakePracticeCard } from '@/features/memory/components/MistakePracticeCard';
 import { ReviewBanner } from '@/features/memory/components/ReviewBanner';
 import { searchMemory, visibleMemory } from '@/features/memory/lib/memoryState';
+import { eligibleMistakePracticeCount } from '@/features/memory/lib/mistakePractice';
 import { useActiveReview } from '@/features/memory/useActiveReview';
 import { useMemoryLibrary } from '@/features/memory/useMemoryLibrary';
 import { archiveLearningItem, deleteMistake, deletePhraseCard } from './memoryApi';
@@ -15,6 +17,10 @@ import './memoryControls.css';
 type Props = {
   /** The microphone is in use elsewhere, so a spoken review cannot start. */
   isAudioBusy: boolean;
+  isSessionOpen: boolean;
+  isStartingMistakePractice: boolean;
+  mistakePracticeError: string;
+  onStartMistakePractice: () => void;
   onStartReview: () => void;
 };
 
@@ -31,7 +37,14 @@ function removeEntry(entry: MemoryEntry): Promise<boolean> {
     : deleteMistake(entry.mistake.id);
 }
 
-export function LearningMemoryPanel({ isAudioBusy, onStartReview }: Props) {
+export function LearningMemoryPanel({
+  isAudioBusy,
+  isSessionOpen,
+  isStartingMistakePractice,
+  mistakePracticeError,
+  onStartMistakePractice,
+  onStartReview,
+}: Props) {
   const { library, retry } = useMemoryLibrary();
   const active = useActiveReview();
   const [query, setQuery] = useState('');
@@ -90,6 +103,17 @@ export function LearningMemoryPanel({ isAudioBusy, onStartReview }: Props) {
         dueCount={view?.due_count ?? 0}
         isBusy={isAudioBusy || library.tag === 'loading'}
         onStart={onStartReview}
+      />
+
+      <MistakePracticeCard
+        eligibleCount={eligibleMistakePracticeCount(view?.mistakes ?? [])}
+        error={mistakePracticeError}
+        isAudioBusy={isAudioBusy}
+        isLibraryError={library.tag === 'error'}
+        isLibraryReady={library.tag === 'ready'}
+        isSessionOpen={isSessionOpen}
+        isStarting={isStartingMistakePractice}
+        onStart={onStartMistakePractice}
       />
 
       {library.tag === 'error' && (

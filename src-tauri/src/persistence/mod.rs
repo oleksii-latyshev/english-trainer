@@ -17,13 +17,14 @@ mod learning_targets;
 pub(crate) mod learning_usage;
 mod learning_writes;
 mod memory_recall;
+mod mistake_practice;
 mod schema;
 pub(crate) mod session_metadata;
 pub(crate) mod session_wrapup;
 mod speech_settings;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 16;
+const SCHEMA_VERSION: i64 = 17;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;
@@ -345,6 +346,7 @@ pub struct StoredSession {
     pub practice_mode: String,
     pub practice_phase: String,
     pub written_turn_count: usize,
+    pub is_mistake_practice: bool,
 }
 
 use schema::migrate;

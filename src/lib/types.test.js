@@ -73,6 +73,26 @@ describe('conversation IPC payloads', () => {
       is_clock_running: false,
     };
     expect(isPracticeSession(validSession)).toBe(true);
+    expect(isPracticeSession({ ...validSession, is_mistake_practice: 'yes' })).toBe(false);
+    const mistakeSession = {
+      ...validSession,
+      target_turns: 5,
+      turn_count: 2,
+      is_mistake_practice: true,
+      practice_mode: 'voice',
+      practice_phase: 'speaking',
+      written_turn_count: 0,
+      spoken_turn_count: 2,
+    };
+    expect(isPracticeSession(mistakeSession)).toBe(true);
+    expect(isPracticeSession({ ...mistakeSession, practice_mode: 'text_chat' })).toBe(false);
+    expect(isPracticeSession({ ...mistakeSession, practice_phase: 'writing' })).toBe(false);
+    expect(isPracticeSession({ ...mistakeSession, target_turns: 8 })).toBe(false);
+    expect(isPracticeSession({ ...mistakeSession, turn_count: 6, spoken_turn_count: 6 })).toBe(
+      false,
+    );
+    expect(isPracticeSession({ ...mistakeSession, written_turn_count: 1 })).toBe(false);
+    expect(isPracticeSession({ ...mistakeSession, spoken_turn_count: 1 })).toBe(false);
     expect(practiceModeOf(validSession)).toBe('voice');
     expect(practicePhaseOf(validSession)).toBe('speaking');
     expect(writtenTurnCountOf(validSession)).toBe(0);
@@ -166,6 +186,22 @@ describe('conversation IPC payloads', () => {
       is_coaching_paused: false,
     };
     expect(isFinishedPracticeSession(finished)).toBe(true);
+    const mistakeFinished = {
+      ...finished,
+      target_turns: 5,
+      is_mistake_practice: true,
+      practice_mode: 'voice',
+      practice_phase: 'speaking',
+      written_turn_count: 0,
+      spoken_turn_count: 3,
+    };
+    expect(isFinishedPracticeSession(mistakeFinished)).toBe(true);
+    expect(isFinishedPracticeSession({ ...mistakeFinished, practice_mode: 'text_chat' })).toBe(
+      false,
+    );
+    expect(isFinishedPracticeSession({ ...mistakeFinished, target_turns: 8 })).toBe(false);
+    expect(isFinishedPracticeSession({ ...mistakeFinished, spoken_turn_count: 2 })).toBe(false);
+    expect(isFinishedPracticeSession({ ...finished, is_mistake_practice: 'yes' })).toBe(false);
     expect(isFinishedPracticeSession({ ...finished, turn_count: -1 })).toBe(false);
     expect(isFinishedPracticeSession({ ...finished, target_turns: 0 })).toBe(false);
     expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);

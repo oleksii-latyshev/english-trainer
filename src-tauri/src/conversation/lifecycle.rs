@@ -4,8 +4,26 @@ use super::{
     ActiveSession, PersonalProfile, PracticeMode, PracticePhase, PracticeSession, ProviderError,
     SessionStore, StartPracticeOptions, State, MAX_SAFE_SESSION_ID, SESSION_MODE,
 };
+use crate::learning::mistake_practice::{
+    GeneratedMistakeQuestion, MistakePracticeCandidate, MistakePracticeQuestion,
+};
 use crate::persistence::session_metadata::{NewSession, PracticePhaseTransition};
+use crate::providers::ProviderErrorCode;
 use std::time::Instant;
+
+struct MistakePracticePreparationGuard {
+    state: std::sync::Arc<std::sync::Mutex<State>>,
+}
+
+impl Drop for MistakePracticePreparationGuard {
+    fn drop(&mut self) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.mistake_practice_preparing = false;
+    }
+}
 
 impl SessionStore {
     #[cfg(test)]
@@ -18,6 +36,9 @@ impl SessionStore {
         options: Option<StartPracticeOptions>,
     ) -> Result<PracticeSession, ProviderError> {
         let mut state = self.lock();
+        if state.mistake_practice_preparing {
+            return Err(super::busy_error());
+        }
         if let Some(active) = &state.active {
             return self.build_practice_session(&state, active);
         }
@@ -44,6 +65,7 @@ impl SessionStore {
                 practice_mode: practice_mode.as_str(),
                 practice_phase: practice_phase.as_str(),
                 written_turn_count: 0,
+                is_mistake_practice: false,
             })
             .map_err(database_error)?;
         if session_id > MAX_SAFE_SESSION_ID {
@@ -70,10 +92,131 @@ impl SessionStore {
             practice_mode,
             practice_phase,
             written_turn_count: 0,
+            is_mistake_practice: false,
+            mistake_questions: Vec::new(),
         };
         let practice_session = self.build_practice_session(&state, &active)?;
         state.active = Some(active);
         Ok(practice_session)
+    }
+
+    pub(crate) fn start_mistake_practice<F>(
+        &self,
+        generate: F,
+    ) -> Result<PracticeSession, ProviderError>
+    where
+        F: FnOnce(
+            &[MistakePracticeCandidate],
+        ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError>,
+    {
+        let candidates = {
+            let mut state = self.lock();
+            if let Some(active) = &state.active {
+                if active.is_mistake_practice {
+                    return self.build_practice_session(&state, active);
+                }
+                return Err(super::busy_error());
+            }
+            if state.mistake_practice_preparing {
+                return Err(super::busy_error());
+            }
+            let candidates = state
+                .database
+                .recurring_mistakes()
+                .map_err(database_error)?;
+            if candidates.is_empty() {
+                return Err(ProviderError::new(ProviderErrorCode::InvalidRequest,
+                    "There are no repeated mistakes to practice yet. Complete a few spoken sessions so Memory can find mistakes to rehearse."));
+            }
+            state.mistake_practice_preparing = true;
+            candidates
+        };
+        let _preparation_guard = MistakePracticePreparationGuard {
+            state: self.state.clone(),
+        };
+        let result = generate(&candidates);
+        let mut state = self.lock();
+        let result = (|| {
+            let questions = match result {
+                Ok(questions) if questions.len() == 5 => questions,
+                Ok(_) => {
+                    return Err(ProviderError::new(ProviderErrorCode::InvalidOutput, "The mistake practice provider returned an invalid question plan. Please retry."));
+                }
+                Err(error) => return Err(error),
+            };
+            let mut snapshots = Vec::with_capacity(5);
+            for item in questions {
+                let Some(target) = candidates
+                    .iter()
+                    .find(|candidate| candidate.id == item.mistake_id)
+                else {
+                    return Err(ProviderError::new(
+                        ProviderErrorCode::InvalidOutput,
+                        "The mistake practice provider returned an unknown target. Please retry.",
+                    ));
+                };
+                snapshots.push(MistakePracticeQuestion {
+                    mistake_id: target.id,
+                    original: target.original.clone(),
+                    corrected: target.corrected.clone(),
+                    question: item.question,
+                });
+            }
+            let opening_question = snapshots[0].question.clone();
+            let session_id = match state.database.create_mistake_practice_session(
+                NewSession {
+                    mode: SESSION_MODE,
+                    opening_question: &opening_question,
+                    topic_id: "free_conversation",
+                    topic_label: "Usual mistakes",
+                    topic_custom: None,
+                    duration_goal_seconds: 300,
+                    practice_mode: "voice",
+                    practice_phase: "speaking",
+                    written_turn_count: 0,
+                    is_mistake_practice: true,
+                },
+                &snapshots,
+                &candidates,
+            ) {
+                Ok(Some(id)) => id,
+                Ok(None) => {
+                    return Err(ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "A repeated mistake changed while questions were being prepared. Please retry.",
+                ));
+                }
+                Err(error) => return Err(database_error(error)),
+            };
+            let metadata = state
+                .database
+                .session_metadata(session_id)
+                .map_err(database_error)?
+                .ok_or_else(database_error_message)?;
+            let active = ActiveSession {
+                id: session_id,
+                opening_question: opening_question.clone(),
+                turns: Vec::new(),
+                in_flight: false,
+                topic_id: metadata.topic_id,
+                topic_label: metadata.topic_label,
+                topic_custom: metadata.topic_custom,
+                duration_goal_seconds: metadata.duration_goal_seconds,
+                active_duration_ms: 0,
+                started_at: metadata.started_at,
+                clock_anchor: None,
+                practice_mode: PracticeMode::Voice,
+                practice_phase: PracticePhase::Speaking,
+                written_turn_count: 0,
+                is_mistake_practice: true,
+                mistake_questions: snapshots,
+            };
+            state.active = Some(active);
+            let active = state.active.as_ref().ok_or_else(invalid_session_error)?;
+            self.build_practice_session(&state, active)
+        })();
+        state.mistake_practice_preparing = false;
+        result
     }
 
     pub fn get_active(&self) -> Result<Option<PracticeSession>, ProviderError> {

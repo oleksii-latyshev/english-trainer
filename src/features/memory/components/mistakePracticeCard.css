@@ -1,0 +1,58 @@
+.memory-mistake-practice {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  border: 1px solid var(--et-line);
+  border-radius: 20px;
+  background: var(--et-surface);
+}
+
+.memory-mistake-practice-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--et-accent) 12%, var(--et-surface));
+  color: var(--et-accent);
+}
+
+.memory-mistake-practice-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.memory-mistake-practice-copy h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.memory-mistake-practice-copy p {
+  margin: 0;
+  color: var(--et-muted);
+  font-size: 13px;
+}
+
+.memory-mistake-practice-copy .memory-mistake-practice-error {
+  color: var(--et-danger, #d56363);
+}
+
+.memory-mistake-practice-action {
+  flex: none;
+  margin-left: auto;
+}
+
+@media (max-width: 1100px) {
+  .memory-mistake-practice {
+    flex-wrap: wrap;
+  }
+
+  .memory-mistake-practice-action {
+    width: 100%;
+    margin-left: 60px;
+  }
+}

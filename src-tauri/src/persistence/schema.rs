@@ -422,6 +422,29 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }
+    if version < 17 {
+        let transaction = connection.unchecked_transaction()?;
+        if !has_column(&transaction, "sessions", "is_mistake_practice")? {
+            transaction.execute_batch(
+                "ALTER TABLE sessions ADD COLUMN is_mistake_practice INTEGER NOT NULL DEFAULT 0;",
+            )?;
+        }
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS mistake_practice_questions (
+                session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL CHECK(position BETWEEN 1 AND 5),
+                mistake_id INTEGER NOT NULL,
+                original TEXT NOT NULL,
+                corrected TEXT NOT NULL,
+                question TEXT NOT NULL,
+                PRIMARY KEY(session_id, position)
+            );
+            CREATE INDEX IF NOT EXISTS idx_mistake_practice_questions_session
+                ON mistake_practice_questions(session_id);",
+        )?;
+        transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        transaction.commit()?;
+    }
     Ok(())
 }
 

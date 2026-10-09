@@ -68,6 +68,7 @@ pub(super) fn validate_answer_source(
         return Err(invalid_phase_transition_error());
     }
     let accepted = match session.practice_mode {
+        PracticeMode::Voice if session.is_mistake_practice => source != InputSource::Text,
         PracticeMode::Voice => true,
         PracticeMode::TextChat => {
             session.practice_phase == PracticePhase::Writing && source == InputSource::Text

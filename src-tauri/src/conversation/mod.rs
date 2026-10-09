@@ -60,6 +60,7 @@ pub struct PracticeSession {
     pub practice_phase: PracticePhase,
     pub written_turn_count: usize,
     pub spoken_turn_count: usize,
+    pub is_mistake_practice: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -120,6 +121,7 @@ pub struct FinishedPracticeSession {
     pub practice_phase: PracticePhase,
     pub written_turn_count: usize,
     pub spoken_turn_count: usize,
+    pub is_mistake_practice: bool,
 }
 
 #[derive(Clone)]
@@ -132,6 +134,7 @@ pub struct SessionStore {
 struct State {
     database: SessionDatabase,
     active: Option<ActiveSession>,
+    mistake_practice_preparing: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -168,12 +171,24 @@ struct ActiveSession {
     practice_mode: PracticeMode,
     practice_phase: PracticePhase,
     written_turn_count: usize,
+    is_mistake_practice: bool,
+    mistake_questions: Vec<crate::learning::mistake_practice::MistakePracticeQuestion>,
 }
 
 impl ActiveSession {
     /// What the learner answers next: the latest question asked. A turn without any (a Coach
     /// answer saved by an older version and never continued) leaves the one before it open.
     fn current_question(&self) -> String {
+        if self.is_mistake_practice {
+            return self
+                .mistake_questions
+                .get(self.turns.len())
+                .map(|item| item.question.clone())
+                .unwrap_or_else(|| {
+                    "You have finished all five questions. You can finish this practice."
+                        .to_string()
+                });
+        }
         if self.practice_mode == PracticeMode::WriteThenSpeak
             && matches!(
                 self.practice_phase,
@@ -205,6 +220,15 @@ impl SessionStore {
 
     fn from_database(database: SessionDatabase) -> rusqlite::Result<Self> {
         let active = if let Some(stored) = database.active_session()? {
+            let mistake_questions = if stored.is_mistake_practice {
+                let questions = database.mistake_practice_questions(stored.id)?;
+                if questions.len() != 5 {
+                    return Err(rusqlite::Error::InvalidQuery);
+                }
+                questions
+            } else {
+                Vec::new()
+            };
             // Sessions saved by older versions carry a mode; they continue as the one Talk mode.
             Some(ActiveSession {
                 id: stored.id,
@@ -221,12 +245,18 @@ impl SessionStore {
                 practice_mode: parse_practice_mode(&stored.practice_mode),
                 practice_phase: parse_practice_phase(&stored.practice_phase),
                 written_turn_count: stored.written_turn_count,
+                is_mistake_practice: stored.is_mistake_practice,
+                mistake_questions,
             })
         } else {
             None
         };
         Ok(Self {
-            state: Arc::new(Mutex::new(State { database, active })),
+            state: Arc::new(Mutex::new(State {
+                database,
+                active,
+                mistake_practice_preparing: false,
+            })),
             usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
             coaching: Arc::new(coaching::CoachingStatus::default()),
         })
@@ -288,7 +318,15 @@ impl SessionStore {
         F: FnOnce(&ConversationContext) -> Result<ConversationTurn, ProviderError>,
     {
         validate_transcript(&transcript)?;
-        let (context, replay_question, replay_next_question, replay_is_final) = {
+        let (
+            context,
+            replay_question,
+            replay_next_question,
+            replay_is_final,
+            is_mistake_practice,
+            mistake_next_question,
+            mistake_is_final,
+        ) = {
             let mut state = self.lock();
             let session = state
                 .active
@@ -301,6 +339,10 @@ impl SessionStore {
             validate_answer_source(session, input_source)?;
             let is_replay = session.practice_mode == PracticeMode::WriteThenSpeak
                 && session.practice_phase == PracticePhase::Speaking;
+            let is_mistake_practice = session.is_mistake_practice;
+            if is_mistake_practice && session.turns.len() >= 5 {
+                return Err(invalid_phase_transition_error());
+            }
             let questions = if is_replay {
                 replay_questions(
                     &session.opening_question,
@@ -320,6 +362,15 @@ impl SessionStore {
             let replay_next_question = replay_question
                 .as_ref()
                 .and_then(|_| questions.get(spoken_count + 1).cloned());
+            let mistake_next_question = if is_mistake_practice {
+                session
+                    .mistake_questions
+                    .get(session.turns.len() + 1)
+                    .map(|item| item.question.clone())
+            } else {
+                None
+            };
+            let mistake_is_final = is_mistake_practice && session.turns.len() + 1 == 5;
             if session.practice_phase.is_review()
                 || (is_replay
                     && (spoken_count >= session.written_turn_count
@@ -327,14 +378,15 @@ impl SessionStore {
             {
                 return Err(invalid_phase_transition_error());
             }
-            let learning_targets = if session.turns.len() == 1 || session.turns.len() == 5 {
-                state
-                    .database
-                    .due_learning_targets(session_id)
-                    .map_err(database_error)?
-            } else {
-                Vec::new()
-            };
+            let learning_targets =
+                if !is_mistake_practice && (session.turns.len() == 1 || session.turns.len() == 5) {
+                    state
+                        .database
+                        .due_learning_targets(session_id)
+                        .map_err(database_error)?
+                } else {
+                    Vec::new()
+                };
             let profile = state
                 .database
                 .get_personal_profile()
@@ -354,19 +406,31 @@ impl SessionStore {
                 replay_question,
                 replay_next_question,
                 replay_is_final,
+                is_mistake_practice,
+                mistake_next_question,
+                mistake_is_final,
             )
         };
 
-        let result = if replay_question.is_some() {
+        let result = if replay_question.is_some() || is_mistake_practice {
             Ok(ConversationTurn {
-                spoken_reply: if replay_is_final {
+                spoken_reply: if replay_is_final || mistake_is_final {
                     "Thanks for practicing those answers.".to_string()
                 } else {
                     "Thanks for sharing that.".to_string()
                 },
-                question: replay_next_question,
-                session_phase: "rehearsal".to_string(),
-                is_complete: replay_is_final,
+                question: if replay_question.is_some() {
+                    replay_next_question
+                } else {
+                    mistake_next_question
+                },
+                session_phase: if mistake_is_final {
+                    "mistake_practice"
+                } else {
+                    "rehearsal"
+                }
+                .to_string(),
+                is_complete: replay_is_final || mistake_is_final,
                 provider_latency_ms: None,
                 first_token_ms: None,
                 answered_by: None,
@@ -497,7 +561,11 @@ impl SessionStore {
             session_id,
             finished: true,
             turn_count,
-            target_turns: DAILY_TARGET_TURNS,
+            target_turns: if metadata.is_mistake_practice {
+                5
+            } else {
+                DAILY_TARGET_TURNS
+            },
             duration_ms: state
                 .database
                 .session_elapsed_ms(session_id)
@@ -518,6 +586,7 @@ impl SessionStore {
                 turn_count,
                 written_turn_count,
             ),
+            is_mistake_practice: metadata.is_mistake_practice,
         })
     }
 
@@ -785,7 +854,11 @@ impl SessionStore {
             session_id: active.id,
             opening_question: active.current_question(),
             turn_count: active.turns.len(),
-            target_turns: DAILY_TARGET_TURNS,
+            target_turns: if active.is_mistake_practice {
+                5
+            } else {
+                DAILY_TARGET_TURNS
+            },
             retry_evidence: state
                 .database
                 .comparisons(active.id)
@@ -806,6 +879,7 @@ impl SessionStore {
                 active.turns.len(),
                 active.written_turn_count,
             ),
+            is_mistake_practice: active.is_mistake_practice,
         })
     }
 }

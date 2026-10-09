@@ -126,11 +126,15 @@ export const memoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory',
   component: function MemoryComponent() {
-    const { capture, practice } = useTrainer();
+    const { capture, practice, startMistakePractice, isSessionOpen } = useTrainer();
     const navigate = memoryRoute.useNavigate();
     return (
       <LearningMemoryPanel
         isAudioBusy={practice.isBusy || !capture.canChangeSession}
+        isSessionOpen={isSessionOpen}
+        isStartingMistakePractice={practice.state.tag === 'starting'}
+        mistakePracticeError={practice.error}
+        onStartMistakePractice={startMistakePractice}
         onStartReview={() => void navigate({ to: '/memory/review' })}
       />
     );

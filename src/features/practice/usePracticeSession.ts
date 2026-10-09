@@ -29,6 +29,7 @@ import {
 import {
   finishPracticeSession,
   getActivePracticeSession,
+  startMistakePractice as requestMistakePractice,
   transitionPracticePhase as requestPracticePhaseTransition,
   startPracticeSession,
 } from './sessionApi';
@@ -63,6 +64,7 @@ function activeState(session: PracticeSession): PracticeState {
     practicePhase: practicePhaseOf(session),
     writtenTurnCount: writtenTurnCountOf(session),
     spokenTurnCount: spokenTurnCountOf(session),
+    isMistakePractice: session.is_mistake_practice ?? false,
     clockSnapshotAtMs: performance.now(),
   };
 }
@@ -73,6 +75,7 @@ export function usePracticeSession(dependencies: Dependencies) {
   );
   const [error, setError] = useState('');
   const isClockError = useRef(false);
+  const isStarting = useRef(false);
   const updateClock = useCallback((session: PracticeSession) => {
     setState((current) => updatePracticeClock(current, session));
     if (isClockError.current) {
@@ -105,18 +108,24 @@ export function usePracticeSession(dependencies: Dependencies) {
     };
   }, []);
 
-  async function start(options?: PracticeOptions): Promise<boolean> {
+  async function startSession(request: () => Promise<PracticeSession>): Promise<boolean> {
     // The start screen owns the options for the next conversation.
-    if ((state.tag !== 'idle' && state.tag !== 'completed') || !dependencies.canChangeSession)
+    if (
+      isStarting.current ||
+      (state.tag !== 'idle' && state.tag !== 'completed') ||
+      !dependencies.canChangeSession
+    )
       return false;
     if (!isTauri()) {
       setError('Open the desktop app with bun run dev to start a conversation.');
       return false;
     }
+    const previous = state;
+    isStarting.current = true;
     setState({ tag: 'starting' });
     setError('');
     try {
-      const session = await startPracticeSession(options);
+      const session = await request();
       dependencies.stopSpeech();
       dependencies.resetCapture();
       setState(activeState(session));
@@ -125,10 +134,20 @@ export function usePracticeSession(dependencies: Dependencies) {
       }
       return true;
     } catch (cause) {
-      setState({ tag: 'idle' });
+      setState(previous);
       setError(sessionError(cause, 'Could not start practice. Please try again.'));
       return false;
+    } finally {
+      isStarting.current = false;
     }
+  }
+
+  async function start(options?: PracticeOptions): Promise<boolean> {
+    return startSession(() => startPracticeSession(options));
+  }
+
+  async function startMistakePractice(): Promise<boolean> {
+    return startSession(requestMistakePractice);
   }
 
   async function finish() {
@@ -181,6 +200,7 @@ export function usePracticeSession(dependencies: Dependencies) {
     error,
     isBusy,
     start,
+    startMistakePractice,
     finish,
     transitionPhase,
     dismissSummary: () =>

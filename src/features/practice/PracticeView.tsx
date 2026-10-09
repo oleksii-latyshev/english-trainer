@@ -59,7 +59,7 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
   const { transcript, practice, currentRequestId } = model;
   const { handlePracticeTurn, isCurrent, onTurnPendingChange } = actions;
   const session = sessionDetails(practice);
-  const recallId = recallSessionId(session);
+  const recallId = session?.isMistakePractice ? undefined : recallSessionId(session);
   const recall = useDailyRecall(recallId);
   const savedAnswer = matchingSentAnswer(sentAnswer, currentRequestId, transcript);
 
@@ -93,7 +93,12 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
 
   const activeSessionId = session?.sessionId;
   const streamingReply = useStreamingReply(activeSessionId, dialogue?.turns.length ?? 0);
-  usePrewarmProvider(activeSessionId, session?.practiceMode, session?.practicePhase);
+  usePrewarmProvider(
+    activeSessionId,
+    session?.practiceMode,
+    session?.practicePhase,
+    session?.isMistakePractice !== true,
+  );
   const phaseKey = session ? `${session.practiceMode}:${session.practicePhase}` : undefined;
   const previousPhaseKey = useRef(phaseKey);
   useEffect(() => {
@@ -216,7 +221,10 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
         speech.play(
           spokenTurn(result),
           (voiceStartMs) => recordVoiceStart(reqId, voiceStartMs),
-          () => listenAfterReply(reqId),
+          () => {
+            if (openSession.isMistakePractice && result.is_complete) return;
+            listenAfterReply(reqId);
+          },
         );
       }
     } catch (cause) {

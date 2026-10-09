@@ -320,16 +320,39 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
 - Reviews stop the active clock and release the warm microphone. An explicit “Say it again”
   remains available to repeat a correction. Restoring a session retains its phase and next question.
 
+### 7.2 Practice my usual mistakes (F12)
+
+- `start_mistake_practice()` returns a voice/speaking `PracticeSession` with
+  `is_mistake_practice: true`, topic label `Usual mistakes`, and five target answers. Ordinary
+  sessions and summaries return `is_mistake_practice: false`; frontend legacy payloads default
+  to false. The UI shows question progress and an approximate two-minute length.
+- Eligible targets are non-archived mistakes seen at least twice, independently of their due
+  date, selected in deterministic frequency/recency order. An empty pool returns an actionable
+  error without a provider call or session.
+- One bounded background-tier Antigravity call, explicitly pinned to a Gemini model, prepares
+  five distinct English questions for the selected corrections. The output must reference known
+  targets, stay bounded and not reveal the target wording. The Gemini conversation API is not used.
+- Generation runs outside the database/session mutex. Concurrent starts are guarded, provider
+  failure permits retry, and target identity/status is rechecked before committing. An existing
+  ordinary session must be finished first; an existing mistake practice resumes its saved plan.
+- The session, question snapshots and cue exposure are stored atomically. Each accepted spoken
+  or edited answer advances to the next saved question without a conversation-provider call.
+  Typed answers and a sixth answer are rejected. The fifth answer completes the question list;
+  coaching remains asynchronous and Finish can be used at any point.
+- Restoring retains the next question and progress, while raw audio follows the existing local
+  transcription/retention policy. Practice evidence never advances independent-use mastery; the
+  existing mastery subsystem and scheduled Memory review are unchanged.
+
 ## 8. Persistence
 
 SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 
 | Group | Tables |
 | :--- | :--- |
-| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls` |
+| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions` (F12 snapshots, schema version 17) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
-| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15); F11 session columns are added by schema version 16; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
+| Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15); F11 session columns are added by schema version 16; F12 adds `is_mistake_practice` with a false default in version 17; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
 
 - Migrations are additive and idempotent; tests cover upgrade from older schemas.

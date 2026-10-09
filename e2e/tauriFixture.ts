@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { emptyDialogue, finishedSession, initialSession } from './fixtureData';
 import type { FixtureOptions, HarnessState } from './harnessTypes';
+import { installMistakePracticeFixture } from './mistakePracticeFixture';
 import { installSpeechFixture } from './speechFixture';
 import { installTauriCommands } from './tauriCommands';
 
@@ -21,6 +22,9 @@ export async function installTauriFixture(page: Page, options: FixtureOptions = 
     failNextSend: options.failNextSend ?? false,
     failNextTransition: options.failNextTransition ?? false,
     lastOptions: null,
+    failNextMistakePractice: options.failNextMistakePractice ?? false,
+    mistakePreparationDelayMs: options.mistakePreparationDelayMs ?? 0,
+    learningMemory: options.learningMemory ?? { mistakes: [], phrase_cards: [], due_count: 0 },
   };
   await page.addInitScript((seed: HarnessState) => {
     Object.defineProperty(window, '__ET_HARNESS__', { value: seed });
@@ -40,4 +44,5 @@ export async function installTauriFixture(page: Page, options: FixtureOptions = 
     );
   }, harness);
   await installTauriCommands(page);
+  await installMistakePracticeFixture(page);
 }

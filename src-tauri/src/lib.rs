@@ -194,6 +194,20 @@ fn start_practice_session(
 }
 
 #[tauri::command]
+async fn start_mistake_practice(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<conversation::PracticeSession, providers::ProviderError> {
+    let sessions = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sessions.start_mistake_practice(providers::agy::mistake_practice::generate)
+    })
+    .await
+    .map_err(conversation_task_failed(
+        "The mistake practice task failed. Please retry.",
+    ))?
+}
+
+#[tauri::command]
 fn set_practice_clock(
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
@@ -565,6 +579,7 @@ pub fn run() {
             generate_follow_up,
             retry_practice_turn,
             start_practice_session,
+            start_mistake_practice,
             set_practice_clock,
             transition_practice_phase,
             get_personal_profile,

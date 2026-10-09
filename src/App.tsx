@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
 import { useFirstRunGate } from '@/features/first-run/useFirstRunGate';
 import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
+import { practiceKeepsMicrophoneWarm } from '@/features/practice/lib/practiceStage';
+import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
@@ -35,11 +37,11 @@ function App() {
     hasSession: isSessionOpen,
   });
 
+  const session = sessionDetails(practice.state);
   const micActive =
     (practice.state.tag === 'active' || practice.state.tag === 'waiting') &&
-    (practice.state.practiceMode === 'voice' ||
-      (practice.state.practiceMode === 'write_then_speak' &&
-        practice.state.practicePhase === 'speaking'));
+    session !== undefined &&
+    practiceKeepsMicrophoneWarm(session);
   const { setActive: setMicActive } = mic;
   useEffect(() => {
     setMicActive(micActive);
@@ -64,6 +66,12 @@ function App() {
     void startPractice();
   }, [isSessionOpen, practice.state, startPractice]);
 
+  const startMistakePractice = useCallback(async () => {
+    const started = await practice.startMistakePractice();
+    if (started) await router.navigate({ to: '/conversation' });
+    return started;
+  }, [practice]);
+
   const trainerContext = useMemo(
     () => ({
       speech,
@@ -71,6 +79,7 @@ function App() {
       mic,
       practice,
       startPractice,
+      startMistakePractice,
       startOrResumePractice,
       isSessionOpen,
       due,
@@ -82,6 +91,7 @@ function App() {
       mic,
       practice,
       startPractice,
+      startMistakePractice,
       startOrResumePractice,
       isSessionOpen,
       due,

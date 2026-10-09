@@ -95,11 +95,13 @@ export function TalkComposerPanel({
           presentation={turn.presentation}
           state={state}
           interaction={
-            session.practicePhase === 'writing'
-              ? 'writing'
-              : session.practiceMode === 'write_then_speak'
-                ? 'spoken_rehearsal'
-                : 'voice'
+            session.isMistakePractice
+              ? 'spoken_rehearsal'
+              : session.practicePhase === 'writing'
+                ? 'writing'
+                : session.practiceMode === 'write_then_speak'
+                  ? 'spoken_rehearsal'
+                  : 'voice'
           }
         />
         {isAudioStage && (

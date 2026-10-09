@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import type { PracticeDialogue } from '../src/lib/dialogueTypes';
 import type { FinishedPracticeSession } from '../src/lib/finishedPracticeSession';
+import type { LearningMemoryView } from '../src/lib/learningTypes';
 import type { PracticeOptions } from '../src/lib/practiceOptions';
 import type { PracticeSession } from '../src/lib/practiceSessionTypes';
 import type { AudioEdgeCounts } from './speechFixture';
@@ -11,6 +12,9 @@ export type FixtureOptions = {
   failNextStart?: boolean;
   failNextSend?: boolean;
   failNextTransition?: boolean;
+  failNextMistakePractice?: boolean;
+  mistakePreparationDelayMs?: number;
+  learningMemory?: LearningMemoryView;
 };
 
 export type IpcCall = { command: string; args: Record<string, unknown> };
@@ -27,6 +31,9 @@ export type HarnessState = {
   failNextStart: boolean;
   failNextSend: boolean;
   failNextTransition: boolean;
+  failNextMistakePractice: boolean;
+  mistakePreparationDelayMs: number;
+  learningMemory: LearningMemoryView;
   lastOptions: PracticeOptions | null;
 };
 

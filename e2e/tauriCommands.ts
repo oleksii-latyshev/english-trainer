@@ -3,7 +3,6 @@ import type { FinishedPracticeSession } from '../src/lib/finishedPracticeSession
 import type { PracticeOptions, PracticePhase } from '../src/lib/practiceOptions';
 import type { PracticeSession } from '../src/lib/practiceSessionTypes';
 import type { ConversationTurn } from '../src/lib/types';
-
 export async function installTauriCommands(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const harness = window.__ET_HARNESS__;
@@ -138,7 +137,6 @@ export async function installTauriCommands(page: Page): Promise<void> {
       harness.activeSession = snapshotForPhase(harness.activeSession, args.phase);
       return harness.activeSession;
     }
-
     const sessionMode = (session: PracticeSession) => session.practice_mode ?? 'voice';
     const sessionPhase = (session: PracticeSession) =>
       session.practice_phase ?? (sessionMode(session) === 'voice' ? 'speaking' : 'writing');
@@ -236,9 +234,11 @@ export async function installTauriCommands(page: Page): Promise<void> {
         session_id: id,
         topic_label: session.topic_label,
         turn_count: session.turn_count,
+        target_turns: session.target_turns,
         duration_ms: session.active_duration_ms,
         duration_goal_seconds: session.duration_goal_seconds,
         ...finishedStage(session),
+        is_mistake_practice: session.is_mistake_practice ?? false,
       };
       harness.activeSession = null;
       return harness.finished;

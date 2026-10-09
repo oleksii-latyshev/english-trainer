@@ -11,7 +11,11 @@ import { EvaStage } from './EvaStage';
 import type { HelpLevel } from './lib/helpLevels';
 import type { InputSource } from './lib/inputSource';
 import { pauseControl } from './lib/pauseControl';
-import { practiceStageIsWriting, practiceStageUsesAudio } from './lib/practiceStage';
+import {
+  practiceKeepsMicrophoneWarm,
+  practiceStageIsWriting,
+  practiceStageUsesAudio,
+} from './lib/practiceStage';
 import { practiceStageAction } from './lib/practiceStageAction';
 import type { SessionDetails } from './lib/practiceState';
 import type { SendFailure } from './lib/turnIssue';
@@ -74,7 +78,9 @@ export function TalkScreen(props: Props) {
   const isRecalling = props.isRecalling ?? false;
   const { actualInput } = usePreferredMicrophone();
   const isWritingStage = practiceStageIsWriting(session);
+  const isMistakePractice = session.isMistakePractice;
   const isAudioStage = practiceStageUsesAudio(session);
+  const canRecordAnswer = practiceKeepsMicrophoneWarm(session);
   const isSpokenReplay =
     session.practiceMode === 'write_then_speak' && session.practicePhase === 'speaking';
   const isReplayComplete = isSpokenReplay && session.spokenTurnCount >= session.writtenTurnCount;
@@ -126,7 +132,8 @@ export function TalkScreen(props: Props) {
     onPause: actions.pauseMic,
     onResume: actions.resumeMic,
   };
-  const isHelpAvailable = !isWritingStage && helpAvailable(question, isRetrying, isRecalling);
+  const isHelpAvailable =
+    !isMistakePractice && !isWritingStage && helpAvailable(question, isRetrying, isRecalling);
   useTalkKeyboard({
     state,
     canPressMic: isAudioStage && turn.canPressMic,
@@ -159,7 +166,7 @@ export function TalkScreen(props: Props) {
         pause={pause}
         session={session}
         stageAction={stageAction}
-        isAudioStage={isAudioStage}
+        isAudioStage={canRecordAnswer}
         timing={model.timing}
       />
       <div className="talk-body">
@@ -215,7 +222,7 @@ export function TalkScreen(props: Props) {
             actions={actions}
             helpKey={helpKey}
             helpLevel={helpLevel}
-            isAudioStage={isAudioStage}
+            isAudioStage={canRecordAnswer}
             isHelpAvailable={isHelpAvailable}
             lock={lock}
             model={model}

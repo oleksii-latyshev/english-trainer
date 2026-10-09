@@ -3,6 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   canSendPracticeSource,
   canSendPracticeStage,
+  practiceKeepsMicrophoneWarm,
   practiceStageIsWriting,
   practiceStageUsesAudio,
 } from './practiceStage';
@@ -21,6 +22,7 @@ const session: SessionDetails = {
   activeDurationMs: 0,
   startedAt: 1,
   isClockRunning: true,
+  isMistakePractice: false,
   clockSnapshotAtMs: 0,
   practiceMode: 'write_then_speak',
   practicePhase: 'writing',
@@ -58,6 +60,40 @@ describe('F11 practice stages', () => {
     );
     expect(
       canSendPracticeStage({ ...speaking, spokenTurnCount: speaking.writtenTurnCount - 1 }),
+    ).toBe(true);
+  });
+});
+
+describe('usual-mistake practice input rules', () => {
+  const drill = {
+    ...session,
+    practiceMode: 'voice' as const,
+    practicePhase: 'speaking' as const,
+    isMistakePractice: true,
+    targetTurns: 5,
+    turnCount: 4,
+  };
+
+  it('accepts recognized or edited speech and rejects typing', () => {
+    expect(canSendPracticeSource(drill, 'voice')).toBe(true);
+    expect(canSendPracticeSource(drill, 'edited')).toBe(true);
+    expect(canSendPracticeSource(drill, 'text')).toBe(false);
+  });
+
+  it('locks the composer after the fifth answer', () => {
+    expect(canSendPracticeStage({ ...drill, turnCount: 5 })).toBe(false);
+    expect(canSendPracticeSource({ ...drill, turnCount: 5 }, 'voice')).toBe(false);
+  });
+
+  it('releases the warm microphone after the fifth answer and keeps it for F11 speech', () => {
+    expect(practiceKeepsMicrophoneWarm(drill)).toBe(true);
+    expect(practiceKeepsMicrophoneWarm({ ...drill, turnCount: 5 })).toBe(false);
+    expect(
+      practiceKeepsMicrophoneWarm({
+        ...session,
+        practiceMode: 'write_then_speak',
+        practicePhase: 'speaking',
+      }),
     ).toBe(true);
   });
 });

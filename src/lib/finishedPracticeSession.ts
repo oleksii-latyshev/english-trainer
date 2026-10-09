@@ -50,6 +50,8 @@ export type FinishedPracticeSession = {
   pending_coaching: number;
   /** Coaching is paused (Antigravity quota), so nothing more will land for now. */
   is_coaching_paused: boolean;
+  /** F12 drill marker; absent only in payloads from older app versions. */
+  is_mistake_practice?: boolean;
   practice_mode?: PracticeMode;
   practice_phase?: PracticePhase;
   written_turn_count?: number;
@@ -138,6 +140,31 @@ function isTurnNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
+function hasValidMistakePractice(value: object): boolean {
+  if (!('is_mistake_practice' in value) || value.is_mistake_practice !== true) return true;
+  const mode: unknown = 'practice_mode' in value ? value.practice_mode : DEFAULT_PRACTICE_MODE;
+  const phase: unknown =
+    'practice_phase' in value
+      ? value.practice_phase
+      : isPracticeMode(mode)
+        ? defaultPracticePhase(mode)
+        : undefined;
+  const turns: unknown = Reflect.get(value, 'turn_count');
+  const target: unknown = Reflect.get(value, 'target_turns');
+  const written: unknown = 'written_turn_count' in value ? value.written_turn_count : 0;
+  const spoken: unknown = 'spoken_turn_count' in value ? value.spoken_turn_count : turns;
+  return (
+    mode === 'voice' &&
+    phase === 'speaking' &&
+    target === 5 &&
+    typeof turns === 'number' &&
+    Number.isSafeInteger(turns) &&
+    turns <= 5 &&
+    written === 0 &&
+    spoken === turns
+  );
+}
+
 function isSummaryText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && Array.from(value).length <= 300;
 }
@@ -222,6 +249,8 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     isCount(value.pending_coaching) &&
     'is_coaching_paused' in value &&
     typeof value.is_coaching_paused === 'boolean' &&
+    (!('is_mistake_practice' in value) || typeof value.is_mistake_practice === 'boolean') &&
+    hasValidMistakePractice(value) &&
     hasValidOptionalStage(value)
   );
 }

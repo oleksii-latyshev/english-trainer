@@ -22,6 +22,7 @@ describe('practice prompt progression', () => {
     activeDurationMs: 42000,
     startedAt: 1780000000000,
     isClockRunning: true,
+    isMistakePractice: false,
     clockSnapshotAtMs: 2000,
   };
   const turn = {
@@ -37,6 +38,22 @@ describe('practice prompt progression', () => {
       question: 'What happened next?',
       turnCount: 2,
     });
+  });
+
+  it('preserves F12 identity and keeps its completion prompt after the final answer', () => {
+    const drill = {
+      ...active,
+      isMistakePractice: true,
+      turnCount: 4,
+      targetTurns: 5,
+    };
+    expect(advancePractice(drill, 7, { ...turn, question: null, is_complete: true })).toMatchObject(
+      {
+        question: 'That sounds interesting.',
+        turnCount: 5,
+        isMistakePractice: true,
+      },
+    );
   });
 
   it('derives written and spoken counts as answers are accepted in each stage', () => {

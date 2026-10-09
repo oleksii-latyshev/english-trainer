@@ -152,6 +152,12 @@ absolute sequence numbers, including coaching and phrase provenance. Entering sp
 records cue exposure, preserving the distinction from independent mastery. React controls audio
 from the returned phase and presents corrections without waiting for the coaching queue.
 
+F12 keeps a five-question mistake-practice plan beside its voice session. One background-tier
+provider call prepares it from recurring mistakes; saved answers then advance through the local
+questions without conversation generation. The plan and cue exposure are committed with the
+session, so restoring preserves the same questions and practice cannot become independent-use
+evidence. The existing coaching queue still checks each answer asynchronously.
+
 SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in
 `persistence/schema.rs`. Provider calls run on blocking worker threads and never hold the lock.
 Tables are listed in TECHNICAL_REQUIREMENTS §8.

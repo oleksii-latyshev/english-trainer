@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { isPhraseCardRecord } from '@/lib/learningTypes';
+import { isMistakeRecord, isPhraseCardRecord } from '@/lib/learningTypes';
 
 const phraseCard = {
   id: 1,
@@ -18,6 +18,28 @@ const phraseCard = {
 };
 
 describe('learning memory IPC records', () => {
+  it('accepts a bounded mistake explanation up to 500 characters', () => {
+    const mistake = {
+      id: 2,
+      normalized_key: 'at university',
+      category: 'grammar',
+      original_example: 'in the university',
+      corrected_example: 'at university',
+      explanation: 'x'.repeat(500),
+      times_seen: 2,
+      times_correct_afterwards: 0,
+      last_seen_at: 1,
+      last_reviewed_at: null,
+      next_review_at: 2,
+      interval_days: 1,
+      ease_factor: 2.5,
+      status: 'learning',
+      is_due: false,
+    };
+    expect(isMistakeRecord(mistake)).toBe(true);
+    expect(isMistakeRecord({ ...mistake, explanation: 'x'.repeat(501) })).toBe(false);
+  });
+
   it('accepts bounded phrase records with complete provenance', () => {
     expect(isPhraseCardRecord(phraseCard)).toBe(true);
     expect(isPhraseCardRecord({ ...phraseCard, session_id: null, sequence: null })).toBe(true);

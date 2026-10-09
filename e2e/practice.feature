@@ -27,3 +27,20 @@ Feature: Practice sessions
     Given the learner is reviewing written answers
     When moving to speaking fails
     Then the learner stays in Review writing and can retry Ready to speak
+
+  Scenario: Practise recurring mistakes independently of due dates
+    Given Memory has a non-archived mistake seen at least twice
+    When the learner starts Practice my usual mistakes
+    Then five short spoken questions are prepared without opening the microphone yet
+    And Talk opens at question one after preparation succeeds
+
+  Scenario: Restore a mistake practice and finish early
+    Given the learner has answered two of five mistake-practice questions
+    When the app restores the saved session and the learner selects Continue
+    Then the same third question and progress are shown
+    And Finish remains available without waiting for coaching
+
+  Scenario: Stop at five questions
+    Given all five mistake-practice questions have been answered
+    Then another answer cannot be recorded or sent
+    And pending coaching remains visible when the session finishes

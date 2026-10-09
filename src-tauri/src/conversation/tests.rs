@@ -44,6 +44,232 @@ fn write_then_speak_options() -> StartPracticeOptions {
     }
 }
 
+fn mistake_plan(
+    mistake_id: u64,
+) -> Vec<crate::learning::mistake_practice::GeneratedMistakeQuestion> {
+    [
+        "What kind of projects do you enjoy most?",
+        "Which task would you choose for a free afternoon?",
+        "What work have you found especially satisfying lately?",
+        "How do you decide which project to take on next?",
+        "What would make your ideal workday memorable?",
+    ]
+    .into_iter()
+    .map(
+        |question| crate::learning::mistake_practice::GeneratedMistakeQuestion {
+            mistake_id,
+            question: question.into(),
+        },
+    )
+    .collect()
+}
+
+fn seed_practice_mistake(store: &SessionStore) -> u64 {
+    store
+        .lock()
+        .database
+        .seed_recurring_mistake("I work in there", "I work there", 2, 20)
+        .unwrap()
+}
+
+#[test]
+fn mistake_practice_requires_candidates_without_calling_the_provider() {
+    let store = SessionStore::default();
+    let called = std::cell::Cell::new(false);
+    let error = store
+        .start_mistake_practice(|_| {
+            called.set(true);
+            Ok(mistake_plan(1))
+        })
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::InvalidRequest);
+    assert!(!called.get());
+    assert_eq!(store.get_active().unwrap(), None);
+}
+
+#[test]
+fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let mistake_id = seed_practice_mistake(&store);
+    let started = store
+        .start_mistake_practice(|_| Ok(mistake_plan(mistake_id)))
+        .unwrap();
+    assert!(started.is_mistake_practice);
+    assert_eq!(started.target_turns, 5);
+    assert_eq!(started.topic_label, "Usual mistakes");
+    assert_eq!(started.duration_goal_seconds, 300);
+    assert_eq!(started.practice_phase, PracticePhase::Speaking);
+    assert!(store
+        .lock()
+        .database
+        .has_session_wide_cue_exposure(started.session_id)
+        .unwrap());
+
+    let text_error = store
+        .send_turn_with_source(
+            started.session_id,
+            "Typed answer".into(),
+            InputSource::Text,
+            None,
+            |_| panic!("mistake practice must not call the conversation provider"),
+        )
+        .unwrap_err();
+    assert_eq!(text_error.code, ProviderErrorCode::InvalidRequest);
+    let first = store
+        .send_turn_with_source(
+            started.session_id,
+            "I enjoy complex projects.".into(),
+            InputSource::Voice,
+            Some(900),
+            |_| panic!("mistake practice must bypass the conversation provider"),
+        )
+        .unwrap();
+    assert_eq!(
+        first.question.as_deref(),
+        Some("Which task would you choose for a free afternoon?")
+    );
+    assert_eq!(first.answered_by, None);
+    assert_eq!(
+        store
+            .lock()
+            .database
+            .coaching_queue(started.session_id)
+            .unwrap()[0]
+            .question,
+        started.opening_question
+    );
+    drop(store);
+
+    let resumed = SessionStore::open(&path).unwrap();
+    let active = resumed.get_active().unwrap().unwrap();
+    assert!(active.is_mistake_practice);
+    assert_eq!(active.turn_count, 1);
+    assert_eq!(
+        active.opening_question,
+        "Which task would you choose for a free afternoon?"
+    );
+    for (index, transcript) in [
+        "I like building tools.",
+        "I chose a hard task.",
+        "I learned a lot.",
+        "I plan the next one.",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let result = resumed
+            .send_turn_with_source(
+                active.session_id,
+                transcript.into(),
+                InputSource::Edited,
+                None,
+                |_| panic!("mistake practice must bypass the conversation provider"),
+            )
+            .unwrap();
+        if index == 0 {
+            let queued = resumed
+                .lock()
+                .database
+                .coaching_queue(active.session_id)
+                .unwrap();
+            assert_eq!(
+                queued[1].question,
+                "Which task would you choose for a free afternoon?"
+            );
+        }
+        if index == 3 {
+            assert!(result.is_complete);
+            assert_eq!(result.question, None);
+            assert_eq!(
+                resumed.get_active().unwrap().unwrap().opening_question,
+                "You have finished all five questions. You can finish this practice."
+            );
+        }
+    }
+    let extra = resumed
+        .send_turn_with_source(
+            active.session_id,
+            "Sixth answer.".into(),
+            InputSource::Voice,
+            None,
+            |_| unreachable!(),
+        )
+        .unwrap_err();
+    assert_eq!(extra.code, ProviderErrorCode::InvalidRequest);
+    let summary = resumed.finish(active.session_id).unwrap();
+    assert!(summary.is_mistake_practice);
+    assert_eq!(summary.target_turns, 5);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn mistake_practice_generation_failure_can_be_retried_and_targets_are_rechecked() {
+    let store = SessionStore::default();
+    let mistake_id = seed_practice_mistake(&store);
+    let failed = store.start_mistake_practice(|_| {
+        Err(ProviderError::new(ProviderErrorCode::RateLimited, "retry"))
+    });
+    assert_eq!(failed.unwrap_err().code, ProviderErrorCode::RateLimited);
+    assert_eq!(store.get_active().unwrap(), None);
+
+    let archived = store.clone();
+    let error = store
+        .start_mistake_practice(move |_| {
+            archived
+                .archive_learning_item(crate::learning::LearningItemType::Mistake, mistake_id)
+                .unwrap();
+            Ok(mistake_plan(mistake_id))
+        })
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::InvalidRequest);
+    assert_eq!(store.get_active().unwrap(), None);
+    assert_eq!(store.lock().database.session_count().unwrap(), 0);
+}
+
+#[test]
+fn mistake_practice_rejects_another_session_and_a_concurrent_preparation() {
+    let store = SessionStore::default();
+    let ordinary = store.start().unwrap();
+    let called = std::cell::Cell::new(false);
+    let error = store
+        .start_mistake_practice(|_| {
+            called.set(true);
+            Ok(mistake_plan(1))
+        })
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::Busy);
+    assert!(!called.get());
+    store.finish(ordinary.session_id).unwrap();
+    let mistake_id = seed_practice_mistake(&store);
+    store.lock().mistake_practice_preparing = true;
+    let normal = store.start_practice_session(None).unwrap_err();
+    assert_eq!(normal.code, ProviderErrorCode::Busy);
+    let drill = store
+        .start_mistake_practice(|_| {
+            called.set(true);
+            Ok(mistake_plan(mistake_id))
+        })
+        .unwrap_err();
+    assert_eq!(drill.code, ProviderErrorCode::Busy);
+    assert!(!called.get());
+    store.lock().mistake_practice_preparing = false;
+}
+
+#[test]
+fn mistake_practice_database_failure_clears_preparation_and_rolls_back() {
+    let store = SessionStore::default();
+    let mistake_id = seed_practice_mistake(&store);
+    store.lock().database.reject_mistake_practice_cue().unwrap();
+    let error = store
+        .start_mistake_practice(|_| Ok(mistake_plan(mistake_id)))
+        .unwrap_err();
+    assert_eq!(error.code, ProviderErrorCode::DatabaseError);
+    assert_eq!(store.lock().database.session_count().unwrap(), 0);
+    // The failed preparation released its guard, so an ordinary session can start immediately.
+    assert!(store.start_practice_session(None).is_ok());
+}
+
 #[test]
 fn the_answer_context_follows_the_conversation() {
     let store = SessionStore::default();

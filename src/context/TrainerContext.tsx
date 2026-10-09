@@ -13,6 +13,7 @@ export type TrainerContextValue = {
   mic: MicrophoneController;
   practice: ReturnType<typeof usePracticeSession>;
   startPractice: (options?: PracticeOptions) => void;
+  startMistakePractice: () => Promise<boolean>;
   startOrResumePractice: () => void;
   isSessionOpen: boolean;
   /** Phrases due for review; shown in the sidebar and on the Talk start screen. */

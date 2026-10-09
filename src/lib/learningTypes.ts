@@ -73,7 +73,7 @@ export function isMistakeRecord(value: unknown): value is MistakeRecord {
     isBoundedText(value.corrected_example, 300) &&
     'explanation' in value &&
     typeof value.explanation === 'string' &&
-    value.explanation.length <= 300 &&
+    value.explanation.length <= 500 &&
     'times_seen' in value &&
     isNonNegativeInteger(value.times_seen) &&
     'times_correct_afterwards' in value &&

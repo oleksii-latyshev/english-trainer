@@ -1,8 +1,8 @@
 # Roadmap: English Trainer
 
 Updated 2026-10-09. The learner checked the new Whisper model in the app and reported that it
-works well. F8 and F11 are built and awaiting the learner’s check in the app.
-The learner deferred that check; the next implementation priorities are F12 and F13.
+works well. F8, F11 and F12 are built and awaiting the learner’s check in the app.
+The learner deferred that check; the next implementation priority is F13.
 
 ## Goal
 
@@ -297,10 +297,20 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   and browser audio boundaries. Run `bun run verify`; browser failure reports include traces and
   screenshots. Acceptance still needs a built-app run with real microphone, Whisper and TTS.
 
-**F12. Practice my usual mistakes** `[ ]`
+**F12. Practice my usual mistakes** `[~]` (built; physical Mac acceptance deferred by the learner)
 - From the recurring mistakes in Memory (for example "the most part of" → "most of", "Just I want"
   → "I just want", "in the university" → "at university"), Eva asks about five short spoken
   questions that need the right form. About two minutes.
+- Built: Memory launch card, eligibility from non-archived mistakes seen at least twice (not
+  limited to due items), one background Gemini-pinned Antigravity call for five questions,
+  saved question snapshots and exact resume. Answers advance locally without a conversation
+  provider call; coaching remains asynchronous. Voice/edited speech only; the fifth answer
+  locks further input and automatic listening. Finish remains available throughout.
+- Practice is recorded as cued evidence and does not advance independent-use mastery.
+- Automated checks cover target selection, output validation/model pinning, preparation errors
+  and concurrency, atomic persistence/migration, voice-only progression, coaching provenance,
+  restore, browser launch/retry/audio boundaries and completion. Run `bun run verify`.
+  Acceptance still needs the built app with a real microphone, Whisper, TTS and question relevance.
 
 **F13. Translate a word** `[ ]`
 - Select a word in Talk, in notes or in Memory to see its translation into the native language

@@ -53,3 +53,19 @@ describe('review copy', () => {
     expect(reviewHint(0)).not.toBe(reviewHint(3));
   });
 });
+
+describe('continue details', () => {
+  it('shows remaining questions for a restored mistake practice', () => {
+    expect(
+      resumeDetail({
+        topicLabel: 'Usual mistakes',
+        startedAt: 1,
+        durationGoalSeconds: 300,
+        activeDurationMs: 60_000,
+        isMistakePractice: true,
+        turnCount: 2,
+        targetTurns: 5,
+      }),
+    ).toBe('3 questions left');
+  });
+});

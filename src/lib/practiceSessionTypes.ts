@@ -29,6 +29,8 @@ export type PracticeSession = {
   active_duration_ms: number;
   started_at: number;
   is_clock_running: boolean;
+  /** F12 drill marker; absent only in payloads from older app versions. */
+  is_mistake_practice?: boolean;
   /** Optional only for sessions created before F11. */
   practice_mode?: PracticeMode;
   practice_phase?: PracticePhase;
@@ -40,6 +42,31 @@ function isOptionalTurnCount(value: object, key: string): boolean {
   if (!(key in value)) return true;
   const count: unknown = Reflect.get(value, key);
   return typeof count === 'number' && Number.isSafeInteger(count) && count >= 0;
+}
+
+function hasValidMistakePractice(value: object): boolean {
+  if (!('is_mistake_practice' in value) || value.is_mistake_practice !== true) return true;
+  const mode: unknown = 'practice_mode' in value ? value.practice_mode : DEFAULT_PRACTICE_MODE;
+  const phase: unknown =
+    'practice_phase' in value
+      ? value.practice_phase
+      : isPracticeMode(mode)
+        ? defaultPracticePhase(mode)
+        : undefined;
+  const turns: unknown = Reflect.get(value, 'turn_count');
+  const target: unknown = Reflect.get(value, 'target_turns');
+  const written: unknown = 'written_turn_count' in value ? value.written_turn_count : 0;
+  const spoken: unknown = 'spoken_turn_count' in value ? value.spoken_turn_count : turns;
+  return (
+    mode === 'voice' &&
+    phase === 'speaking' &&
+    target === 5 &&
+    typeof turns === 'number' &&
+    Number.isSafeInteger(turns) &&
+    turns <= 5 &&
+    written === 0 &&
+    spoken === turns
+  );
 }
 
 function compatiblePracticeStage(mode: PracticeMode, phase: PracticePhase): boolean {
@@ -113,6 +140,8 @@ export function isPracticeSession(value: unknown): value is PracticeSession {
     value.started_at >= 0 &&
     'is_clock_running' in value &&
     typeof value.is_clock_running === 'boolean' &&
+    (!('is_mistake_practice' in value) || typeof value.is_mistake_practice === 'boolean') &&
+    hasValidMistakePractice(value) &&
     (!('practice_mode' in value) || isPracticeMode(value.practice_mode)) &&
     (!('practice_phase' in value) || isPracticePhase(value.practice_phase)) &&
     isOptionalTurnCount(value, 'written_turn_count') &&

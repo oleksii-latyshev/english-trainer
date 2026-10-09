@@ -129,6 +129,14 @@ At the end of a session:
   spoken recall and independent use in conversation. Cued or typed answers never count as
   independent use. The detailed rules are in TECHNICAL_REQUIREMENTS §9.
 
+### 8.1 Practice my usual mistakes
+
+Memory offers a short spoken practice on mistakes seen at least twice: five questions, about
+two minutes, even when those mistakes are not due for scheduled review. Eva prepares varied
+questions that invite the corrected forms, then asks them without waiting for feedback. The
+learner can finish early or resume an unfinished practice. Normal inline coaching appears in
+the background; the drill is cued practice and does not establish independent mastery.
+
 ## 9. Settings
 
 Microphone choice with a short record/playback check; conversation provider and API key; system

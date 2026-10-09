@@ -1,4 +1,5 @@
 pub mod memory_recall;
+pub(crate) mod mistake_practice;
 pub mod models;
 pub mod normalization;
 pub mod scheduling;

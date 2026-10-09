@@ -168,8 +168,14 @@ export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdat
       <header className="wrapup-header">
         <div className="wrapup-header-copy">
           <div className="wrapup-subtitle">
-            {summary.topic_label} · {practiceModeLabel(practiceMode)} ·{' '}
-            {practicePhaseLabel(practicePhase)} · {formatDuration(summary.duration_ms)}
+            {summary.is_mistake_practice ? (
+              <>Usual mistakes practice · {formatDuration(summary.duration_ms)}</>
+            ) : (
+              <>
+                {summary.topic_label} · {practiceModeLabel(practiceMode)} ·{' '}
+                {practicePhaseLabel(practicePhase)} · {formatDuration(summary.duration_ms)}
+              </>
+            )}
           </div>
           <h1>Nice session. Here’s what to keep.</h1>
         </div>

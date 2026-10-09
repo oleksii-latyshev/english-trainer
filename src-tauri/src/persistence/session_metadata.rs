@@ -11,6 +11,7 @@ pub(crate) struct NewSession<'a> {
     pub practice_mode: &'a str,
     pub practice_phase: &'a str,
     pub written_turn_count: usize,
+    pub is_mistake_practice: bool,
 }
 
 pub(crate) struct PracticePhaseTransition<'a> {
@@ -21,11 +22,27 @@ pub(crate) struct PracticePhaseTransition<'a> {
     pub active_duration_ms: Option<u64>,
 }
 
+pub(super) fn insert_session(
+    connection: &rusqlite::Connection,
+    options: NewSession<'_>,
+) -> rusqlite::Result<u64> {
+    connection.execute(
+        "INSERT INTO sessions (mode, scenario, started_at, opening_question, topic_id, topic_label, topic_custom, duration_goal_seconds, active_duration_ms, practice_mode, practice_phase, written_turn_count, is_mistake_practice)
+         VALUES (?1, 'free_conversation', ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9, ?10, ?11)",
+        params![options.mode, now_ms(), options.opening_question, options.topic_id, options.topic_label,
+            options.topic_custom, i64::from(options.duration_goal_seconds), options.practice_mode,
+            options.practice_phase, i64::try_from(options.written_turn_count).unwrap_or(i64::MAX),
+            options.is_mistake_practice],
+    )?;
+    let row_id = connection.last_insert_rowid();
+    u64::try_from(row_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, row_id))
+}
+
 impl SessionDatabase {
     pub fn active_session(&self) -> rusqlite::Result<Option<StoredSession>> {
         self.connection
             .query_row(
-                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, COALESCE(duration_goal_seconds, 600), COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0)
+                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, COALESCE(duration_goal_seconds, 600), COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0), COALESCE(is_mistake_practice, 0)
                  FROM sessions WHERE ended_at IS NULL LIMIT 1",
                 [],
                 stored_session,
@@ -36,7 +53,7 @@ impl SessionDatabase {
     pub fn session_metadata(&self, session_id: u64) -> rusqlite::Result<Option<StoredSession>> {
         self.connection
             .query_row(
-                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, COALESCE(duration_goal_seconds, 600), COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0)
+                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, COALESCE(duration_goal_seconds, 600), COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0), COALESCE(is_mistake_practice, 0)
                  FROM sessions WHERE id = ?1",
                 [to_sql_id(session_id)?],
                 stored_session,
@@ -60,24 +77,7 @@ impl SessionDatabase {
         &mut self,
         options: NewSession<'_>,
     ) -> rusqlite::Result<u64> {
-        self.connection.execute(
-            "INSERT INTO sessions (mode, scenario, started_at, opening_question, topic_id, topic_label, topic_custom, duration_goal_seconds, active_duration_ms, practice_mode, practice_phase, written_turn_count)
-             VALUES (?1, 'free_conversation', ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9, ?10)",
-            params![
-                options.mode,
-                now_ms(),
-                options.opening_question,
-                options.topic_id,
-                options.topic_label,
-                options.topic_custom,
-                i64::from(options.duration_goal_seconds),
-                options.practice_mode,
-                options.practice_phase,
-                i64::try_from(options.written_turn_count).unwrap_or(i64::MAX),
-            ],
-        )?;
-        let row_id = self.connection.last_insert_rowid();
-        u64::try_from(row_id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, row_id))
+        insert_session(&self.connection, options)
     }
 
     #[cfg(test)]
@@ -96,6 +96,7 @@ impl SessionDatabase {
             practice_mode: "voice",
             practice_phase: "speaking",
             written_turn_count: 0,
+            is_mistake_practice: false,
         })
     }
 
@@ -207,5 +208,6 @@ fn stored_session(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredSession> {
         practice_phase: row.get(9)?,
         written_turn_count: usize::try_from(row.get::<_, i64>(10)?)
             .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(10, -1))?,
+        is_mistake_practice: row.get(11)?,
     })
 }

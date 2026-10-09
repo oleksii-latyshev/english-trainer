@@ -26,9 +26,16 @@ export function resumeDetail(
     startedAt: number;
     durationGoalSeconds: 300 | 600 | 900;
     activeDurationMs: number;
+    isMistakePractice?: boolean;
+    turnCount?: number;
+    targetTurns?: number;
   },
   now: number = Date.now(),
 ): string {
+  if (session.isMistakePractice && session.targetTurns !== undefined) {
+    const remaining = Math.max(0, session.targetTurns - (session.turnCount ?? 0));
+    return `${remaining} ${remaining === 1 ? 'question' : 'questions'} left`;
+  }
   return `${session.topicLabel} · ${formatSessionWhen(session.startedAt, now)} · ${remainingMinutes(session.durationGoalSeconds, session.activeDurationMs)} min left`;
 }
 
