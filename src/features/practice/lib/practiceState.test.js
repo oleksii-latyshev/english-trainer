@@ -3,6 +3,7 @@ import {
   advancePractice,
   recordRetryComparison,
   setTurnPending,
+  updatePracticeClock,
   updateSummary,
 } from './practiceState';
 
@@ -14,6 +15,14 @@ describe('practice prompt progression', () => {
     turnCount: 1,
     targetTurns: 8,
     retryEvidence: [],
+    topicId: 'daily_life',
+    topicLabel: 'Daily life',
+    topicCustom: null,
+    durationGoalSeconds: 600,
+    activeDurationMs: 42000,
+    startedAt: 1780000000000,
+    isClockRunning: true,
+    clockSnapshotAtMs: 2000,
   };
   const turn = {
     spoken_reply: 'That sounds interesting.',
@@ -64,5 +73,33 @@ describe('practice prompt progression', () => {
     expect(updateSummary(completed, fuller)).toEqual({ tag: 'completed', summary: fuller });
     expect(updateSummary(completed, { ...fuller, session_id: 8 })).toBe(completed);
     expect(updateSummary(active, fuller)).toBe(active);
+  });
+
+  it('keeps topic and suggested time across replies and updates only clock fields from snapshots', () => {
+    const next = advancePractice(active, 7, turn);
+    expect(next).toMatchObject({
+      topicId: 'daily_life',
+      topicLabel: 'Daily life',
+      durationGoalSeconds: 600,
+      activeDurationMs: 42000,
+    });
+    const snapshot = {
+      session_id: 7,
+      topic_id: 'plans_stories',
+      topic_label: 'Plans & stories',
+      topic_custom: null,
+      duration_goal_seconds: 900,
+      active_duration_ms: 65000,
+      started_at: 1780000000000,
+      is_clock_running: false,
+    };
+    expect(updatePracticeClock(next, snapshot)).toMatchObject({
+      question: 'What happened next?',
+      turnCount: 2,
+      topicLabel: 'Plans & stories',
+      activeDurationMs: 65000,
+      isClockRunning: false,
+    });
+    expect(updatePracticeClock(next, { ...snapshot, session_id: 8 })).toBe(next);
   });
 });

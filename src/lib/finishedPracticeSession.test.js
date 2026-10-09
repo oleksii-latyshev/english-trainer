@@ -7,6 +7,8 @@ const finished = {
   turn_count: 3,
   target_turns: 8,
   duration_ms: 624000,
+  topic_label: 'Daily life',
+  duration_goal_seconds: 600,
   numbers: {
     speaking_time: { duration_ms: 290000, trend: { kind: 'percent', change: 12 } },
     words_per_minute: { value: 104, trend: { kind: 'same' } },

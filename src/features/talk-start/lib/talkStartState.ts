@@ -1,3 +1,5 @@
+import { formatSessionWhen, remainingMinutes } from '@/lib/practiceOptions';
+
 export type PrimaryAction = 'restoring' | 'resume' | 'starting' | 'start';
 
 export function primaryAction(state: {
@@ -18,8 +20,16 @@ export const PRIMARY_ACTION_LABEL: Record<PrimaryAction, string> = {
   start: 'Start talking',
 };
 
-export function resumeDetail(session: { turnCount: number; targetTurns: number }): string {
-  return `${session.turnCount} of ${session.targetTurns} answers so far`;
+export function resumeDetail(
+  session: {
+    topicLabel: string;
+    startedAt: number;
+    durationGoalSeconds: 300 | 600 | 900;
+    activeDurationMs: number;
+  },
+  now: number = Date.now(),
+): string {
+  return `${session.topicLabel} · ${formatSessionWhen(session.startedAt, now)} · ${remainingMinutes(session.durationGoalSeconds, session.activeDurationMs)} min left`;
 }
 
 export function reviewTitle(dueCount: number): string {

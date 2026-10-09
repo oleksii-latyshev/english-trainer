@@ -14,6 +14,7 @@ import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import type { TalkScreenName } from '@/features/practice/TalkScreen';
+import { useSessionClock } from '@/features/practice/useSessionClock';
 import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
 import { SettingsView } from '@/features/settings/SettingsView';
 import { TalkStart } from '@/features/talk-start/TalkStart';
@@ -35,7 +36,8 @@ export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: function IndexComponent() {
-    const { practice, isSessionOpen, startOrResumePractice, due, firstRun } = useTrainer();
+    const { practice, isSessionOpen, startOrResumePractice, startPractice, due, firstRun } =
+      useTrainer();
     const navigate = indexRoute.useNavigate();
 
     // Launch looks for earlier use first; a brand-new learner lands on first run instead.
@@ -50,6 +52,7 @@ export const indexRoute = createRoute({
         isRestoring={practice.state.tag === 'loading'}
         onOpenMemory={() => void navigate({ to: '/memory' })}
         onStartOrResume={startOrResumePractice}
+        onStart={startPractice}
         openSession={isSessionOpen ? sessionDetails(practice.state) : undefined}
       />
     );
@@ -62,6 +65,14 @@ export const conversationRoute = createRoute({
   component: function ConversationComponent() {
     const { practice, capture, speech, mic, startPractice } = useTrainer();
     const navigate = conversationRoute.useNavigate();
+    const session = sessionDetails(practice.state);
+    useSessionClock({
+      sessionId: session?.sessionId,
+      isSessionActive: practice.state.tag === 'active' || practice.state.tag === 'waiting',
+      isMicPaused: mic.status === 'paused',
+      onSnapshot: practice.updateClock,
+      onError: practice.reportClockError,
+    });
 
     return (
       <PracticeView
@@ -82,7 +93,7 @@ export const conversationRoute = createRoute({
           isCurrent: () => capture.isCurrentRequest(capture.view.currentRequestId),
           onTurnPendingChange: practice.onTurnPendingChange,
         }}
-        key={sessionDetails(practice.state)?.sessionId ?? 'no-session'}
+        key={session?.sessionId ?? 'no-session'}
         model={{
           ...capture.view,
           practice: practice.state,
@@ -156,7 +167,7 @@ export const summaryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/summary',
   component: function SummaryComponent() {
-    const { practice, startPractice } = useTrainer();
+    const { practice } = useTrainer();
     const navigate = summaryRoute.useNavigate();
 
     if (practice.state.tag !== 'completed') {
@@ -170,7 +181,10 @@ export const summaryRoute = createRoute({
           void navigate({ to: '/' });
         }}
         onSummaryUpdated={practice.updateSummary}
-        onTalkMore={() => startPractice()}
+        onTalkMore={() => {
+          practice.dismissSummary();
+          void navigate({ to: '/' });
+        }}
         summary={practice.state.summary}
       />
     );

@@ -8,8 +8,8 @@ import { AppearanceSettings } from './AppearanceSettings';
 import { ConversationFlowSettings } from './ConversationFlowSettings';
 import { ConversationProviderSettings } from './ConversationProviderSettings';
 import { EvaSettingsLink } from './EvaSettingsLink';
-import { GlossarySettings } from './GlossarySettings';
 import { MicrophoneSettings } from './MicrophoneSettings';
+import { PersonalProfileSettings } from './PersonalProfileSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
 import { SpeechSettings } from './SpeechSettings';
@@ -69,7 +69,7 @@ export function SettingsView() {
       <AppearanceSettings />
       <EvaSettingsLink />
       <ConversationFlowSettings />
-      <GlossarySettings />
+      <PersonalProfileSettings />
       <PrivacySettings />
       <SetupDetails
         onRecheck={() => void loadDiagnostics()}

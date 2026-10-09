@@ -1,6 +1,7 @@
 # Roadmap: English Trainer
 
-Updated 2026-10-08. Plan after F5: F3 is next, then F8 (with topics), F11, F12 and F13.
+Updated 2026-10-09. The learner checked the new Whisper model in the app and reported that it
+works well. F8 (with topics) is in progress, then F11, F12 and F13.
 
 ## Goal
 
@@ -89,7 +90,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   listening starts within 200 ms of the request or of the end of AI speech; a 10-minute
   conversation without touching the keyboard or mouse.
 
-**F3. Accurate speech recognition** `[ ]` (part 1 built 2026-10-08: tools to choose the model and the glossary; part 2 built 2026-10-09; both await a check in the app on a physical Mac)
+**F3. Accurate speech recognition** `[~]` (parts 1 and 2 built; the learner checked the new model in the app on 2026-10-09 and reported that it works well; the formal 30-term / 15-second acceptance measurements remain open)
 - **Part 1 (built, awaiting a check in the app on a physical Mac).** Settings > Speech recognition: the
   speech check (12 fixed sentences read aloud, kept in `<app data>/speech-check/` as the learner's own
   test set, "Delete recordings" removes them), measurement of every `ggml-*.bin` model in
@@ -98,9 +99,8 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   Model select whose choice is stored and used by transcription (default `ggml-base.en.bin`;
   `ENG_TRAINER_WHISPER_MODEL` still wins). Settings > Personalisation: the editable personal
   glossary, seeded once with 27 words. Settings > Privacy: the "Keep raw audio" switch (off by
-  default) with "Delete kept recordings". The glossary does not yet reach the live transcription:
-  that is part 2.
-- **Part 2 (built 2026-10-09, awaiting a check in the app on a physical Mac).** Decision from the
+  default) with "Delete kept recordings". The glossary reaches live transcription through part 2 below.
+- **Part 2 (built 2026-10-09; the learner checked the new model in the app and reported that it works well).** Decision from the
   measurements below: `small.en` is the default model when installed (base.en otherwise; a model
   the learner chose is never replaced). A `whisper-server` child keeps the model loaded (started
   when a practice session opens, restarted once if it dies, replaced on a model change, stopped on
@@ -205,7 +205,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Rescue use is recorded as a cue, like guided help.
 - Acceptance: a stuck moment can be resolved in under 10 s without leaving the chat.
 
-**F8. Topics, profile, and time-based sessions** `[ ]`
+**F8. Topics, profile, and time-based sessions** `[~]`
 - Topic picker: work and technology, daily life, opinions and debates, plans and stories, job
   interview (HR, behavioural, technical). Free topic is also possible.
 - A short personal profile (role, stack, interests, goals) feeds topic questions and the STT
@@ -227,6 +227,11 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Added 2026-10-08: choose a topic for a conversation or get a random one, and the opening question
   varies with the topic instead of always asking "What is something interesting that happened to
   you recently?".
+- Built 2026-10-09 (awaiting acceptance in the built app): topic and random-topic selection,
+  topic-specific opening questions, optional local profile, a suggested 5 / 10 / 15 minute goal,
+  an active-time clock that excludes pauses and time while closed, saved topic/time on Continue,
+  and topic provenance in Memory and wrap-up. The existing spoken review remains separate;
+  the optional pre-session warm-up belongs to F10.
 - Acceptance: three sessions on different topics feel relevant to the user's real life and work.
 
 ### Stage 3 — Remember and review

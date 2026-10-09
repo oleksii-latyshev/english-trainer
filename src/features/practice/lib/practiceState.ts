@@ -6,6 +6,14 @@ export type SessionDetails = {
   turnCount: number;
   targetTurns: number;
   retryEvidence: AttemptComparison[];
+  topicId: string;
+  topicLabel: string;
+  topicCustom: string | null;
+  durationGoalSeconds: 300 | 600 | 900;
+  activeDurationMs: number;
+  startedAt: number;
+  isClockRunning: boolean;
+  clockSnapshotAtMs: number;
 };
 
 export type PracticeState =
@@ -71,4 +79,27 @@ export function updateSummary(
     return current;
   }
   return { tag: 'completed', summary };
+}
+
+/** Applies only a matching session's clock snapshot; turn state stays owned by its latest reply. */
+export function updatePracticeClock(
+  current: PracticeState,
+  session: import('@/lib/practiceSessionTypes').PracticeSession,
+): PracticeState {
+  if (
+    (current.tag !== 'active' && current.tag !== 'waiting' && current.tag !== 'finishing') ||
+    current.sessionId !== session.session_id
+  )
+    return current;
+  return {
+    ...current,
+    topicId: session.topic_id,
+    topicLabel: session.topic_label,
+    topicCustom: session.topic_custom,
+    durationGoalSeconds: session.duration_goal_seconds,
+    activeDurationMs: session.active_duration_ms,
+    startedAt: session.started_at,
+    isClockRunning: session.is_clock_running,
+    clockSnapshotAtMs: performance.now(),
+  };
 }

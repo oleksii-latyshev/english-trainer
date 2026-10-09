@@ -8,17 +8,38 @@ use super::rules::{
 use super::StoredTurn;
 use crate::providers::{ContextTurn, ConversationContext, LearningPromptTarget};
 
+pub(super) struct ContextInput<'a> {
+    pub opening_question: &'a str,
+    pub prior_turns: &'a [StoredTurn],
+    pub latest_transcript: &'a str,
+    pub learning_targets: Vec<LearningPromptTarget>,
+    pub profile: Option<crate::conversation::PersonalProfile>,
+    pub topic: Option<String>,
+}
+
+const QUESTION_STYLE_HINTS: [&str; 6] = [
+    "describe",
+    "explain",
+    "compare",
+    "opinion",
+    "story",
+    "polite disagreement",
+];
+
 /// `prior_turns` are the completed turns before `latest_transcript`, oldest first.
 ///
 /// The last `MAX_TURNS` go in full. Older learner answers are condensed so Eva keeps what the
 /// learner already told her, and every question already asked is listed so she does not repeat
 /// one. Over budget, condensed answers go first, then the oldest turns, then the oldest questions.
-pub(super) fn build_context(
-    opening_question: &str,
-    prior_turns: &[StoredTurn],
-    latest_transcript: &str,
-    learning_targets: Vec<LearningPromptTarget>,
-) -> ConversationContext {
+pub(super) fn build_context(input: ContextInput<'_>) -> ConversationContext {
+    let ContextInput {
+        opening_question,
+        prior_turns,
+        latest_transcript,
+        learning_targets,
+        profile,
+        topic,
+    } = input;
     let split = prior_turns.len().saturating_sub(MAX_TURNS);
     let (older, recent) = prior_turns.split_at(split);
     let mut context = ConversationContext {
@@ -39,6 +60,10 @@ pub(super) fn build_context(
             .filter(|answer| !answer.is_empty())
             .collect(),
         asked_questions: asked_questions(opening_question, prior_turns),
+        profile,
+        topic,
+        question_style_hint: QUESTION_STYLE_HINTS[prior_turns.len() % QUESTION_STYLE_HINTS.len()]
+            .to_string(),
         ..Default::default()
     };
     context.trim_to(MAX_CONTEXT_CHARS);
@@ -96,9 +121,24 @@ mod tests {
             .collect()
     }
 
+    fn build_with_history(
+        opening_question: &str,
+        prior_turns: &[StoredTurn],
+        latest: &str,
+    ) -> ConversationContext {
+        build_context(ContextInput {
+            opening_question,
+            prior_turns,
+            latest_transcript: latest,
+            learning_targets: Vec::new(),
+            profile: None,
+            topic: None,
+        })
+    }
+
     #[test]
     fn the_last_twenty_turns_are_sent_in_full_and_older_answers_are_condensed() {
-        let context = build_context("Opening?", &session(30), " latest ", Vec::new());
+        let context = build_with_history("Opening?", &session(30), " latest ");
         assert_eq!(context.recent_turns.len(), 20);
         assert_eq!(context.recent_turns[0].learner, "answer 10");
         assert_eq!(context.recent_turns[19].learner, "answer 29");
@@ -110,7 +150,7 @@ mod tests {
 
     #[test]
     fn a_short_session_has_no_condensed_history() {
-        let context = build_context("Opening?", &session(5), "x", Vec::new());
+        let context = build_with_history("Opening?", &session(5), "x");
         assert_eq!(context.recent_turns.len(), 5);
         assert!(context.earlier_answers.is_empty());
     }
@@ -120,7 +160,7 @@ mod tests {
         let long = "I finished university last year and ".repeat(10);
         let mut turns = session(25);
         turns[0] = turn(0, &long);
-        let context = build_context("Opening?", &turns, "x", Vec::new());
+        let context = build_with_history("Opening?", &turns, "x");
         let condensed = &context.earlier_answers[0];
         assert!(condensed.chars().count() <= MAX_EARLIER_ANSWER_CHARS + 1);
         let last_word = condensed.trim_end_matches('…').rsplit(' ').next().unwrap();
@@ -131,12 +171,12 @@ mod tests {
 
     #[test]
     fn every_asked_question_is_listed_capped_to_the_most_recent_forty() {
-        let context = build_context("Opening?", &session(10), "x", Vec::new());
+        let context = build_with_history("Opening?", &session(10), "x");
         assert_eq!(context.asked_questions.len(), 11);
         assert_eq!(context.asked_questions[0], "Opening?");
         assert_eq!(context.asked_questions[10], "Question 9?");
 
-        let long = build_context("Opening?", &session(70), "x", Vec::new());
+        let long = build_with_history("Opening?", &session(70), "x");
         assert_eq!(long.asked_questions.len(), 40);
         assert_eq!(long.asked_questions[39], "Question 69?");
         assert_eq!(long.asked_questions[0], "Question 30?");
@@ -146,7 +186,7 @@ mod tests {
     fn long_questions_are_shortened_and_the_restart_opening_is_not_duplicated() {
         let mut turns = session(3);
         turns[2].assistant_question = "word ".repeat(100);
-        let context = build_context("Question 1?", &turns, "x", Vec::new());
+        let context = build_with_history("Question 1?", &turns, "x");
         assert!(context
             .asked_questions
             .iter()
@@ -173,7 +213,14 @@ mod tests {
             cue: "work".into(),
             target: "I work on".into(),
         }];
-        let context = build_context("Opening?", &turns, "latest", targets);
+        let context = build_context(ContextInput {
+            opening_question: "Opening?",
+            prior_turns: &turns,
+            latest_transcript: "latest",
+            learning_targets: targets,
+            profile: None,
+            topic: None,
+        });
         assert!(context.char_count() <= MAX_CONTEXT_CHARS);
         assert_eq!(context.recent_turns.len(), 20);
         assert!(context.earlier_answers.len() < 380);
@@ -199,7 +246,7 @@ mod tests {
                 t
             })
             .collect();
-        let context = build_context("Opening?", &turns, "my latest answer", Vec::new());
+        let context = build_with_history("Opening?", &turns, "my latest answer");
         let prompt_chars = crate::providers::primary_prompt_chars(&context);
         println!(
             "70-turn session: context {} chars, primary prompt {} chars",
@@ -212,5 +259,39 @@ mod tests {
         let apple_chars = crate::providers::primary_prompt_chars(&compact);
         println!("70-turn session: Apple backup prompt {apple_chars} chars");
         assert!(apple_chars < 3_500 + 2_000);
+    }
+
+    #[test]
+    fn bounded_context_retains_topic_and_profile_on_compaction() {
+        let profile = crate::conversation::PersonalProfile {
+            role: "Software engineer".into(),
+            stack: "Rust, TypeScript, React, Tauri".into(),
+            interests: "Distributed systems, cycling".into(),
+            goals: "Natural everyday fluency".into(),
+        };
+        let topic = Some("Work & technology".to_string());
+        let prior_turns = session(10);
+        let context = build_context(ContextInput {
+            opening_question: "What projects are you working on?",
+            prior_turns: &prior_turns,
+            latest_transcript: "I am building a desktop application in Rust.",
+            learning_targets: Vec::new(),
+            profile: Some(profile.clone()),
+            topic: topic.clone(),
+        });
+        assert_eq!(context.topic, topic);
+        assert_eq!(context.question_style_hint, "story");
+        assert_eq!(
+            context.profile.as_ref().map(|p| p.role.as_str()),
+            Some("Software engineer")
+        );
+
+        // Compacting for Apple tight window retains topic and profile
+        let compact = context.compact(4, 3_500, 6);
+        assert_eq!(compact.topic, topic);
+        assert_eq!(compact.question_style_hint, "story");
+        assert!(compact.profile.is_some());
+        assert_eq!(compact.profile.as_ref().unwrap().role, "Software engineer");
+        assert!(compact.profile.as_ref().unwrap().stack.contains("Rust"));
     }
 }

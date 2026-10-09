@@ -32,6 +32,8 @@ export type FinishedPracticeSession = {
   turn_count: number;
   target_turns: number;
   duration_ms: number;
+  topic_label: string;
+  duration_goal_seconds: 300 | 600 | 900;
   numbers: SessionNumbers;
   phrases: WrapupPhrase[];
   recurring_mistakes: RecurringMistake[];
@@ -146,6 +148,12 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     value.target_turns > 0 &&
     'duration_ms' in value &&
     isCount(value.duration_ms) &&
+    'topic_label' in value &&
+    isSummaryText(value.topic_label) &&
+    'duration_goal_seconds' in value &&
+    (value.duration_goal_seconds === 300 ||
+      value.duration_goal_seconds === 600 ||
+      value.duration_goal_seconds === 900) &&
     'numbers' in value &&
     isSessionNumbers(value.numbers) &&
     'phrases' in value &&

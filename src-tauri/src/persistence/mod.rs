@@ -18,11 +18,12 @@ pub(crate) mod learning_usage;
 mod learning_writes;
 mod memory_recall;
 mod schema;
+pub(crate) mod session_metadata;
 pub(crate) mod session_wrapup;
 mod speech_settings;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 14;
+const SCHEMA_VERSION: i64 = 15;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;
@@ -75,22 +76,6 @@ impl SessionDatabase {
         Ok(Self { connection })
     }
 
-    pub fn active_session(&self) -> rusqlite::Result<Option<StoredSession>> {
-        self.connection
-            .query_row(
-                "SELECT id, opening_question FROM sessions WHERE ended_at IS NULL LIMIT 1",
-                [],
-                |row| {
-                    Ok(StoredSession {
-                        id: u64::try_from(row.get::<_, i64>(0)?)
-                            .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, -1))?,
-                        opening_question: row.get(1)?,
-                    })
-                },
-            )
-            .optional()
-    }
-
     pub fn turns(&self, session_id: u64) -> rusqlite::Result<Vec<StoredTurn>> {
         let mut statement = self.connection.prepare(
             "SELECT user_transcript, assistant_reply, assistant_question, answered_by_provider, answered_by_model, answered_by_backup FROM turns WHERE session_id = ?1 ORDER BY sequence",
@@ -101,23 +86,6 @@ impl SessionDatabase {
             stored_turn,
         )?;
         rows.collect()
-    }
-
-    #[cfg(test)]
-    pub fn create_session(&mut self, opening_question: &str) -> rusqlite::Result<u64> {
-        self.create_session_with_mode("conversation", opening_question)
-    }
-
-    pub fn create_session_with_mode(
-        &mut self,
-        mode: &str,
-        opening_question: &str,
-    ) -> rusqlite::Result<u64> {
-        self.connection.execute(
-            "INSERT INTO sessions (mode, scenario, started_at, opening_question) VALUES (?1, 'free_conversation', ?2, ?3)",
-            params![mode, now_ms(), opening_question],
-        )?;
-        Ok(self.connection.last_insert_rowid() as u64)
     }
 
     #[cfg(test)]
@@ -364,9 +332,15 @@ impl SessionDatabase {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredSession {
     pub id: u64,
+    pub topic_id: String,
+    pub topic_label: String,
+    pub topic_custom: Option<String>,
+    pub duration_goal_seconds: u32,
+    pub active_duration_ms: u64,
+    pub started_at: i64,
     pub opening_question: String,
 }
 

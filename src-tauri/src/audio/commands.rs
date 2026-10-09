@@ -68,7 +68,7 @@ fn settings_unreadable() -> TranscriptionError {
 /// What Whisper is told before it hears the answer being recorded now: the question, names from
 /// the last answers, and the glossary. A glossary that cannot be read costs accuracy, not the turn.
 fn prompt_for_current_answer(sessions: &SessionStore) -> Option<String> {
-    let glossary = sessions.glossary_terms().unwrap_or_default();
+    let glossary = sessions.effective_glossary_terms().unwrap_or_default();
     let context = sessions.answer_context().unwrap_or_default();
     answer_prompt(&glossary, &context)
 }

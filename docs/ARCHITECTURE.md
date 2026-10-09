@@ -68,8 +68,8 @@ not per answer. Recording starts at once with a 300 ms pre-roll, `audio/turnDete
 turn after a pause, and `useSpeechCapture` falls back to a one-shot session where no warm one is
 provided (recall drill, Settings test).
 
-F3 part 2 built (awaiting a check in the app): the model is kept loaded by the `whisper-server`
-child, `small.en` is the default when installed (chosen by measurement), the initial prompt is the
+F3 part 2 built (the learner checked the new model in the app on 2026-10-09 and reported that it
+works well): the model is kept loaded by the `whisper-server` child, `small.en` is the default when installed (chosen by measurement), the initial prompt is the
 question + names from recent answers + the glossary, and a live transcript follows the learner
 while they speak.
 
@@ -137,6 +137,13 @@ Rules:
   typed answers never count as independent spoken evidence.
 
 ## 8. Persistence
+
+F8 adds a persisted topic and suggested time goal to each session, plus a local personal profile.
+The session clock uses accumulated active milliseconds and a monotonic anchor in Rust. It is
+checkpointed periodically and on pause/exit; restored sessions start paused, so time while the app
+is closed is excluded. React displays and extrapolates the returned snapshot while Talk is open.
+The profile reaches the conversation as bounded JSON data and contributes terms to the effective
+Whisper glossary without changing the editable glossary.
 
 SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in
 `persistence/schema.rs`. Provider calls run on blocking worker threads and never hold the lock.

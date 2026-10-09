@@ -61,13 +61,18 @@ impl SessionDatabase {
         rows.map(|row| super::to_u64_id(row?)).collect()
     }
 
-    /// Time from the start of the session to its end, or to now while it is still open.
+    /// Accumulated active time; older rows without a stored clock retain their wall-time fallback.
     pub(crate) fn session_elapsed_ms(&self, session_id: u64) -> rusqlite::Result<u64> {
-        let (started_at, ended_at): (i64, Option<i64>) = self.connection.query_row(
-            "SELECT started_at, ended_at FROM sessions WHERE id = ?1",
-            [to_sql_id(session_id)?],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )?;
+        let (started_at, ended_at, active_duration_ms): (i64, Option<i64>, Option<i64>) =
+            self.connection.query_row(
+                "SELECT started_at, ended_at, active_duration_ms FROM sessions WHERE id = ?1",
+                [to_sql_id(session_id)?],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )?;
+        if let Some(active_ms) = active_duration_ms {
+            return u64::try_from(active_ms)
+                .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(2, active_ms));
+        }
         Ok(u64::try_from(ended_at.unwrap_or_else(now_ms) - started_at).unwrap_or(0))
     }
 

@@ -25,6 +25,13 @@ impl ConversationContext {
                 .sum::<usize>()
             + self.earlier_answers.iter().map(count).sum::<usize>()
             + self.asked_questions.iter().map(count).sum::<usize>()
+            + self
+                .profile
+                .as_ref()
+                .map(|p| serde_json::to_string(p).unwrap_or_default().chars().count())
+                .unwrap_or(0)
+            + self.topic.as_ref().map(count).unwrap_or(0)
+            + count(&self.question_style_hint)
     }
 
     /// Drops the least useful history until the context fits `max_chars`: condensed older answers

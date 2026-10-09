@@ -56,6 +56,10 @@ function capitalise(text: string): string {
 /** Where a saved phrase came from, then when: its note, or what kind of save it was. */
 export function phraseSourceLine(card: PhraseCardRecord, now: number = Date.now()): string {
   const note = card.meaning_or_note.trim();
+  if (card.session_topic?.trim()) {
+    const detail = note ? ` · ${note}` : '';
+    return `${card.session_topic.trim()}${detail} · ${capitalise(whenLabel(card.created_at, now))}`;
+  }
   const origin = note || (card.session_id === null ? 'Saved by hand' : 'From a conversation');
   return `${origin} · ${capitalise(whenLabel(card.created_at, now))}`;
 }
@@ -88,7 +92,9 @@ export function searchMemory(memory: VisibleMemory, rawQuery: string): VisibleMe
   const query = rawQuery.trim().toLowerCase();
   if (!query) return memory;
   return {
-    phrases: memory.phrases.filter((card) => matches(query, card.phrase, card.meaning_or_note)),
+    phrases: memory.phrases.filter((card) =>
+      matches(query, card.phrase, card.meaning_or_note, card.session_topic ?? ''),
+    ),
     mistakes: memory.mistakes.filter((mistake) =>
       matches(
         query,

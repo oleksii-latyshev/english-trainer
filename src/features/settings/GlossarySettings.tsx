@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { getGlossary, saveGlossary, speechErrorMessage } from '@/lib/speechTypes';
 import { glossarySummary } from './lib/speechCheck';
 import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type LoadState =
   | { tag: 'loading' }
   | { tag: 'ready'; terms: string[] }
   | { tag: 'error'; message: string };
 
-/** Personalisation: the words speech recognition should know. About you joins with F8. */
+/** The editable glossary stays separate from the terms derived from the profile. */
 export function GlossarySettings() {
   const [state, setState] = useState<LoadState>({ tag: 'loading' });
   const [isEditing, setIsEditing] = useState(false);
@@ -54,7 +54,7 @@ export function GlossarySettings() {
 
   const terms = state.tag === 'ready' ? state.terms : [];
   return (
-    <SettingsGroup id="personalisation" title="Personalisation">
+    <>
       {state.tag === 'error' ? (
         <SettingsBlock role="alert" tone="error">
           {state.message}
@@ -117,6 +117,6 @@ export function GlossarySettings() {
           {problem && <p role="alert">{problem}</p>}
         </SettingsBlock>
       )}
-    </SettingsGroup>
+    </>
   );
 }

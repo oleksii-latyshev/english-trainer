@@ -21,12 +21,15 @@ describe('learning memory IPC records', () => {
   it('accepts bounded phrase records with complete provenance', () => {
     expect(isPhraseCardRecord(phraseCard)).toBe(true);
     expect(isPhraseCardRecord({ ...phraseCard, session_id: null, sequence: null })).toBe(true);
+    expect(isPhraseCardRecord({ ...phraseCard, session_topic: 'Plans & stories' })).toBe(true);
+    expect(isPhraseCardRecord({ ...phraseCard, session_topic: null })).toBe(true);
   });
 
   it('rejects empty phrase text and incomplete or invalid provenance', () => {
     expect(isPhraseCardRecord({ ...phraseCard, phrase: '' })).toBe(false);
     expect(isPhraseCardRecord({ ...phraseCard, session_id: null })).toBe(false);
     expect(isPhraseCardRecord({ ...phraseCard, sequence: -1 })).toBe(false);
+    expect(isPhraseCardRecord({ ...phraseCard, session_topic: 4 })).toBe(false);
   });
 
   it('rejects unbounded schedule fields', () => {

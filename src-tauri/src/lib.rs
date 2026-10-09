@@ -182,8 +182,33 @@ fn retry_practice_turn(
 #[tauri::command]
 fn start_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
+    options: Option<conversation::StartPracticeOptions>,
 ) -> Result<conversation::PracticeSession, providers::ProviderError> {
-    sessions.start_session()
+    sessions.start_practice_session(options)
+}
+
+#[tauri::command]
+fn set_practice_clock(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    running: bool,
+) -> Result<conversation::PracticeSession, providers::ProviderError> {
+    sessions.set_practice_clock(session_id, running)
+}
+
+#[tauri::command]
+fn get_personal_profile(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+) -> Result<conversation::PersonalProfile, providers::ProviderError> {
+    sessions.personal_profile()
+}
+
+#[tauri::command]
+fn save_personal_profile(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    profile: conversation::PersonalProfile,
+) -> Result<conversation::PersonalProfile, providers::ProviderError> {
+    sessions.save_personal_profile(profile)
 }
 
 // Tauri injects each managed state as its own argument, so the count is the command's contract.
@@ -520,6 +545,9 @@ pub fn run() {
             generate_follow_up,
             retry_practice_turn,
             start_practice_session,
+            set_practice_clock,
+            get_personal_profile,
+            save_personal_profile,
             send_practice_turn,
             get_practice_dialogue,
             finish_practice_session,
@@ -551,6 +579,13 @@ pub fn run() {
         .run(|app, event| {
             // The model server is a child process; it must not outlive the app.
             if let tauri::RunEvent::Exit = event {
+                if let Some(sessions) = app.try_state::<conversation::SessionStore>() {
+                    if let Err(error) = sessions.checkpoint_on_exit() {
+                        eprintln!(
+                            "Could not checkpoint the practice session clock on exit: {error:?}"
+                        );
+                    }
+                }
                 if let Some(engine) = app.try_state::<std::sync::Arc<audio::SpeechEngine>>() {
                     engine.shutdown();
                 }

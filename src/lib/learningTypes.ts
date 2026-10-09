@@ -105,6 +105,7 @@ export type PhraseCardRecord = {
   meaning_or_note: string;
   session_id: number | null;
   sequence: number | null;
+  session_topic?: string | null;
   created_at: number;
   last_reviewed_at: number | null;
   next_review_at: number;
@@ -130,6 +131,11 @@ export function isPhraseCardRecord(value: unknown): value is PhraseCardRecord {
     (value.session_id === null || isPositiveInteger(value.session_id)) &&
     'sequence' in value &&
     (value.sequence === null || isPositiveInteger(value.sequence)) &&
+    (!('session_topic' in value) ||
+      value.session_topic === null ||
+      (typeof value.session_topic === 'string' &&
+        value.session_topic.trim().length > 0 &&
+        Array.from(value.session_topic).length <= 150)) &&
     (value.session_id === null) === (value.sequence === null) &&
     'created_at' in value &&
     isNonNegativeInteger(value.created_at) &&

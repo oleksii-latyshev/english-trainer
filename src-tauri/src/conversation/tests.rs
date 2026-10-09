@@ -1,4 +1,4 @@
-use super::rules::{MAX_CONTEXT_CHARS, MAX_TURNS};
+use super::rules::{MAX_CONTEXT_CHARS, MAX_TURNS, OPENING_QUESTION};
 use super::*;
 use std::sync::mpsc;
 use std::thread;
@@ -163,6 +163,165 @@ fn start_turn_context_resume_and_finish_form_a_session() {
         store.finish(session.session_id).unwrap_err().code,
         ProviderErrorCode::InvalidSession
     );
+}
+
+#[test]
+fn practice_start_options_persist_and_active_reopen_starts_paused() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store
+        .start_practice_session(Some(StartPracticeOptions {
+            topic_id: Some(topics::TOPIC_PLANS_STORIES.into()),
+            topic_custom: None,
+            duration_goal_seconds: Some(300),
+        }))
+        .unwrap();
+    assert_eq!(session.topic_id, topics::TOPIC_PLANS_STORIES);
+    assert_eq!(session.topic_label, "Plans & stories");
+    assert_eq!(session.duration_goal_seconds, 300);
+    assert_eq!(session.active_duration_ms, 0);
+    assert!(!session.is_clock_running);
+    store.set_practice_clock(session.session_id, true).unwrap();
+    let anchor = Instant::now();
+    store.lock().active.as_mut().unwrap().clock_anchor = Some(anchor);
+    super::lifecycle::checkpoint_clock_at(
+        &mut store.lock(),
+        session.session_id,
+        anchor + Duration::from_secs(2),
+    )
+    .unwrap();
+    let checkpoint = store.set_practice_clock(session.session_id, false).unwrap();
+    assert_eq!(checkpoint.active_duration_ms, 2_000);
+    drop(store);
+
+    let sqlite = rusqlite::Connection::open(&path).unwrap();
+    sqlite
+        .execute(
+            "UPDATE sessions SET started_at = started_at - 600000 WHERE id = ?1",
+            [session.session_id as i64],
+        )
+        .unwrap();
+    drop(sqlite);
+
+    let reopened = SessionStore::open(&path).unwrap();
+    let resumed = reopened.get_active().unwrap().unwrap();
+    assert_eq!(resumed.topic_id, session.topic_id);
+    assert_eq!(resumed.topic_label, session.topic_label);
+    assert_eq!(resumed.duration_goal_seconds, 300);
+    assert_eq!(resumed.active_duration_ms, checkpoint.active_duration_ms);
+    assert!(!resumed.is_clock_running);
+    assert_eq!(
+        reopened.get_active().unwrap().unwrap().active_duration_ms,
+        checkpoint.active_duration_ms
+    );
+    let finished = reopened.finish(session.session_id).unwrap();
+    assert_eq!(finished.duration_ms, 2_000);
+    assert_eq!(finished.topic_label, "Plans & stories");
+    assert_eq!(finished.duration_goal_seconds, 300);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn finishing_a_new_session_keeps_its_zero_active_duration() {
+    let store = SessionStore::default();
+    let session = store
+        .start_practice_session(Some(StartPracticeOptions {
+            topic_id: Some(topics::TOPIC_DAILY_LIFE.into()),
+            topic_custom: None,
+            duration_goal_seconds: Some(600),
+        }))
+        .unwrap();
+    let finished = store.finish(session.session_id).unwrap();
+    assert_eq!(finished.duration_ms, 0);
+}
+
+#[test]
+fn profiles_persist_clear_and_merge_with_the_manual_glossary() {
+    let store = SessionStore::default();
+    store
+        .save_glossary_terms(vec!["ManualTerm".into(), "Rust".into()])
+        .unwrap();
+    let saved = store
+        .save_personal_profile(PersonalProfile {
+            role: "  Engineer  ".into(),
+            stack: "Rust, Tauri".into(),
+            interests: "Tauri, hiking".into(),
+            goals: "Speak more naturally".into(),
+        })
+        .unwrap();
+    assert_eq!(saved.role, "Engineer");
+    assert_eq!(store.personal_profile().unwrap(), saved);
+    assert_eq!(
+        store.effective_glossary_terms().unwrap(),
+        ["ManualTerm", "Rust", "Engineer", "Tauri", "hiking"]
+    );
+    store
+        .save_personal_profile(PersonalProfile::default())
+        .unwrap();
+    assert_eq!(
+        store.effective_glossary_terms().unwrap(),
+        ["ManualTerm", "Rust"]
+    );
+    assert!(store
+        .save_personal_profile(PersonalProfile {
+            role: "x".repeat(151),
+            ..Default::default()
+        })
+        .is_err());
+}
+
+#[test]
+fn migration_from_version_fourteen_keeps_sessions_turns_glossary_and_retry_evidence() {
+    let path = temporary_database_path();
+    let mut db = SessionDatabase::open(&path).unwrap();
+    let sid = db.create_session("Legacy opening?").unwrap();
+    db.save_turn(
+        sid,
+        1,
+        &StoredTurn {
+            learner: "A retained answer".into(),
+            assistant_reply: "Thanks.".into(),
+            assistant_question: "Tell me more?".into(),
+            answered_by: None,
+        },
+    )
+    .unwrap();
+    db.replace_glossary_terms(&["Manual glossary term".into()])
+        .unwrap();
+    let evidence =
+        crate::providers::compare_attempts(1, "I work in there", "I work there", "I work there");
+    db.save_comparison(sid, &evidence).unwrap();
+    drop(db);
+
+    let legacy = rusqlite::Connection::open(&path).unwrap();
+    for column in [
+        "active_duration_ms",
+        "duration_goal_seconds",
+        "topic_custom",
+        "topic_label",
+        "topic_id",
+    ] {
+        legacy
+            .execute_batch(&format!("ALTER TABLE sessions DROP COLUMN {column};"))
+            .unwrap();
+    }
+    legacy.pragma_update(None, "user_version", 14).unwrap();
+    drop(legacy);
+
+    let store = SessionStore::open(&path).unwrap();
+    let resumed = store.get_active().unwrap().unwrap();
+    assert_eq!(resumed.session_id, sid);
+    assert_eq!(resumed.topic_id, topics::TOPIC_FREE_CONVERSATION);
+    assert_eq!(resumed.topic_label, "Free conversation");
+    assert_eq!(resumed.duration_goal_seconds, 600);
+    assert_eq!(resumed.active_duration_ms, 0);
+    assert_eq!(
+        store.dialogue(sid).unwrap().turns[0].learner,
+        "A retained answer"
+    );
+    assert_eq!(store.glossary_terms().unwrap(), ["Manual glossary term"]);
+    assert_eq!(resumed.retry_evidence, [evidence]);
+    std::fs::remove_file(path).unwrap();
 }
 
 #[test]

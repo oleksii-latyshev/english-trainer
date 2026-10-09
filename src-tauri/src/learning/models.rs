@@ -84,6 +84,8 @@ pub struct PhraseCardRecord {
     pub meaning_or_note: String,
     pub session_id: Option<u64>,
     pub sequence: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_topic: Option<String>,
     pub created_at: i64,
     pub last_reviewed_at: Option<i64>,
     pub next_review_at: i64,

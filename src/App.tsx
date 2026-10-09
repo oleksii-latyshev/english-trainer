@@ -7,6 +7,7 @@ import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import type { PracticeOptions } from '@/lib/practiceOptions';
 import { TrainerProvider } from './context/TrainerContext';
 import { router } from './router';
 import './App.css';
@@ -40,9 +41,12 @@ function App() {
     setMicActive(micActive);
   }, [micActive, setMicActive]);
 
-  const startPractice = useCallback(() => {
-    void practice.start();
-  }, [practice]);
+  const startPractice = useCallback(
+    (options?: PracticeOptions) => {
+      void practice.start(options);
+    },
+    [practice],
+  );
 
   const startOrResumePractice = useCallback(() => {
     if (isSessionOpen) {
@@ -83,7 +87,7 @@ function App() {
 
   useEffect(() => {
     const prev = previousPracticeTag.current;
-    if ((prev === 'loading' || prev === 'starting') && practice.state.tag === 'active') {
+    if (prev === 'starting' && practice.state.tag === 'active') {
       void router.navigate({ to: '/conversation' });
     }
     if (prev === 'finishing' && practice.state.tag === 'completed') {

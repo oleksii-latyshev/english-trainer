@@ -365,6 +365,43 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             "UPDATE speech_settings SET model_file = '' WHERE model_file = 'ggml-base.en.bin'",
             [],
         )?;
+        transaction.pragma_update(None, "user_version", 14)?;
+        transaction.commit()?;
+        version = 14;
+    }
+    if version < 15 {
+        let transaction = connection.unchecked_transaction()?;
+        for (column, kind, default_val) in [
+            ("topic_id", "TEXT", "'free_conversation'"),
+            ("topic_label", "TEXT", "'Free conversation'"),
+            ("topic_custom", "TEXT", "NULL"),
+            ("duration_goal_seconds", "INTEGER", "600"),
+            ("active_duration_ms", "INTEGER", "0"),
+        ] {
+            if !has_column(&transaction, "sessions", column)? {
+                transaction.execute_batch(&format!(
+                    "ALTER TABLE sessions ADD COLUMN {column} {kind} DEFAULT {default_val};"
+                ))?;
+            }
+        }
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS personal_profile (
+                id INTEGER PRIMARY KEY CHECK(id = 1),
+                role TEXT NOT NULL DEFAULT '',
+                stack TEXT NOT NULL DEFAULT '',
+                interests TEXT NOT NULL DEFAULT '',
+                goals TEXT NOT NULL DEFAULT ''
+            );
+            INSERT OR IGNORE INTO personal_profile (id, role, stack, interests, goals)
+            VALUES (1, '', '', '', '');",
+        )?;
+        // Earlier versions measured finished sessions as wall time. Preserve that historical
+        // duration once, while all open legacy sessions resume paused at zero active time.
+        transaction.execute(
+            "UPDATE sessions SET active_duration_ms = MAX(0, ended_at - started_at)
+             WHERE ended_at IS NOT NULL AND active_duration_ms = 0",
+            [],
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

@@ -280,6 +280,15 @@ pub struct ConversationContext {
     /// Questions Eva already asked this session, oldest first.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub asked_questions: Vec<String>,
+    /// Learner background profile. Data, never instructions.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile: Option<crate::conversation::PersonalProfile>,
+    /// Session topic label.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub topic: Option<String>,
+    /// Stable round-robin question type based on the full session turn count.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub question_style_hint: String,
     /// How Eva should sound; set from the saved settings, never part of the data sent to a model.
     #[serde(skip)]
     pub eva_style: EvaStyle,

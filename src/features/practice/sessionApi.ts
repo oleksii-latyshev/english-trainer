@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { isPracticeDialogue, type PracticeDialogue } from '@/lib/dialogueTypes';
+import type { PracticeOptions } from '@/lib/practiceOptions';
 import {
   type DailyRecallPlan,
   type FinishedPracticeSession,
@@ -12,9 +13,22 @@ import {
   type SpokenRecallResult,
 } from '@/lib/types';
 
-export async function startPracticeSession(): Promise<PracticeSession> {
-  const result = await invoke<unknown>('start_practice_session');
+export async function startPracticeSession(options?: PracticeOptions): Promise<PracticeSession> {
+  const result: unknown = options
+    ? await invoke<unknown>('start_practice_session', { options })
+    : await invoke<unknown>('start_practice_session');
   if (!isPracticeSession(result)) throw new Error('Unexpected practice session response.');
+  return result;
+}
+
+export async function setPracticeClock(
+  sessionId: number,
+  running: boolean,
+): Promise<PracticeSession> {
+  const result = await invoke<unknown>('set_practice_clock', { sessionId, running });
+  if (!isPracticeSession(result) || result.session_id !== sessionId) {
+    throw new Error('Unexpected practice clock response.');
+  }
   return result;
 }
 

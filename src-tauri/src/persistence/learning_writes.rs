@@ -213,9 +213,12 @@ impl SessionDatabase {
         let existing: Option<PhraseCardRecord> = self
             .connection
             .query_row(
-                "SELECT id, phrase, normalized_phrase, meaning_or_note, session_id, sequence,
-                        created_at, last_reviewed_at, next_review_at, interval_days, ease_factor, status
-                 FROM phrase_cards WHERE normalized_phrase = ?1",
+                "SELECT p.id, p.phrase, p.normalized_phrase, p.meaning_or_note, p.session_id, p.sequence,
+                        p.created_at, p.last_reviewed_at, p.next_review_at, p.interval_days, p.ease_factor, p.status,
+                        s.topic_label
+                 FROM phrase_cards p
+                 LEFT JOIN sessions s ON s.id = p.session_id
+                 WHERE p.normalized_phrase = ?1",
                 params![normalized],
                 |row| {
                     let next_review: i64 = row.get(8)?;
@@ -227,6 +230,7 @@ impl SessionDatabase {
                         meaning_or_note: row.get(3)?,
                         session_id: row.get::<_, Option<i64>>(4)?.map(|id| id as u64),
                         sequence: row.get::<_, Option<i64>>(5)?.map(|s| s as usize),
+                        session_topic: row.get(12)?,
                         created_at: row.get(6)?,
                         last_reviewed_at: row.get(7)?,
                         next_review_at: next_review,
@@ -257,6 +261,18 @@ impl SessionDatabase {
             return Ok(card);
         }
 
+        let session_topic: Option<String> = if let Some(sid) = session_id {
+            self.connection
+                .query_row(
+                    "SELECT topic_label FROM sessions WHERE id = ?1",
+                    [to_sql_id(sid)?],
+                    |row| row.get(0),
+                )
+                .optional()?
+        } else {
+            None
+        };
+
         let sql_session_id = session_id.map(to_sql_id).transpose()?;
         let sql_sequence = sequence.map(to_sql_sequence).transpose()?;
         let next_review = now + MS_PER_DAY;
@@ -285,6 +301,7 @@ impl SessionDatabase {
             meaning_or_note: meaning_or_note.to_string(),
             session_id,
             sequence,
+            session_topic,
             created_at: now,
             last_reviewed_at: None,
             next_review_at: next_review,

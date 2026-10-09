@@ -52,25 +52,53 @@ describe('conversation IPC payloads', () => {
   });
 
   it('requires a valid practice session identifier and opening question', () => {
-    expect(
-      isPracticeSession({
-        session_id: 1,
-        opening_question: 'How was your day?',
-        turn_count: 2,
-        target_turns: 8,
-        retry_evidence: [],
-      }),
-    ).toBe(true);
+    const validSession = {
+      session_id: 1,
+      opening_question: 'How was your day?',
+      turn_count: 2,
+      target_turns: 8,
+      retry_evidence: [],
+      topic_id: 'daily_life',
+      topic_label: 'Daily life',
+      topic_custom: null,
+      duration_goal_seconds: 600,
+      active_duration_ms: 30000,
+      started_at: 1780000000000,
+      is_clock_running: false,
+    };
+    expect(isPracticeSession(validSession)).toBe(true);
+    expect(isPracticeSession({ ...validSession, topic_id: 'unknown' })).toBe(false);
+    expect(isPracticeSession({ ...validSession, duration_goal_seconds: 420 })).toBe(false);
+    expect(isPracticeSession({ ...validSession, active_duration_ms: -1 })).toBe(false);
     expect(
       isPracticeSession({
         session_id: 0,
         opening_question: 'How was your day?',
         turn_count: 0,
         target_turns: 8,
+        topic_id: 'daily_life',
+        topic_label: 'Daily life',
+        topic_custom: null,
+        duration_goal_seconds: 600,
+        active_duration_ms: 0,
+        started_at: 1780000000000,
+        is_clock_running: false,
       }),
     ).toBe(false);
     expect(
-      isPracticeSession({ session_id: 1, opening_question: '', turn_count: 0, target_turns: 8 }),
+      isPracticeSession({
+        session_id: 1,
+        opening_question: '',
+        turn_count: 0,
+        target_turns: 8,
+        topic_id: 'daily_life',
+        topic_label: 'Daily life',
+        topic_custom: null,
+        duration_goal_seconds: 600,
+        active_duration_ms: 0,
+        started_at: 1780000000000,
+        is_clock_running: false,
+      }),
     ).toBe(false);
     expect(isPracticeSession({ session_id: 1, opening_question: 'Question?', turn_count: 0 })).toBe(
       false,
@@ -81,6 +109,8 @@ describe('conversation IPC payloads', () => {
       turn_count: 3,
       target_turns: 8,
       duration_ms: 624000,
+      topic_label: 'Daily life',
+      duration_goal_seconds: 600,
       numbers: {
         speaking_time: { duration_ms: null, trend: { kind: 'first' } },
         words_per_minute: { value: null, trend: { kind: 'first' } },

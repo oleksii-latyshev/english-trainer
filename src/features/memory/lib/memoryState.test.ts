@@ -79,6 +79,9 @@ describe('memory text', () => {
     expect(
       phraseSourceLine({ ...phrase, meaning_or_note: '', session_id: null, sequence: null }, NOW),
     ).toBe('Saved by hand · 3 days ago');
+    expect(phraseSourceLine({ ...phrase, session_topic: 'Plans & stories' }, NOW)).toBe(
+      'Plans & stories · we had to make all data same · 3 days ago',
+    );
   });
 
   it('builds the source line of a mistake from how often it came up', () => {

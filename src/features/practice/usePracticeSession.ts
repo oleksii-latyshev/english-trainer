@@ -1,5 +1,6 @@
 import { isTauri } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { PracticeOptions } from '@/lib/practiceOptions';
 import {
   type AttemptComparison,
   type ConversationTurn,
@@ -12,6 +13,7 @@ import {
   type PracticeState,
   recordRetryComparison,
   setTurnPending,
+  updatePracticeClock,
   updateSummary,
 } from './lib/practiceState';
 import {
@@ -39,6 +41,14 @@ function activeState(session: PracticeSession): PracticeState {
     turnCount: session.turn_count,
     targetTurns: session.target_turns,
     retryEvidence: session.retry_evidence,
+    topicId: session.topic_id,
+    topicLabel: session.topic_label,
+    topicCustom: session.topic_custom,
+    durationGoalSeconds: session.duration_goal_seconds,
+    activeDurationMs: session.active_duration_ms,
+    startedAt: session.started_at,
+    isClockRunning: session.is_clock_running,
+    clockSnapshotAtMs: performance.now(),
   };
 }
 
@@ -47,6 +57,20 @@ export function usePracticeSession(dependencies: Dependencies) {
     isTauri() ? { tag: 'loading' } : { tag: 'idle' },
   );
   const [error, setError] = useState('');
+  const isClockError = useRef(false);
+  const updateClock = useCallback((session: PracticeSession) => {
+    setState((current) => updatePracticeClock(current, session));
+    if (isClockError.current) {
+      isClockError.current = false;
+      setError('');
+    }
+  }, []);
+  const reportClockError = useCallback((cause: unknown) => {
+    isClockError.current = true;
+    setError(
+      sessionError(cause, 'Session time could not be saved. Keep the app open and try again.'),
+    );
+  }, []);
 
   useEffect(() => {
     if (!isTauri()) return;
@@ -66,8 +90,8 @@ export function usePracticeSession(dependencies: Dependencies) {
     };
   }, []);
 
-  async function start() {
-    // "Talk more" on the wrap-up starts the next session straight from the summary.
+  async function start(options?: PracticeOptions) {
+    // The start screen owns the options for the next conversation.
     if ((state.tag !== 'idle' && state.tag !== 'completed') || !dependencies.canChangeSession)
       return;
     if (!isTauri()) {
@@ -77,7 +101,7 @@ export function usePracticeSession(dependencies: Dependencies) {
     setState({ tag: 'starting' });
     setError('');
     try {
-      const session = await startPracticeSession();
+      const session = await startPracticeSession(options);
       dependencies.stopSpeech();
       dependencies.resetCapture();
       setState(activeState(session));
@@ -122,5 +146,7 @@ export function usePracticeSession(dependencies: Dependencies) {
       setState((current) => recordRetryComparison(current, sessionId, comparison)),
     onTurnPendingChange: (isPending: boolean) =>
       setState((current) => setTurnPending(current, isPending)),
+    updateClock,
+    reportClockError,
   };
 }

@@ -159,7 +159,9 @@ export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdat
     <div className="wrapup">
       <header className="wrapup-header">
         <div className="wrapup-header-copy">
-          <div className="wrapup-subtitle">{formatDuration(summary.duration_ms)}</div>
+          <div className="wrapup-subtitle">
+            {summary.topic_label} · {formatDuration(summary.duration_ms)}
+          </div>
           <h1>Nice session. Here’s what to keep.</h1>
         </div>
         <div className="wrapup-header-actions">

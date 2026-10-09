@@ -1,14 +1,21 @@
 import { Button, Tooltip } from '@heroui/react';
 import { Pause, Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { SpeechTiming } from '@/features/speech/TimingPanel';
 import { TimingPopover } from '@/features/speech/TimingPanel';
+import { elapsedSessionMs, formatElapsedClock } from '@/lib/practiceOptions';
 import type { PauseControl } from './lib/pauseControl';
 
 type Props = {
   mood: EvaMood;
-  turnCount: number;
-  targetTurns: number;
+  session: {
+    topicLabel: string;
+    durationGoalSeconds: 300 | 600 | 900;
+    activeDurationMs: number;
+    isClockRunning: boolean;
+    clockSnapshotAtMs: number;
+  };
   timing: SpeechTiming;
   /** Pause or Resume; when `disabledReason` is set the control is disabled and says why. */
   pause: PauseControl & { onPause: () => void; onResume: () => void };
@@ -49,33 +56,49 @@ function PauseButton({ pause }: { pause: Props['pause'] }) {
 
 export function TalkHeader({
   mood,
-  turnCount,
-  targetTurns,
+  session,
   timing,
   pause,
   isFinishing,
   isFinishDisabled,
   onFinish,
 }: Props) {
-  const percent = Math.min(100, (turnCount / Math.max(1, targetTurns)) * 100);
+  const [now, setNow] = useState(performance.now());
+  useEffect(() => {
+    if (!session.isClockRunning) return;
+    const timer = window.setInterval(() => setNow(performance.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [session.isClockRunning]);
+  const elapsedMs = elapsedSessionMs(
+    session.activeDurationMs,
+    session.clockSnapshotAtMs,
+    session.isClockRunning,
+    now,
+  );
+  const elapsedText = formatElapsedClock(elapsedMs);
+  const goalText = formatElapsedClock(session.durationGoalSeconds * 1000);
+  const percent = Math.min(100, (elapsedMs / (session.durationGoalSeconds * 1000)) * 100);
   return (
     <header className="talk-header">
       <div className="talk-header-eva">
         <Eva decorative mood={mood} size={44} />
       </div>
       <div className="talk-progress">
+        <div className="talk-mode">
+          <div className="talk-mode-label">{session.topicLabel}</div>
+          <div className="talk-mode-step">
+            {elapsedText} of {goalText}
+          </div>
+        </div>
         <div
-          aria-label="Answers so far"
-          aria-valuemax={targetTurns}
+          aria-label="Suggested session time"
+          aria-valuemax={session.durationGoalSeconds}
           aria-valuemin={0}
-          aria-valuenow={Math.min(turnCount, targetTurns)}
+          aria-valuenow={Math.min(Math.floor(elapsedMs / 1000), session.durationGoalSeconds)}
           className="talk-progress-track"
           role="progressbar"
         >
           <div className="talk-progress-fill" style={{ width: `${percent}%` }} />
-        </div>
-        <div className="talk-progress-count">
-          {turnCount} <span>of {targetTurns} answers</span>
         </div>
       </div>
       <div className="talk-header-actions">

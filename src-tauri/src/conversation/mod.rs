@@ -6,28 +6,31 @@ use crate::providers::{
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 mod ai_settings;
 mod api_usage;
 mod coaching;
 pub(crate) mod coaching_queue;
 mod context_builder;
 mod guided;
+mod lifecycle;
 pub(crate) mod memory_recall;
+mod profile;
 pub(crate) mod recall;
 mod rules;
 mod scaffold;
 mod speech_settings;
+mod topics;
 pub(crate) mod usage;
 mod usage_support;
 mod wrapup;
 pub use coaching::TurnCoaching;
 pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
+pub use profile::PersonalProfile;
 pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
-use rules::{
-    validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS,
-    OPENING_QUESTION,
-};
+use rules::{validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS};
 pub use scaffold::{question_scaffold, QuestionScaffold};
+pub use topics::StartPracticeOptions;
 pub use wrapup::{RecurringMistake, WrapupPhrase};
 
 /// The mode column of every new session. Conversation and Coach are one mode now; sessions saved
@@ -41,6 +44,13 @@ pub struct PracticeSession {
     pub turn_count: usize,
     pub target_turns: usize,
     pub retry_evidence: Vec<AttemptComparison>,
+    pub topic_id: String,
+    pub topic_label: String,
+    pub topic_custom: Option<String>,
+    pub duration_goal_seconds: u32,
+    pub active_duration_ms: u64,
+    pub started_at: i64,
+    pub is_clock_running: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -86,6 +96,8 @@ pub struct FinishedPracticeSession {
     pub target_turns: usize,
     /// Session length, from start to finish, in ms.
     pub duration_ms: u64,
+    pub topic_label: String,
+    pub duration_goal_seconds: u32,
     pub numbers: crate::learning::session_stats::SessionNumbers,
     /// Up to three phrases from the session's coaching that are not saved yet.
     pub phrases: Vec<WrapupPhrase>,
@@ -133,6 +145,13 @@ struct ActiveSession {
     opening_question: String,
     turns: Vec<StoredTurn>,
     in_flight: bool,
+    topic_id: String,
+    topic_label: String,
+    topic_custom: Option<String>,
+    duration_goal_seconds: u32,
+    active_duration_ms: u64,
+    started_at: i64,
+    clock_anchor: Option<Instant>,
 }
 
 impl ActiveSession {
@@ -163,6 +182,13 @@ impl SessionStore {
                 opening_question: stored.opening_question,
                 turns: database.turns(stored.id)?,
                 in_flight: false,
+                topic_id: stored.topic_id,
+                topic_label: stored.topic_label,
+                topic_custom: stored.topic_custom,
+                duration_goal_seconds: stored.duration_goal_seconds,
+                active_duration_ms: stored.active_duration_ms,
+                started_at: stored.started_at,
+                clock_anchor: None,
             })
         } else {
             None
@@ -177,40 +203,6 @@ impl SessionStore {
     #[cfg(test)]
     pub fn start(&self) -> Result<PracticeSession, ProviderError> {
         self.start_session()
-    }
-
-    pub fn start_session(&self) -> Result<PracticeSession, ProviderError> {
-        let mut state = self.lock();
-        if let Some(active) = &state.active {
-            return self.build_practice_session(&state, active);
-        }
-        let opening_question = OPENING_QUESTION.to_string();
-        let session_id = state
-            .database
-            .create_session_with_mode(SESSION_MODE, &opening_question)
-            .map_err(database_error)?;
-        if session_id > MAX_SAFE_SESSION_ID {
-            let _ = state.database.finish_session(session_id);
-            return Err(database_error_message());
-        }
-        let active = ActiveSession {
-            id: session_id,
-            opening_question: opening_question.clone(),
-            turns: Vec::new(),
-            in_flight: false,
-        };
-        let practice_session = self.build_practice_session(&state, &active)?;
-        state.active = Some(active);
-        Ok(practice_session)
-    }
-
-    pub fn get_active(&self) -> Result<Option<PracticeSession>, ProviderError> {
-        let state = self.lock();
-        state
-            .active
-            .as_ref()
-            .map(|active| self.build_practice_session(&state, active))
-            .transpose()
     }
 
     pub fn dialogue(&self, session_id: u64) -> Result<PracticeDialogue, ProviderError> {
@@ -282,14 +274,20 @@ impl SessionStore {
             } else {
                 Vec::new()
             };
+            let profile = state
+                .database
+                .get_personal_profile()
+                .map_err(database_error)?;
             let session = active_session_mut(&mut state, session_id)?;
             session.in_flight = true;
-            context_builder::build_context(
-                &session.opening_question,
-                &session.turns,
-                &transcript,
+            context_builder::build_context(context_builder::ContextInput {
+                opening_question: &session.opening_question,
+                prior_turns: &session.turns,
+                latest_transcript: &transcript,
                 learning_targets,
-            )
+                profile: Some(profile),
+                topic: Some(session.topic_label.clone()),
+            })
         };
 
         let result = generate(&context);
@@ -347,16 +345,18 @@ impl SessionStore {
 
     pub fn finish(&self, session_id: u64) -> Result<FinishedPracticeSession, ProviderError> {
         let mut state = self.lock();
+        lifecycle::checkpoint_clock(&mut state, session_id)?;
         let session = active_session_mut(&mut state, session_id)?;
         if session.in_flight {
             return Err(busy_error());
         }
         let turn_count = session.turns.len();
+        let active_duration_ms = session.active_duration_ms;
         // Read first: a failure here leaves the session open.
         let summary = self.finished_summary(&state, session_id, turn_count)?;
         if !state
             .database
-            .finish_session(session_id)
+            .finish_session_with_duration(session_id, active_duration_ms)
             .map_err(database_error)?
         {
             return Err(invalid_session_error());
@@ -403,7 +403,23 @@ impl SessionStore {
             finished: true,
             turn_count,
             target_turns: DAILY_TARGET_TURNS,
-            duration_ms: wrapup.duration_ms,
+            duration_ms: state
+                .database
+                .session_elapsed_ms(session_id)
+                .map_err(database_error)?,
+            topic_label: state
+                .database
+                .session_metadata(session_id)
+                .map_err(database_error)?
+                .map_or_else(
+                    || "Free conversation".to_string(),
+                    |session| session.topic_label,
+                ),
+            duration_goal_seconds: state
+                .database
+                .session_metadata(session_id)
+                .map_err(database_error)?
+                .map_or(600, |session| session.duration_goal_seconds),
             numbers: wrapup.numbers,
             phrases: wrapup.phrases,
             recurring_mistakes: wrapup.recurring_mistakes,
@@ -681,6 +697,13 @@ impl SessionStore {
                 .database
                 .comparisons(active.id)
                 .map_err(database_error)?,
+            topic_id: active.topic_id.clone(),
+            topic_label: active.topic_label.clone(),
+            topic_custom: active.topic_custom.clone(),
+            duration_goal_seconds: active.duration_goal_seconds,
+            active_duration_ms: lifecycle::elapsed_snapshot_at(active, Instant::now()),
+            started_at: active.started_at,
+            is_clock_running: active.clock_anchor.is_some(),
         })
     }
 }

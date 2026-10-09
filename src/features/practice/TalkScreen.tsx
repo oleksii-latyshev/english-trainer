@@ -142,9 +142,8 @@ export function TalkScreen(props: Props) {
         mood={mood}
         onFinish={actions.finishPractice}
         pause={pause}
-        targetTurns={session.targetTurns}
+        session={session}
         timing={model.timing}
-        turnCount={session.turnCount}
       />
       <div className="talk-body">
         <EvaStage

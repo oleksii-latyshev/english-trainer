@@ -26,8 +26,20 @@ describe('primaryAction', () => {
 });
 
 describe('resumeDetail', () => {
-  it('shows progress against the target', () => {
-    expect(resumeDetail({ turnCount: 3, targetTurns: 8 })).toBe('3 of 8 answers so far');
+  it('shows the open topic, start day and suggested time remaining', () => {
+    const startedAt = new Date(2026, 9, 7, 9).getTime();
+    const now = new Date(2026, 9, 7, 15).getTime();
+    expect(
+      resumeDetail(
+        {
+          topicLabel: 'Daily life',
+          startedAt,
+          durationGoalSeconds: 600,
+          activeDurationMs: 8 * 60_000,
+        },
+        now,
+      ),
+    ).toBe('Daily life · Started today · 2 min left');
   });
 });
 

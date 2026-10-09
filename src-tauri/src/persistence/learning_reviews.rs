@@ -105,9 +105,12 @@ impl SessionDatabase {
         let mistakes: Vec<MistakeRecord> = mistakes_rows.collect::<Result<_, _>>()?;
 
         let mut phrases_stmt = self.connection.prepare(
-            "SELECT id, phrase, normalized_phrase, meaning_or_note, session_id, sequence,
-                    created_at, last_reviewed_at, next_review_at, interval_days, ease_factor, status
-             FROM phrase_cards ORDER BY next_review_at ASC, id DESC",
+            "SELECT p.id, p.phrase, p.normalized_phrase, p.meaning_or_note, p.session_id, p.sequence,
+                    p.created_at, p.last_reviewed_at, p.next_review_at, p.interval_days, p.ease_factor, p.status,
+                    s.topic_label
+             FROM phrase_cards p
+             LEFT JOIN sessions s ON s.id = p.session_id
+             ORDER BY p.next_review_at ASC, p.id DESC",
         )?;
         let phrases_rows = phrases_stmt.query_map([], |row| {
             let next_review: i64 = row.get(8)?;
@@ -119,6 +122,7 @@ impl SessionDatabase {
                 meaning_or_note: row.get(3)?,
                 session_id: row.get::<_, Option<i64>>(4)?.map(|id| id as u64),
                 sequence: row.get::<_, Option<i64>>(5)?.map(|s| s as usize),
+                session_topic: row.get(12)?,
                 created_at: row.get(6)?,
                 last_reviewed_at: row.get(7)?,
                 next_review_at: next_review,
