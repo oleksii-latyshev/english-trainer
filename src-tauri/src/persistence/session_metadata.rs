@@ -105,7 +105,8 @@ impl SessionDatabase {
         session_id: u64,
         active_duration_ms: u64,
     ) -> rusqlite::Result<bool> {
-        Ok(self.connection.execute(
+        let transaction = self.connection.transaction()?;
+        let updated = transaction.execute(
             "UPDATE sessions SET ended_at = ?1, active_duration_ms = ?2 WHERE id = ?3 AND ended_at IS NULL",
             params![
                 now_ms(),
@@ -113,7 +114,19 @@ impl SessionDatabase {
                 i64::try_from(session_id)
                     .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?
             ],
-        )? == 1)
+        )? == 1;
+        if updated {
+            transaction.execute(
+                "INSERT INTO session_wrapups (session_id, state, result_json)
+                 SELECT ?1, CASE WHEN EXISTS(SELECT 1 FROM turns WHERE session_id = ?1)
+                    THEN 'pending' ELSE 'ready' END,
+                 CASE WHEN EXISTS(SELECT 1 FROM turns WHERE session_id = ?1)
+                    THEN NULL ELSE '{\"phrases\":[]}' END",
+                [to_sql_id(session_id)?],
+            )?;
+        }
+        transaction.commit()?;
+        Ok(updated)
     }
 
     pub fn update_session_active_duration(

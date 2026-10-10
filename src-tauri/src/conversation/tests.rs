@@ -1290,16 +1290,24 @@ fn feedback_mistake_deduplication_and_idempotency_across_turns() {
         .unwrap();
 
     let memory1 = store.get_learning_memory().unwrap();
-    assert_eq!(memory1.mistakes.len(), 1);
-    assert_eq!(memory1.mistakes[0].times_seen, 1);
-    assert_eq!(memory1.mistakes[0].normalized_key, "grammar:i work there");
+    assert!(memory1.mistakes.is_empty());
+    assert_eq!(
+        store
+            .lock()
+            .database
+            .mistake_by_key("grammar:i work there")
+            .unwrap()
+            .unwrap()
+            .times_seen,
+        1
+    );
 
     // Saving feedback again for turn 1 does NOT increment times_seen (idempotent)
     store
         .save_feedback(session.session_id, 1, "I work in there", &feedback1)
         .unwrap();
     let memory1_again = store.get_learning_memory().unwrap();
-    assert_eq!(memory1_again.mistakes[0].times_seen, 1);
+    assert!(memory1_again.mistakes.is_empty());
 
     // Save feedback for turn 2 (same normalized key "grammar:i work there")
     store
@@ -1380,6 +1388,19 @@ fn due_memory_returns_as_a_bounded_later_session_conversation_cue() {
         .unwrap();
     store
         .save_feedback(first.session_id, 1, "I work in there", &sample_feedback())
+        .unwrap();
+    store
+        .send_turn(first.session_id, "I work in there again".into(), |_| {
+            Ok(turn("I see.", "What changed?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(
+            first.session_id,
+            2,
+            "I work in there again",
+            &sample_feedback(),
+        )
         .unwrap();
     store
         .save_phrase(
@@ -1652,13 +1673,21 @@ fn coaching_is_saved_for_a_finished_session_only_for_the_answer_it_belongs_to() 
     store
         .save_feedback(session.session_id, 1, "I work in there", &sample_feedback())
         .unwrap();
+    assert!(store
+        .session_wrapup(session.session_id)
+        .unwrap()
+        .phrases
+        .is_empty());
+    assert!(store.coaching_queue(session.session_id).unwrap().is_empty());
     assert_eq!(
         store
-            .session_wrapup(session.session_id)
+            .lock()
+            .database
+            .mistake_by_key("grammar:i work there")
             .unwrap()
-            .phrases
-            .len(),
-        2
+            .unwrap()
+            .times_seen,
+        1
     );
     let open = store.start().unwrap();
     assert!(store.session_wrapup(open.session_id).is_err());
@@ -1930,7 +1959,47 @@ fn finished_summary_carries_numbers_trends_phrases_and_recurring_mistakes() {
         )
         .unwrap();
 
-    let summary = store.finish(id).unwrap();
+    let pending = store.finish(id).unwrap();
+    assert_eq!(pending.wrapup_preparation, WrapupPreparation::Pending);
+    assert!(pending.phrases.is_empty());
+    let (_, request) = store.next_wrapup_request().unwrap().unwrap();
+    // The earlier session is also pending: complete it before selecting the current snapshot.
+    store
+        .complete_session_wrapup(
+            earlier.session_id,
+            &request,
+            Ok(crate::providers::WrapupResult {
+                phrases: Vec::new(),
+            }),
+        )
+        .unwrap();
+    let (_, request) = store.next_wrapup_request().unwrap().unwrap();
+    let generated = crate::providers::WrapupResult {
+        phrases: vec![
+            crate::providers::GeneratedWrapupPhrase {
+                sequence: 1,
+                phrase: "I have worked here for two weeks.".into(),
+                note: "Describe an ongoing situation.".into(),
+                you_said: "since two weeks".into(),
+            },
+            crate::providers::GeneratedWrapupPhrase {
+                sequence: 2,
+                phrase: "for two weeks".into(),
+                note: "Use for with a length of time.".into(),
+                you_said: "since two weeks".into(),
+            },
+            crate::providers::GeneratedWrapupPhrase {
+                sequence: 2,
+                phrase: "I have lived here for two weeks.".into(),
+                note: "Describe where you have been living.".into(),
+                you_said: "I live here since two weeks too".into(),
+            },
+        ],
+    };
+    store
+        .complete_session_wrapup(id, &request, Ok(generated))
+        .unwrap();
+    let summary = store.session_wrapup(id).unwrap();
 
     assert_eq!(summary.numbers.speaking_time.duration_ms, Some(28_000));
     assert_eq!(

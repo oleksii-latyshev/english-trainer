@@ -91,7 +91,7 @@ impl SessionDatabase {
         {
             let mut statement = self.connection.prepare(
                 "SELECT id, original_example, corrected_example, next_review_at FROM mistakes
-                 WHERE status != 'archived' AND next_review_at <= ?1",
+                 WHERE status != 'archived' AND times_seen >= 2 AND next_review_at <= ?1",
             )?;
             let rows = statement.query_map([now], |row| {
                 Ok((

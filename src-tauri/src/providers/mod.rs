@@ -8,14 +8,19 @@ mod plain_prompt;
 mod race;
 mod reply_text;
 mod rescue;
+mod session_wrapup;
 mod settings;
 pub use agy::guided::{generate_guided_answer, GuidedAnswer};
+pub use agy::session_wrapup::generate_session_wrapup;
 pub use answer_plan::{parse_answer_plan, AnswerPlan};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
 pub use gemini::generate_answer_plan;
 pub use gemini::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
 pub use rescue::{generate_rescue, RescueKind, RescueRequest, RescueResponse};
+pub use session_wrapup::{
+    parse_wrapup_result, GeneratedWrapupPhrase, WrapupAnswer, WrapupRequest, WrapupResult,
+};
 pub use settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
 
 use serde::{Deserialize, Serialize};
@@ -173,6 +178,10 @@ pub trait UsageReviewEngine: Send + Sync {
 
 pub trait RescueEngine: Send + Sync {
     fn generate_rescue(&self, request: &RescueRequest) -> Result<RescueResponse, ProviderError>;
+}
+
+pub trait SessionWrapupEngine: Send + Sync {
+    fn generate_wrapup(&self, request: &WrapupRequest) -> Result<WrapupResult, ProviderError>;
 }
 
 pub use crate::learning::usage::{UsageCandidate, UsageFinding, UsageOutcome};

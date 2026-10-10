@@ -316,10 +316,12 @@ fn get_practice_dialogue(
 fn finish_practice_session(
     sessions: tauri::State<'_, conversation::SessionStore>,
     coaching: tauri::State<'_, conversation::CoachingQueue>,
+    wrapup: tauri::State<'_, conversation::WrapupQueue>,
     session_id: u64,
 ) -> Result<conversation::FinishedPracticeSession, providers::ProviderError> {
     let summary = sessions.finish(session_id)?;
     coaching.flush(session_id);
+    wrapup.wake();
     Ok(summary)
 }
 
@@ -329,6 +331,23 @@ fn get_session_wrapup(
     session_id: u64,
 ) -> Result<conversation::FinishedPracticeSession, providers::ProviderError> {
     sessions.session_wrapup(session_id)
+}
+
+#[tauri::command]
+fn retry_session_wrapup(
+    wrapup: tauri::State<'_, conversation::WrapupQueue>,
+    session_id: u64,
+) -> Result<(), providers::ProviderError> {
+    wrapup.retry(session_id)
+}
+
+#[tauri::command]
+fn save_wrapup_phrases(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    phrases: Vec<String>,
+) -> Result<conversation::SavedWrapupPhrases, providers::ProviderError> {
+    sessions.save_wrapup_phrases(session_id, &phrases)
 }
 
 #[tauri::command]
@@ -611,6 +630,21 @@ pub fn run() {
                     let _ = handle.emit("coaching-updated", event);
                 },
             ));
+            let handle = app.handle().clone();
+            app.manage(
+                conversation::WrapupQueue::start(
+                    sessions.clone(),
+                    providers::generate_session_wrapup,
+                    move |event| {
+                        let _ = handle.emit("wrapup-updated", event);
+                    },
+                )
+                .map_err(|_| {
+                    std::io::Error::other(
+                        "Could not start session phrase preparation. Restart the app.",
+                    )
+                })?,
+            );
             start_usage_log(&sessions);
             app.manage(sessions);
             app.manage(std::sync::Arc::new(audio::SpeechEngine::new(Some(
@@ -669,6 +703,8 @@ pub fn run() {
             get_practice_dialogue,
             finish_practice_session,
             get_session_wrapup,
+            retry_session_wrapup,
+            save_wrapup_phrases,
             retry_answer_coaching,
             get_daily_recall_plan,
             submit_daily_recall,

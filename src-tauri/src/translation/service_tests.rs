@@ -101,9 +101,10 @@ fn active_helper_returns_busy_and_session_lock_stays_free() {
         "english-trainer-translation-started-{}",
         std::process::id()
     ));
+    let release = marker.with_extension("release");
     let script = format!(
-        "touch {}; cat >/dev/null; sleep 1; printf '%s' '{SUCCESS}'",
-        marker.display()
+        "touch '{}'; cat >/dev/null; while [ ! -e '{}' ]; do sleep 0.02; done; printf '%s' '{SUCCESS}'",
+        marker.display(), release.display()
     );
     let helper = helper(&script, 6);
     let service = TranslationService::new(Some(helper.clone()));
@@ -111,7 +112,7 @@ fn active_helper_returns_busy_and_session_lock_stays_free() {
     let request = prepared.request;
     let native_language = prepared.native_language;
     let operation = std::thread::spawn(move || service.translate(&request, &native_language));
-    let deadline = Instant::now() + Duration::from_secs(1);
+    let deadline = Instant::now() + Duration::from_secs(5);
     while !marker.exists() && Instant::now() < deadline {
         std::thread::sleep(Duration::from_millis(5));
     }
@@ -123,9 +124,11 @@ fn active_helper_returns_busy_and_session_lock_stays_free() {
     let lock_check = Instant::now();
     assert_eq!(store.translation_settings().unwrap().native_language, "ru");
     assert!(lock_check.elapsed() < Duration::from_millis(500));
+    std::fs::write(&release, "continue").unwrap();
     assert_eq!(operation.join().unwrap().unwrap().translation, "устойчивый");
     std::fs::remove_file(helper).unwrap();
     let _ = std::fs::remove_file(marker);
+    let _ = std::fs::remove_file(release);
 }
 
 #[test]

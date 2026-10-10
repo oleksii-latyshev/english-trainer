@@ -83,7 +83,7 @@ fn migrates_existing_version_two_database_to_current_version() {
         .unwrap();
     drop(connection);
 
-    let mut db = SessionDatabase::open(&path).unwrap();
+    let db = SessionDatabase::open(&path).unwrap();
     let version: i64 = db
         .connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
@@ -222,6 +222,72 @@ fn mistake_observation_is_idempotent_for_same_turn_and_increments_for_distinct_t
     db.save_turn_feedback(session_id, 2, &feedback2).unwrap();
     let mistake_after_turn2_again = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
     assert_eq!(mistake_after_turn2_again.times_seen, 2);
+}
+
+#[test]
+fn mistake_needs_two_observations_for_learning_surfaces_and_replacement_removes_eligibility() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = db.create_session("First question?").unwrap();
+    let turn = StoredTurn {
+        learner: "I work in there".into(),
+        assistant_reply: "Reply".into(),
+        assistant_question: "Next?".into(),
+        answered_by: None,
+    };
+    db.save_turn(first, 1, &turn).unwrap();
+    let original = sample_turn_feedback(FocusCategory::Grammar, "I work there");
+    db.save_turn_feedback(first, 1, &original).unwrap();
+    let initial = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(initial.times_seen, 1);
+    db.connection
+        .execute("UPDATE mistakes SET next_review_at = 0", [])
+        .unwrap();
+    db.save_turn_feedback(first, 1, &original).unwrap();
+    assert_eq!(
+        db.mistake_by_key("grammar:i work there")
+            .unwrap()
+            .unwrap()
+            .times_seen,
+        1
+    );
+    assert!(db.get_learning_memory().unwrap().mistakes.is_empty());
+    assert!(db.start_memory_review_run().unwrap().is_none());
+    db.finish_session(first).unwrap();
+
+    let second = db.create_session("Second question?").unwrap();
+    db.save_turn(second, 1, &turn).unwrap();
+    assert!(db.due_learning_targets(second).unwrap().is_empty());
+    db.save_turn_feedback(second, 1, &original).unwrap();
+    let repeated = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(repeated.times_seen, 2);
+    db.connection
+        .execute("UPDATE mistakes SET next_review_at = 0", [])
+        .unwrap();
+    let memory = db.get_learning_memory().unwrap();
+    assert_eq!(memory.mistakes.len(), 1);
+    assert!(memory.mistakes[0].is_due);
+    let targets = db.due_learning_targets(second).unwrap();
+    assert_eq!(targets.len(), 1);
+    assert_eq!(targets[0].kind, "mistake");
+    let run = db.start_memory_review_run().unwrap().unwrap();
+    assert_eq!(run.items.len(), 1);
+    assert_eq!(run.items[0].item_id, repeated.id);
+    db.finish_memory_review_run(run.run_id).unwrap();
+
+    let replacement = sample_turn_feedback(FocusCategory::Grammar, "I work at that location");
+    db.save_turn_feedback(second, 1, &replacement).unwrap();
+    let old = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
+    assert_eq!(old.times_seen, 1);
+    db.connection
+        .execute("UPDATE mistakes SET next_review_at = 0", [])
+        .unwrap();
+    assert!(db.get_learning_memory().unwrap().mistakes.is_empty());
+    assert!(db
+        .due_learning_targets(second)
+        .unwrap()
+        .iter()
+        .all(|target| target.kind != "mistake"));
+    assert!(db.start_memory_review_run().unwrap().is_none());
 }
 
 #[test]
@@ -468,7 +534,7 @@ fn removing_a_turn_correction_archives_its_observation_until_it_recurs() {
     assert_eq!(old.times_seen, 0);
     assert_eq!(old.status, LearningStatus::Archived);
     let memory = db.get_learning_memory().unwrap();
-    assert!(!memory.mistakes[0].is_due);
+    assert!(memory.mistakes.is_empty());
     assert_eq!(memory.due_count, 0);
 
     db.save_turn_feedback(session_id, 2, &correction).unwrap();
@@ -479,7 +545,7 @@ fn removing_a_turn_correction_archives_its_observation_until_it_recurs() {
 
 #[test]
 fn phrase_save_rejects_empty_normalized_text_and_incomplete_provenance() {
-    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let db = SessionDatabase::open_in_memory().unwrap();
     assert!(db.save_phrase_card("... !!!", "", None, None).is_err());
     assert!(db
         .save_phrase_card("Useful phrase", "", Some(1), None)
@@ -488,7 +554,7 @@ fn phrase_save_rejects_empty_normalized_text_and_incomplete_provenance() {
 
 #[test]
 fn saving_phrase_card_deduplicates_by_normalized_text() {
-    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let db = SessionDatabase::open_in_memory().unwrap();
     let card1 = db
         .save_phrase_card("The main trade-off was...", "Note 1", None, None)
         .unwrap();
@@ -617,6 +683,23 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
     db.save_turn_feedback(
         first,
         1,
+        &sample_turn_feedback(FocusCategory::Grammar, "I work there"),
+    )
+    .unwrap();
+    db.save_turn(
+        first,
+        2,
+        &StoredTurn {
+            learner: "I worked in there yesterday".into(),
+            assistant_reply: "Reply".into(),
+            assistant_question: "Another?".into(),
+            answered_by: None,
+        },
+    )
+    .unwrap();
+    db.save_turn_feedback(
+        first,
+        2,
         &sample_turn_feedback(FocusCategory::Grammar, "I work there"),
     )
     .unwrap();

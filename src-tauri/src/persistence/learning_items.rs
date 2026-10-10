@@ -52,8 +52,8 @@ mod tests {
         db.connection
             .execute(
                 "INSERT INTO mistakes (normalized_key, category, original_example, corrected_example,
-                    explanation, last_seen_at, next_review_at, status)
-                 VALUES (?1, 'grammar', 'every bank send', 'every bank sends', '', 1, 0, 'learning')",
+                    explanation, times_seen, last_seen_at, next_review_at, status)
+                 VALUES (?1, 'grammar', 'every bank send', 'every bank sends', '', 2, 1, 0, 'learning')",
                 [key],
             )
             .unwrap();

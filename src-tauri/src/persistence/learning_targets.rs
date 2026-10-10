@@ -20,7 +20,7 @@ impl SessionDatabase {
             .connection
             .query_row(
                 "SELECT original_example, corrected_example FROM mistakes m
-                 WHERE m.status != 'archived' AND m.next_review_at <= ?1
+                 WHERE m.status != 'archived' AND m.times_seen >= 2 AND m.next_review_at <= ?1
                    AND EXISTS (SELECT 1 FROM mistake_occurrences o
                                WHERE o.mistake_id = m.id AND o.session_id != ?2)
                  ORDER BY m.next_review_at, m.id LIMIT 1",

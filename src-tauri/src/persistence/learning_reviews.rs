@@ -72,7 +72,8 @@ impl SessionDatabase {
             "SELECT id, normalized_key, category, original_example, corrected_example,
                     explanation, times_seen, times_correct_afterwards, last_seen_at,
                     last_reviewed_at, next_review_at, interval_days, ease_factor, status
-             FROM mistakes ORDER BY next_review_at ASC, id DESC",
+             FROM mistakes WHERE times_seen >= 2
+             ORDER BY next_review_at ASC, id DESC",
         )?;
         let mistakes_rows = mistakes_stmt.query_map([], |row| {
             let cat_str: String = row.get(2)?;

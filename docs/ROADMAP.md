@@ -1,7 +1,7 @@
 # Roadmap: English Trainer
 
 Updated 2026-10-10. The learner checked the new Whisper model in the app and reported that it
-works well. F4, F8, F11, F12 and F13 are built and awaiting the learner’s check in the app.
+works well. F4–F9, F11, F12 and F13 are built and awaiting the learner’s check in the app.
 The learner deferred that check; the remaining core MVP work is listed below.
 
 ## Goal
@@ -25,7 +25,7 @@ Everything not needed for these five outcomes is deferred.
 | Conversation language | English only. The interface may later be localised (e.g. Russian); practice content never is. Whisper stays English-only. One approved on-demand exception: F13 translates a selected word into the native language chosen in Settings, on this Mac. |
 | Gemini API use (2026-10-08) | The Gemini API free tier is used for conversation and the question-only F6 answer planner. Coaching and other AI side tasks go to Antigravity pinned to a Gemini model (batched) or to on-device Apple / macOS frameworks. Settings > Usage shows locally counted requests and the last limit errors, because neither API reports the remaining quota. |
 | Conversation provider | Two streaming adapters behind one interface: **Apple Foundation Models** (on-device, free, private; measured 1.6 s warm / 4.6 s cold for a whole non-streamed reply on 2026-10-06) and the **Gemini API** (Flash / Flash-Lite, API key from Google AI Studio). The default is chosen by measured time to first spoken word. |
-| Coaching, planning and wrap-up | Coaching runs through Antigravity CLI with `gemini-3.8-flash-medium`, in batches of up to five answers (decided 2026-10-08 from a measurement on 66 real answers: Apple on-device rewrites whole answers, "corrects" recognition artefacts or finds nothing; one `agy` call per answer exhausted the Antigravity quota after about 54 calls; the Gemini API free quota is reserved for conversation). Planning (F6) stays on the Gemini API. |
+| Coaching, planning and wrap-up | Coaching runs through Antigravity CLI with `gemini-3.8-flash-medium`, in batches of up to five answers (decided 2026-10-08 from a measurement on 66 real answers: Apple on-device rewrites whole answers, "corrects" recognition artefacts or finds nothing; one `agy` call per answer exhausted the Antigravity quota after about 54 calls; the Gemini API free quota is reserved for conversation). Planning (F6) stays on the Gemini API. F9 prepares session phrases in one background `gemini-3.8-flash-high` call. |
 | Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured; 14–136 s for a batch of five) and cannot stream. It stays as the slow background tier (coaching, answer examples, usage review), always with an explicit Gemini model. |
 | TTS | macOS system voices (the standard voice is acceptable). Neural TTS only together with the avatar. |
 | Usage-review / mastery-streak subsystem | Frozen: keeps working, is not extended. F10 reuses its data; simplifying it is reconsidered after the MVP with real usage data. |
@@ -290,21 +290,35 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 
 ### Stage 3 — Remember and review
 
-**F9. Session wrap-up** `[ ]`
-- At the end of a session, generate (in the background) up to three phrases worth learning and up
-  to two recurring mistakes, with examples taken from the user's own answers. Save to Memory in one
-  action.
-- Local fluency numbers for the session: speaking time, words per minute, average answer length.
-  Presented as personal trends, never as CEFR levels.
-- Built with the wrap-up screen (design `Wrapup`): the numbers with trends against the last
-  session, up to three phrase cards from the session's coaching, recurring mistakes, and
-  "Save all to Memory" with Undo. Since F5 the lists fill from the background coaching of every
-  answer, and the screen says "Still checking N answers…" while the last batch runs. What is
-  still open for F9: F9 generates phrases and recurring mistakes in the background for every session, with
-  a short note per phrase ("The word you were looking for: normalise.") instead of the quoted
-  original, and may offer the recurring mistakes themselves as savable items.
-- Design: the Memory footer reads "Mistakes that come up twice are added for you". Today every
-  mistake Eva's notes point out is added on first sight; "twice" needs the recurring detection above.
+**F9. Session wrap-up** `[~]` (built; physical Mac acceptance deferred by the learner)
+- At the end of a session, prepare up to three reusable English phrases with a short usage note
+  and an exact quote from the learner's numbered answers. Up to two recurring mistakes come from
+  the session's background coaching. Save the selected phrases to Memory in one action.
+- Speaking time, words per minute and average answer length appear immediately, as local personal
+  trends against the previous comparable session; no CEFR or mastery claims.
+- Built: one durable SQLite job is committed with session finish. A separate worker prepares phrases
+  without holding the conversation lock, resumes pending jobs after restart and saves a stable
+  snapshot. Empty sessions need no provider. Failures show a typed message and explicit Retry;
+  finished sessions from older versions retain their coaching phrases and can opt into preparation.
+- The adapter pins `agy` to `gemini-3.8-flash-high`, sends at most 24 bounded answer excerpts and
+  strictly checks the ordinary JSON response, including exact quote provenance. One synthetic live
+  request succeeded in 10.44 seconds; this does not establish real-session quality or latency.
+- Save all is a single transaction. Undo removes only newly created cards, preserving existing
+  duplicates. Cards keep their note and quote after coaching refresh or Save/Undo.
+- Memory, due conversation targets and spoken Memory review now require two distinct observations
+  of a mistake. First observations stay stored and inline; repeat delivery of one answer does not
+  count twice, and replacement feedback reprojects eligibility. Existing single observations are
+  preserved and become visible after another occurrence. The frozen mastery subsystem is unchanged.
+- Automatic validation covers durable jobs, restart, nonblocking generation, provider contracts,
+  transactional rollback, duplicate-safe Undo, recurring eligibility and browser flows.
+- Validation: 397 TypeScript tests, 401 Rust unit tests plus one SQLite integration test, and
+  53 browser scenarios (`--workers=1`) pass; Biome, Clippy and both TypeScript checks pass.
+  The macOS app and DMG are built. Ten live/provider tests remain opt-in; the F9 synthetic
+  live check was explicitly run and passed. An existing F6 auto-capture scenario intermittently
+  failed in a parallel browser run during packaging, then passed in the complete serial run;
+  this does not establish that the parallel-run timing issue is fixed.
+- Built-app acceptance remains deferred: finish a real spoken session, inspect the phrases and
+  notes, save/undo them, and confirm later spoken review on the physical Mac.
 
 **F10. Spoken phrase review** `[ ]`
 - Due phrases return as short spoken tasks: the AI gives a situation, the user answers using the

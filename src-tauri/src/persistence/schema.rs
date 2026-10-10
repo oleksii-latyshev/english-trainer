@@ -456,6 +456,20 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             );
             INSERT OR IGNORE INTO translation_settings (id, native_language) VALUES (1, 'ru');",
         )?;
+        transaction.pragma_update(None, "user_version", 18)?;
+        transaction.commit()?;
+        version = 18;
+    }
+    if version < 19 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS session_wrapups (
+                session_id INTEGER PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+                state TEXT NOT NULL CHECK(state IN ('pending', 'ready', 'failed')),
+                result_json TEXT,
+                error_json TEXT
+            );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

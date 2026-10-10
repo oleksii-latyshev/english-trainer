@@ -138,7 +138,8 @@ English content and requires an explicit lookup action; stale results cannot rep
 
 ## 7. Learning engine
 
-- Mistakes and phrase cards with review events and a simple interval schedule.
+- Mistakes and phrase cards with review events and a simple interval schedule. Mistake observations
+  are retained immediately; Memory and due learning surfaces require two distinct observations.
 - Due items enter conversation context on selected turns (at most two targets).
 - Spoken recall (daily recall and Memory review) records transcript evidence and updates the
   schedule atomically.
@@ -169,6 +170,13 @@ provider call prepares it from recurring mistakes; saved answers then advance th
 questions without conversation generation. The plan and cue exposure are committed with the
 session, so restoring preserves the same questions and practice cannot become independent-use
 evidence. The existing coaching queue still checks each answer asynchronously.
+
+F9 commits a durable phrase-preparation job with session finish (schema version 19). A separate
+`WrapupQueue` resumes pending jobs on startup and calls `SessionWrapupEngine` outside the session
+mutex. The background `agy` adapter uses one explicitly pinned Flash 3.8 High request; strict Rust
+validation requires quotes from the numbered answer snapshot. Results and typed failures persist
+before events refresh the UI. Coaching still supplies recurring mistakes independently. Batch saving
+phrases is transactional and returns newly created IDs so Undo preserves existing duplicate cards.
 
 SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in
 `persistence/schema.rs`. Provider calls run on blocking worker threads and never hold the lock.

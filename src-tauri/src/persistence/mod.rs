@@ -23,9 +23,10 @@ pub(crate) mod session_metadata;
 pub(crate) mod session_wrapup;
 mod speech_settings;
 mod translation_settings;
+pub(crate) mod wrapup_generation;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 18;
+const SCHEMA_VERSION: i64 = 19;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;

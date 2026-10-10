@@ -22,8 +22,8 @@ fn insert_mistake(db: &mut SessionDatabase, original: &str, corrected: &str, due
     db.connection
         .execute(
             "INSERT INTO mistakes (normalized_key, category, original_example, corrected_example,
-                explanation, last_seen_at, next_review_at, status)
-             VALUES (?1, 'grammar', ?2, ?3, 'test fixture', 1, ?4, 'improving')",
+                explanation, times_seen, last_seen_at, next_review_at, status)
+             VALUES (?1, 'grammar', ?2, ?3, 'test fixture', 2, 1, ?4, 'improving')",
             params![format!("fixture-{original}"), original, corrected, due],
         )
         .unwrap();

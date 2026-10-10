@@ -265,6 +265,23 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
   failed }` or `{ state: ready, feedback }`. `get_session_wrapup(session_id)` rebuilds the wrap-up of
   a finished session; `FinishedPracticeSession` has `pending_coaching` and `is_coaching_paused`.
   `TurnFeedback` is stored and shown; the note's "Say it again" uses `retry_practice_turn`.
+- F9 `FinishedPracticeSession.wrapup_preparation` is `{ state: legacy | pending | ready }` or
+  `{ state: failed, error: ProviderError }`. Finish atomically creates a `session_wrapups` row;
+  empty sessions are ready with no phrases. A separate worker resumes pending jobs at startup,
+  snapshots up to 24 answers (1,500 characters each, 12,000 total) and their original questions,
+  including written-question replay in F11. Provider generation holds no session lock.
+- `SessionWrapupEngine` prepares zero to three English phrases. The `agy` adapter explicitly uses
+  `gemini-3.8-flash-high`, a private temporary workspace, an 85-second CLI / 90-second process bound
+  and one call. JSON is requested in the prompt, because installed CLI schema output can be empty.
+  Strict serde validates sequence provenance, exact quote substrings, unique normalized phrases,
+  English plain text and bounded phrases/notes/quotes; notes cannot simply copy the quote.
+- Results or typed failures persist before `wrapup-updated { session_id }`. There is no automatic
+  provider retry. `retry_session_wrapup(sessionId)` starts only failed or legacy finished sessions.
+  `get_session_wrapup` preserves the cached phrase snapshot; already saved phrases are excluded at
+  generation completion. The UI subscribes before re-reading to close missed-event gaps.
+- `save_wrapup_phrases(sessionId, phrases)` accepts one to three exact cached suggestions and saves
+  all selected cards transactionally, returning `{ cards, created_ids }`. Undo uses only the newly
+  created IDs. Existing duplicate cards and their notes are preserved.
 - `retry_practice_turn` saves a second attempt and returns a local `AttemptComparison`
   (`target_evidence`: `already_present_in_both | newly_observed_in_retry | partially_observed |
   not_observed | uncertain`, word-count change).
@@ -443,7 +460,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 
 | Group | Tables |
 | :--- | :--- |
-| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions` (F12 snapshots, schema version 17) |
+| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions` (F12 snapshots, schema version 17), `session_wrapups` (F9 durable preparation, schema version 19) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
 | Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15), `translation_settings` (F13 native language, schema version 18); F11 session columns are added by schema version 16; F12 adds `is_mistake_practice` with a false default in version 17; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
@@ -461,6 +478,11 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 ## 9. Learning rules
 
 ### 9.1 Scheduling
+
+- Mistake observations remain stored from the first occurrence, but Memory listing, due-count,
+  conversation targets and spoken Memory review selection require `times_seen >= 2`. Distinct
+  answers, including answers in different sessions, count; identical feedback delivery is
+  idempotent. Replacing feedback can reduce eligibility. Inline coaching remains unchanged.
 
 - Schedule rule (applied to a spoken recall: a miss is "need practice", a wording match "remembered"; there is no self-reported review any more): "need practice" → interval 1 day, status `learning`; "remembered" →
   interval 2 → 4 → previous × ease (4–365 days), ease +0.1 up to 3.0. `new → learning`;
@@ -525,7 +547,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `save_ai_settings`, `set_dock_icon`, `get_api_usage`, `prewarm_conversation_provider`, `get_gemini_key_status`,
   `save_gemini_api_key`, `delete_gemini_api_key`, `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
   `send_practice_turn`, `get_practice_dialogue`, `finish_practice_session`, `get_session_wrapup`,
-  `retry_answer_coaching`, `retry_practice_turn`,
+  `retry_session_wrapup`, `save_wrapup_phrases`, `retry_answer_coaching`, `retry_practice_turn`,
   `get_question_scaffold`, `get_guided_answer`, `record_answer_help_used`, `get_daily_recall_plan`, `submit_daily_recall`,
   `save_phrase_card`, `delete_phrase_card`, `delete_mistake`, `archive_learning_item`,
   `get_learning_memory`, `view_learning_memory`,

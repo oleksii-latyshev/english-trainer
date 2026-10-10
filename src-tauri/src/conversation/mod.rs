@@ -29,6 +29,8 @@ mod translation;
 pub(crate) mod usage;
 mod usage_support;
 mod wrapup;
+mod wrapup_generation;
+mod wrapup_queue;
 pub use coaching::TurnCoaching;
 pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
 pub use profile::PersonalProfile;
@@ -41,6 +43,8 @@ use rules::{validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TR
 pub use scaffold::{question_scaffold, QuestionScaffold};
 pub use topics::{PracticeMode, PracticePhase, StartPracticeOptions};
 pub use wrapup::{RecurringMistake, WrapupPhrase};
+pub use wrapup_generation::{SavedWrapupPhrases, WrapupPreparation};
+pub use wrapup_queue::WrapupQueue;
 
 /// The mode column of every new session. Conversation and Coach are one mode now; sessions saved
 /// as "coach" by older versions are read the same way.
@@ -121,6 +125,7 @@ pub struct FinishedPracticeSession {
     pub pending_coaching: usize,
     /// Coaching is paused because the Antigravity quota ran out, so nothing more will land.
     pub is_coaching_paused: bool,
+    pub wrapup_preparation: WrapupPreparation,
     pub practice_mode: PracticeMode,
     pub practice_phase: PracticePhase,
     pub written_turn_count: usize,
@@ -540,7 +545,7 @@ impl SessionStore {
         let turn_count = session.turns.len();
         let active_duration_ms = session.active_duration_ms;
         // Read first: a failure here leaves the session open.
-        let summary = self.finished_summary(&state, session_id, turn_count)?;
+        let mut summary = self.finished_summary(&state, session_id, turn_count)?;
         if !state
             .database
             .finish_session_with_duration(session_id, active_duration_ms)
@@ -549,6 +554,12 @@ impl SessionStore {
             return Err(invalid_session_error());
         }
         state.active = None;
+        summary.phrases.clear();
+        summary.wrapup_preparation = if turn_count == 0 {
+            WrapupPreparation::Ready
+        } else {
+            WrapupPreparation::Pending
+        };
         Ok(summary)
     }
 
@@ -617,6 +628,22 @@ impl SessionStore {
             recurring_mistakes: wrapup.recurring_mistakes,
             pending_coaching: if is_paused { 0 } else { waiting },
             is_coaching_paused: is_paused,
+            wrapup_preparation: match state
+                .database
+                .wrapup_record(session_id)
+                .map_err(database_error)?
+            {
+                None => WrapupPreparation::Legacy,
+                Some(crate::persistence::wrapup_generation::PreparedWrapup::Pending) => {
+                    WrapupPreparation::Pending
+                }
+                Some(crate::persistence::wrapup_generation::PreparedWrapup::Ready(_)) => {
+                    WrapupPreparation::Ready
+                }
+                Some(crate::persistence::wrapup_generation::PreparedWrapup::Failed(error)) => {
+                    WrapupPreparation::Failed { error }
+                }
+            },
             practice_mode,
             practice_phase,
             written_turn_count,
@@ -811,7 +838,7 @@ impl SessionStore {
             ));
         }
 
-        let mut state = self.lock();
+        let state = self.lock();
         if let (Some(sid), Some(seq)) = (session_id, sequence) {
             if state
                 .database

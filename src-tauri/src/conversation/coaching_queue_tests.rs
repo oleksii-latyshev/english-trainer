@@ -179,11 +179,27 @@ fn a_batch_starts_when_five_answers_wait_and_every_answer_gets_its_own_feedback(
         panic!("answer 3 is coached");
     };
     assert_eq!(feedback.focus_feedback[0].original, "Answer number 3");
-    // Each answer reached the learning engine as its own mistake.
-    assert_eq!(
-        fixture.store.get_learning_memory().unwrap().mistakes.len(),
-        5
-    );
+    // Each first observation is retained, but Memory only shows repeated mistakes.
+    assert!(fixture
+        .store
+        .get_learning_memory()
+        .unwrap()
+        .mistakes
+        .is_empty());
+    for sequence in 1..=5 {
+        let key = format!("grammar:answer number {sequence} correctly");
+        assert_eq!(
+            fixture
+                .store
+                .lock()
+                .database
+                .mistake_by_key(&key)
+                .unwrap()
+                .unwrap()
+                .times_seen,
+            1
+        );
+    }
 }
 
 #[test]
@@ -213,7 +229,7 @@ fn only_five_answers_go_in_one_batch_and_batches_never_overlap() {
 }
 
 #[test]
-fn finishing_flushes_the_queue_and_the_wrap_up_fills_in_when_the_last_batch_lands() {
+fn finishing_flushes_coaching_without_completing_independent_phrase_preparation() {
     let store = SessionStore::default();
     let session = store.start().unwrap();
     let (release_tx, release_rx) = mpsc::channel::<()>();
@@ -239,7 +255,11 @@ fn finishing_flushes_the_queue_and_the_wrap_up_fills_in_when_the_last_batch_land
 
     let later = fixture.store.session_wrapup(session.session_id).unwrap();
     assert_eq!(later.pending_coaching, 0);
-    assert_eq!(later.phrases.len(), 3, "two focus points and a rewrite");
+    assert!(later.phrases.is_empty());
+    assert_eq!(
+        later.wrapup_preparation,
+        crate::conversation::WrapupPreparation::Pending
+    );
     assert_eq!(later.turn_count, 2);
     assert!(fixture.store.dialogue(session.session_id).is_err());
 }
@@ -355,6 +375,7 @@ fn a_quota_pause_ends_on_its_own_with_one_probe_that_pauses_again_while_still_li
     fixture.answer(session.session_id, "I work in there");
     fixture.queue.flush(session.session_id);
     assert_eq!(fixture.next_batch(), [1]);
+    fixture.next_event(); // The provider-call notification precedes the committed pause.
     assert!(fixture.store.is_coaching_paused());
     // Nothing runs during the pause.
     fixture.assert_no_batch_within(Duration::from_millis(200));
@@ -362,14 +383,13 @@ fn a_quota_pause_ends_on_its_own_with_one_probe_that_pauses_again_while_still_li
     // The first probe is still limited: one batch only, then the pause starts over.
     let paused_at = Instant::now();
     assert_eq!(fixture.next_batch(), [1]);
+    fixture.next_event();
     assert!(paused_at.elapsed() >= Duration::from_millis(100));
     fixture.assert_no_batch_within(Duration::from_millis(200));
     assert_eq!(fixture.batches.lock().unwrap().len(), 2);
 
     // The second probe succeeds and coaching is back without any manual retry.
     assert_eq!(fixture.next_batch(), [1]);
-    fixture.next_event();
-    fixture.next_event();
     fixture.next_event();
     assert!(!fixture.store.is_coaching_paused());
     assert!(is_ready(&fixture.coaching(session.session_id)[0]));
@@ -455,16 +475,17 @@ fn coached_conversation_mistakes_become_memory_become_due_and_come_back_in_later
             .collect())
     });
     fixture.answer(first.session_id, "I work in there");
+    fixture.answer(first.session_id, "I work in there again");
     fixture.store.finish(first.session_id).unwrap();
     fixture.queue.flush(first.session_id);
     fixture.next_batch();
     fixture.next_event();
 
-    // 1. The mistake is in Memory, observed once.
+    // 1. The recurring mistake is in Memory, observed in two answers.
     let memory = fixture.store.get_learning_memory().unwrap();
     assert_eq!(memory.mistakes.len(), 1);
     assert_eq!(memory.mistakes[0].corrected_example, "I work there");
-    assert_eq!(memory.mistakes[0].times_seen, 1);
+    assert_eq!(memory.mistakes[0].times_seen, 2);
     drop(fixture);
 
     // 2. It becomes due (here: a day later).

@@ -63,6 +63,25 @@ describe('session wrap-up payload', () => {
     expect(isFinishedPracticeSession(withoutPending)).toBe(false);
   });
 
+  it('accepts optional phrase preparation lifecycle data for older and new sessions', () => {
+    expect(isFinishedPracticeSession(finished)).toBe(true);
+    for (const state of ['legacy', 'pending', 'ready']) {
+      expect(isFinishedPracticeSession({ ...finished, wrapup_preparation: { state } })).toBe(true);
+    }
+    expect(
+      isFinishedPracticeSession({
+        ...finished,
+        wrapup_preparation: { state: 'failed', error: { code: 'timeout', message: 'Try again.' } },
+      }),
+    ).toBe(true);
+    expect(
+      isFinishedPracticeSession({
+        ...finished,
+        wrapup_preparation: { state: 'failed', error: 'no' },
+      }),
+    ).toBe(false);
+  });
+
   it('accepts practice-stage metadata and rejects malformed optional stage fields', () => {
     expect(
       isFinishedPracticeSession({

@@ -12,6 +12,7 @@ import {
   type PracticeSession,
   type SpokenRecallResult,
 } from '@/lib/types';
+import { isSavedWrapupPhrases, type SavedWrapupPhrases } from '@/lib/wrapupTypes';
 
 export async function startPracticeSession(options?: PracticeOptions): Promise<PracticeSession> {
   const result: unknown = options
@@ -95,6 +96,24 @@ export async function getSessionWrapup(sessionId: number): Promise<FinishedPract
   if (!isFinishedPracticeSession(result) || result.session_id !== sessionId) {
     throw new Error('Unexpected session wrap-up response.');
   }
+  return result;
+}
+
+/** Retries background phrase preparation for a failed or legacy session. */
+export async function retrySessionWrapup(sessionId: number): Promise<void> {
+  await invoke<void>('retry_session_wrapup', { sessionId });
+}
+
+/** Saves the selected wrap-up phrases as one atomic operation. */
+export async function saveWrapupPhrases(
+  sessionId: number,
+  phrases: string[],
+): Promise<SavedWrapupPhrases> {
+  const result = await invoke<unknown>('save_wrapup_phrases', { sessionId, phrases });
+  if (!isSavedWrapupPhrases(result)) {
+    throw new Error('Unexpected saved session phrases response.');
+  }
+  window.dispatchEvent(new Event('learning-memory-changed'));
   return result;
 }
 

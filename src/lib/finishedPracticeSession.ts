@@ -6,6 +6,7 @@ import {
   type PracticeMode,
   type PracticePhase,
 } from './practiceOptions';
+import { isWrapupPreparation, type WrapupPreparation } from './wrapupTypes';
 
 /** How a number moved against the last earlier session that has it. */
 export type Trend =
@@ -56,6 +57,8 @@ export type FinishedPracticeSession = {
   practice_phase?: PracticePhase;
   written_turn_count?: number;
   spoken_turn_count?: number;
+  /** New sessions prepare phrase cards independently from answer coaching. */
+  wrapup_preparation?: WrapupPreparation;
 };
 
 const MAX_WRAPUP_PHRASES = 3;
@@ -250,6 +253,7 @@ export function isFinishedPracticeSession(value: unknown): value is FinishedPrac
     'is_coaching_paused' in value &&
     typeof value.is_coaching_paused === 'boolean' &&
     (!('is_mistake_practice' in value) || typeof value.is_mistake_practice === 'boolean') &&
+    (!('wrapup_preparation' in value) || isWrapupPreparation(value.wrapup_preparation)) &&
     hasValidMistakePractice(value) &&
     hasValidOptionalStage(value)
   );

@@ -119,10 +119,25 @@ pub(crate) fn build(database: &SessionDatabase, session_id: u64) -> rusqlite::Re
         })
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
-    let phrases = pick_phrases(
-        &database.reviewed_answers(session_id)?,
-        &database.saved_phrase_keys()?,
-    );
+    let phrases = match database.wrapup_record(session_id)? {
+        None => pick_phrases(
+            &database.reviewed_answers(session_id)?,
+            &database.saved_phrase_keys()?,
+        ),
+        Some(crate::persistence::wrapup_generation::PreparedWrapup::Ready(result)) => result
+            .phrases
+            .into_iter()
+            .map(
+                |item: crate::providers::GeneratedWrapupPhrase| WrapupPhrase {
+                    sequence: item.sequence,
+                    phrase: item.phrase,
+                    note: item.note,
+                    you_said: item.you_said,
+                },
+            )
+            .collect(),
+        Some(_) => Vec::new(),
+    };
     let recurring_mistakes = database
         .repeated_mistakes(session_id, MAX_WRAPUP_MISTAKES)?
         .into_iter()

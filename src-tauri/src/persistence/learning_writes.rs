@@ -190,7 +190,7 @@ impl SessionDatabase {
     }
 
     pub fn save_phrase_card(
-        &mut self,
+        &self,
         phrase: &str,
         meaning_or_note: &str,
         session_id: Option<u64>,
