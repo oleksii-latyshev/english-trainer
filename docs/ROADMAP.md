@@ -23,7 +23,7 @@ Everything not needed for these five outcomes is deferred.
 | Topic | Decision |
 | :--- | :--- |
 | Conversation language | English only. The interface may later be localised (e.g. Russian); practice content never is. Whisper stays English-only. One approved on-demand exception: F13 translates a selected word into the native language chosen in Settings, on this Mac. |
-| Gemini API use (2026-10-08) | The Gemini API free tier is used only for conversation. Coaching and every other AI side task go to Antigravity pinned to a Gemini model (batched) or to on-device Apple / macOS frameworks. Settings > Usage shows locally counted requests and the last limit errors, because neither API reports the remaining quota. |
+| Gemini API use (2026-10-08) | The Gemini API free tier is used for conversation and the question-only F6 answer planner. Coaching and other AI side tasks go to Antigravity pinned to a Gemini model (batched) or to on-device Apple / macOS frameworks. Settings > Usage shows locally counted requests and the last limit errors, because neither API reports the remaining quota. |
 | Conversation provider | Two streaming adapters behind one interface: **Apple Foundation Models** (on-device, free, private; measured 1.6 s warm / 4.6 s cold for a whole non-streamed reply on 2026-10-06) and the **Gemini API** (Flash / Flash-Lite, API key from Google AI Studio). The default is chosen by measured time to first spoken word. |
 | Coaching, planning and wrap-up | Coaching runs through Antigravity CLI with `gemini-3.8-flash-medium`, in batches of up to five answers (decided 2026-10-08 from a measurement on 66 real answers: Apple on-device rewrites whole answers, "corrects" recognition artefacts or finds nothing; one `agy` call per answer exhausted the Antigravity quota after about 54 calls; the Gemini API free quota is reserved for conversation). Planning (F6) stays on the Gemini API. |
 | Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured; 14–136 s for a batch of five) and cannot stream. It stays as the slow background tier (coaching, answer examples, usage review), always with an explicit Gemini model. |
@@ -175,7 +175,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 
 ### Stage 2 — Help to structure spoken answers
 
-**F5. One Talk screen with inline coaching** `[ ]`
+**F5. One Talk screen with inline coaching** `[~]`
 - Built to the design brief ([`ui/DESIGN_BRIEF.md`](ui/DESIGN_BRIEF.md)).
 - Merge Conversation and Coach into a single chat. Deep feedback runs in the background, off the
   turn path, and appears under the message when ready: one natural rephrasing of what the user
@@ -193,7 +193,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   batch (14–136 s); one call per answer exhausted the Antigravity quota after about 54 calls. Apple
   on-device was rejected (rewrites whole answers, "corrects" recognition artefacts, or finds nothing)
   and the Gemini API is not used (its free quota is kept for conversation).
-- Built (still `[ ]` until accepted in the built app on a physical Mac): one Talk mode and route
+- Built (`[~]`; acceptance in the built app on a physical Mac is deferred): one Talk mode and route
   (`/coach`, "Get feedback in Coach", the Coach chip and the Continue step are gone; older Coach
   sessions are read as Talk sessions); a Rust coaching queue (a batch at 5 waiting answers, at
   finish, and after 60 s of quiet; one batch at a time; one retry; a calm "couldn't check this
@@ -205,18 +205,31 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Acceptance: a 10-turn session where feedback appears for every answer and the AI reply is never
   delayed by it.
 
-**F6. Answer planner** `[ ]`
+**F6. Answer planner** `[~]`
 - When the AI asks a question, prefetch in the background a short plan for answering it: a
   three-step frame suited to the question type (e.g. point–reason–example, past–present–future,
   situation–action–result), three to five useful phrases, and a model answer kept hidden by default.
 - Help is graduated and visible above the composer: Frame → Phrases → Example. Optional 15–30 s
   planning timer before speaking.
 - Opening help is recorded so cued answers are not counted as independent evidence. Per-answer help
-  use is already recorded (`record_answer_help_used`, shown as "used help" in the dialogue); F6
-  should use it to exclude cued answers from independent evidence.
+  use is recorded (`record_answer_help_used`, shown as "used help" in the dialogue); cued
+  answers are excluded from independent spoken memory evidence, including after restart.
 - Design: the help chips are numbered "1 Frame · 2 Phrases · 3 Example"; Frame adds "Plan first:
   15 s / 30 s". Example shows the prefetched model answer at once with "Model answer — try your own
   version after reading", Play and "Hide before speaking" (replacing today's request-then-adapt flow).
+- Built: Gemini prepares the current question's validated English plan in the background, without
+  the conversation transcript or Apple helper queue. One question is cached, including failures;
+  only explicit Retry requests another failed preparation. Stale results are rejected. Prefetch
+  records no cue; a help level opens only after its per-answer cue is saved. Example has Play and
+  Hide before speaking, and closes before microphone capture. Frame offers 15/30-second planning;
+  expiry never starts capture, and planning suppresses automatic listening while keeping the mic warm.
+- Automated coverage includes cache reuse, failure/retry, stale questions, slow planning alongside
+  replies, cue persistence and independent-evidence exclusion, plus browser help and timer flows.
+  Deterministic provider fixtures do not establish real Gemini latency or answer quality.
+- Validation: 387 TypeScript tests, 367 Rust unit tests plus one SQLite integration test, and
+  40 browser scenarios pass; Biome, Clippy and both TypeScript checks pass. The macOS app and DMG
+  are built. Eight live/provider tests remain opt-in.
+- Built-app acceptance and the live Gemini check are deferred to the user's physical Mac.
 - Acceptance: help is shown instantly (already prefetched) for at least 9 of 10 questions.
 
 **F7. Stuck rescue** `[ ]`

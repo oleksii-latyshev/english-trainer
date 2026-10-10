@@ -157,7 +157,16 @@ impl SessionDatabase {
         rows.collect()
     }
 
-    /// Records that help was opened for the answer with this sequence; repeating it changes nothing.
+    /// Per-answer exposure excludes that answer from independent spoken evidence.
+    pub fn has_answer_help_used(&self, session_id: u64, sequence: usize) -> rusqlite::Result<bool> {
+        self.connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM answer_help_uses WHERE session_id = ?1 AND sequence = ?2)",
+            rusqlite::params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
+            |row| row.get(0),
+        )
+    }
+
+    /// Records help once for the pending answer.
     pub fn record_answer_help_used(
         &mut self,
         session_id: u64,

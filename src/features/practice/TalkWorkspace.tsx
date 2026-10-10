@@ -32,6 +32,7 @@ type Props = {
   isPhraseSaved: boolean;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onNavigate?: (screen: TalkScreenName) => void;
+  onPlanningChange?: (isPlanning: boolean) => void;
 };
 
 type ExtrasProps = Pick<
@@ -82,6 +83,7 @@ function TalkExtras(props: ExtrasProps) {
     savedAnswer !== null &&
     savedAnswer.sequence <= 2 &&
     dialogue?.input_sources?.[savedAnswer.sequence - 1] === 'voice' &&
+    dialogue?.help_used?.[savedAnswer.sequence - 1] !== true &&
     !isRetrying &&
     !recall.active;
   return (
@@ -143,6 +145,7 @@ export function TalkWorkspace(props: Props) {
       model={model}
       noteTools={props.noteTools}
       onNavigate={props.onNavigate}
+      onPlanningChange={props.onPlanningChange}
       onSend={props.onSend}
       pendingReply={props.pendingReply}
       question={session.question}

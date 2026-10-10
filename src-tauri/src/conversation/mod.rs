@@ -16,6 +16,7 @@ mod guided;
 mod interruption;
 mod lifecycle;
 pub(crate) mod memory_recall;
+mod planner;
 mod profile;
 pub(crate) mod recall;
 mod rehearsal;
@@ -130,6 +131,7 @@ pub struct FinishedPracticeSession {
 pub struct SessionStore {
     state: Arc<Mutex<State>>,
     pub(crate) usage_in_flight: Arc<usage_support::UsageInFlightTracker>,
+    answer_plan_cache: Arc<Mutex<Option<planner::CachedPlan>>>,
     pub(crate) coaching: Arc<coaching::CoachingStatus>,
 }
 
@@ -262,6 +264,7 @@ impl SessionStore {
                 mistake_practice_preparing: false,
             })),
             usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
+            answer_plan_cache: Arc::new(Mutex::new(None)),
             coaching: Arc::new(coaching::CoachingStatus::default()),
         })
     }

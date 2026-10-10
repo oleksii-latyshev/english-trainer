@@ -32,6 +32,7 @@ import { useAnswerNotes } from './useAnswerNotes';
 import { useAutoListen } from './useAutoListen';
 import { useCoachingUpdates } from './useCoachingUpdates';
 import { useDailyRecall } from './useDailyRecall';
+import { usePlanningGuard } from './usePlanningGuard';
 import { usePracticeDialogue } from './usePracticeDialogue';
 import { usePrewarmProvider } from './usePrewarmProvider';
 import { useReplyInterruption } from './useReplyInterruption';
@@ -57,6 +58,7 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
 
   const generation = useRef(0);
   const pending = useRef(false);
+  const planning = usePlanningGuard(actions.cancelRecording, actions.startAutoListen);
   const { mic } = useTrainer();
   const { preferences: flow } = useConversationFlow();
   const { transcript, practice, currentRequestId } = model;
@@ -124,7 +126,7 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
       !recall.active &&
       !isRetrying,
     generation,
-    actions.startAutoListen,
+    planning.startAutoListen,
   );
 
   const replySpeech = useStreamSpeech({ speech, generation, listenAfterReply });
@@ -285,6 +287,7 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
         model={displayedModel}
         noteTools={noteTools}
         onNavigate={onNavigate}
+        onPlanningChange={planning.onPlanningChange}
         onSend={handleSendTurn}
         pendingReply={streamingReply.pendingReply}
         recall={recall}

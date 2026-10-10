@@ -1,5 +1,5 @@
 import { isTauri } from '@tauri-apps/api/core';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { setConversationFlow } from '@/lib/conversationFlowPreferences';
@@ -26,6 +26,7 @@ import { recordAnswerHelpUsed } from './sessionApi';
 import { TalkComposerPanel } from './TalkComposerPanel';
 import { TalkHeader } from './TalkHeader';
 import { TalkNotices } from './TalkNotices';
+import { exampleCueWasInterrupted, useExampleCaptureGuard } from './useExampleCaptureGuard';
 import { useTalkKeyboard } from './useTalkKeyboard';
 import { useTalkTurn } from './useTalkTurn';
 import './talk.css';
@@ -64,6 +65,7 @@ type Props = {
   noteTools: NoteTools | null;
   onSend: (text: string, source: InputSource) => Promise<void>;
   onNavigate?: (screen: TalkScreenName) => void;
+  onPlanningChange?: (active: boolean) => void;
   /** Extra material after the messages: recall, coaching notes, retry comparison. */
   children?: ReactNode;
 };
@@ -100,22 +102,76 @@ export function TalkScreen(props: Props) {
     onChooseMicrophone: () => props.onNavigate?.('settings-microphone'),
   });
   const { state, presentation, composer, flow } = turn;
+  const isCapturing = model.status === 'recording';
 
   // Help opens per question; a new question starts closed without an effect resetting it.
-  const helpKey = `${session.sessionId}:${session.turnCount + 1}:${question}`;
+  const helpKey = `${session.sessionId}:${session.practicePhase}:${session.turnCount + 1}:${question}`;
+  const currentHelpKey = useRef(helpKey);
+  currentHelpKey.current = helpKey;
+  const helpRequest = useRef(0);
+  const requestedHelp = useRef<HelpLevel | null>(null);
   const [help, setHelp] = useState<{ key: string; level: HelpLevel | null }>({
     key: helpKey,
     level: null,
   });
+  const [helpNotice, setHelpNotice] = useState<{ key: string; text: string } | null>(null);
   const helpLevel = help.key === helpKey ? help.level : null;
+  const { captureEpoch, isCapturingRef } = useExampleCaptureGuard({
+    isCapturing,
+    helpLevel,
+    helpKey,
+    helpRequest,
+    requestedHelp,
+    setHelp,
+    stopSpeech: speech.stop,
+  });
   function changeHelpLevel(level: HelpLevel | null) {
-    setHelp({ key: helpKey, level });
-    if (level === null || !isTauri()) return;
-    // The mark only decorates the saved answer, so a failed write must not interrupt the answer.
-    recordAnswerHelpUsed(session.sessionId, session.turnCount + 1).catch((cause: unknown) =>
-      console.warn('Could not record that help was used for this answer.', cause),
-    );
+    if (level === 'example' && isCapturingRef.current) return;
+    const request = ++helpRequest.current;
+    const requestKey = helpKey;
+    const requestCaptureEpoch = captureEpoch.current;
+    const wasCapturingAtRequest = isCapturingRef.current;
+    if (level === null) {
+      requestedHelp.current = null;
+      setHelp({ key: requestKey, level: null });
+      return;
+    }
+    requestedHelp.current = level;
+    setHelpNotice(null);
+    if (!isTauri()) {
+      requestedHelp.current = null;
+      setHelp({ key: requestKey, level });
+      return;
+    }
+    void recordAnswerHelpUsed(session.sessionId, session.turnCount + 1)
+      .then(() => {
+        if (helpRequest.current !== request || currentHelpKey.current !== requestKey) return;
+        requestedHelp.current = null;
+        if (
+          level === 'example' &&
+          exampleCueWasInterrupted(
+            wasCapturingAtRequest,
+            requestCaptureEpoch,
+            captureEpoch.current,
+            isCapturingRef.current,
+          )
+        ) {
+          setHelp({ key: requestKey, level: null });
+          return;
+        }
+        setHelp({ key: requestKey, level });
+      })
+      .catch(() => {
+        if (helpRequest.current !== request || currentHelpKey.current !== requestKey) return;
+        requestedHelp.current = null;
+        setHelp({ key: requestKey, level: null });
+        setHelpNotice({
+          key: requestKey,
+          text: 'Help could not be marked. Try opening it again, or keep speaking.',
+        });
+      });
   }
+
   const mood = evaMoodFor(state, turn.flowSignals, {
     isPhraseSaved: props.isPhraseSaved ?? false,
     isHelpOpen: helpLevel !== null,
@@ -133,14 +189,27 @@ export function TalkScreen(props: Props) {
     onResume: actions.resumeMic,
   };
   const isHelpAvailable =
-    !isMistakePractice && !isWritingStage && helpAvailable(question, isRetrying, isRecalling);
+    canRecordAnswer &&
+    !isMistakePractice &&
+    !isWritingStage &&
+    helpAvailable(question, isRetrying, isRecalling);
+  function startRecording() {
+    if (helpLevel === 'example') {
+      speech.stop();
+      changeHelpLevel(null);
+    } else if (requestedHelp.current === 'example') {
+      helpRequest.current += 1;
+      requestedHelp.current = null;
+    }
+    composer.startRecording();
+  }
   useTalkKeyboard({
     state,
     canPressMic: isAudioStage && turn.canPressMic,
     isHelpAvailable,
     helpLevel,
     onHelpLevelChange: changeHelpLevel,
-    onStartRecording: composer.startRecording,
+    onStartRecording: startRecording,
     onStopRecording: actions.stopRecording,
     onCancelRecording: actions.cancelRecording,
     onCancelCountdown: composer.cancelAutoSend,
@@ -228,6 +297,9 @@ export function TalkScreen(props: Props) {
             lock={lock}
             model={model}
             onHelpLevelChange={changeHelpLevel}
+            onPlanningChange={props.onPlanningChange}
+            onStartRecording={startRecording}
+            helpNotice={helpNotice?.key === helpKey ? helpNotice.text : undefined}
             question={question}
             session={session}
             speech={speech}

@@ -87,8 +87,9 @@ e2e/                    Playwright against Vite, typed command/audio edges faked
   user setting. Send the configured LLM provider only the transcript and prompt context needed.
 - LLM providers: Apple Foundation Models (bundled helper) and the Gemini API are the target
   real-time providers; API keys live in an encrypted, owner-only file in the app data folder, never in SQLite,
-  logs or the repository. The Antigravity CLI (`agy`) runs the background coaching, answer examples and
-  usage reviews, only in private scratch directories with bounded timeouts; never pass the repository
+  logs or the repository. The F6 answer planner uses question-only Gemini requests, outside the
+  conversation queue. The Antigravity CLI (`agy`) runs background coaching, legacy answer examples
+  and usage reviews, only in private scratch directories with bounded timeouts; never pass the repository
   as its working directory. Every `agy` call names a Gemini model (`CliOptions.model` is required,
   not optional): without `--model` agy runs its own default, a Claude model, on the learner's Claude quota.
 - macOS companion: Ambient prompts, notifications, and autostart are opt-in and respect quiet

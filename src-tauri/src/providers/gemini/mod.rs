@@ -1,6 +1,7 @@
 //! Gemini API conversation adapter: streamed plain-text replies over HTTPS.
 
 mod key;
+mod planner;
 mod stream;
 #[cfg(test)]
 mod tests;
@@ -16,6 +17,8 @@ use super::{
 use std::{sync::OnceLock, time::Duration};
 
 pub use key::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
+
+pub use planner::generate_answer_plan;
 
 const BASE_URL: &str = "https://generativelanguage.googleapis.com";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);

@@ -104,11 +104,12 @@ describe('Escape', () => {
 });
 
 describe('help keys', () => {
-  it('H opens the first level, then closes; 2 and 3 pick a level and toggle it', () => {
+  it('H opens Frame, then closes; 1, 2 and 3 pick a level and toggle it', () => {
     const idle: TurnState = { tag: 'idle' };
-    expect(down('h', idle)).toEqual({ kind: 'set-help', level: 'phrases' });
+    expect(down('h', idle)).toEqual({ kind: 'set-help', level: 'frame' });
     expect(down('H', idle, { helpLevel: 'example' })).toEqual({ kind: 'set-help', level: null });
     expect(down('2', idle)).toEqual({ kind: 'set-help', level: 'phrases' });
+    expect(down('1', idle)).toEqual({ kind: 'set-help', level: 'frame' });
     expect(down('3', idle, { helpLevel: 'phrases' })).toEqual({
       kind: 'set-help',
       level: 'example',
@@ -116,9 +117,8 @@ describe('help keys', () => {
     expect(down('3', idle, { helpLevel: 'example' })).toEqual({ kind: 'set-help', level: null });
   });
 
-  it('leaves Frame (1) alone and ignores keys without help, in text fields or with a modifier', () => {
+  it('ignores keys without help, in text fields or with a modifier', () => {
     const idle: TurnState = { tag: 'idle' };
-    expect(down('1', idle)).toBeNull();
     expect(down('h', idle, { isHelpAvailable: false })).toBeNull();
     expect(down('h', idle, {}, { target: 'text' })).toBeNull();
     expect(down('h', idle, {}, { hasModifier: true })).toBeNull();

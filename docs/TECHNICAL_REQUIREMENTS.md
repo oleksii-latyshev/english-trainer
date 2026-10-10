@@ -271,8 +271,24 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
 - `get_guided_answer(session_id, sequence, question)` → `{ model_answer, adaptation }` for the
   active unanswered prompt only. Rust checks session, sequence and exact question. The cue exposure is saved **before** generation; a stale result cannot supply help for
   another turn. Failure does not change the session.
-- **Target [F6]:** a help bundle `{ frame[3], phrases[3..5], model_answer, adaptation }` is
-  prefetched when a question appears. Opening any level records a cue exposure.
+- `prefetch_answer_plan(session_id, sequence, question, retry?)` (snake-case command arguments)
+  returns `{ frame[3], phrases[3..5], model_answer, adaptation }` for the active unanswered spoken
+  question. Gemini receives only that question as user data, uses JSON-schema output, and reports
+  request/limit counters through the existing usage tracker. Every field is validated: plain English,
+  bounded lengths, at most 60 words per field, a complete model answer and bracketed adaptation slots.
+  The provider response is bounded to 16 KB; invalid output remains a recoverable typed error.
+- F6 holds one in-memory question cache, including failures, behind a separate mutex. Concurrent
+  prefetches coalesce; a failed plan is regenerated only on explicit Retry. The session lock is not
+  held during generation, so conversation and coaching continue. Session, phase, sequence and exact
+  question are checked before and after preparation; obsolete results cannot be exposed.
+- Prefetch writes no help exposure. Opening Frame, Phrases or Example first awaits the existing
+  per-answer cue write; its failure leaves help hidden and offers a calm recovery notice. The cue
+  persists in SQLite and excludes only that answer from independent spoken usage review.
+- H opens Frame; 1/2/3 select Frame/Phrases/Example. Example reads the cached plan, supports Play
+  and Hide before speaking, and closes on manual or automatic microphone capture, including a pending
+  cue acknowledgment. The optional Frame timer uses a 15/30-second deadline, cancels on capture,
+  closure or question change, and suppresses auto-listening without releasing the warm microphone.
+  Timer expiry never starts capture. Missing keys, quotas and invalid plans leave answering usable.
 - **Target [F7]:** rescue requests carry the partial transcript and return one suggestion; they
   record a cue exposure.
 

@@ -57,6 +57,16 @@ impl SessionStore {
                     "Typed or edited answers cannot count as independent spoken memory evidence.",
                 ));
             }
+            if state
+                .database
+                .has_answer_help_used(session_id, sequence)
+                .map_err(database_error)?
+            {
+                return Err(ProviderError::new(
+                    ProviderErrorCode::InvalidRequest,
+                    "This answer used help. Independent evidence needs an answer without help.",
+                ));
+            }
             if let Some(saved) = state
                 .database
                 .get_turn_usage_assessment(session_id, sequence)

@@ -21,6 +21,9 @@ type Props = {
   helpLevel: HelpLevel | null;
   onHelpLevelChange: (level: HelpLevel | null) => void;
   question: string;
+  onPlanningChange?: (active: boolean) => void;
+  helpNotice?: string;
+  onStartRecording: () => void;
 };
 
 export function TalkComposerPanel({
@@ -36,15 +39,13 @@ export function TalkComposerPanel({
   helpLevel,
   onHelpLevelChange,
   question,
+  onPlanningChange,
+  helpNotice,
+  onStartRecording,
 }: Props) {
   const { composer, flow, state } = turn;
   const fixes = state.tag === 'error' ? state.issue.fixes.map((fix) => turn.fixes[fix]) : [];
-  const isHelpDisabled =
-    turn.isBusy ||
-    composer.isSending ||
-    model.status === 'recording' ||
-    model.transcribing ||
-    lock.isLocked;
+  const isHelpDisabled = turn.isBusy || composer.isSending || model.transcribing || lock.isLocked;
 
   return (
     <div className="talk-composer-zone">
@@ -55,7 +56,10 @@ export function TalkComposerPanel({
             key={helpKey}
             level={helpLevel}
             onLevelChange={onHelpLevelChange}
+            onPlanningChange={onPlanningChange}
+            notice={helpNotice}
             question={question}
+            isRecording={state.tag === 'listening' || state.tag === 'auto-listen'}
             sequence={session.turnCount + 1}
             sessionId={session.sessionId}
           />
@@ -89,7 +93,7 @@ export function TalkComposerPanel({
           onHold={actions.holdListening}
           onResume={actions.resumeMic}
           onSend={composer.sendDraft}
-          onStart={composer.startRecording}
+          onStart={onStartRecording}
           onStop={actions.stopRecording}
           onStopEva={speech.stop}
           presentation={turn.presentation}

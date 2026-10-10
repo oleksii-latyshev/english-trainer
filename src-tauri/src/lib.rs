@@ -399,6 +399,33 @@ async fn get_guided_answer(
     })?
 }
 
+#[tauri::command(rename_all = "snake_case")]
+async fn prefetch_answer_plan(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+    question: String,
+    retry: Option<bool>,
+) -> Result<providers::AnswerPlan, providers::ProviderError> {
+    let store = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        store.answer_plan(
+            session_id,
+            sequence,
+            &question,
+            retry.unwrap_or(false),
+            providers::generate_answer_plan,
+        )
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "Could not prepare this answer plan. Retry help or keep speaking.",
+        )
+    })?
+}
+
 #[tauri::command]
 fn get_question_scaffold(question: String) -> conversation::QuestionScaffold {
     conversation::question_scaffold(&question)
@@ -626,6 +653,7 @@ pub fn run() {
             submit_daily_recall,
             get_active_practice_session,
             get_question_scaffold,
+            prefetch_answer_plan,
             get_guided_answer,
             record_answer_help_used,
             save_phrase_card,

@@ -109,7 +109,9 @@ Additional tools:
   a sentence start, or a simpler way to express the idea.
 - **Missing word:** describe the word in English and choose from suggestions.
 
-Every use of help is recorded as a cue for that answer.
+Opening a help level is recorded as a cue before the content appears; background preparation is
+not a cue. A cued answer remains available for coaching but cannot count as independent spoken
+memory evidence. Planning expiry never starts recording; the learner chooses when to speak.
 
 ## 6. Topics and personalisation
 

@@ -1,4 +1,5 @@
 pub(crate) mod agy;
+mod answer_plan;
 mod answered_by;
 mod apple;
 mod context;
@@ -8,8 +9,10 @@ mod race;
 mod reply_text;
 mod settings;
 pub use agy::guided::{generate_guided_answer, GuidedAnswer};
+pub use answer_plan::{parse_answer_plan, AnswerPlan};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
+pub use gemini::generate_answer_plan;
 pub use gemini::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
 pub use settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
 

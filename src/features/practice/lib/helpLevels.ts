@@ -1,7 +1,7 @@
-/** The help levels the app supports today; the design's "Frame" level (number 1) has no logic yet. */
-export type HelpLevel = 'phrases' | 'example';
+export type HelpLevel = 'frame' | 'phrases' | 'example';
 
 export const HELP_LEVELS: { id: HelpLevel; label: string; keyNumber: number }[] = [
+  { id: 'frame', label: 'Frame', keyNumber: 1 },
   { id: 'phrases', label: 'Phrases', keyNumber: 2 },
   { id: 'example', label: 'Example', keyNumber: 3 },
 ];

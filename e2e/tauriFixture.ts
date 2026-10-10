@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { emptyDialogue, finishedSession, initialSession } from './fixtureData';
 import type { FixtureOptions, HarnessState } from './harnessTypes';
 import { installMistakePracticeFixture } from './mistakePracticeFixture';
+import { installPlannerFixture } from './plannerFixture';
 import { installSpeechFixture } from './speechFixture';
 import { installTauriCommands } from './tauriCommands';
 import { installTranslationFixture } from './translationFixture';
@@ -47,4 +48,5 @@ export async function installTauriFixture(page: Page, options: FixtureOptions = 
   await installTauriCommands(page);
   await installMistakePracticeFixture(page);
   await installTranslationFixture(page, options.translation);
+  await installPlannerFixture(page, options.planner);
 }
