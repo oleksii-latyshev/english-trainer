@@ -72,7 +72,7 @@ fn snapshots_only_safe_due_items_in_deterministic_order_and_hides_targets() {
     let _second = phrase(&mut db, "trade-off", "A compromise between choices");
     let overflow = phrase(&mut db, "come across", "Find or seem to be");
     let run = db.start_memory_review_run().unwrap().unwrap();
-    assert_eq!(run.items.len(), 3);
+    assert_eq!(run.items.len(), 4);
     assert!(run.items.iter().all(|item| item.target.is_none()));
     assert_eq!(run.items[0].item_id, first);
     assert_eq!(run.items[0].cue, "the minus was clear");
@@ -82,10 +82,7 @@ fn snapshots_only_safe_due_items_in_deterministic_order_and_hides_targets() {
         .items
         .iter()
         .any(|item| item.item_type == LearningItemType::Mistake && item.item_id == unsafe_item));
-    assert!(!run
-        .items
-        .iter()
-        .any(|item| item.item_type == LearningItemType::Phrase && item.item_id == overflow));
+    assert_eq!(run.items[3].item_id, overflow);
     assert_eq!(db.start_memory_review_run().unwrap().unwrap(), run);
 }
 

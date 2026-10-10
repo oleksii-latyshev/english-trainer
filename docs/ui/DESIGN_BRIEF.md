@@ -79,6 +79,9 @@ start state can live inside Talk (see §6.1) rather than as a separate dashboard
   (HR / behavioural / technical), Free topic. Each with a one-line description.
 - Session length: 5 / 10 / 15 minutes (default 10), shown as a suggestion, not a hard limit.
 - "Phrases to review today: N" — optional short spoken review before or after the session.
+- With due phrases, offer "A 2-minute spoken warm-up before you start": Before session / Skip
+  today (default). A fresh warm-up has up to three phrases; finishing or explicitly skipping
+  starts the chosen spoken conversation. Text modes and a resumed conversation bypass it.
 - A resumable unfinished session, if any ("Continue: Work & technology, 4 min left").
 - One primary action: **Start talking**.
 
@@ -148,6 +151,11 @@ answer as "used help" (show this subtly on the learner's message).
   status (new / learning / improving / stable / archived).
 - "Review now (N due)": a spoken review flow — Eva gives a situation, the learner answers aloud
   using the phrase; result shown as "used it / not yet".
+- Up to six items, about three minutes; resume an unfinished queue unchanged. Keep wording
+  hidden before the first answer. Show phrase labels the attempt as practice with a hint. After
+  the first score, offer a model sentence, Play example and Shadow it; retries stay unscored.
+  Keep recording, Skip and End available while situations prepare; freeze the prompt during an
+  answer and show a calm Retry situations action if preparation fails.
 - Search, archive, delete. Calm empty state explaining how phrases get here.
 
 ### 6.8 Settings

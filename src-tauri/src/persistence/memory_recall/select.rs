@@ -22,6 +22,17 @@ impl Candidate {
 
 impl SessionDatabase {
     pub fn start_memory_review_run(&mut self) -> rusqlite::Result<Option<MemoryReviewRun>> {
+        self.start_memory_review_with_limit(false)
+    }
+
+    pub fn start_memory_warmup(&mut self) -> rusqlite::Result<Option<MemoryReviewRun>> {
+        self.start_memory_review_with_limit(true)
+    }
+
+    fn start_memory_review_with_limit(
+        &mut self,
+        warmup: bool,
+    ) -> rusqlite::Result<Option<MemoryReviewRun>> {
         if let Some(active) = self.active_memory_review_run()? {
             return Ok(Some(active));
         }
@@ -33,7 +44,10 @@ impl SessionDatabase {
                 .then_with(|| left.type_order().cmp(&right.type_order()))
                 .then_with(|| left.item_id.cmp(&right.item_id))
         });
-        candidates.truncate(3);
+        if warmup {
+            candidates.retain(|item| item.item_type == LearningItemType::Phrase);
+        }
+        candidates.truncate(if warmup { 3 } else { 6 });
         if candidates.is_empty() {
             return Ok(None);
         }

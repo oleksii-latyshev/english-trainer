@@ -104,7 +104,7 @@ export function summarizeReview(items: MemoryReviewItem[]): ReviewSummary {
   const notYet = entries.filter((entry) => entry.outcome === 'not-yet').length;
   const skipped = entries.filter((entry) => entry.outcome === 'skipped').length;
   const noun = items.every((item) => item.item_type === 'phrase') ? 'phrases' : 'items';
-  const parts = [`You used ${used} of ${entries.length} ${noun} on the spot.`];
+  const parts = [`You used ${used} of ${entries.length} ${noun} during this review.`];
   if (notYet > 0) parts.push('The rest come back tomorrow.');
   if (skipped > 0)
     parts.push(`${skipped === 1 ? 'The skipped one stays' : 'Skipped ones stay'} due.`);

@@ -68,4 +68,10 @@ describe('review prompt', () => {
     expect(prompt.label).toBe('Eva · say it better');
     expect(prompt.spoken).toBe('Say this one better. I work in there yesterday.');
   });
+
+  it('introduces generated situations as context even for a mistake item', () => {
+    const prompt = reviewPrompt('mistake', 'A coworker asks what happened.', true);
+    expect(prompt.label).toBe('Eva · situation');
+    expect(prompt.spoken).toBe('Here is a situation. A coworker asks what happened.');
+  });
 });

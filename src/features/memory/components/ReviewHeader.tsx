@@ -7,6 +7,7 @@ type Props = {
   position: number | null;
   isBusy: boolean;
   onEnd: () => void;
+  endLabel?: string;
 };
 
 function pipState(index: number, position: number | null): 'done' | 'current' | 'ahead' {
@@ -15,7 +16,7 @@ function pipState(index: number, position: number | null): 'done' | 'current' | 
 }
 
 /** Where the learner is in the review, and the way out. */
-export function ReviewHeader({ items, position, isBusy, onEnd }: Props) {
+export function ReviewHeader({ items, position, isBusy, onEnd, endLabel }: Props) {
   return (
     <header className="review-header">
       <div className="review-title">
@@ -33,7 +34,7 @@ export function ReviewHeader({ items, position, isBusy, onEnd }: Props) {
         </span>
       </div>
       <Button className="review-end" isDisabled={isBusy} onPress={onEnd} size="sm" variant="ghost">
-        {position === null ? 'Back to Memory' : 'End review'}
+        {endLabel ?? (position === null ? 'Back to Memory' : 'End review')}
       </Button>
     </header>
   );

@@ -119,7 +119,7 @@ export function isMemoryReviewItem(value: unknown): value is MemoryReviewItem {
   const item = value;
   return (
     isSafeInteger(item.position, 1) &&
-    item.position <= 3 &&
+    item.position <= 6 &&
     isLearningItemType(item.item_type) &&
     isSafeInteger(item.item_id, 1) &&
     isBoundedText(item.cue, 500) &&
@@ -143,7 +143,7 @@ export function isMemoryReviewRun(value: unknown): value is MemoryReviewRun {
     run.completed !== false ||
     !Array.isArray(run.items) ||
     run.items.length === 0 ||
-    run.items.length > 3 ||
+    run.items.length > 6 ||
     !run.items.every(isMemoryReviewItem)
   ) {
     return false;
@@ -165,7 +165,7 @@ export function isMemoryRecallResult(value: unknown): value is MemoryRecallResul
   return (
     isSafeInteger(result.run_id, 1) &&
     isSafeInteger(result.position, 1) &&
-    result.position <= 3 &&
+    result.position <= 6 &&
     isLearningItemType(result.item_type) &&
     isSafeInteger(result.item_id, 1) &&
     isBoundedText(result.cue, 500) &&

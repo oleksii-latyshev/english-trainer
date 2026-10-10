@@ -6,14 +6,42 @@ import {
   type MemoryRecallResult,
   type MemoryReviewRun,
 } from '@/lib/memoryRecallTypes';
+import { isReviewMaterials, type ReviewMaterials } from '@/lib/reviewMaterialTypes';
 
-export async function startMemoryReview(): Promise<MemoryReviewRun | null> {
-  const result = await invoke<unknown>('start_memory_review');
+export async function startMemoryReview(options?: {
+  warmup?: boolean;
+}): Promise<MemoryReviewRun | null> {
+  const result = await invoke<unknown>(
+    'start_memory_review',
+    options?.warmup ? { warmup: true } : {},
+  );
   if (result === null) return null;
   if (!isMemoryReviewRun(result)) {
     throw new Error('Unexpected memory review response from local database.');
   }
   return result;
+}
+
+async function readReviewMaterials(
+  command: string,
+  args: Record<string, unknown>,
+): Promise<ReviewMaterials> {
+  const result = await invoke<unknown>(command, args);
+  if (!isReviewMaterials(result)) throw new Error('Unexpected spoken review materials response.');
+  if (result.run_id !== args.run_id) throw new Error('Review materials belong to another run.');
+  return result;
+}
+
+export function getReviewMaterial(runId: number): Promise<ReviewMaterials> {
+  return readReviewMaterials('get_review_material', { run_id: runId });
+}
+
+export function prepareReviewMaterial(runId: number, retry = false): Promise<ReviewMaterials> {
+  return readReviewMaterials('prepare_review_material', { run_id: runId, retry });
+}
+
+export function revealReviewPhrase(runId: number, position: number): Promise<ReviewMaterials> {
+  return readReviewMaterials('reveal_review_phrase', { run_id: runId, position });
 }
 
 export async function getMemoryReview(): Promise<MemoryReviewRun | null> {

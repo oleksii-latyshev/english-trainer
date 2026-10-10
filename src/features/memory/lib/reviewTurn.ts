@@ -124,8 +124,12 @@ export type ReviewPrompt = {
  * The cue as Eva gives it. A phrase's cue is its note; a mistake's cue is the sentence as the
  * learner first said it, so Eva asks for it to be said better rather than reading it as a model.
  */
-export function reviewPrompt(itemType: LearningItemType, cue: string): ReviewPrompt {
-  if (itemType === 'mistake') {
+export function reviewPrompt(
+  itemType: LearningItemType,
+  cue: string,
+  isGeneratedSituation = false,
+): ReviewPrompt {
+  if (itemType === 'mistake' && !isGeneratedSituation) {
     return {
       label: 'Eva · say it better',
       text: cue,

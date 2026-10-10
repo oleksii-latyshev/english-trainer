@@ -25,7 +25,7 @@ export function reviewBannerCopy(dueCount: number, active: ActiveReview): Review
     return {
       state: 'due',
       title: `Spoken review · ${dueCount} due`,
-      hint: 'Eva gives you a situation, you answer out loud using the phrase. About 2 minutes.',
+      hint: 'Eva gives you a situation, you answer out loud using the phrase. Up to 6 items · about 3 minutes.',
       actionLabel: 'Review now',
     };
   }

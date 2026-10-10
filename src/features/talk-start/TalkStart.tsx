@@ -20,6 +20,7 @@ import { StartActions } from './StartActions';
 import { TopicSpecificFields } from './TopicSpecificFields';
 import './talkStart.css';
 import './talkStartModes.css';
+import './talkStartWarmup.css';
 
 type Props = {
   isBusy: boolean;
@@ -29,6 +30,7 @@ type Props = {
   openSession?: Parameters<typeof resumeDetail>[0];
   onStartOrResume: () => void;
   onStart: (options: PracticeOptions) => void;
+  onStartWarmup?: (options: PracticeOptions) => void;
   onOpenMemory: () => void;
 };
 
@@ -46,6 +48,7 @@ export function TalkStart({
   openSession,
   onStartOrResume,
   onStart,
+  onStartWarmup,
   onOpenMemory,
 }: Props) {
   const [topicId, setTopicId] = useState<TopicId>(DEFAULT_PRACTICE_OPTIONS.topic_id);
@@ -57,6 +60,7 @@ export function TalkStart({
   const [practiceMode, setPracticeMode] = useState<PracticeMode>(
     DEFAULT_PRACTICE_OPTIONS.practice_mode ?? 'voice',
   );
+  const [warmupFirst, setWarmupFirst] = useState(false);
   const action = primaryAction({
     isRestoring,
     isBusy,
@@ -64,18 +68,22 @@ export function TalkStart({
   });
   const effectiveTopicId = topicId === 'job_interview_hr' ? interviewTopic : topicId;
   const chosenLabel = topicLabel(effectiveTopicId, customTopic);
+  const duePhraseCount = due.tag === 'ready' ? (due.duePhraseCount ?? 0) : 0;
   const isCustomTopicValid =
     topicId !== 'free_topic' ||
     (customTopic.trim().length > 0 && Array.from(customTopic.trim()).length <= 150);
 
   function start(selectedId: TopicId = effectiveTopicId) {
     const useCustom = selectedId === 'free_topic';
-    onStart({
+    const options: PracticeOptions = {
       topic_id: selectedId,
       topic_custom: useCustom ? customTopic.trim() : null,
       duration_goal_seconds: duration,
       practice_mode: practiceMode,
-    });
+    };
+    if (warmupFirst && practiceMode === 'voice' && duePhraseCount > 0 && onStartWarmup) {
+      onStartWarmup(options);
+    } else onStart(options);
   }
 
   return (
@@ -121,6 +129,21 @@ export function TalkStart({
             <Button className="talk-start-card-action" onPress={onOpenMemory} variant="secondary">
               Review now
             </Button>
+          )}
+          {duePhraseCount > 0 && practiceMode === 'voice' && !openSession && (
+            <fieldset className="talk-start-warmup">
+              <legend>A 2-minute spoken warm-up before you start</legend>
+              <button aria-pressed={warmupFirst} onClick={() => setWarmupFirst(true)} type="button">
+                Before session
+              </button>
+              <button
+                aria-pressed={!warmupFirst}
+                onClick={() => setWarmupFirst(false)}
+                type="button"
+              >
+                Skip today
+              </button>
+            </fieldset>
           )}
         </section>
       )}

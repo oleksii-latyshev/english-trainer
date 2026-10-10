@@ -320,7 +320,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Built-app acceptance remains deferred: finish a real spoken session, inspect the phrases and
   notes, save/undo them, and confirm later spoken review on the physical Mac.
 
-**F10. Spoken phrase review** `[ ]`
+**F10. Spoken phrase review** `[~]` (built; physical Mac acceptance deferred by the learner)
 - Due phrases return as short spoken tasks: the AI gives a situation, the user answers using the
   phrase. Optional shadowing: listen to an AI sentence and repeat it.
 - Due phrases are also woven into topic questions (existing learning-target context).
@@ -330,17 +330,34 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   until the core loop is fast and used daily.
 - Design: the start-screen review card offers "A 2-minute spoken warm-up before you start" with a
   Before session / Skip today toggle.
-- Design (spoken review, built on the existing recall run): Eva reads the situation and the learner
-  answers by voice; the result shows "Used it" or "Not yet" with the wording marked in the answer,
-  Try again, Skip, Next and Finish, progress pips and the end summary with each new status. What it
-  still lacks for F10: (1) a situation written for the phrase: the cue is the saved note (a
-  mistake's cue is the sentence as first said), so Eva reads that; (2) the banner "Use this phrase
-  X" shows the wording before the answer: the run keeps the wording hidden until the answer is
-  saved, so it is recall, and showing it would make the answer cued; F10 decides whether a cued
-  mode exists, and it must not count as independent use; (3) a model answer for "With the phrase":
-  today it is the wording itself (for a mistake, the corrected sentence), not a sentence written
-  around it; (4) runs of six items ("N of 6", "about 3 minutes"): a run holds three. Decided
-  2026-10-07: Try again in the review stays practice only; the first answer is the scored one.
+- Built: a normal run snapshots up to six safe due phrases or recurring mistakes; a fresh
+  pre-session warm-up selects up to three phrases. Either route resumes an unfinished run
+  unchanged. Skip and End keep unanswered items due. The selected topic, custom text, mode and
+  suggested length survive the warm-up handoff; resume, Text chat and Write it, then say it
+  bypass warm-up. It is optional and Skip today is the default.
+- Built: `ReviewMaterialEngine` prepares a situation and a complete model sentence for each
+  snapshot item using one background `agy` Flash 3.8 request. SQLite caches pending/ready/failed
+  work across restarts; failures require explicit retry. Late results cannot revive ended runs.
+  Safe saved cues and recording remain usable during preparation, and a situation freezes for
+  the answer once capture begins. Empty or revealing saved notes remain ineligible for recall.
+- Built: the target is hidden before the first scored answer. Show phrase persists cue exposure
+  before returning wording and labels the answer as practice with a hint. The model sentence is
+  exposed only after the first score, with Play example and optional shadowing. All retries and
+  shadowing are practice only; reviews never establish independent mastery. The existing
+  usage-review/mastery subsystem is unchanged.
+- Automatic verification includes strict generated-output/IPC boundaries, six-item selection,
+  three-phrase warm-up, migration from SQLite v19, restart recovery, cue-write failure, cached
+  provider failure and explicit retry, and generation outside the session lock. A synthetic live
+  Flash 3.8 batch succeeded in 16.52 s; microphone/STT/TTS feel still needs physical Mac acceptance.
+- Verification: 403 frontend tests, 419 Rust unit tests plus the SQLite integration test, and all
+  61 browser scenarios passed serially. Biome, both TypeScript checks, Rust format and Clippy
+  passed. Browser coverage includes real test PCM capture, late preparation during recording,
+  one-score-only shadowing, failed hint writes, Text chat bypass, selected-options handoff and a
+  resumed fully answered warm-up whose finish write fails before an explicit successful retry.
+- Built-app acceptance: complete a real six-item review, listen and shadow a generated example,
+  use Show phrase, and choose or skip the pre-session warm-up on a physical Mac. Automatic
+  tests verify state and persistence; microphone permissions and perceived speech quality remain
+  deferred.
 
 ### Stage 4 — Plan of 2026-10-08 (after F3 and F8)
 

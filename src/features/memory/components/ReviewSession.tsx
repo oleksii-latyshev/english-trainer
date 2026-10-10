@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { summarizeReview } from '@/features/memory/lib/memoryRecallState';
 import { useReviewFlow } from '@/features/memory/useReviewFlow';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
@@ -15,6 +16,7 @@ type Props = {
   onBackToMemory: () => void;
   onStartTalk: () => void;
   onOpenSettings: () => void;
+  warmup?: boolean;
 };
 
 export function ReviewSession({
@@ -24,8 +26,15 @@ export function ReviewSession({
   onBackToMemory,
   onStartTalk,
   onOpenSettings,
+  warmup = false,
 }: Props) {
   const flow = useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettings });
+  const warmupFinished = useRef(false);
+  useEffect(() => {
+    if (!warmup || flow.step.tag !== 'summary' || warmupFinished.current) return;
+    warmupFinished.current = true;
+    onStartTalk();
+  }, [flow.step.tag, onStartTalk, warmup]);
 
   if (flow.step.tag !== 'summary') {
     return (
@@ -33,12 +42,19 @@ export function ReviewSession({
         canReplay={speech.state.tag !== 'unavailable'}
         flow={flow}
         statusBefore={statusBefore}
+        warmup={warmup}
       />
     );
   }
   return (
     <>
-      <ReviewHeader isBusy={false} items={flow.run.items} onEnd={onBackToMemory} position={null} />
+      <ReviewHeader
+        isBusy={false}
+        items={flow.run.items}
+        onEnd={onBackToMemory}
+        position={null}
+        endLabel={warmup ? 'Start conversation' : undefined}
+      />
       <div className="review-body">
         <ReviewSummary
           onBackToMemory={onBackToMemory}

@@ -147,6 +147,12 @@ At the end of a session:
 - Due items return as short spoken tasks ("Here is a situation — answer using …") and are woven
   into later conversation questions.
 - Optional shadowing: listen to an AI sentence and repeat it.
+- A review has up to six due items. Before a new spoken session, the learner can choose a
+  two-minute warm-up of up to three due phrases, or Skip today. An unfinished review resumes
+  intact, including its saved first answers.
+- The target stays hidden before the first answer. Show phrase makes the attempt visibly cued;
+  after the first answer, a model sentence is available to listen to and shadow. Retries and
+  shadowing are practice only. AI preparation never blocks recording, skipping or ending review.
 - Status (`new → learning → improving → stable`, `archived`) changes only from real evidence:
   spoken recall and independent use in conversation. Cued or typed answers never count as
   independent use. The detailed rules are in TECHNICAL_REQUIREMENTS §9.

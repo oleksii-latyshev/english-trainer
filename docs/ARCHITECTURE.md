@@ -118,6 +118,7 @@ Voice interruption is opt-in and gated by actual input echo cancellation. F6 hel
 | Answer planner | Frame, phrases and hidden example for the current question; separate bounded cache and per-answer cue tracking | Gemini API, question-only prefetched request [F6]; `agy` guided-answer IPC remains for compatibility | Same |
 | `RescueEngine` | One next step, simpler wording, or 3–5 missing-word candidates during recording; saves a per-answer cue before generation | `agy`, explicitly pinned to `gemini-3.8-flash-high` [F7], one request with a 20 s process bound | Same |
 | `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |
+| `ReviewMaterialEngine` | One situation and model sentence per due review item | `agy`, pinned to `gemini-3.8-flash-high` [F10], one 90 s background request and durable SQLite cache | Same |
 
 Rules:
 
@@ -180,6 +181,15 @@ phrases is transactional and returns newly created IDs so Undo preserves existin
 
 SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in
 `persistence/schema.rs`. Provider calls run on blocking worker threads and never hold the lock.
+
+F10 snapshots at most six due items, or three phrases for a fresh pre-session warm-up. Review
+material has a separate SQLite cache (`review_material_preparations`, schema version 20), so
+background situation generation cannot delay first-answer scoring or mutate the saved queue.
+`ReviewMaterialEngine` receives only that queue's targets and notes. The session layer validates
+the whole generated batch, masks model sentences until the first score, persists hint exposure
+before returning wording, and rejects a result for an ended run. The UI freezes the situation
+during capture and uses the existing unscored retry path for shadowing. Warm-up hands off the
+selected conversation options only when the learner finishes or explicitly skips it.
 Tables are listed in TECHNICAL_REQUIREMENTS §8.
 
 ## 9. Failure handling

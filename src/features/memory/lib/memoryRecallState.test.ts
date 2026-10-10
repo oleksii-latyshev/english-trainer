@@ -150,7 +150,7 @@ describe('review wording', () => {
     ];
     const summary = summarizeReview(items);
     expect(summary.headline).toBe(
-      'You used 1 of 3 phrases on the spot. The rest come back tomorrow. The skipped one stays due.',
+      'You used 1 of 3 phrases during this review. The rest come back tomorrow. The skipped one stays due.',
     );
     expect(summary.entries).toEqual([
       { key: 'phrase-1', label: 'Target 1', outcome: 'used', status: 'learning' },
@@ -164,6 +164,6 @@ describe('review wording', () => {
       mergeRecallResult(run, result(1, 'phrase', 1)).items[0],
       mergeRecallResult(run, result(2, 'mistake', 2)).items[1],
     ];
-    expect(summarizeReview(items).headline).toBe('You used 2 of 2 items on the spot.');
+    expect(summarizeReview(items).headline).toBe('You used 2 of 2 items during this review.');
   });
 });

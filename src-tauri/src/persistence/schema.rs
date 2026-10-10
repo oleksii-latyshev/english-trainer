@@ -470,6 +470,24 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 error_json TEXT
             );",
         )?;
+        transaction.pragma_update(None, "user_version", 19)?;
+        transaction.commit()?;
+        version = 19;
+    }
+    if version < 20 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS review_material_preparations (
+                run_id INTEGER PRIMARY KEY REFERENCES memory_review_runs(id) ON DELETE CASCADE,
+                state TEXT NOT NULL CHECK(state IN ('pending', 'ready', 'failed')),
+                result_json TEXT, error_json TEXT
+            );",
+        )?;
+        if !has_column(&transaction, "memory_review_items", "is_cued")? {
+            transaction.execute_batch(
+                "ALTER TABLE memory_review_items ADD COLUMN is_cued INTEGER NOT NULL DEFAULT 0;",
+            )?;
+        }
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

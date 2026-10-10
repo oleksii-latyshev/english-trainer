@@ -11,6 +11,13 @@ impl SessionStore {
             .map_err(database_error)
     }
 
+    pub fn start_memory_warmup(&self) -> Result<Option<MemoryReviewRun>, ProviderError> {
+        self.lock()
+            .database
+            .start_memory_warmup()
+            .map_err(database_error)
+    }
+
     pub fn get_memory_review(&self) -> Result<Option<MemoryReviewRun>, ProviderError> {
         let state = self.lock();
         state

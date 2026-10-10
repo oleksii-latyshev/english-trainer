@@ -17,6 +17,7 @@ import {
   submitMemoryRecall,
 } from '@/features/memory/memoryRecallApi';
 import { useReviewKeyboard } from '@/features/memory/useReviewKeyboard';
+import { useReviewMaterials } from '@/features/memory/useReviewMaterials';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { MemoryRecallResult, MemoryReviewRun } from '@/lib/memoryRecallTypes';
@@ -26,9 +27,9 @@ const MAX_TRANSCRIPT_CHARS = 4000;
 export type ReviewStep =
   | { tag: 'answering' }
   | { tag: 'result'; result: MemoryRecallResult; attempt: Attempt }
+  | { tag: 'closing' }
   | { tag: 'summary' };
 
-/** What the review is waiting on besides the learner. */
 type Pending = 'none' | 'saving' | 'skipping' | 'finishing';
 
 type Options = {
@@ -38,24 +39,21 @@ type Options = {
   onOpenSettings: () => void;
 };
 
-function listeningOf(phase: ReviewPhase): 'no' | 'starting' | 'live' {
-  if (phase === 'listening') return 'live';
-  return phase === 'starting' ? 'starting' : 'no';
-}
+const listeningOf = (phase: ReviewPhase): 'no' | 'starting' | 'live' =>
+  phase === 'listening' ? 'live' : phase === 'starting' ? 'starting' : 'no';
 
-/**
- * One spoken review from the first situation to the summary: Eva reads the cue, the learner
- * answers by voice, Rust checks the transcript and schedules the item, and every step that
- * can fail is shown with its fix. The learning rules stay in Rust; this only moves through them.
- */
 export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettings }: Options) {
   const capture = useSpeechCapture(speech);
   const [run, setRun] = useState(initialRun);
   const [step, setStep] = useState<ReviewStep>(
-    isRunFinished(initialRun.items) ? { tag: 'summary' } : { tag: 'answering' },
+    isRunFinished(initialRun.items) ? { tag: 'closing' } : { tag: 'answering' },
   );
   const [pending, setPending] = useState<Pending>('none');
   const [actionError, setActionError] = useState<ReviewActionError | null>(null);
+  const materials = useReviewMaterials(initialRun.run_id);
+  const frozenPrompt = useRef<ReturnType<typeof reviewPrompt> | null>(null);
+  const initialFinishStarted = useRef(false);
+  const finishLock = useRef(false);
 
   const pendingItem = getCurrentPendingItem(run.items);
   const shownItem =
@@ -70,22 +68,34 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
     isTranscribing: capture.view.transcribing,
     isSaving: pending === 'saving',
   });
-  const prompt = shownItem ? reviewPrompt(shownItem.item_type, shownItem.cue) : null;
+  const material = shownItem
+    ? materials.materials?.items.find((item) => item.position === shownItem.position)
+    : null;
+  const generatedPrompt = shownItem
+    ? reviewPrompt(
+        shownItem.item_type,
+        material?.situation ?? shownItem.cue,
+        material?.situation !== null && material?.situation !== undefined,
+      )
+    : null;
+  const recordingPhase = phase !== 'prompt';
+  const prompt = frozenPrompt.current ?? generatedPrompt;
   const transcript = capture.view.transcript;
 
-  // Eva reads the situation when an item first comes up and stops when the learner moves on.
   const readPosition = step.tag === 'answering' ? (pendingItem?.position ?? null) : null;
   // biome-ignore lint/correctness/useExhaustiveDependencies: Only a new item should be read, not every render.
   useEffect(() => {
-    if (readPosition === null || !prompt) return;
+    if (readPosition === null || !prompt || recordingPhase) return;
     speech.play(prompt.spoken);
     return () => speech.stop();
-  }, [readPosition]);
+  }, [readPosition, prompt?.spoken, recordingPhase]);
 
-  // A saved run whose items were all closed only needs finishing.
   // biome-ignore lint/correctness/useExhaustiveDependencies: Runs once, for the run that was opened.
   useEffect(() => {
-    if (isRunFinished(initialRun.items)) void finish();
+    if (isRunFinished(initialRun.items) && !initialFinishStarted.current) {
+      initialFinishStarted.current = true;
+      void finish();
+    }
   }, []);
 
   const latestTranscriptHandler = useRef((_text: string) => {});
@@ -98,7 +108,7 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
     canStart: isAnswering && phase === 'prompt' && pending === 'none',
     listening: listeningOf(phase),
     isEvaSpeaking,
-    onStart: () => void capture.startRecording(),
+    onStart: () => startAnswerRecording(),
     onStop: () => void capture.stopRecording(),
     onCancel: capture.cancelRecording,
     onStopEva: speech.stop,
@@ -110,6 +120,12 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
       setStep({ ...step, attempt: { tag: 'tried', transcript: text } });
       capture.reset();
     }
+  }
+
+  function startAnswerRecording() {
+    if (shownItem && !frozenPrompt.current) frozenPrompt.current = generatedPrompt;
+    speech.stop();
+    void capture.startRecording();
   }
 
   async function save(text: string) {
@@ -129,6 +145,7 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
       );
       setRun(mergeRecallResult(run, result));
       capture.reset();
+      void materials.refresh();
       setStep({ tag: 'result', result, attempt: { tag: 'saved' } });
     } catch {
       setActionError('save');
@@ -141,11 +158,11 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
     await finishMemoryReview(runId);
     setStep({ tag: 'summary' });
   }
-
   async function skip() {
     if (!pendingItem || pending !== 'none') return;
     capture.cancelRecording();
     capture.reset();
+    frozenPrompt.current = null;
     speech.stop();
     setPending('skipping');
     setActionError(null);
@@ -163,9 +180,9 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
       setPending('none');
     }
   }
-
   async function finish() {
-    if (pending !== 'none') return;
+    if (pending !== 'none' || finishLock.current) return;
+    finishLock.current = true;
     setPending('finishing');
     setActionError(null);
     try {
@@ -173,10 +190,10 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
     } catch {
       setActionError('finish');
     } finally {
+      finishLock.current = false;
       setPending('none');
     }
   }
-
   async function end() {
     capture.cancelRecording();
     speech.stop();
@@ -191,7 +208,6 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
       setPending('none');
     }
   }
-
   function fix(kind: ReviewFix) {
     switch (kind) {
       case 'transcribe-again':
@@ -215,6 +231,17 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
         return;
     }
   }
+  function practiceAnswer() {
+    speech.stop();
+    if (!frozenPrompt.current) frozenPrompt.current = generatedPrompt;
+    setStep((current) =>
+      current.tag === 'result' ? { ...current, attempt: { tag: 'recording' } } : current,
+    );
+    void capture.startRecording();
+  }
+  async function showPhrase() {
+    if (shownItem) await materials.reveal(shownItem.position);
+  }
 
   return {
     run,
@@ -233,17 +260,24 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
       transcriptionFailure: capture.view.transcriptionFailure,
       captureError: capture.view.error,
     }),
+    material,
+    preparation: materials.materials?.preparation ?? null,
+    materialError: materials.error,
+    materialBusy: materials.busy,
+    retryMaterials: materials.retry,
+    revealPhrase: showPhrase,
+    practiceAnswer,
+    playExample: (text: string) => speech.play(text),
     next: () => {
       capture.reset();
+      frozenPrompt.current = null;
       if (isRunFinished(run.items)) void finish();
       else setStep({ tag: 'answering' });
     },
-    tryAgain: () => {
-      if (step.tag === 'result') setStep({ ...step, attempt: { tag: 'recording' } });
-    },
+    tryAgain: practiceAnswer,
     pressMic: () => {
       if (phase === 'listening') void capture.stopRecording();
-      else void capture.startRecording();
+      else startAnswerRecording();
     },
     // "Skip" while answering an item; "Cancel" while trying again after the saved result.
     pressSecondary: () => {

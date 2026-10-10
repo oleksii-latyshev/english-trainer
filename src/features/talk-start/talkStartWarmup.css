@@ -1,0 +1,29 @@
+.talk-start-warmup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  color: var(--et-muted);
+  font-size: 12px;
+}
+
+.talk-start-warmup legend {
+  float: left;
+  margin-right: 8px;
+}
+
+.talk-start-warmup button {
+  padding: 5px 9px;
+  border: 1px solid var(--et-line);
+  border-radius: 999px;
+  background: var(--et-surface);
+  color: var(--et-fg);
+  cursor: pointer;
+}
+
+.talk-start-warmup button[aria-pressed="true"] {
+  border-color: var(--et-accent);
+  color: var(--et-accent);
+}

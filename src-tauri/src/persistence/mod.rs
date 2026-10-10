@@ -18,6 +18,7 @@ pub(crate) mod learning_usage;
 mod learning_writes;
 mod memory_recall;
 mod mistake_practice;
+pub(crate) mod review_material;
 mod schema;
 pub(crate) mod session_metadata;
 pub(crate) mod session_wrapup;
@@ -26,7 +27,7 @@ mod translation_settings;
 pub(crate) mod wrapup_generation;
 use std::path::Path;
 
-const SCHEMA_VERSION: i64 = 19;
+const SCHEMA_VERSION: i64 = 20;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;

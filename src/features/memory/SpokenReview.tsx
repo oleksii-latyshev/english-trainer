@@ -13,6 +13,7 @@ type Props = {
   onBackToMemory: () => void;
   onStartTalk: () => void;
   onOpenSettings: () => void;
+  warmup?: boolean;
 };
 
 type Load =
@@ -45,7 +46,13 @@ function Notice({ title, hint, actions }: { title: string; hint: string; actions
 }
 
 /** Opens the review: resumes a saved run or starts one from what is due. */
-export function SpokenReview({ speech, onBackToMemory, onStartTalk, onOpenSettings }: Props) {
+export function SpokenReview({
+  speech,
+  onBackToMemory,
+  onStartTalk,
+  onOpenSettings,
+  warmup = false,
+}: Props) {
   const [load, setLoad] = useState<Load>({ tag: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
@@ -56,7 +63,10 @@ export function SpokenReview({ speech, onBackToMemory, onStartTalk, onOpenSettin
     const open = async () => {
       try {
         // Starting returns the saved run when there is one, so this also resumes.
-        const [run, statusBefore] = await Promise.all([startMemoryReview(), readStatusBefore()]);
+        const [run, statusBefore] = await Promise.all([
+          startMemoryReview({ warmup }),
+          readStatusBefore(),
+        ]);
         if (!isCurrent) return;
         setLoad(run ? { tag: 'ready', run, statusBefore } : { tag: 'nothing-to-review' });
       } catch {
@@ -80,10 +90,14 @@ export function SpokenReview({ speech, onBackToMemory, onStartTalk, onOpenSettin
         <Notice
           actions={
             <Button onPress={onBackToMemory} variant="primary">
-              Back to Memory
+              {warmup ? 'Skip and start conversation' : 'Back to Memory'}
             </Button>
           }
-          hint="Nothing due has a cue that is safe to practise out loud yet. Your saved items are unchanged."
+          hint={
+            warmup
+              ? 'No phrases are ready for warmup. You can start your conversation now.'
+              : 'Nothing due has a cue that is safe to practise out loud yet. Your saved items are unchanged.'
+          }
           title="Nothing to review right now"
         />
       )}
@@ -101,7 +115,7 @@ export function SpokenReview({ speech, onBackToMemory, onStartTalk, onOpenSettin
                 Try again
               </Button>
               <Button onPress={onBackToMemory} variant="secondary">
-                Back to Memory
+                {warmup ? 'Skip and start conversation' : 'Back to Memory'}
               </Button>
             </>
           }
@@ -117,6 +131,7 @@ export function SpokenReview({ speech, onBackToMemory, onStartTalk, onOpenSettin
           onStartTalk={onStartTalk}
           speech={speech}
           statusBefore={load.statusBefore}
+          warmup={warmup}
         />
       )}
     </div>

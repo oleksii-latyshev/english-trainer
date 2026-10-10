@@ -84,27 +84,30 @@ function AnswerBubble({ segments, caption }: { segments: WordingSegment[]; capti
 
 type ResultProps = {
   view: ResultView;
-  itemType: LearningItemType;
   target: string;
   /** Label of the button that moves on. */
   nextLabel: string;
   isBusy: boolean;
   onNext: () => void;
   onTryAgain: () => void;
+  modelAnswer: string;
+  modelLabel: string;
+  onPlayExample: () => void;
 };
 
 /** The answer, then "Used it" or "Not yet" with what comes next. */
 export function ReviewResult({
   view,
-  itemType,
   target,
   nextLabel,
   isBusy,
   onNext,
   onTryAgain,
+  modelAnswer,
+  modelLabel,
+  onPlayExample,
 }: ResultProps) {
   const isUsed = view.tone === 'used';
-  const hasActionsBelow = view.showsModel || view.canTryAgain;
   const nextButton = (
     <Button isDisabled={isBusy} onPress={onNext} variant="primary">
       {nextLabel}
@@ -129,24 +132,25 @@ export function ReviewResult({
               {view.hint.text}
             </div>
           </div>
-          {!hasActionsBelow && nextButton}
         </div>
-        {view.showsModel && (
-          <div className="review-model">
-            <span>{itemType === 'mistake' ? 'Said better' : 'With the phrase'}</span>
-            {target}
-          </div>
-        )}
-        {hasActionsBelow && (
-          <div className="review-result-actions">
-            {view.canTryAgain && (
-              <Button isDisabled={isBusy} onPress={onTryAgain} variant="secondary">
-                Try again
-              </Button>
-            )}
-            {nextButton}
-          </div>
-        )}
+        <div className="review-model">
+          <span>{modelLabel}</span>
+          {modelAnswer || target}
+        </div>
+        <div className="review-result-actions">
+          <Button onPress={onPlayExample} variant="secondary">
+            Play example
+          </Button>
+          <Button isDisabled={isBusy} onPress={onTryAgain} variant="secondary">
+            Shadow it
+          </Button>
+          {view.canTryAgain && (
+            <Button isDisabled={isBusy} onPress={onTryAgain} variant="secondary">
+              Try again
+            </Button>
+          )}
+          {nextButton}
+        </div>
       </div>
     </div>
   );

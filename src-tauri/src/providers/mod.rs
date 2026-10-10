@@ -10,8 +10,10 @@ mod reply_text;
 mod rescue;
 mod session_wrapup;
 mod settings;
+pub(crate) mod spoken_review;
 pub use agy::guided::{generate_guided_answer, GuidedAnswer};
 pub use agy::session_wrapup::generate_session_wrapup;
+pub use agy::spoken_review::generate_review_material;
 pub use answer_plan::{parse_answer_plan, AnswerPlan};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
@@ -22,6 +24,11 @@ pub use session_wrapup::{
     parse_wrapup_result, GeneratedWrapupPhrase, WrapupAnswer, WrapupRequest, WrapupResult,
 };
 pub use settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
+#[cfg(test)]
+pub use spoken_review::GeneratedReviewMaterial;
+pub use spoken_review::{
+    parse_review_material_result, ReviewMaterialRequest, ReviewMaterialResult, ReviewTarget,
+};
 
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -182,6 +189,13 @@ pub trait RescueEngine: Send + Sync {
 
 pub trait SessionWrapupEngine: Send + Sync {
     fn generate_wrapup(&self, request: &WrapupRequest) -> Result<WrapupResult, ProviderError>;
+}
+
+pub trait ReviewMaterialEngine: Send + Sync {
+    fn generate_review_material(
+        &self,
+        request: &ReviewMaterialRequest,
+    ) -> Result<ReviewMaterialResult, ProviderError>;
 }
 
 pub use crate::learning::usage::{UsageCandidate, UsageFinding, UsageOutcome};

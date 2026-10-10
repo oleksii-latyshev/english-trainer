@@ -461,7 +461,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
 | Group | Tables |
 | :--- | :--- |
 | Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions` (F12 snapshots, schema version 17), `session_wrapups` (F9 durable preparation, schema version 19) |
-| Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` |
+| Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items`, `review_material_preparations` (F10 cache and `memory_review_items.is_cued`, schema version 20) |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
 | Settings | `ai_settings`, `speech_settings` (the chosen Whisper model file, empty until the learner chooses; `keep_raw_audio`, default off; `live_transcript`, default on), `glossary_terms` (ordered personal glossary), `personal_profile` (F8, schema version 15), `translation_settings` (F13 native language, schema version 18); F11 session columns are added by schema version 16; F12 adds `is_mistake_practice` with a false default in version 17; speech settings and the glossary were added in version 13, `live_transcript` and the empty model default in version 14; the glossary is seeded once with 27 words |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source), both added by schema version 12 |
@@ -491,9 +491,32 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   change atomically. Wording match is transcript evidence, not mastery. The saved wording must
   appear as whole words in order; a phrase with "…" gaps matches when its pieces are said in order
   with at most 8 of the learner's own words in each gap (`conversation/recall.rs`).
-- A Memory review run holds up to three due items, answered in order. An item the learner skips is
+- A Memory review run holds up to six due items, answered in order. `start_memory_review` accepts
+  optional `warmup: true` to select up to three due phrases for a new run; either route resumes
+  an existing run intact, even if it has six items or mistakes. Safe nonempty saved cues remain
+  required for eligibility, so a missing or revealing note is not silently shown as recall.
+  An item the learner skips is
   closed without a score: it keeps its schedule and stays due, and its wording stays hidden. The
   first answer to an item is the one that is saved; a later try on screen is practice only.
+  A restored run with all items answered or skipped enters a closing state; warm-up cannot start
+  the selected conversation until the finish write succeeds. A failed write offers Retry finish.
+- F10 `prepare_review_material(run_id, retry?)` prepares one batch outside the session lock,
+  using `ReviewMaterialEngine` and the pinned `agy` Flash 3.8 model. Only snapshot positions,
+  target wording and usage notes are sent, in a private scratch directory with a 90-second
+  process budget and an 85-second CLI timeout. One request, no automatic retry; the CLI schema
+  flag is omitted because installed schema output can be empty. Request/quota accounting applies.
+  SQLite caches `pending | ready | failed`; ready and failed survive restart, explicit retry
+  retries a failure, and an interrupted pending job can restart. Late results cannot revive an
+  ended run. Existing safe cues, recording, Skip and End remain usable while preparation runs.
+- Generated JSON must contain exactly one situation and model sentence per requested position,
+  with no unknown fields. Situations are plain English, at most 500 characters / 60 words and
+  cannot contain the target; examples are at most 600 characters / 80 words and must contain it
+  as wording evidence in a sentence. Invalid batches fail wholly with a typed recoverable error.
+- `get_review_material(run_id)` is read-only; situations are exposed when ready, model answers
+  only after the first answer has been saved. `reveal_review_phrase(run_id, position)` persists
+  `is_cued` for the current unanswered item before returning its hint. A failed write reveals
+  nothing. Cued recall never grants independent-use evidence. Listen and Shadow it after a
+  result reuse the practice-only retry path and never submit a second score or schedule change.
 - Archive hides a phrase or mistake from Memory and from every review queue (status `archived`,
   never due) and keeps its history. Saving an archived phrase again, or Eva's notes catching an
   archived mistake again, brings it back (`learning` / `new`). Delete removes the item and its
@@ -553,6 +576,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Current tables:
   `get_learning_memory`, `view_learning_memory`,
   `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `skip_memory_review_item`,
   `finish_memory_review`,
+  `prepare_review_material`, `get_review_material`, `reveal_review_phrase`,
   `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.
 - API usage (`src/api_usage/`): neither Gemini nor `agy` reports a remaining quota, so requests are
   counted where they are sent (`providers/gemini/stream.rs`, `agy::runner::run_cli`) and limit

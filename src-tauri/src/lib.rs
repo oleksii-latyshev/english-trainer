@@ -521,8 +521,53 @@ fn get_learning_memory(
 #[tauri::command(rename_all = "snake_case")]
 fn start_memory_review(
     sessions: tauri::State<'_, conversation::SessionStore>,
+    warmup: Option<bool>,
 ) -> Result<Option<learning::MemoryReviewRun>, providers::ProviderError> {
-    sessions.start_memory_review()
+    if warmup.unwrap_or(false) {
+        sessions.start_memory_warmup()
+    } else {
+        sessions.start_memory_review()
+    }
+}
+
+#[tauri::command(rename_all = "snake_case")]
+async fn prepare_review_material(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    run_id: u64,
+    retry: Option<bool>,
+) -> Result<conversation::ReviewMaterials, providers::ProviderError> {
+    let store = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        store.prepare_review_material(
+            run_id,
+            retry.unwrap_or(false),
+            providers::generate_review_material,
+        )
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "Could not prepare review situations. Please retry.",
+        )
+    })?
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn get_review_material(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    run_id: u64,
+) -> Result<conversation::ReviewMaterials, providers::ProviderError> {
+    sessions.get_review_material(run_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn reveal_review_phrase(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    run_id: u64,
+    position: usize,
+) -> Result<conversation::ReviewMaterials, providers::ProviderError> {
+    sessions.reveal_review_phrase(run_id, position)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -722,6 +767,9 @@ pub fn run() {
             view_learning_memory,
             start_memory_review,
             get_memory_review,
+            prepare_review_material,
+            get_review_material,
+            reveal_review_phrase,
             submit_memory_recall,
             skip_memory_review_item,
             finish_memory_review,

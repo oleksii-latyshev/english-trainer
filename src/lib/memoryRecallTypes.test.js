@@ -92,7 +92,8 @@ describe('memory recall IPC guards', () => {
   it('rejects malformed IDs, missing null fields, unsafe positions, and inconsistent queues', () => {
     expect(isMemoryReviewItem({ ...pending, item_id: 0 })).toBe(false);
     expect(isMemoryReviewItem({ ...pending, item_id: Number.MAX_SAFE_INTEGER + 1 })).toBe(false);
-    expect(isMemoryReviewItem({ ...pending, position: 4 })).toBe(false);
+    expect(isMemoryReviewItem({ ...pending, position: 6 })).toBe(true);
+    expect(isMemoryReviewItem({ ...pending, position: 7 })).toBe(false);
     const missingField = { ...pending };
     delete missingField.target;
     expect(isMemoryReviewItem(missingField)).toBe(false);
@@ -122,5 +123,21 @@ describe('memory recall IPC guards', () => {
     expect(isMemoryRecallResult({ ...result, wording_observed: 'yes' })).toBe(false);
     expect(isMemoryRecallResult({ ...result, interval_days: 0 })).toBe(false);
     expect(isMemoryRecallResult({ ...result, saved_response: 'need_practice' })).toBe(false);
+  });
+
+  it('accepts a six-item mixed run while preserving ordered positions', () => {
+    const six = Array.from({ length: 6 }, (_, index) => ({
+      ...pending,
+      position: index + 1,
+      item_id: 42 + index,
+    }));
+    expect(isMemoryReviewRun({ run_id: 10, items: six, completed: false })).toBe(true);
+    expect(
+      isMemoryReviewRun({
+        run_id: 10,
+        items: [...six, { ...pending, position: 7 }],
+        completed: false,
+      }),
+    ).toBe(false);
   });
 });

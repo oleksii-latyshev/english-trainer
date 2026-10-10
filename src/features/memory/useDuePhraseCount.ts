@@ -3,7 +3,7 @@ import { getLearningMemory } from './memoryApi';
 
 export type DueCount =
   | { tag: 'loading' }
-  | { tag: 'ready'; dueCount: number }
+  | { tag: 'ready'; dueCount: number; duePhraseCount?: number }
   | { tag: 'unavailable' };
 
 /** Phrases due for review; reloads when Memory changes. Failures hide the count and the review card. */
@@ -16,7 +16,12 @@ export function useDuePhraseCount(): DueCount {
       const request = ++generation;
       try {
         const memory = await getLearningMemory();
-        if (request === generation) setState({ tag: 'ready', dueCount: memory.due_count });
+        if (request === generation)
+          setState({
+            tag: 'ready',
+            dueCount: memory.due_count,
+            duePhraseCount: memory.phrase_cards.filter((card) => card.is_due).length,
+          });
       } catch {
         if (request === generation) setState({ tag: 'unavailable' });
       }

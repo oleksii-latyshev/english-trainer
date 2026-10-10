@@ -98,6 +98,36 @@
   text-align: center;
 }
 
+.review-material-status,
+.review-material-error,
+.review-hint {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--et-muted);
+  font-size: 13px;
+}
+
+.review-material-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--et-line);
+  border-radius: 12px;
+}
+
+.review-hint {
+  padding: 12px 16px;
+  border-left: 2px solid var(--et-accent);
+  background: var(--et-surface);
+}
+
+.review-hint p {
+  margin: 6px 0 0;
+  color: var(--et-fg);
+}
+
 /* What is being practised */
 .review-context {
   display: flex;

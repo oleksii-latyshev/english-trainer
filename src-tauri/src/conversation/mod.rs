@@ -21,6 +21,7 @@ mod profile;
 pub(crate) mod recall;
 mod rehearsal;
 mod rescue;
+mod review_material;
 mod rules;
 mod scaffold;
 mod speech_settings;
@@ -39,6 +40,7 @@ use rehearsal::{
     invalid_phase_transition_error, parse_practice_mode, parse_practice_phase, replay_questions,
     spoken_turn_count, validate_answer_source,
 };
+pub use review_material::ReviewMaterials;
 use rules::{validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS};
 pub use scaffold::{question_scaffold, QuestionScaffold};
 pub use topics::{PracticeMode, PracticePhase, StartPracticeOptions};
@@ -139,6 +141,7 @@ pub struct SessionStore {
     pub(crate) usage_in_flight: Arc<usage_support::UsageInFlightTracker>,
     answer_plan_cache: Arc<Mutex<Option<planner::CachedPlan>>>,
     rescue_in_flight: Arc<std::sync::atomic::AtomicBool>,
+    review_material_in_flight: Arc<std::sync::atomic::AtomicBool>,
     pub(crate) coaching: Arc<coaching::CoachingStatus>,
 }
 
@@ -273,6 +276,7 @@ impl SessionStore {
             usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
             answer_plan_cache: Arc::new(Mutex::new(None)),
             rescue_in_flight: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            review_material_in_flight: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             coaching: Arc::new(coaching::CoachingStatus::default()),
         })
     }

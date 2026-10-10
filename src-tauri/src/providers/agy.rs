@@ -6,6 +6,7 @@ pub(crate) mod mistake_practice;
 pub(crate) mod rescue;
 pub(crate) mod runner;
 pub(crate) mod session_wrapup;
+pub(crate) mod spoken_review;
 #[cfg(test)]
 mod test_support;
 mod usage;

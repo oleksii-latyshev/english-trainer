@@ -7,6 +7,7 @@ describe('review banner', () => {
     expect(reviewBannerCopy(6, { tag: 'none' })).toMatchObject({
       state: 'due',
       title: 'Spoken review · 6 due',
+      hint: 'Eva gives you a situation, you answer out loud using the phrase. Up to 6 items · about 3 minutes.',
       actionLabel: 'Review now',
     });
   });
