@@ -90,6 +90,50 @@
   margin: 0 auto;
 }
 
+.review-live-transcript {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px dashed color-mix(in oklab, var(--et-me) 60%, transparent);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--et-me) 8%, var(--et-surface));
+  color: var(--et-live-text);
+}
+
+.review-live-label {
+  color: var(--et-me);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.review-live-transcript p {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.review-live-caret {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-left: 3px;
+  background: var(--et-me);
+  vertical-align: text-bottom;
+  animation: review-live-blink 1s steps(2, start) infinite;
+}
+
+@keyframes review-live-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-live-caret {
+    animation: none;
+  }
+}
+
 .review-status {
   margin: 0;
   padding: 64px 24px;

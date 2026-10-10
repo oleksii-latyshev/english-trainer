@@ -2,6 +2,8 @@ import type { Page } from '@playwright/test';
 import type { LearningMemoryView } from '../src/lib/learningTypes';
 import type { MemoryReviewRun } from '../src/lib/memoryRecallTypes';
 import type { ReviewMaterials } from '../src/lib/reviewMaterialTypes';
+import type { SpeechEngineStatus } from '../src/lib/speechTypes';
+import { unavailableSpeechStatus } from './fixtureData';
 import { installTauriFixture } from './tauriFixture';
 
 export type ReviewFixtureOptions = {
@@ -12,6 +14,7 @@ export type ReviewFixtureOptions = {
   holdPreparation?: boolean;
   throwPreparation?: boolean;
   failReveal?: boolean;
+  silentAudio?: boolean;
 };
 
 declare global {
@@ -120,6 +123,7 @@ export async function installReviewFixture(page: Page, options: ReviewFixtureOpt
       run: MemoryReviewRun;
       memory: LearningMemoryView;
       materials: ReviewMaterials;
+      speechStatus: SpeechEngineStatus;
       options: ReviewFixtureOptions;
     }) => {
       const original = window.__TAURI_INTERNALS__.invoke.bind(window.__TAURI_INTERNALS__);
@@ -142,7 +146,7 @@ export async function installReviewFixture(page: Page, options: ReviewFixtureOpt
         const oscillator = context.createOscillator();
         const gain = context.createGain();
         oscillator.frequency.value = 220;
-        gain.gain.value = 0.12;
+        gain.gain.value = seed.options.silentAudio ? 0 : 0.12;
         oscillator.connect(gain).connect(destination);
         oscillator.start();
         await context.resume();
@@ -229,6 +233,7 @@ export async function installReviewFixture(page: Page, options: ReviewFixtureOpt
         return state.run;
       };
       const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
+        get_speech_engine_status: () => seed.speechStatus,
         get_learning_memory: () => seed.memory,
         view_learning_memory: () => seed.memory,
         start_memory_review: startReview,
@@ -288,6 +293,7 @@ export async function installReviewFixture(page: Page, options: ReviewFixtureOpt
       run: options.completedRunWithDuePhrase ? { ...run, items: [completedItem] } : run,
       memory: options.completedRunWithDuePhrase ? memoryWithDuePhrase : memory,
       materials,
+      speechStatus: unavailableSpeechStatus,
       options,
     },
   );

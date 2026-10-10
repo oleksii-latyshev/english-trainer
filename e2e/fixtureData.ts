@@ -1,6 +1,13 @@
 import type { PracticeDialogue } from '../src/lib/dialogueTypes';
 import type { FinishedPracticeSession } from '../src/lib/finishedPracticeSession';
 import type { PracticeSession } from '../src/lib/practiceSessionTypes';
+import type { SpeechEngineStatus } from '../src/lib/speechTypes';
+
+export const unavailableSpeechStatus: SpeechEngineStatus = {
+  server: 'not_running',
+  failure: null,
+  is_live_transcript_available: false,
+};
 
 export function emptyDialogue(session: PracticeSession): PracticeDialogue {
   return {

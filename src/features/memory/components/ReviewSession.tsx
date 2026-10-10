@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { summarizeReview } from '@/features/memory/lib/memoryRecallState';
+import { isRunFinished, summarizeReview } from '@/features/memory/lib/memoryRecallState';
 import { useReviewFlow } from '@/features/memory/useReviewFlow';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { LearningStatus } from '@/lib/learningTypes';
 import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
+import { warmSpeechEngine } from '@/lib/speechTypes';
 import { ReviewActive } from './ReviewActive';
 import { ReviewHeader } from './ReviewHeader';
 import { ReviewSummary } from './ReviewSummary';
@@ -30,6 +31,14 @@ export function ReviewSession({
 }: Props) {
   const flow = useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettings });
   const warmupFinished = useRef(false);
+  const warmedRunId = useRef<number | null>(null);
+  useEffect(() => {
+    if (isRunFinished(initialRun.items) || warmedRunId.current === initialRun.run_id) return;
+    warmedRunId.current = initialRun.run_id;
+    // Optional prewarming never blocks review; final transcription reports failures and can
+    // use one-off recognition when the server cannot start, as it does in Talk.
+    void warmSpeechEngine().catch(() => {});
+  }, [initialRun]);
   useEffect(() => {
     if (!warmup || flow.step.tag !== 'summary' || warmupFinished.current) return;
     warmupFinished.current = true;

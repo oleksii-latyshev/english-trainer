@@ -1,9 +1,10 @@
+import type { Dispatch, SetStateAction } from 'react';
 import type { MicrophoneSession } from '@/audio/microphoneSession';
 import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
 import { listenForTurn } from '@/audio/turnListening';
 import type { MicrophoneController } from '@/audio/useMicrophoneSession';
 import { getConversationFlow } from '@/lib/conversationFlowPreferences';
-import { preRollMsFor, type RecordingMode } from './captureView';
+import { type CaptureState, preRollMsFor, type RecordingMode } from './captureView';
 import { startLiveTranscript } from './liveTranscript';
 import type { useSystemSpeech } from './useSystemSpeech';
 import { startWarmRecording } from './warmRecorder';
@@ -51,9 +52,40 @@ export type TurnWatch = {
   dispose: () => void;
 };
 
+/** Attaches practice turn controls and partial text to an already-open warm recording. */
+export function watchActiveTurn(
+  session: MicrophoneSession,
+  recorder: PcmRecorder,
+  mode: RecordingMode,
+  options: {
+    setState: Dispatch<SetStateAction<CaptureState>>;
+    onTurnEnded: () => void;
+    onIdleTimeout: () => void;
+    isCurrent: () => boolean;
+  },
+): TurnWatch {
+  return watchTurn(
+    session,
+    recorder,
+    mode,
+    {
+      onLiveText: (liveText) =>
+        options.setState((current) =>
+          current.tag === 'recording' ? { ...current, liveText } : current,
+        ),
+      onSpeechStarted: () =>
+        options.setState((current) =>
+          current.tag === 'recording' ? { ...current, heardSpeech: true } : current,
+        ),
+      onTurnEnded: options.onTurnEnded,
+      onIdleTimeout: options.onIdleTimeout,
+    },
+    options.isCurrent,
+  );
+}
+
 /**
- * Watches the warm session for the end of the user's turn, and shows the words heard so far
- * (only the practice conversation does; other recordings are read once, after the fact).
+ * Watches the warm session for the end of a practice turn and shows the words heard so far.
  * Auto-listening also gives up quietly if nobody speaks for a while.
  */
 export function watchTurn(

@@ -1,7 +1,7 @@
 # Roadmap: English Trainer
 
 Updated 2026-10-10. The learner checked the new Whisper model in the app and reported that it
-works well. F4–F9, F11, F12 and F13 are built and awaiting the learner’s check in the app.
+works well. F4–F13 are built and awaiting the learner’s check in the app.
 The learner deferred that check; the remaining core MVP work is listed below.
 
 ## Goal
@@ -113,8 +113,11 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   far every 1.5 s while the learner speaks, only with base/small models and a ready server;
   the final transcription is unchanged. Settings > Speech recognition shows "Kept loaded · ready" /
   "Loading…" / "Not running (using one-off runs)" and a Live transcript switch (on by default).
-  Not done: the live bubble for the spoken Memory review answer (it still shows the result after
-  the answer).
+  Memory review, pre-session warm-up and unscored shadowing use the same live local transcription
+  during one-shot capture. A dashed bubble with a caret shows provisional words; it disappears on
+  stop or cancellation, and only final transcription can be scored. Disabled or unavailable live
+  recognition and missed updates leave the final answer path usable. No additional microphone or
+  cloud request is opened.
 - **Measured on the learner's 12 speech-check recordings (2026-10-09).** Glossary terms recognised
   (of 23), without / with the glossary prompt, whisper-cli including model load: base.en 13 / 19
   (0.4 s); small.en 17 / **21 (91%)** (1.0 s); medium.en 17 / 20 (3.3 s, deleted);
@@ -134,7 +137,17 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
   `<app data>/recordings/<session>/<sequence>.wav` only when it is on, and "Delete kept recordings".
 - Design: a live transcript bubble (dashed, with a caret, "Live transcript") grows while the learner
   speaks; needs partial results from the loaded model. The spoken Memory review has the same bubble
-  while the learner answers a situation; today it shows the result only after the answer.
+  while the learner answers a situation, including practice-only retries.
+- Live Memory transcript regression checks (2026-10-10): seven browser scenarios exercise the real
+  PCM recorder with synthetic audio and typed local STT edges. They cover provisional vs final
+  wording, one-score-only shadowing, unavailable/failed live recognition, cancellation and late
+  responses, silence, warm-up completion while a partial request is pending, and background model
+  prewarming for a first review after launch. The main scenario
+  failed on the prior implementation because the live bubble was missing, then passed after the
+  change. Run `bun run test:e2e e2e/liveReview.e2e.ts --workers=1`. Actual recognition quality,
+  microphone permissions and the formal timing/term measurements below remain physical checks.
+  Full regression: 403 frontend tests and 68 serial browser scenarios pass; both TypeScript
+  checks and Biome pass. The updated macOS app and DMG are built and their signature verified.
 - Acceptance: a fixed list of 30 of the user's technical terms is recognised in at least 90% of
   readings; transcription of a 15 s answer finishes in under 1.5 s.
 

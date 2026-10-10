@@ -16,9 +16,10 @@ import {
   sessionFor,
   startElapsedTimer,
   type TurnWatch,
-  watchTurn,
+  watchActiveTurn,
 } from './listening';
 import { microphoneError } from './microphoneError';
+import { startOneShotLiveTranscript } from './oneShotLiveTranscript';
 import { createRescueCapture } from './rescueCapture';
 import type { SpeechTiming } from './TimingPanel';
 import { createTranscriptionRunner } from './transcriptionRunner';
@@ -49,6 +50,7 @@ export function useSpeechCapture(
   const speechRef = useRef(speech);
   const micRef = useRef(mic);
   const turnWatchRef = useRef<TurnWatch | null>(null);
+  const oneShotLiveRef = useRef<ReturnType<typeof startOneShotLiveTranscript> | null>(null);
   const handlersRef = useRef({ stop: () => {}, cancel: () => {} });
   stateRef.current = state;
   speechRef.current = speech;
@@ -58,6 +60,8 @@ export function useSpeechCapture(
     return () => {
       requestIdRef.current += 1;
       turnWatchRef.current?.dispose();
+      oneShotLiveRef.current?.dispose();
+      oneShotLiveRef.current = null;
       // Cleanup errors cannot be shown after unmount; no data is persisted.
       void recorderRef.current?.cancel().catch(() => {});
       recorderRef.current = null;
@@ -74,7 +78,11 @@ export function useSpeechCapture(
   }
 
   function reset() {
-    requestIdRef.current += 1;
+    const requestId = ++requestIdRef.current;
+    stopListening();
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    if (recorder) releaseRecorder(recorder, requestId);
     discardRecording();
     transcribingRef.current = false;
     setTiming({});
@@ -89,6 +97,9 @@ export function useSpeechCapture(
   function stopListening() {
     turnWatchRef.current?.dispose();
     turnWatchRef.current = null;
+    oneShotLiveRef.current?.dispose();
+    oneShotLiveRef.current = null;
+    clearElapsedTimer();
   }
 
   /** Releases a recorder; a failure to release it is shown unless a newer request took over. */
@@ -105,36 +116,11 @@ export function useSpeechCapture(
     if (!recorder) return;
     recorderRef.current = null;
     stopListening();
-    clearElapsedTimer();
     releaseRecorder(recorder, requestIdRef.current);
     setState({
       tag: 'error',
       message: 'The microphone disconnected during recording. Reconnect it and try again.',
     });
-  }
-
-  function watchActiveTurn(
-    session: MicrophoneSession,
-    recorder: PcmRecorder,
-    mode: RecordingMode,
-    requestId: number,
-  ) {
-    turnWatchRef.current = watchTurn(
-      session,
-      recorder,
-      mode,
-      {
-        onLiveText: (liveText) =>
-          setState((current) => (current.tag === 'recording' ? { ...current, liveText } : current)),
-        onSpeechStarted: () =>
-          setState((current) =>
-            current.tag === 'recording' ? { ...current, heardSpeech: true } : current,
-          ),
-        onTurnEnded: () => handlersRef.current.stop(),
-        onIdleTimeout: () => handlersRef.current.cancel(),
-      },
-      () => requestId === requestIdRef.current,
-    );
   }
 
   function startBlocked(): boolean {
@@ -152,10 +138,24 @@ export function useSpeechCapture(
     rescueHeldRef.current = false;
     const startedAt = performance.now();
     setTiming({ captureStartMs: startedAt - requestedAtMs });
-    timerRef.current = startElapsedTimer(recorder, startedAt, (elapsedMs, level) =>
-      setState((state) => (state.tag === 'recording' ? { ...state, elapsedMs, level } : state)),
-    );
-    if (session) watchActiveTurn(session, recorder, mode, requestId);
+    if (!session) {
+      oneShotLiveRef.current = startOneShotLiveTranscript(recorder, (liveText) => {
+        if (requestId !== requestIdRef.current) return;
+        setState((current) => (current.tag === 'recording' ? { ...current, liveText } : current));
+      });
+    }
+    timerRef.current = startElapsedTimer(recorder, startedAt, (elapsedMs, level) => {
+      oneShotLiveRef.current?.sampleLevel(level);
+      setState((state) => (state.tag === 'recording' ? { ...state, elapsedMs, level } : state));
+    });
+    if (session) {
+      turnWatchRef.current = watchActiveTurn(session, recorder, mode, {
+        setState,
+        onTurnEnded: () => handlersRef.current.stop(),
+        onIdleTimeout: () => handlersRef.current.cancel(),
+        isCurrent: () => requestId === requestIdRef.current,
+      });
+    }
     setState({
       tag: 'recording',
       elapsedMs: 0,
@@ -211,8 +211,7 @@ export function useSpeechCapture(
     const actualInput = current.actualInput;
     recorderRef.current = null;
     stopListening();
-    clearElapsedTimer();
-    setState({ ...current, tag: 'stopping', level: 0, held: false });
+    setState({ ...current, tag: 'stopping', level: 0, held: false, liveText: '' });
     try {
       const startedAt = performance.now();
       const result = await recorder.stop();
@@ -246,7 +245,6 @@ export function useSpeechCapture(
     const requestId = ++requestIdRef.current;
     recorderRef.current = null;
     stopListening();
-    clearElapsedTimer();
     setState({ tag: 'idle' });
     if (recorder) releaseRecorder(recorder, requestId);
   }

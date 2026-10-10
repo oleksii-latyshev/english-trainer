@@ -156,6 +156,9 @@ answer as "used help" (show this subtly on the learner's message).
   the first score, offer a model sentence, Play example and Shadow it; retries stay unscored.
   Keep recording, Skip and End available while situations prepare; freeze the prompt during an
   answer and show a calm Retry situations action if preparation fails.
+- While recording, show provisional words in a dashed teal bubble with a caret and the label
+  "Live transcript", also during warm-up and shadowing. Hide it on stop/cancel; only the final
+  answer appears in the result. If live recognition is unavailable, recording stays usable.
 - Search, archive, delete. Calm empty state explaining how phrases get here.
 
 ### 6.8 Settings

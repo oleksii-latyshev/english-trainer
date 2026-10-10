@@ -133,6 +133,15 @@ function ReviewStageContent({ flow, statusBefore, canReplay }: Props) {
         )}
         <MaterialNotice flow={flow} isAnswering={flow.step.tag === 'answering'} />
         <PhraseHint flow={flow} item={shownItem} />
+        {flow.phase === 'listening' && flow.liveText && (
+          <article aria-label="Live transcript" className="review-live-transcript">
+            <span className="review-live-label">Live transcript</span>
+            <p>
+              {flow.liveText}
+              <span aria-hidden="true" className="review-live-caret" />
+            </p>
+          </article>
+        )}
         {result && view && <SavedReviewResult flow={flow} result={result} view={view} />}
         {!flow.isAnswering && issue && (
           <ReviewIssueNotice issue={issue} onFix={() => flow.fix(issue.fix)} />

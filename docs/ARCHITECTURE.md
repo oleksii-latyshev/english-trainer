@@ -55,12 +55,17 @@ record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
 ```
 
 `audio/server.rs` owns the `whisper-server` child process: one per app run for the chosen model,
-bound to 127.0.0.1 on a free port, started when a practice session opens or on the first answer,
+bound to 127.0.0.1 on a free port, started when a practice session or unfinished Memory review opens,
+or on the first answer,
 restarted once if it dies, replaced when the model changes, stopped on app exit (and, through a pid
 note in the app data folder, after a crash). It is the only long-lived process on the speech path;
 Rust builds the initial prompt (question, recent names, glossary) and the UI never talks to it.
 While an answer is recorded, `transcribe_partial` re-runs the same loaded model on the audio so far
 for the live transcript; the final transcription is separate.
+The same live ticker observes the existing one-shot recorder in Memory review, warm-up and
+unscored shadowing. Opening an unfinished review prewarms the local speech engine in the background.
+The ticker neither opens a second microphone nor changes manual turn completion.
+Capture cleanup stops the ticker and rejects late updates; only the final transcript is scored.
 
 Practice keeps one warm microphone session open (`audio/microphoneSession.ts`, owned by
 `audio/microphoneManager.ts` and the `useMicrophoneSession` hook): the three-second input warm-up

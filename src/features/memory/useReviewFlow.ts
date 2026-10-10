@@ -255,6 +255,7 @@ export function useReviewFlow({ initialRun, speech, onBackToMemory, onOpenSettin
     isBusy: pending !== 'none',
     isEnding: pending === 'finishing',
     level: capture.view.level,
+    liveText: capture.view.liveText,
     issue: reviewIssue({
       actionError,
       transcriptionFailure: capture.view.transcriptionFailure,

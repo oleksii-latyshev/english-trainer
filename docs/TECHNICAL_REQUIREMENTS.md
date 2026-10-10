@@ -75,7 +75,9 @@ Current:
 - **Model kept loaded (F3 part 2, `audio/server.rs`).** One `whisper-server` child per app run holds
   the model. It is resolved like `whisper-cli` (`ENG_TRAINER_WHISPER_SERVER_BIN`, `PATH`, Homebrew
   paths), started with `-m <model> --host 127.0.0.1 --port <free port>` when a practice session opens
-  (`warm_speech_engine`), when the model is changed, or on the first transcription. Transcription is
+  or an unfinished spoken Memory review opens (`warm_speech_engine`), when the model is changed,
+  or on the first transcription. This optional background prewarming never opens the microphone
+  or blocks recording. Transcription is
   `POST /inference` as multipart (`file` = the WAV, `prompt`, `language=en`,
   `response_format=json`) with the existing blocking `reqwest` client (no proxy; the multipart body
   is written by hand, so no extra crate feature). A server that has died is restarted once; after two
@@ -97,12 +99,16 @@ Current:
   session names first). Names are words with a capital inside a sentence or inside the word
   (`CS2`, `TypeScript`) that the glossary does not hold. Outside a session (the memory review) it is
   the glossary alone.
-- **Live transcript (F3 part 2).** While a practice answer is being recorded the UI asks for
+- **Live transcript (F3 part 2).** While a Talk or spoken Memory review answer is being recorded the UI asks for
   `transcribe_partial` every 1.5 s with a WAV of the audio so far (copied from the capture buffer;
   capture is not interrupted; no more than 30 s). Rust runs it on the loaded model only when the
   setting is on, the model is small (tiny, base or small) and the server is ready; it never starts a
   server, handles one update at a time, gives up after 5 s and returns nothing otherwise. The
   partial audio is not kept. The final transcription after recording is separate and authoritative.
+  Memory review also supports this during warm-up and unscored retries/shadowing on its existing
+  one-shot recorder. Live text is presentation only: it never submits an answer or changes a
+  schedule. Stop, cancel, skip, end, device loss and unmount dispose live updates; late replies
+  cannot enter a newer capture. Unavailable or failed updates do not block final transcription.
 
 - Speech check (F3 part 1, `src-tauri/src/audio/speech_check.rs`): 12 fixed sentences; the learner
   reads them in Settings and each reading is stored as the same 16 kHz mono WAV as `NN.wav` with
