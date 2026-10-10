@@ -325,6 +325,8 @@ fn live_updates_use_a_loaded_model_only_and_never_start_one() {
         None
     );
     assert_eq!(engine.server_status().state, ServerState::NotRunning);
+    assert_eq!(engine.transcribe_rescue(&f.small, &wav, None), None);
+    assert_eq!(engine.server_status().state, ServerState::NotRunning);
 
     let binaries = Binaries {
         server: Some(f.server.clone()),
@@ -339,6 +341,16 @@ fn live_updates_use_a_loaded_model_only_and_never_start_one() {
             .as_deref(),
         Some(format!("ggml-small.en.bin|Vocabulary: Tauri.|{}", wav.len()).as_str())
     );
+    let pid = engine.server.pid();
+    assert_eq!(
+        engine.transcribe_rescue(&f.small, &wav, Some("Question: Why?")),
+        Some(format!("ggml-small.en.bin|Question: Why?|{}", wav.len()))
+    );
+    assert_eq!(engine.server.pid(), pid);
+    assert!(!engine
+        .partial_running
+        .load(std::sync::atomic::Ordering::Acquire));
+    assert_eq!(engine.transcribe_rescue(&f.base, &wav, None), None);
     // Another model is not loaded, so there is no live text for it.
     assert_eq!(engine.transcribe_partial(&f.base, &wav, None), None);
 }

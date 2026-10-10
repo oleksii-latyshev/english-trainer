@@ -9,7 +9,7 @@ export type { RecordedAudio };
 
 export type PcmRecorder = {
   /** The audio so far as a WAV, for the live transcript; null when there is none to show. */
-  snapshot: () => Promise<Blob | null>;
+  snapshot: (options?: { tailMs: number }) => Promise<Blob | null>;
   stop: () => Promise<RecordedAudio>;
   cancel: () => Promise<void>;
   actualInput: ActualAudioInput;

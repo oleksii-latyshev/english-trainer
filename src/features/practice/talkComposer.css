@@ -32,6 +32,92 @@
   gap: 16px;
 }
 
+.talk-rescue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, 45vw);
+  padding: 10px 12px;
+  border: 1px solid var(--et-line);
+  border-radius: 14px;
+  background: var(--et-bg);
+}
+
+.talk-rescue-head,
+.talk-rescue-modes,
+.talk-rescue-candidates,
+.talk-rescue-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.talk-rescue-head {
+  justify-content: space-between;
+  color: var(--et-fg);
+  font-size: 13px;
+}
+
+.talk-rescue-modes,
+.talk-rescue-candidates {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex-wrap: wrap;
+}
+
+.talk-rescue-legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.talk-rescue p {
+  margin: 0;
+  color: var(--et-fg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.talk-rescue-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.talk-rescue-form label {
+  flex-basis: 100%;
+  color: var(--et-muted);
+  font-size: 12px;
+}
+
+.talk-rescue-form input {
+  flex: 1;
+  min-width: 130px;
+  padding: 7px 9px;
+  border: 1px solid var(--et-line);
+  border-radius: 9px;
+  background: var(--et-surface);
+  color: var(--et-fg);
+  font: inherit;
+}
+
+.talk-rescue-form input:focus {
+  outline: 2px solid var(--et-me);
+  outline-offset: 1px;
+}
+
+.talk-rescue-error {
+  flex-wrap: wrap;
+  color: var(--et-fg);
+  font-size: 12px;
+}
+
 .talk-kbd-on-accent {
   border: 1px solid rgba(0, 0, 0, 0.2);
   background: transparent;

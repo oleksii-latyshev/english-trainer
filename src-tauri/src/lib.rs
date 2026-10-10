@@ -400,6 +400,26 @@ async fn get_guided_answer(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+async fn rescue_answer(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+    sequence: usize,
+    request: providers::RescueRequest,
+) -> Result<providers::RescueResponse, providers::ProviderError> {
+    let store = sessions.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        store.rescue_answer(session_id, sequence, &request, providers::generate_rescue)
+    })
+    .await
+    .map_err(|_| {
+        providers::ProviderError::new(
+            providers::ProviderErrorCode::ProcessFailed,
+            "Could not prepare rescue help. Keep speaking and try Stuck again.",
+        )
+    })?
+}
+
+#[tauri::command(rename_all = "snake_case")]
 async fn prefetch_answer_plan(
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
@@ -606,6 +626,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             audio::commands::transcribe_audio,
             audio::commands::transcribe_partial,
+            audio::rescue_commands::transcribe_rescue,
             audio::commands::get_speech_settings,
             audio::commands::save_speech_model,
             audio::commands::save_live_transcript,
@@ -654,6 +675,7 @@ pub fn run() {
             get_active_practice_session,
             get_question_scaffold,
             prefetch_answer_plan,
+            rescue_answer,
             get_guided_answer,
             record_answer_help_used,
             save_phrase_card,

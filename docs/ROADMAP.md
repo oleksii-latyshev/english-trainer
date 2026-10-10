@@ -232,13 +232,31 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Built-app acceptance and the live Gemini check are deferred to the user's physical Mac.
 - Acceptance: help is shown instantly (already prefetched) for at least 9 of 10 questions.
 
-**F7. Stuck rescue** `[ ]`
+**F7. Stuck rescue** `[~]` (built; physical Mac acceptance deferred by the learner)
 - "Stuck" button (and keyboard shortcut) while speaking: transcribes what has been said so far and
   suggests the next step in English — a connector, a sentence start, or a simpler way to say the
   idea ("say it simpler") — without ending the turn.
 - "Missing word": the user describes the word in English ("the thing that stores data
   temporarily…") and gets candidate words to choose from. Practice stays in English.
 - Rescue use is recorded as a cue, like guided help.
+- Built: Stuck / S during recording, Next step and Say it simpler from a local snapshot of the
+  newest 15 seconds, and 3–5 Missing word candidates from an English description. The full answer
+  stays intact; Stop, Cancel and retry remain available. Opening help suspends hands-free turn end
+  and silent auto-listen expiry; closure restores only its own hold. Recording/question identity
+  discards late results. Rust saves a per-answer cue before generation, including failed attempts,
+  and excludes that answer from independent memory evidence.
+- Rescue is explicitly pinned to `agy` / `gemini-3.8-flash-high`, with one call and a 20-second
+  process bound. A real synthetic request returned validated next-step JSON in 9.1 seconds.
+  The installed CLI returned empty results with `--json-schema`; F7 instead requests JSON in the
+  prompt and strictly validates the ordinary response locally. This measurement covers generation
+  only, so the under-10-second end-to-end target still needs real Whisper and built-app acceptance.
+- Automated validation covers audio-tail preservation, strict request/output contracts, model
+  pinning and CLI compatibility, per-answer cues, concurrency and late responses, and seven browser
+  scenarios running the real PCM recorder and turn detector against audio/provider edges.
+  394 TypeScript tests, 379 Rust unit tests, one SQLite integration test and 47 browser scenarios
+  pass; Biome, Clippy and both TypeScript checks pass. The app and DMG are built; nine live tests
+  stay opt-in in the normal regression suite.
+  Run `bun run verify`; physical microphone, relevance and total recovery time remain manual.
 - Acceptance: a stuck moment can be resolved in under 10 s without leaving the chat.
 
 **F8. Topics, profile, and time-based sessions** `[~]`

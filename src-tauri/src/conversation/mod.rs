@@ -20,6 +20,7 @@ mod planner;
 mod profile;
 pub(crate) mod recall;
 mod rehearsal;
+mod rescue;
 mod rules;
 mod scaffold;
 mod speech_settings;
@@ -132,6 +133,7 @@ pub struct SessionStore {
     state: Arc<Mutex<State>>,
     pub(crate) usage_in_flight: Arc<usage_support::UsageInFlightTracker>,
     answer_plan_cache: Arc<Mutex<Option<planner::CachedPlan>>>,
+    rescue_in_flight: Arc<std::sync::atomic::AtomicBool>,
     pub(crate) coaching: Arc<coaching::CoachingStatus>,
 }
 
@@ -265,6 +267,7 @@ impl SessionStore {
             })),
             usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
             answer_plan_cache: Arc::new(Mutex::new(None)),
+            rescue_in_flight: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             coaching: Arc::new(coaching::CoachingStatus::default()),
         })
     }

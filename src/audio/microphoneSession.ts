@@ -5,6 +5,7 @@ import {
   signalMeterValue,
   summarizeAudioSignal,
 } from './audioSignal';
+import { snapshotAudioChunks } from './audioTail';
 import { createCaptureStartup } from './captureStartup';
 import { getPreferredDeviceId, recordActualAudioInput } from './devicePreference';
 import { actualEchoCancellationEnabled, describeInput } from './microphoneInput';
@@ -39,7 +40,7 @@ export const MAX_SNAPSHOT_MS = 30_000;
 
 export type MicrophoneCapture = {
   /** The audio captured so far as a WAV, while capturing goes on; null when there is none or too much. */
-  snapshot: () => Promise<Blob | null>;
+  snapshot: (options?: { tailMs: number }) => Promise<Blob | null>;
   stop: () => Promise<RecordedAudio>;
   cancel: () => void;
   level: () => number;
@@ -262,11 +263,11 @@ export function createMicrophoneSession(options: MicrophoneSessionOptions = {}):
     };
     return {
       level: () => currentLevel,
-      snapshot: async () => {
+      snapshot: async (options) => {
         if (active !== capture || capture.sampleCount === 0) return null;
-        if ((capture.sampleCount / sampleRateHz) * 1000 > MAX_SNAPSHOT_MS) return null;
+        if (!options && (capture.sampleCount / sampleRateHz) * 1000 > MAX_SNAPSHOT_MS) return null;
         // The chunks are only appended to, so a copy of the list is a consistent cut.
-        const chunks = [...capture.chunks];
+        const chunks = snapshotAudioChunks(capture.chunks, sampleRateHz, options?.tailMs);
         const sampleCount = chunks.reduce((total, chunk) => total + chunk.length, 0);
         const resampled = await resampleForWhisper(chunks, sampleCount, sampleRateHz);
         return encodeWav([resampled], resampled.length, 16_000);

@@ -109,6 +109,12 @@ Additional tools:
   a sentence start, or a simpler way to express the idea.
 - **Missing word:** describe the word in English and choose from suggestions.
 
+Stuck appears during recording and also opens with S. Next step and Say it simpler use a local
+snapshot of the newest speech; Missing word works from the typed English description alone.
+Recording continues while help is prepared, Stop and Cancel remain available, and choosing a
+candidate never changes or sends the answer. Continue speaking closes help and restores any prior
+hands-free hold. Suggestions stay silent while the microphone is open.
+
 Opening a help level is recorded as a cue before the content appears; background preparation is
 not a cue. A cued answer remains available for coaching but cannot count as independent spoken
 memory evidence. Planning expiry never starts recording; the learner chooses when to speak.

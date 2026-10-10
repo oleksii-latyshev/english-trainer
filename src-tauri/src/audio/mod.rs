@@ -5,6 +5,7 @@ pub(crate) mod kept;
 mod models;
 mod private_files;
 mod prompt;
+pub(crate) mod rescue_commands;
 mod scoring;
 mod server;
 #[cfg(test)]
@@ -318,6 +319,35 @@ impl SpeechEngine {
             return None;
         }
         let text = self.server.transcribe_partial(&model, wav, prompt);
+        self.partial_running.store(false, Ordering::Release);
+        text
+    }
+
+    /// An explicitly requested snapshot gets a short slot after a live update, but never starts
+    /// a server or invokes the final-transcription fallback. The whole attempt is bounded to 3 s.
+    pub fn transcribe_rescue(
+        &self,
+        model: &Path,
+        wav: &[u8],
+        prompt: Option<&str>,
+    ) -> Option<String> {
+        validate_wav(wav).ok()?;
+        let model = ready_model(model).ok()?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+        while self
+            .partial_running
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            if std::time::Instant::now() >= deadline {
+                return None;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        let timeout = deadline.saturating_duration_since(std::time::Instant::now());
+        let text = self
+            .server
+            .transcribe_snapshot(&model, wav, prompt, timeout);
         self.partial_running.store(false, Ordering::Release);
         text
     }

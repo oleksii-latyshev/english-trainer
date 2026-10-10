@@ -19,6 +19,8 @@ type Props = {
   draft: string;
   /** A problem with its fixes; sits at the top of the card. */
   notice?: ReactNode;
+  /** Optional action presented beside the live microphone controls. */
+  rescueControl?: ReactNode;
   onChangeDraft: (value: string) => void;
   onSend: () => void;
   onStart: () => void;
@@ -243,6 +245,7 @@ export function Composer(props: Props) {
               <span className="talk-mic-hint">{presentation.micHint}</span>
             </div>
             <LevelMeter isActive={listening?.isLive === true} level={props.level} />
+            {props.rescueControl}
           </>
         )}
         <TurnActions

@@ -116,6 +116,7 @@ Voice interruption is opt-in and gated by actual input echo cancellation. F6 hel
 | `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level system speech from the stream (F4 built) |
 | Batch coaching (`coach_answers`) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, pinned to `gemini-3.8-flash-medium`; the Gemini API is not used (its free quota is reserved for conversation) | Same |
 | Answer planner | Frame, phrases and hidden example for the current question; separate bounded cache and per-answer cue tracking | Gemini API, question-only prefetched request [F6]; `agy` guided-answer IPC remains for compatibility | Same |
+| `RescueEngine` | One next step, simpler wording, or 3–5 missing-word candidates during recording; saves a per-answer cue before generation | `agy`, explicitly pinned to `gemini-3.8-flash-high` [F7], one request with a 20 s process bound | Same |
 | `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |
 
 Rules:

@@ -327,8 +327,18 @@ impl WhisperServer {
         wav: &[u8],
         prompt: Option<&str>,
     ) -> Option<String> {
+        self.transcribe_snapshot(model, wav, prompt, PARTIAL_TIMEOUT)
+    }
+
+    pub(super) fn transcribe_snapshot(
+        &self,
+        model: &Path,
+        wav: &[u8],
+        prompt: Option<&str>,
+        timeout: Duration,
+    ) -> Option<String> {
         let port = self.ready_port(model)?;
-        let json = post(port, &request(wav, prompt), PARTIAL_TIMEOUT).ok()?;
+        let json = post(port, &request(wav, prompt), timeout).ok()?;
         match parse_server_output(&json, 0) {
             Ok(transcript) => Some(transcript.text),
             Err(error) if error.code == TranscriptionErrorCode::NoSpeech => Some(String::new()),

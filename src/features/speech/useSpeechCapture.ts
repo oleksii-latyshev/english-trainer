@@ -19,6 +19,7 @@ import {
   watchTurn,
 } from './listening';
 import { microphoneError } from './microphoneError';
+import { createRescueCapture } from './rescueCapture';
 import type { SpeechTiming } from './TimingPanel';
 import { createTranscriptionRunner } from './transcriptionRunner';
 import type { useSystemSpeech } from './useSystemSpeech';
@@ -37,6 +38,7 @@ export function useSpeechCapture(
   const [state, setState] = useState<CaptureState>({ tag: 'idle' });
   const [timing, setTiming] = useState<SpeechTiming>({});
   const recorderRef = useRef<PcmRecorder | null>(null);
+  const rescueHeldRef = useRef(false);
   const recordedWavRef = useRef<Blob | null>(null);
   const playbackUrlRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -147,6 +149,7 @@ export function useSpeechCapture(
     requestedAtMs: number,
   ) {
     recorderRef.current = recorder;
+    rescueHeldRef.current = false;
     const startedAt = performance.now();
     setTiming({ captureStartMs: startedAt - requestedAtMs });
     timerRef.current = startElapsedTimer(recorder, startedAt, (elapsedMs, level) =>
@@ -249,7 +252,7 @@ export function useSpeechCapture(
   }
 
   function holdListening(held: boolean) {
-    turnWatchRef.current?.setHold(held);
+    turnWatchRef.current?.setHold(held || rescueHeldRef.current);
     setState((state) => (state.tag === 'recording' ? { ...state, held } : state));
   }
 
@@ -277,6 +280,13 @@ export function useSpeechCapture(
   const canChangeSession = !startingRef.current && !transcribingRef.current && !isCapturing(state);
 
   return {
+    ...createRescueCapture({
+      recorder: recorderRef,
+      state: stateRef,
+      requestId: requestIdRef,
+      turnWatch: turnWatchRef,
+      held: rescueHeldRef,
+    }),
     view,
     canChangeSession,
     reset,

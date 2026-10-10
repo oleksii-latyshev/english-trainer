@@ -1,11 +1,13 @@
 import { Button, Kbd } from '@heroui/react';
 import { TurnNotice } from '@/components/TurnNotice';
+import { useTrainer } from '@/context/TrainerContext';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { Composer } from './Composer';
 import { HelpBar } from './HelpBar';
 import type { HelpLevel } from './lib/helpLevels';
 import type { SessionDetails } from './lib/practiceState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import { RescuePanel } from './RescuePanel';
 import type { useTalkTurn } from './useTalkTurn';
 
 type Props = {
@@ -43,6 +45,7 @@ export function TalkComposerPanel({
   helpNotice,
   onStartRecording,
 }: Props) {
+  const { capture } = useTrainer();
   const { composer, flow, state } = turn;
   const fixes = state.tag === 'error' ? state.issue.fixes.map((fix) => turn.fixes[fix]) : [];
   const isHelpDisabled = turn.isBusy || composer.isSending || model.transcribing || lock.isLocked;
@@ -97,6 +100,24 @@ export function TalkComposerPanel({
           onStop={actions.stopRecording}
           onStopEva={speech.stop}
           presentation={turn.presentation}
+          rescueControl={
+            isHelpAvailable &&
+            isAudioStage &&
+            !session.isMistakePractice &&
+            session.practiceMode !== 'text_chat' &&
+            (session.practiceMode !== 'write_then_speak' || session.practicePhase === 'speaking') &&
+            model.status === 'recording' ? (
+              <RescuePanel
+                key={`${session.sessionId}:${session.practicePhase}:${session.turnCount + 1}:${question}:${model.currentRequestId}`}
+                capture={capture}
+                phase={session.practicePhase}
+                question={question}
+                recordingId={model.currentRequestId}
+                sequence={session.turnCount + 1}
+                sessionId={session.sessionId}
+              />
+            ) : null
+          }
           state={state}
           interaction={
             session.isMistakePractice

@@ -92,13 +92,19 @@ export function watchTurn(
       },
     },
   );
-  if (mode === 'auto') {
+  function scheduleIdle() {
+    if (mode !== 'auto' || hasHeardSpeech || idleTimer) return;
     idleTimer = setTimeout(() => {
       if (isCurrent()) handlers.onIdleTimeout();
     }, AUTO_LISTEN_IDLE_MS);
   }
+  scheduleIdle();
   return {
-    setHold: listening.setHold,
+    setHold: (held) => {
+      listening.setHold(held);
+      if (held) clearIdle();
+      else scheduleIdle();
+    },
     dispose: () => {
       clearIdle();
       stopLiveText();

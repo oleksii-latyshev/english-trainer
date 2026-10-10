@@ -289,8 +289,34 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
   cue acknowledgment. The optional Frame timer uses a 15/30-second deadline, cancels on capture,
   closure or question change, and suppresses auto-listening without releasing the warm microphone.
   Timer expiry never starts capture. Missing keys, quotas and invalid plans leave answering usable.
-- **Target [F7]:** rescue requests carry the partial transcript and return one suggestion; they
-  record a cue exposure.
+- F7 `transcribe_rescue` receives a raw WAV snapshot and positive `x-session-id` /
+  `x-answer-sequence` headers. React copies the newest 15 seconds without consuming the full
+  recording. Rust validates the active unanswered spoken question before and after local STT.
+  The loaded Whisper server has a 3-second attempt bound, including waiting for a live update;
+  no server restart, final-transcription fallback, audio retention or live-transcript setting change
+  occurs. Busy, unready and no-speech states offer recovery while recording continues.
+- `rescue_answer(session_id, sequence, request)` uses snake-case arguments and a strict request
+  `{ kind: next_step | simpler | missing_word, question, partial_transcript, description }`.
+  Bounds are 500 / 1500 / 300 characters. Next step and simpler wording use a fresh snapshot;
+  missing word uses the English description alone and works without recognized speech.
+  Rust validates session, phase, sequence and exact question, saves the per-answer cue before the
+  provider call, and revalidates afterwards. A separate concurrency guard never holds the session
+  mutex across generation, so an answer can be submitted while help is pending.
+- `RescueEngine` makes one private-scratch `agy` call pinned to `gemini-3.8-flash-high`, with a
+  20-second process bound and no automatic retry. A discriminated response contains one plain
+  English suggestion (at most 160 characters / 30 words), or 3–5 distinct terms of 1–3 words each.
+  Unknown fields, wrong variants, translations and markup are rejected as typed errors. Existing
+  request/quota accounting includes these calls. F7 sends the schema in the prompt and validates
+  the JSON string in the CLI's `response` locally; the installed CLI returned empty results when
+  given `--json-schema`, so F7 does not use that flag or attempt prose extraction.
+  The process bound does not guarantee the F7
+  under-10-second acceptance target; a live latency check remains separate from deterministic tests.
+- Stuck / S is available only during a spoken recording. S ignores text fields, focused controls,
+  IME, repeats and modifiers. The open panel suspends hands-free end-of-turn and auto-listen idle
+  expiry; dismissal and failure release only its own hold. Stop and Cancel remain usable. Selecting
+  a word neither edits nor sends the answer. Recording identity and question scope discard late
+  results, and help never plays TTS over the microphone. Cued answers remain excluded from
+  independent spoken memory evidence.
 
 ## 7. Sessions and input provenance
 

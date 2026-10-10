@@ -3,6 +3,7 @@ pub(crate) mod conversation;
 mod feedback;
 pub(crate) mod guided;
 pub(crate) mod mistake_practice;
+pub(crate) mod rescue;
 pub(crate) mod runner;
 #[cfg(test)]
 mod test_support;
