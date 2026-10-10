@@ -68,7 +68,7 @@ export function useTalkTurn(options: Options) {
     hasTranscript: Boolean(answerTranscript),
     sendingLabel:
       composer.autoSend.isActive && !composer.isSending ? composer.autoSend.label : undefined,
-    // Once Eva speaks, the reply is complete even if its saved copy has not arrived yet.
+    // Native speech takes visual priority while the provider may still be generating.
     isThinking:
       model.practice.tag === 'waiting' ||
       composer.isSending ||
@@ -100,9 +100,19 @@ export function useTalkTurn(options: Options) {
     flow,
     flowSignals,
     state,
-    presentation: describeTurn(state, flowSignals),
+    presentation:
+      state.tag === 'speaking' && model.canVoiceInterrupt
+        ? {
+            ...describeTurn(state, flowSignals),
+            stageHint: 'Start talking or press Esc to interrupt.',
+            micHint: 'Speak or press to interrupt',
+          }
+        : describeTurn(state, flowSignals),
     isBusy,
     fixes,
-    canPressMic: canPressMic(state, isLocked || isBusy),
+    canPressMic: canPressMic(
+      state,
+      isLocked || model.busy || (isBusy && model.practice.tag !== 'waiting'),
+    ),
   };
 }

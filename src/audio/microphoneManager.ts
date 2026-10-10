@@ -14,6 +14,8 @@ export type MicrophoneManager = {
   setActive: (active: boolean) => void;
   /** Reopens the stream on the new device if one is open. `undefined` follows the stored preference. */
   setDeviceId: (deviceId: string | undefined) => void;
+  /** Reopens a warm session when the requested processing mode changes. */
+  setEchoCancellation: (enabled: boolean) => void;
   /** Releases the device until `resume` or `ensure`. */
   pause: () => void;
   resume: () => void;
@@ -37,6 +39,7 @@ export function createMicrophoneManager(
   let active = false;
   let paused = false;
   let deviceId: string | undefined;
+  let echoCancellation = false;
   let session: MicrophoneSession | null = null;
   let phase: Phase = 'opening';
   let failure = '';
@@ -67,6 +70,7 @@ export function createMicrophoneManager(
     phase = 'opening';
     const created: MicrophoneSession = factory({
       deviceId,
+      echoCancellation,
       hooks: {
         onWarm: () => {
           if (session !== created) return;
@@ -116,6 +120,13 @@ export function createMicrophoneManager(
     setDeviceId(next) {
       if (deviceId === next) return;
       deviceId = next;
+      if (!session) return;
+      closeCurrent();
+      reconcile();
+    },
+    setEchoCancellation(next) {
+      if (echoCancellation === next) return;
+      echoCancellation = next;
       if (!session) return;
       closeCurrent();
       reconcile();

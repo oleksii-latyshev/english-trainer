@@ -14,6 +14,13 @@
 .eva-listening .eva-ring {
   animation: eva-ripple 1.4s ease-out infinite;
 }
+.eva-listening .eva-core {
+  transform: scale(var(--eva-audio-scale, 1));
+  transition: transform 100ms linear;
+}
+.eva-listening .eva-halo {
+  opacity: var(--eva-audio-opacity, 1);
+}
 .eva-listening .eva-eye {
   width: 19cqw;
   height: 17cqw;
@@ -221,6 +228,12 @@
     animation: none;
     transition: none;
   }
+  .eva.eva-listening .eva-core {
+    transform: none;
+  }
+  .eva.eva-listening .eva-halo {
+    opacity: 1;
+  }
 }
 
 /*
@@ -234,4 +247,10 @@
 
 :root[data-eva-motion="still"] .eva :is(.eva-core, .eva-ring, .eva-face, .eva-eye, .eva-mouth) {
   animation: none;
+}
+:root[data-eva-motion="still"] .eva.eva-listening .eva-core {
+  transform: none;
+}
+:root[data-eva-motion="still"] .eva.eva-listening .eva-halo {
+  opacity: 1;
 }

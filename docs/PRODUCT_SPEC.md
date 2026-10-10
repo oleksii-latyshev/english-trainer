@@ -51,8 +51,12 @@ Principles:
 
 One chat-style screen replaces the former separate Conversation and Coach modes.
 
-- **Top:** topic and current question; a voice visual (orb/waveform) shows listening, thinking and
-  speaking states.
+- **Top:** topic and current question; Eva shows listening, thinking and speaking states. Her
+  listening visual follows actual microphone level; system speech events drive the speaking state.
+- Eva starts speaking completed sentences while the rest of her reply arrives. Mic/Space and Esc
+  interrupt her; "Speak anyway" also cancels a pending reply. Voice interruption is an optional
+  Conversation flow setting, available only when the microphone confirms echo cancellation.
+  Auto-listening waits until the whole reply has finished speaking.
 - **Middle:** the dialogue. Each learner message can grow an inline coaching note: "More natural:
   …" and at most one focus point, plus a "Say it again" action that records a second attempt and
   shows what changed.

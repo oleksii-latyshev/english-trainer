@@ -32,7 +32,7 @@ export type KeyCommand =
   | { kind: 'stop-eva' }
   | { kind: 'set-help'; level: HelpLevel | null };
 
-const STARTABLE: TurnState['tag'][] = ['idle', 'review', 'speaking', 'error'];
+const STARTABLE: TurnState['tag'][] = ['idle', 'review', 'thinking', 'speaking', 'error'];
 
 function isLiveListening(state: TurnState): boolean {
   return (state.tag === 'listening' || state.tag === 'auto-listen') && state.isLive;
@@ -52,7 +52,7 @@ function escapeDown(context: KeyContext): KeyCommand | null {
   const { state } = context;
   if (isLiveListening(state)) return { kind: 'cancel-listening' };
   if (state.tag === 'review' && context.isCountingDown) return { kind: 'cancel-countdown' };
-  if (state.tag === 'speaking') return { kind: 'stop-eva' };
+  if (state.tag === 'speaking' || state.tag === 'thinking') return { kind: 'stop-eva' };
   return null;
 }
 

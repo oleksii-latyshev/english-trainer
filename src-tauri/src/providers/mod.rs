@@ -53,6 +53,25 @@ pub fn generate_configured_turn(
     apple: &AppleHelper,
     on_delta: &mut dyn FnMut(&str),
 ) -> Result<ConversationTurn, ProviderError> {
+    generate_configured_turn_cancellable(
+        context,
+        settings,
+        apple,
+        on_delta,
+        std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    )
+}
+
+pub fn generate_configured_turn_cancellable(
+    context: &ConversationContext,
+    settings: &AiSettings,
+    apple: &AppleHelper,
+    on_delta: &mut dyn FnMut(&str),
+    cancelled: std::sync::Arc<std::sync::atomic::AtomicBool>,
+) -> Result<ConversationTurn, ProviderError> {
+    if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+        return Err(cancelled_reply());
+    }
     let mut styled = context.clone();
     styled.eva_style = settings.eva_style;
     let context = &styled;
@@ -61,6 +80,9 @@ pub fn generate_configured_turn(
             let context = context.compact(AGY_MAX_TURNS, AGY_MAX_CHARS, AGY_MAX_QUESTIONS);
             let mut turn =
                 agy::conversation::generate_turn_with_model(&context, settings.agy_model)?;
+            if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                return Err(cancelled_reply());
+            }
             turn.answered_by = Some(AnsweredBy::agy(settings.agy_model));
             forward(&format!(
                 "{} {}",
@@ -69,14 +91,16 @@ pub fn generate_configured_turn(
             ));
             Ok(turn)
         }
-        ConversationProvider::Apple => apple.generate_turn(context, forward),
+        ConversationProvider::Apple => {
+            apple.generate_turn_cancellable(context, forward, &cancelled)
+        }
         ConversationProvider::Gemini => {
             let backup = race::Backup {
-                leg: apple.backup_leg(context.clone()),
+                leg: apple.backup_leg_cancellable(context.clone(), cancelled.clone()),
                 after: APPLE_BACKUP_AFTER,
                 label: AnsweredBy::apple(true),
             };
-            gemini::generate_turn(context, Some(backup), forward)
+            gemini::generate_turn_cancellable(context, Some(backup), forward, &cancelled)
         }
     })
 }
@@ -337,6 +361,7 @@ pub enum ProviderErrorCode {
     Unauthorized,
     RateLimited,
     Timeout,
+    Cancelled,
     InvalidOutput,
     ProcessFailed,
     InvalidRequest,
@@ -434,4 +459,11 @@ mod retry_comparison_tests {
             TargetEvidence::AlreadyPresentInBoth
         );
     }
+}
+
+pub(crate) fn cancelled_reply() -> ProviderError {
+    ProviderError::new(
+        ProviderErrorCode::Cancelled,
+        "The reply was interrupted. Continue speaking when ready.",
+    )
 }

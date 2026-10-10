@@ -1,7 +1,6 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
-import { TurnNotice } from '@/components/TurnNotice';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { setConversationFlow } from '@/lib/conversationFlowPreferences';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
@@ -26,6 +25,7 @@ import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { recordAnswerHelpUsed } from './sessionApi';
 import { TalkComposerPanel } from './TalkComposerPanel';
 import { TalkHeader } from './TalkHeader';
+import { TalkNotices } from './TalkNotices';
 import { useTalkKeyboard } from './useTalkKeyboard';
 import { useTalkTurn } from './useTalkTurn';
 import './talk.css';
@@ -177,6 +177,7 @@ export function TalkScreen(props: Props) {
           </aside>
         ) : (
           <EvaStage
+            audioLevel={model.audioLevel}
             flow={flow}
             inputLabel={actualInput?.label}
             isSendLocked={lock.isLocked}
@@ -214,7 +215,7 @@ export function TalkScreen(props: Props) {
             }
             retryHistory={props.retryHistory}
           >
-            {model.practiceError && <TurnNotice message={model.practiceError} />}
+            <TalkNotices practiceError={model.practiceError} voiceError={model.voiceError} />
             {showLiveTranscript && <LiveTranscriptBubble text={model.liveText} />}
             {props.children}
           </Dialogue>

@@ -104,14 +104,16 @@ sequenceDiagram
 
 Current: the reply streams from `send_practice_turn`. Each saved answer joins a per-session coaching
 queue in Rust; batches of up to five answers run in the background through `agy` and the notes appear
-under the answers when a batch lands (`coaching-updated` event). Target: [F4] sentence-level TTS,
-[F6] prefetched help.
+under the answers when a batch lands (`coaching-updated` event). F4 queues sentence-level system
+TTS from those deltas, independently of coaching. A turn cancellation token is owned by Rust and
+checked atomically before saving; the UI also invalidates late stream and speech callbacks.
+Voice interruption is opt-in and gated by actual input echo cancellation. Target: [F6] prefetched help.
 
 ## 6. Providers
 
 | Engine | Purpose | Current adapters | Target |
 | :--- | :--- | :--- | :--- |
-| `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level speech from the stream [F4] |
+| `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level system speech from the stream (F4 built) |
 | Batch coaching (`coach_answers`) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, pinned to `gemini-3.8-flash-medium`; the Gemini API is not used (its free quota is reserved for conversation) | Same |
 | Guided answer | Model answer for the current question | `agy` | Gemini API, prefetched [F6] |
 | `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |

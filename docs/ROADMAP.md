@@ -1,7 +1,7 @@
 # Roadmap: English Trainer
 
-Updated 2026-10-09. The learner checked the new Whisper model in the app and reported that it
-works well. F8, F11, F12 and F13 are built and awaiting the learner’s check in the app.
+Updated 2026-10-10. The learner checked the new Whisper model in the app and reported that it
+works well. F4, F8, F11, F12 and F13 are built and awaiting the learner’s check in the app.
 The learner deferred that check; the remaining core MVP work is listed below.
 
 ## Goal
@@ -138,7 +138,7 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Acceptance: a fixed list of 30 of the user's technical terms is recognised in at least 90% of
   readings; transcription of a 15 s answer finishes in under 1.5 s.
 
-**F4. Speak while generating + voice visual** `[ ]`
+**F4. Speak while generating + voice visual** `[~]` (built; physical Mac acceptance deferred by the learner)
 - Split the streamed reply into sentences and speak the first sentence while the rest arrives.
 - Barge-in: starting to speak (or pressing record) stops AI speech immediately. Needs echo
   cancellation on the warm stream, or listening paused while the AI speaks.
@@ -151,7 +151,27 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` accepted on a physica
 - Design: while Eva is thinking the mic control reads "Speak anyway" (sub "You can speak anyway") and
   pressing it cancels the pending reply and starts listening. (Stopping Eva while she speaks, by the
   mic or Esc, already exists; barge-in by voice is the item above.)
-- Acceptance: end-of-speech → first AI audio under 2.5 s median over 10 turns.
+- Built 2026-10-10: completed sentences start speaking before provider completion; the final
+  question is queued once. Mic, Space, "Speak anyway" and Esc cancel speech and the pending reply;
+  late chunks cannot resume playback or save an interrupted answer. Auto-listening waits for both
+  provider completion and the last natural speech end.
+- Settings → Conversation flow: "Interrupt Eva by voice" is opt-in and requests echo cancellation.
+  Voice onset is enabled only when the acquired track confirms echo cancellation; otherwise mic
+  and Esc remain available. Listening visuals follow microphone level; speaking follows native
+  TTS events (system voices do not expose their output amplitude). Reduced motion stays static.
+- Automated checks cover sentence boundaries, canonical tail deduplication, cancellation races,
+  helper restart, late events, released-Space cancellation and the speech queue. Checks pass:
+  384 TypeScript tests, 354 Rust tests plus the SQLite integration test, and 32 browser scenarios.
+  The timing panel measures first text, full provider completion, send → first audio and actual
+  speech-end → first audio when available.
+- On-device synthetic benchmark (10 Apple helper turns, 2026-10-09): full-reply readiness before
+  sentence streaming p50/p95 2981/5304 ms; first-sentence readiness after p50/p95 1455/4036 ms;
+  10 successes, 0 errors. These are provider text readiness measurements, excluding Whisper and
+  actual TTS output. Default microphone processing and STT remain unchanged; opted-in echo
+  cancellation still needs a physical-Mac recognition/feedback check.
+- Acceptance: end-of-speech → first AI audio under 2.5 s median over 10 real spoken turns.
+  Check audible sentence joins, interruption with speakers/headphones, microphone permissions,
+  recognition with optional echo cancellation and actual timing in the built app.
 
 ### Stage 2 — Help to structure spoken answers
 

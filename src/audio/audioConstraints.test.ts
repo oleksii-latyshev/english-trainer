@@ -60,6 +60,17 @@ describe('buildAudioConstraints', () => {
     });
   });
 
+  it('enables only echo cancellation when voice interruption is opted in', () => {
+    expect(buildAudioConstraints(undefined, true)).toEqual({
+      audio: {
+        channelCount: { ideal: 1 },
+        echoCancellation: { ideal: true },
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
+  });
+
   it('trims leading and trailing whitespace from explicit deviceId', () => {
     const constraints = buildAudioConstraints('  external-usb-mic-42  ');
     expect(constraints).toEqual({

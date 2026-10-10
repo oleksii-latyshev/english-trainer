@@ -225,7 +225,12 @@ export function Composer(props: Props) {
           <>
             <MicButton
               icon={presentation.micIcon}
-              isDisabled={!canPressMic(state, isLocked || isBusy)}
+              isDisabled={
+                !canPressMic(
+                  state,
+                  isLocked || (isBusy && state.tag !== 'thinking' && state.tag !== 'speaking'),
+                )
+              }
               name={presentation.micName}
               onPress={handlePressMic}
               variant={presentation.micVariant}

@@ -13,6 +13,7 @@ mod coaching;
 pub(crate) mod coaching_queue;
 mod context_builder;
 mod guided;
+mod interruption;
 mod lifecycle;
 pub(crate) mod memory_recall;
 mod profile;
@@ -162,6 +163,7 @@ struct ActiveSession {
     opening_question: String,
     turns: Vec<StoredTurn>,
     in_flight: bool,
+    reply_cancelled: Arc<std::sync::atomic::AtomicBool>,
     topic_id: String,
     topic_label: String,
     topic_custom: Option<String>,
@@ -236,6 +238,7 @@ impl SessionStore {
                 opening_question: stored.opening_question,
                 turns: database.turns(stored.id)?,
                 in_flight: false,
+                reply_cancelled: Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 topic_id: stored.topic_id,
                 topic_label: stored.topic_label,
                 topic_custom: stored.topic_custom,
@@ -318,9 +321,33 @@ impl SessionStore {
     where
         F: FnOnce(&ConversationContext) -> Result<ConversationTurn, ProviderError>,
     {
+        self.send_turn_cancellable(
+            session_id,
+            transcript,
+            input_source,
+            answer_duration_ms,
+            |context, _| generate(context),
+        )
+    }
+
+    pub fn send_turn_cancellable<F>(
+        &self,
+        session_id: u64,
+        transcript: String,
+        input_source: InputSource,
+        answer_duration_ms: Option<u64>,
+        generate: F,
+    ) -> Result<ConversationTurn, ProviderError>
+    where
+        F: FnOnce(
+            &ConversationContext,
+            Arc<std::sync::atomic::AtomicBool>,
+        ) -> Result<ConversationTurn, ProviderError>,
+    {
         validate_transcript(&transcript)?;
         let (
             context,
+            cancellation,
             replay_question,
             replay_next_question,
             replay_is_final,
@@ -394,6 +421,8 @@ impl SessionStore {
                 .map_err(database_error)?;
             let session = active_session_mut(&mut state, session_id)?;
             session.in_flight = true;
+            session.reply_cancelled = Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let cancellation = session.reply_cancelled.clone();
             let context = context_builder::build_context(context_builder::ContextInput {
                 opening_question: &session.opening_question,
                 prior_turns: &session.turns,
@@ -404,6 +433,7 @@ impl SessionStore {
             });
             (
                 context,
+                cancellation,
                 replay_question,
                 replay_next_question,
                 replay_is_final,
@@ -437,9 +467,12 @@ impl SessionStore {
                 answered_by: None,
             })
         } else {
-            generate(&context)
+            generate(&context, cancellation.clone())
         };
         let mut state = self.lock();
+        if cancellation.load(std::sync::atomic::Ordering::Acquire) {
+            return Err(crate::providers::cancelled_reply());
+        }
         let turn = match result {
             Ok(turn) => turn,
             Err(error) => {

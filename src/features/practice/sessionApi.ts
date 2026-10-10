@@ -120,3 +120,10 @@ export async function getPracticeDialogue(sessionId: number): Promise<PracticeDi
   }
   return result;
 }
+
+export async function cancelPracticeReply(sessionId: number): Promise<boolean> {
+  const result: unknown = await invoke<unknown>('cancel_practice_reply', { sessionId });
+  if (typeof result !== 'boolean')
+    throw new Error('The pending reply could not be interrupted. Try again.');
+  return result;
+}

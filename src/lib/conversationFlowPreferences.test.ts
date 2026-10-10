@@ -21,6 +21,7 @@ describe('conversation flow preferences', () => {
       handsFree: true,
       endPauseMs: 1500,
       autoSendDelayMs: 2000,
+      voiceInterrupt: false,
     });
   });
 
@@ -31,12 +32,14 @@ describe('conversation flow preferences', () => {
         handsFree: 'yes',
         endPauseMs: 2000,
         autoSendDelayMs: 'x',
+        voiceInterrupt: true,
       }),
     );
     expect(parsed.autoListen).toBe(false);
     expect(parsed.handsFree).toBe(true);
     expect(parsed.endPauseMs).toBe(2000);
     expect(parsed.autoSendDelayMs).toBe(2000);
+    expect(parsed.voiceInterrupt).toBe(true);
   });
 
   it('clamps and rounds durations into their ranges', () => {
@@ -53,12 +56,13 @@ describe('conversation flow preferences', () => {
     const unsubscribe = subscribeConversationFlow(() => {
       calls += 1;
     });
-    setConversationFlow({ autoListen: false, endPauseMs: 100 });
+    setConversationFlow({ autoListen: false, endPauseMs: 100, voiceInterrupt: true });
     expect(getConversationFlow().autoListen).toBe(false);
     expect(getConversationFlow().endPauseMs).toBe(1000);
+    expect(getConversationFlow().voiceInterrupt).toBe(true);
     expect(calls).toBe(1);
     unsubscribe();
-    setConversationFlow({ autoListen: true, endPauseMs: 1500 });
+    setConversationFlow({ autoListen: true, endPauseMs: 1500, voiceInterrupt: false });
     expect(calls).toBe(1);
   });
 });

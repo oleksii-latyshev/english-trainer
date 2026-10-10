@@ -8,6 +8,10 @@ export type SpeechTiming = {
   captureFinalizationMs?: number;
   sttMs?: number;
   ttsStartMs?: number;
+  firstTokenMs?: number;
+  providerCompleteMs?: number;
+  sendToAudioMs?: number;
+  firstAiAudioMs?: number;
 };
 
 type Props = { timing: SpeechTiming };
@@ -17,6 +21,10 @@ const STAGES: { label: string; key: keyof SpeechTiming }[] = [
   { label: 'Audio buffer', key: 'captureFinalizationMs' },
   { label: 'Whisper STT', key: 'sttMs' },
   { label: 'System voice', key: 'ttsStartMs' },
+  { label: 'AI first text', key: 'firstTokenMs' },
+  { label: 'AI complete reply', key: 'providerCompleteMs' },
+  { label: 'Send to first audio', key: 'sendToAudioMs' },
+  { label: 'Speech end to first AI audio', key: 'firstAiAudioMs' },
 ];
 
 /** The latency readout, kept one tap away from the conversation. */

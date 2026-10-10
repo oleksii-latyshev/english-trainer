@@ -107,3 +107,41 @@ fn missing_helper_is_unavailable() {
         ProviderErrorCode::Unavailable
     );
 }
+
+#[test]
+fn cancelling_a_waiting_apple_request_restarts_the_helper_for_the_next_turn() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let dir = crate::providers::agy::runner::ScratchDirectory::new().unwrap();
+    let marker = dir.path().join("first-request");
+    let body = format!(
+        "if [ ! -e '{}' ]; then touch '{}'; read -r line; exec sleep 10; fi\n{}",
+        marker.display(),
+        marker.display(),
+        SERVE
+    );
+    let helper = AppleHelper::new(Some(script(dir.path(), &body)));
+    let other = helper.clone();
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let signal = cancelled.clone();
+    let request =
+        thread::spawn(move || other.generate_turn_cancellable(&context(), &mut |_| {}, &signal));
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while !marker.exists() && Instant::now() < deadline {
+        thread::sleep(Duration::from_millis(5));
+    }
+    assert!(marker.exists());
+    let interrupted_at = Instant::now();
+    cancelled.store(true, Ordering::Release);
+    assert_eq!(
+        request.join().unwrap().unwrap_err().code,
+        ProviderErrorCode::Cancelled
+    );
+    assert!(interrupted_at.elapsed() < Duration::from_millis(500));
+    assert_eq!(
+        helper
+            .generate_turn(&context(), &mut |_| {})
+            .unwrap()
+            .spoken_reply,
+        "Nice."
+    );
+}

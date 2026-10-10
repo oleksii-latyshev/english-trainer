@@ -40,6 +40,7 @@ describe('Space hold-to-talk', () => {
       { tag: 'idle' },
       { tag: 'review' },
       { tag: 'speaking' },
+      { tag: 'thinking' },
       { tag: 'error', issue: { message: 'x', kind: 'reply', fixes: ['retry-send'] } },
     ] as TurnState[]) {
       expect(down(' ', state)).toEqual({ kind: 'hold-to-talk' });
@@ -48,11 +49,7 @@ describe('Space hold-to-talk', () => {
 
   it('follows the microphone button: nothing while it is disabled, busy or not a turn state', () => {
     expect(down(' ', { tag: 'idle' }, { canPressMic: false })).toBeNull();
-    for (const state of [
-      { tag: 'thinking' },
-      { tag: 'transcribing' },
-      { tag: 'paused' },
-    ] as TurnState[]) {
+    for (const state of [{ tag: 'transcribing' }, { tag: 'paused' }] as TurnState[]) {
       expect(down(' ', state)).toBeNull();
     }
   });
@@ -96,7 +93,7 @@ describe('Escape', () => {
   it('does nothing when there is nothing to cancel', () => {
     expect(down('Escape', { tag: 'idle' })).toBeNull();
     expect(down('Escape', { tag: 'review' })).toBeNull();
-    expect(down('Escape', { tag: 'thinking' })).toBeNull();
+    expect(down('Escape', { tag: 'thinking' })).toEqual({ kind: 'stop-eva' });
   });
 
   it('works from a text field because it never types', () => {

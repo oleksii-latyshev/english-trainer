@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useConversationFlow } from '@/lib/conversationFlowPreferences';
 import { getPreferredDeviceId, subscribeDevicePreference } from './devicePreference';
 import { createMicrophoneManager, type MicrophoneStatus } from './microphoneManager';
 import type { MicrophoneSession } from './microphoneSession';
@@ -17,6 +18,11 @@ export function useMicrophoneSession(): MicrophoneController {
   const [manager] = useState(createMicrophoneManager);
   const snapshot = useSyncExternalStore(manager.subscribe, manager.getSnapshot);
   const deviceId = useSyncExternalStore(subscribeDevicePreference, getPreferredDeviceId, () => '');
+  const { preferences } = useConversationFlow();
+
+  useEffect(() => {
+    manager.setEchoCancellation(preferences.voiceInterrupt);
+  }, [manager, preferences.voiceInterrupt]);
 
   useEffect(() => {
     manager.setDeviceId(deviceId);

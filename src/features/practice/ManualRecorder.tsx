@@ -98,7 +98,7 @@ export function ManualRecorder({
               ? 'Stop recording'
               : recordButtonLabel(status, Boolean(transcript), isRetrying)
           }
-          onPress={isRecording ? actions.stopRecording : actions.startRecording}
+          onPress={() => (isRecording ? actions.stopRecording() : actions.startRecording())}
           variant={isRecording ? 'live' : 'ready'}
         />
         <div aria-live="polite" className="talk-recorder-copy">

@@ -271,12 +271,20 @@ async fn send_practice_turn(
     let sessions = sessions.inner().clone();
     let turn = tauri::async_runtime::spawn_blocking(move || {
         let mut forward = forward_deltas(on_reply);
-        sessions.send_turn_with_source(
+        sessions.send_turn_cancellable(
             session_id,
             transcript,
             input_source.unwrap_or_default(),
             answer_duration_ms,
-            |context| providers::generate_configured_turn(context, &settings, &apple, &mut forward),
+            |context, cancelled| {
+                providers::generate_configured_turn_cancellable(
+                    context,
+                    &settings,
+                    &apple,
+                    &mut forward,
+                    cancelled,
+                )
+            },
         )
     })
     .await
@@ -286,6 +294,14 @@ async fn send_practice_turn(
     // The answer is saved: coaching joins its queue and runs in the background.
     coaching.answer_saved(session_id);
     Ok(turn)
+}
+
+#[tauri::command]
+fn cancel_practice_reply(
+    sessions: tauri::State<'_, conversation::SessionStore>,
+    session_id: u64,
+) -> Result<bool, providers::ProviderError> {
+    sessions.cancel_pending_reply(session_id)
 }
 
 #[tauri::command]
@@ -601,6 +617,7 @@ pub fn run() {
             get_personal_profile,
             save_personal_profile,
             send_practice_turn,
+            cancel_practice_reply,
             get_practice_dialogue,
             finish_practice_session,
             get_session_wrapup,

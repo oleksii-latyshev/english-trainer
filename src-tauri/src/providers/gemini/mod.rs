@@ -25,14 +25,30 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 pub(crate) const MAX_CONTEXT_CHARS: usize = 24_000;
 
 /// Streams a reply; `backup` takes over if Gemini stalls or is overloaded before its first word.
+#[cfg(test)]
 pub(super) fn generate_turn(
     context: &ConversationContext,
     backup: Option<Backup>,
     on_delta: &mut dyn FnMut(&str),
 ) -> Result<ConversationTurn, ProviderError> {
+    generate_turn_cancellable(
+        context,
+        backup,
+        on_delta,
+        &std::sync::atomic::AtomicBool::new(false),
+    )
+}
+
+pub(super) fn generate_turn_cancellable(
+    context: &ConversationContext,
+    backup: Option<Backup>,
+    on_delta: &mut dyn FnMut(&str),
+    cancelled: &std::sync::atomic::AtomicBool,
+) -> Result<ConversationTurn, ProviderError> {
     validate_plain_context(context, MAX_CONTEXT_CHARS)?;
     let api_key = key::resolve_key()?;
-    let result = generate_from(BASE_URL, &api_key, context, backup, on_delta);
+    let result =
+        generate_from_cancellable(BASE_URL, &api_key, context, backup, on_delta, cancelled);
     if matches!(&result, Err(error) if error.code == ProviderErrorCode::Unauthorized) {
         key::forget_cached_key();
     }
@@ -44,6 +60,7 @@ pub(super) fn prewarm() -> Result<(), ProviderError> {
     key::resolve_key().map(|_| ())
 }
 
+#[cfg(test)]
 fn generate_from(
     base_url: &str,
     api_key: &str,
@@ -51,17 +68,36 @@ fn generate_from(
     backup: Option<Backup>,
     on_delta: &mut dyn FnMut(&str),
 ) -> Result<ConversationTurn, ProviderError> {
+    generate_from_cancellable(
+        base_url,
+        api_key,
+        context,
+        backup,
+        on_delta,
+        &std::sync::atomic::AtomicBool::new(false),
+    )
+}
+
+fn generate_from_cancellable(
+    base_url: &str,
+    api_key: &str,
+    context: &ConversationContext,
+    backup: Option<Backup>,
+    on_delta: &mut dyn FnMut(&str),
+    cancelled: &std::sync::atomic::AtomicBool,
+) -> Result<ConversationTurn, ProviderError> {
     let primary = stream::leg(stream::Request {
         base_url: base_url.to_string(),
         api_key: api_key.to_string(),
         model: CONVERSATION_MODEL,
         body: wire::request_body(context),
     });
-    let (reply, answered_by) = race::race(
+    let (reply, answered_by) = race::race_cancellable(
         (primary, AnsweredBy::gemini()),
         backup,
         REQUEST_TIMEOUT,
         on_delta,
+        cancelled,
     )?;
     let mut turn = plain_turn(&reply)?;
     turn.answered_by = Some(answered_by);

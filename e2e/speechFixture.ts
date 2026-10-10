@@ -6,6 +6,7 @@ export type AudioEdgeCounts = { mediaRequests: number; speechRequests: number };
 export async function installSpeechFixture(page: Page): Promise<void> {
   await page.addInitScript(() => {
     type FakeUtterance = {
+      text: string;
       voice: unknown;
       rate: number;
       onstart: (() => void) | null;
@@ -27,7 +28,8 @@ export async function installSpeechFixture(page: Page): Promise<void> {
       },
     });
     Object.defineProperty(window, 'SpeechSynthesisUtterance', {
-      value: function (this: FakeUtterance) {
+      value: function (this: FakeUtterance, text: string) {
+        this.text = text;
         this.voice = null;
         this.rate = 1;
         this.onstart = null;

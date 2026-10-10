@@ -27,19 +27,44 @@ export function useTalkKeyboard(options: Options) {
   const latest = useRef(options);
   latest.current = options;
   const isHoldingRef = useRef(false);
+  const keyboardStartPendingRef = useRef(false);
+  const keyboardStartAbandonedRef = useRef(false);
 
   // The recording only goes live after the press, so the hold is applied once audio flows.
   useEffect(() => {
+    const isListening = options.state.tag === 'listening' || options.state.tag === 'auto-listen';
+    if (keyboardStartPendingRef.current && isListening) {
+      keyboardStartPendingRef.current = false;
+      if (keyboardStartAbandonedRef.current) {
+        keyboardStartAbandonedRef.current = false;
+        options.onCancelRecording();
+        return;
+      }
+    }
+    if (
+      keyboardStartPendingRef.current &&
+      (options.state.tag === 'transcribing' || options.state.tag === 'error')
+    ) {
+      keyboardStartPendingRef.current = false;
+      keyboardStartAbandonedRef.current = false;
+    }
     if (shouldKeepTurnOpen(options.state, isHoldingRef.current)) options.onHoldListening(true);
-  }, [options.state, options.onHoldListening]);
+  }, [options.state, options.onCancelRecording, options.onHoldListening]);
 
   useEffect(() => {
     const holding = isHoldingRef;
 
     function release() {
       const current = latest.current;
+      const wasHolding = holding.current;
       const outcome = decideKeyUp(' ', { state: current.state, isHoldingSpace: holding.current });
       holding.current = false;
+      if (outcome) {
+        keyboardStartPendingRef.current = false;
+        keyboardStartAbandonedRef.current = false;
+      } else if (wasHolding && keyboardStartPendingRef.current) {
+        keyboardStartAbandonedRef.current = true;
+      }
       if (outcome === 'stop-listening') current.onStopRecording();
       if (outcome === 'cancel-listening') current.onCancelRecording();
     }
@@ -69,13 +94,19 @@ export function useTalkKeyboard(options: Options) {
       switch (command.kind) {
         case 'hold-to-talk':
           holding.current = true;
+          keyboardStartPendingRef.current = true;
+          keyboardStartAbandonedRef.current = false;
           current.onStartRecording();
           return;
         case 'adopt-listening':
           holding.current = true;
+          keyboardStartPendingRef.current = false;
+          keyboardStartAbandonedRef.current = false;
           current.onHoldListening(true);
           return;
         case 'cancel-listening':
+          keyboardStartPendingRef.current = false;
+          keyboardStartAbandonedRef.current = false;
           current.onCancelRecording();
           return;
         case 'cancel-countdown':

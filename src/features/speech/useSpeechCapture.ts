@@ -165,14 +165,14 @@ export function useSpeechCapture(
     });
   }
 
-  async function beginRecording(mode: RecordingMode) {
+  async function beginRecording(mode: RecordingMode, discardPreRoll = false) {
     if (startBlocked()) return;
     const session = sessionFor(micRef.current, mode);
     if (mode === 'auto' && !session) return;
     startingRef.current = true;
     const requestId = ++requestIdRef.current;
     const requestedAtMs = performance.now();
-    const assistantWasSpeaking = isAssistantSpeaking(speechRef.current);
+    const assistantWasSpeaking = discardPreRoll || isAssistantSpeaking(speechRef.current);
     speechRef.current.stop();
     discardRecording();
     setTiming({});
@@ -280,7 +280,7 @@ export function useSpeechCapture(
     view,
     canChangeSession,
     reset,
-    startRecording: () => beginRecording('manual'),
+    startRecording: (discardPreRoll = false) => beginRecording('manual', discardPreRoll),
     startAutoListen: () => beginRecording('auto'),
     stopRecording,
     cancelRecording,

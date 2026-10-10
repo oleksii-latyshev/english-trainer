@@ -72,6 +72,7 @@ describe('deriveTurnState', () => {
 
   it('shows Eva speaking after the reply arrived', () => {
     expect(derive({ isEvaSpeaking: true })).toEqual({ tag: 'speaking' });
+    expect(derive({ isEvaSpeaking: true, isThinking: true })).toEqual({ tag: 'speaking' });
   });
 
   it('shows an error only once nothing else is in progress, keeping the draft reachable', () => {
@@ -97,7 +98,8 @@ describe('canPressMic', () => {
     expect(canPressMic({ tag: 'listening', isLive: true, isHeld: false }, true)).toBe(true);
     expect(canPressMic({ tag: 'listening', isLive: false, isHeld: false }, false)).toBe(false);
     expect(canPressMic({ tag: 'transcribing' }, false)).toBe(false);
-    expect(canPressMic({ tag: 'thinking' }, false)).toBe(false);
+    expect(canPressMic({ tag: 'thinking' }, false)).toBe(true);
+    expect(canPressMic({ tag: 'thinking' }, true)).toBe(false);
     expect(canPressMic({ tag: 'paused' }, true)).toBe(true);
   });
 });
@@ -144,7 +146,7 @@ describe('describeTurn', () => {
     expect(idle.stageHint).toBe('Press the mic or hold Space to answer.');
     expect(idle.micHint).toBe('or hold Space');
     expect(describeTurn({ tag: 'speaking' }, FLOW).stageHint).toBe(
-      'Start talking or press Esc to interrupt.',
+      'Press the mic or Esc to interrupt.',
     );
   });
 

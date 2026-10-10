@@ -25,6 +25,7 @@ function harness() {
       isWarm: () => false,
       level: () => 0,
       noiseFloor: () => 0,
+      echoCancellationEnabled: () => options.echoCancellation === true,
       subscribeFrames: () => () => {},
       beginCapture: () => {
         throw new Error('not used');
@@ -95,6 +96,17 @@ describe('microphone manager', () => {
     expect(sessions[1].options.deviceId).toBe('usb');
     sessions[0].options.hooks?.onFailure?.(new Error('late'));
     expect(manager.getSnapshot().status).toBe('opening');
+  });
+
+  it('releases and reopens the active stream when echo cancellation changes', () => {
+    const { manager, sessions } = harness();
+    manager.setActive(true);
+    manager.setEchoCancellation(true);
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0].closed).toBe(true);
+    expect(sessions[1].options.echoCancellation).toBe(true);
+    manager.setEchoCancellation(true);
+    expect(sessions).toHaveLength(2);
   });
 
   it('notifies subscribers only when the snapshot changes', () => {

@@ -38,11 +38,28 @@ enum Source {
 
 /// Streams the first reply that produces text and returns its full text with the label of the
 /// leg that wrote it.
+#[cfg(test)]
 pub(super) fn race(
+    primary: (Leg, AnsweredBy),
+    backup: Option<Backup>,
+    timeout: Duration,
+    on_delta: &mut dyn FnMut(&str),
+) -> Result<(String, AnsweredBy), ProviderError> {
+    race_cancellable(
+        primary,
+        backup,
+        timeout,
+        on_delta,
+        &std::sync::atomic::AtomicBool::new(false),
+    )
+}
+
+pub(super) fn race_cancellable(
     primary: (Leg, AnsweredBy),
     mut backup: Option<Backup>,
     timeout: Duration,
     on_delta: &mut dyn FnMut(&str),
+    cancelled: &std::sync::atomic::AtomicBool,
 ) -> Result<(String, AnsweredBy), ProviderError> {
     let (primary, primary_label) = primary;
     let backup_label = backup.as_ref().map(|pending| pending.label.clone());
@@ -60,22 +77,33 @@ pub(super) fn race(
     let mut backup_error = None;
     let mut reply = String::new();
     loop {
+        if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+            return Err(super::cancelled_reply());
+        }
         let wait_until = match (&backup, committed) {
             (Some(pending), None) => (started_at + pending.after).min(deadline),
             _ => deadline,
         };
-        let (source, event) =
-            match events.recv_timeout(wait_until.saturating_duration_since(Instant::now())) {
-                Ok(received) => received,
-                Err(RecvTimeoutError::Timeout) if Instant::now() < deadline => {
+        let (source, event) = match events.recv_timeout(
+            wait_until
+                .saturating_duration_since(Instant::now())
+                .min(Duration::from_millis(20)),
+        ) {
+            Ok(received) => received,
+            Err(RecvTimeoutError::Timeout) if Instant::now() < deadline => {
+                if backup
+                    .as_ref()
+                    .is_some_and(|pending| Instant::now() >= started_at + pending.after)
+                {
                     if let Some(pending) = backup.take() {
                         alive += 1;
                         spawn(pending.leg, Source::Backup, sender.clone());
                     }
-                    continue;
                 }
-                Err(_) => return Err(timeout_error()),
-            };
+                continue;
+            }
+            Err(_) => return Err(timeout_error()),
+        };
         if committed.is_some_and(|chosen| chosen != source) {
             continue;
         }
@@ -322,5 +350,32 @@ mod tests {
             &mut on_delta,
         );
         assert_eq!(result.unwrap_err().code, ProviderErrorCode::Timeout);
+    }
+    #[test]
+    fn cancellation_exits_an_idle_race_without_waiting_for_provider_timeout() {
+        use std::sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        };
+        let cancellation = Arc::new(AtomicBool::new(false));
+        let signal = cancellation.clone();
+        let cancel = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(30));
+            signal.store(true, Ordering::Release);
+        });
+        let started = Instant::now();
+        let result = race_cancellable(
+            (
+                leg(Duration::from_millis(300), vec![text("Late."), Event::Done]),
+                AnsweredBy::gemini(),
+            ),
+            None,
+            Duration::from_secs(2),
+            &mut |_| panic!("cancelled race forwarded late text"),
+            &cancellation,
+        );
+        cancel.join().unwrap();
+        assert_eq!(result.unwrap_err().code, ProviderErrorCode::Cancelled);
+        assert!(started.elapsed() < Duration::from_millis(250));
     }
 }

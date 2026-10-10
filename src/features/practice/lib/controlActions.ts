@@ -7,6 +7,7 @@ export function withTurnReset(
     isRetrying: boolean;
     startRetry: () => void;
     resetTurnState: () => void;
+    interruptReply?: (record: boolean) => Promise<void>;
   },
 ): PracticeActions {
   return {
@@ -14,9 +15,17 @@ export function withTurnReset(
     startRecording: turn.isRetrying
       ? turn.startRetry
       : () => {
+          if (turn.interruptReply) {
+            void turn.interruptReply(true);
+            return;
+          }
           turn.resetTurnState();
           actions.startRecording();
         },
+    pauseMic: () => {
+      if (turn.interruptReply) void turn.interruptReply(false);
+      actions.pauseMic();
+    },
     startPractice: () => {
       turn.resetTurnState();
       actions.startPractice();

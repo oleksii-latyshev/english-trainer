@@ -19,9 +19,13 @@ contract of a roadmap feature that is not implemented yet.
 
 - Push-to-talk through Web Audio / AudioWorklet: mono, 16-bit PCM, normalised to 16 kHz, WAV in
   memory. Never rely on `MediaRecorder` formats.
-- Capture requests `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`
-  (best-effort; device DSP and macOS microphone modes are outside the app's control). Playback and
-  TTS stop before capture.
+- Capture defaults to `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`
+  (best-effort; device DSP and macOS microphone modes are outside the app's control). Opt-in voice
+  interruption requests `echoCancellation: { ideal: true }` on the warm practice stream only;
+  noise suppression and automatic gain stay off. Changing the preference reopens that stream.
+  Voice interruption requires actual `track.getSettings().echoCancellation === true` and 300 ms
+  sustained voice onset; unsupported devices retain manual interruption. No audio is retained.
+  Playback and TTS stop before capture.
 - An explicit device uses `deviceId: { exact: id }`; a missing device is a recoverable error, never
   a silent fallback to the default. The device ID is a local WebView preference. The actual input
   label is read from the acquired track. Enumerating devices never starts capture.
@@ -127,7 +131,23 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
 - System voices through `speechSynthesis`; voices are discovered at runtime, English voices are
   preferred, no named voice is assumed. Rate is adjustable; pause, resume, stop and replay exist.
 - A new recording or a new AI turn cancels current speech.
-- **Target [F4]:** the reply is spoken sentence by sentence as it streams in.
+- F4: `beginStream` queues completed English sentences serially, buffering partial words,
+  abbreviations, decimals and quotation marks. `finish` adds the unspoken canonical tail once;
+  providers without deltas speak their final reply once. Cancel, replacement and unmount invalidate
+  utterance callbacks. Auto-listening occurs only after provider finish and final natural speech
+  end, never between streamed sentences or after playback failure.
+- `cancel_practice_reply(session_id) -> bool` atomically invalidates the pending turn before
+  persistence. `ProviderError.code = cancelled` is recoverable; already committed turns remain
+  saved. Apple cancellation kills/restarts the helper; Gemini cancellation releases the caller
+  promptly and drops the stream receiver (the bounded HTTP leg stops on its next event/timeout).
+  Legacy CLI calls remain bounded and their cancelled results cannot commit.
+- Mic/Space, "Speak anyway" while thinking, and Esc interrupt both playback and pending generation.
+  Manual interruption excludes assistant audio from pre-roll; AEC-gated voice interruption retains
+  300 ms to preserve onset. Delayed cancellation cannot restart capture after navigation.
+- The timing panel records first text, provider completion, send → actual utterance start,
+  speech-end → actual utterance start (when a voice answer supplies that timestamp), and TTS start.
+  Eva's listening scale follows microphone level; speaking follows TTS events rather than an
+  invented output amplitude. Reduced-motion and still preferences keep the visual static.
 
 ## 5. Conversation providers
 

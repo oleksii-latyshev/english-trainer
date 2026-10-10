@@ -49,6 +49,16 @@ export function ConversationFlowSettings() {
         />
       </SettingsRow>
       <SettingsRow
+        description="Uses echo cancellation. If the microphone cannot enable it, use the mic button or Esc."
+        title="Interrupt Eva by voice"
+      >
+        <Switch
+          checked={preferences.voiceInterrupt}
+          label="Interrupt Eva by voice"
+          onChange={(voiceInterrupt) => update({ voiceInterrupt })}
+        />
+      </SettingsRow>
+      <SettingsRow
         description="With hands-free and auto-listen both on, answers are sent as soon as they are transcribed."
         title="Auto-send after review"
       >

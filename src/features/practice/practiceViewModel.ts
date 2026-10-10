@@ -7,11 +7,14 @@ export type PracticeViewModel = CaptureView & {
   practice: PracticeState;
   practiceError: string;
   busy: boolean;
+  audioLevel?: number;
+  voiceError?: string;
+  canVoiceInterrupt?: boolean;
   canChangeSession: boolean;
 };
 
 export type PracticeActions = {
-  startRecording: () => void;
+  startRecording: (discardPreRoll?: boolean) => void;
   stopRecording: () => void;
   /** Listening that starts by itself after the AI finished speaking. */
   startAutoListen: () => void;

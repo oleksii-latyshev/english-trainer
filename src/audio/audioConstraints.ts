@@ -1,12 +1,15 @@
-export function buildAudioConstraints(deviceId?: string): MediaStreamConstraints {
-  // Avoid browser voice filtering; playback stops before push-to-talk capture.
+export function buildAudioConstraints(
+  deviceId?: string,
+  echoCancellation = false,
+): MediaStreamConstraints {
+  // Noise suppression and gain remain off; voice interruption may opt into echo cancellation.
   const trimmed = typeof deviceId === 'string' ? deviceId.trim() : '';
   if (trimmed && trimmed !== 'default') {
     return {
       audio: {
         deviceId: { exact: trimmed },
         channelCount: { ideal: 1 },
-        echoCancellation: false,
+        echoCancellation: echoCancellation ? { ideal: true } : false,
         noiseSuppression: false,
         autoGainControl: false,
       },
@@ -15,7 +18,7 @@ export function buildAudioConstraints(deviceId?: string): MediaStreamConstraints
   return {
     audio: {
       channelCount: { ideal: 1 },
-      echoCancellation: false,
+      echoCancellation: echoCancellation ? { ideal: true } : false,
       noiseSuppression: false,
       autoGainControl: false,
     },

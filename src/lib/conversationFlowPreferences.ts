@@ -8,6 +8,7 @@ export type ConversationFlowPreferences = {
   endPauseMs: number;
   autoSendVoice: boolean;
   autoSendDelayMs: number;
+  voiceInterrupt: boolean;
 };
 
 export const END_PAUSE_RANGE_MS = { min: 1000, max: 3000 } as const;
@@ -19,6 +20,7 @@ export const DEFAULT_CONVERSATION_FLOW: ConversationFlowPreferences = {
   endPauseMs: 1500,
   autoSendVoice: true,
   autoSendDelayMs: 2000,
+  voiceInterrupt: false,
 };
 
 /** Fully hands-free conversation sends at once: the edit window applies only when a hand is on the controls anyway. */
@@ -79,6 +81,7 @@ export function parseConversationFlow(raw: unknown): ConversationFlowPreferences
     handsFree: parseBoolean(value.handsFree, defaults.handsFree),
     endPauseMs: parseMs(value.endPauseMs, END_PAUSE_RANGE_MS, defaults.endPauseMs),
     autoSendVoice: parseBoolean(value.autoSendVoice, defaults.autoSendVoice),
+    voiceInterrupt: parseBoolean(value.voiceInterrupt, defaults.voiceInterrupt),
     autoSendDelayMs: parseMs(
       value.autoSendDelayMs,
       AUTO_SEND_DELAY_RANGE_MS,

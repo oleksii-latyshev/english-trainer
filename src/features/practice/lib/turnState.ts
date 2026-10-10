@@ -38,8 +38,9 @@ export function canPressMic(state: TurnState, isUnavailable: boolean): boolean {
     case 'auto-listen':
       return state.isLive;
     case 'transcribing':
-    case 'thinking':
       return false;
+    case 'thinking':
+      return !isUnavailable;
     case 'paused':
       return true;
     default:
@@ -62,8 +63,8 @@ export function deriveTurnState(signals: TurnSignals): TurnState {
     };
   }
   if (signals.isTranscribing) return { tag: 'transcribing' };
-  if (signals.isThinking) return { tag: 'thinking' };
   if (signals.isEvaSpeaking) return { tag: 'speaking' };
+  if (signals.isThinking) return { tag: 'thinking' };
   if (signals.issue) return { tag: 'error', issue: signals.issue };
   if (signals.hasTranscript) return { tag: 'review', sendingLabel: signals.sendingLabel };
   return { tag: 'idle' };
@@ -188,11 +189,11 @@ export function describeTurn(state: TurnState, flow: FlowSignals): TurnPresentat
         actor: 'eva',
         stageLabel: 'Eva',
         stageTitle: 'Thinking',
-        stageHint: 'First words in about a second.',
+        stageHint: 'You can speak anyway.',
         micVariant: 'quiet',
-        micName: 'Eva is thinking',
-        micTitle: 'Eva is thinking',
-        micHint: 'One moment',
+        micName: 'Speak anyway',
+        micTitle: 'Speak anyway',
+        micHint: 'Interrupt the pending reply',
       };
     case 'speaking':
       return {
@@ -201,11 +202,11 @@ export function describeTurn(state: TurnState, flow: FlowSignals): TurnPresentat
         actor: 'eva',
         stageLabel: 'Eva',
         stageTitle: 'Speaking',
-        stageHint: 'Start talking or press Esc to interrupt.',
+        stageHint: 'Press the mic or Esc to interrupt.',
         micVariant: 'quiet',
         micName: 'Interrupt and speak',
         micTitle: 'Eva is speaking',
-        micHint: 'Speak or press to interrupt',
+        micHint: 'Press to interrupt',
       };
     case 'paused':
       return {

@@ -16,6 +16,7 @@ type Props = {
   /** Sending voice answers automatically is locked while the composer is. */
   isSendLocked: boolean;
   inputLabel?: string;
+  audioLevel?: number;
 };
 
 function FlowSwitch({
@@ -87,10 +88,16 @@ export function EvaStage({
   onFlowChange,
   isSendLocked,
   inputLabel,
+  audioLevel,
 }: Props) {
   return (
     <aside aria-label="Eva" className="talk-stage">
-      <Eva label={`Eva, ${presentation.stageTitle.toLowerCase()}`} mood={mood} size={184} />
+      <Eva
+        label={`Eva, ${presentation.stageTitle.toLowerCase()}`}
+        mood={mood}
+        size={184}
+        audioLevel={audioLevel}
+      />
       <div className="talk-stage-copy" role="status">
         <span className="talk-stage-actor" data-actor={presentation.actor}>
           {presentation.stageLabel}

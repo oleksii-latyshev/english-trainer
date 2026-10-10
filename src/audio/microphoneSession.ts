@@ -7,6 +7,7 @@ import {
 } from './audioSignal';
 import { createCaptureStartup } from './captureStartup';
 import { getPreferredDeviceId, recordActualAudioInput } from './devicePreference';
+import { actualEchoCancellationEnabled, describeInput } from './microphoneInput';
 import { encodeWav, resampleForWhisper } from './pcmEncoding';
 import { createPreRollBuffer } from './preRollBuffer';
 import { createNoiseFloorTracker } from './turnDetector';
@@ -58,13 +59,19 @@ export type MicrophoneSession = {
   isWarm: () => boolean;
   level: () => number;
   noiseFloor: () => number;
+  /** True only when the live input track reports that echo cancellation is enabled. */
+  echoCancellationEnabled: () => boolean;
   subscribeFrames: (listener: (frame: AudioFrame) => void) => () => void;
   /** Starts capturing immediately. Call after `opened` has resolved. */
   beginCapture: (options?: CaptureOptions) => MicrophoneCapture;
   close: () => Promise<void>;
 };
 
-export type MicrophoneSessionOptions = { deviceId?: string; hooks?: SessionHooks };
+export type MicrophoneSessionOptions = {
+  deviceId?: string;
+  echoCancellation?: boolean;
+  hooks?: SessionHooks;
+};
 
 const workletSource = `
 class MonoPcmProcessor extends AudioWorkletProcessor {
@@ -83,19 +90,6 @@ class MonoPcmProcessor extends AudioWorkletProcessor {
 }
 registerProcessor('mono-pcm-recorder', MonoPcmProcessor);
 `;
-
-function describeInput(stream: MediaStream): ActualAudioInput {
-  const [track] = stream.getAudioTracks();
-  const settings = typeof track?.getSettings === 'function' ? track.getSettings() : {};
-  return {
-    deviceId: typeof settings.deviceId === 'string' ? settings.deviceId : '',
-    label: track?.label ? track.label : 'Microphone',
-    echoCancellation:
-      typeof settings.echoCancellation === 'boolean' ? settings.echoCancellation : undefined,
-    noiseSuppression: settings.noiseSuppression,
-    autoGainControl: settings.autoGainControl,
-  };
-}
 
 type ActiveCapture = {
   chunks: Float32Array[];
@@ -212,7 +206,9 @@ export function createMicrophoneSession(options: MicrophoneSessionOptions = {}):
     }
     const targetDeviceId =
       options.deviceId !== undefined ? options.deviceId : getPreferredDeviceId();
-    const media = await navigator.mediaDevices.getUserMedia(buildAudioConstraints(targetDeviceId));
+    const media = await navigator.mediaDevices.getUserMedia(
+      buildAudioConstraints(targetDeviceId, options.echoCancellation ?? false),
+    );
     stream = media;
     if (closed) {
       for (const track of media.getTracks()) track.stop();
@@ -304,6 +300,11 @@ export function createMicrophoneSession(options: MicrophoneSessionOptions = {}):
     isWarm: () => warm,
     level: () => currentLevel,
     noiseFloor: () => noise.value(),
+    echoCancellationEnabled: () => {
+      const track = stream?.getAudioTracks()[0];
+      const settings = typeof track?.getSettings === 'function' ? track.getSettings() : undefined;
+      return actualEchoCancellationEnabled(settings);
+    },
     subscribeFrames(listener) {
       listeners.add(listener);
       return () => {

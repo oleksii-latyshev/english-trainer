@@ -166,6 +166,7 @@ export type ProviderErrorCode =
   | 'unauthorized'
   | 'rate_limited'
   | 'timeout'
+  | 'cancelled'
   | 'invalid_output'
   | 'process_failed'
   | 'invalid_request'
@@ -259,6 +260,7 @@ function isProviderErrorCode(value: unknown): value is ProviderErrorCode {
     case 'unauthorized':
     case 'rate_limited':
     case 'timeout':
+    case 'cancelled':
     case 'invalid_output':
     case 'process_failed':
     case 'invalid_request':

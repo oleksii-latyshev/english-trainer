@@ -93,24 +93,46 @@ impl AppleHelper {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(super) fn generate_turn(
         &self,
         context: &ConversationContext,
         on_delta: &mut dyn FnMut(&str),
     ) -> Result<ConversationTurn, ProviderError> {
-        let mut turn = plain_turn(&self.stream_reply(context, on_delta)?)?;
+        self.generate_turn_cancellable(
+            context,
+            on_delta,
+            &std::sync::atomic::AtomicBool::new(false),
+        )
+    }
+
+    pub(super) fn generate_turn_cancellable(
+        &self,
+        context: &ConversationContext,
+        on_delta: &mut dyn FnMut(&str),
+        cancelled: &std::sync::atomic::AtomicBool,
+    ) -> Result<ConversationTurn, ProviderError> {
+        let mut turn = plain_turn(&self.stream_reply(context, on_delta, cancelled)?)?;
         turn.answered_by = Some(AnsweredBy::apple(false));
         Ok(turn)
     }
 
     /// The on-device reply as a race leg, used when the chosen cloud provider stalls.
-    pub(super) fn backup_leg(&self, context: ConversationContext) -> Leg {
+    pub(super) fn backup_leg_cancellable(
+        &self,
+        context: ConversationContext,
+        cancelled: Arc<std::sync::atomic::AtomicBool>,
+    ) -> Leg {
         let helper = self.clone();
         Box::new(move |emit| {
             // A leg that lost the race still finishes its short reply; the helper stays usable.
-            let finished = helper.stream_reply(&context, &mut |text| {
-                emit(Event::Delta(text.to_string()));
-            });
+            let finished = helper.stream_reply(
+                &context,
+                &mut |text| {
+                    emit(Event::Delta(text.to_string()));
+                },
+                &cancelled,
+            );
             emit(match finished {
                 Ok(_) => Event::Done,
                 Err(error) => Event::Failed {
@@ -125,22 +147,38 @@ impl AppleHelper {
         &self,
         context: &ConversationContext,
         on_delta: &mut dyn FnMut(&str),
+        cancelled: &std::sync::atomic::AtomicBool,
     ) -> Result<String, ProviderError> {
         let context = &context.compact(MAX_TURNS, MAX_CONTEXT_CHARS, MAX_ASKED_QUESTIONS);
         validate_plain_context(context, MAX_CONTEXT_CHARS)?;
         let instructions = plain_prompt::instructions(context);
         let prompt = plain_prompt::transcript_prompt(context);
-        let mut running = self.lock();
+        let mut running = loop {
+            if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                return Err(super::cancelled_reply());
+            }
+            match self.running.try_lock() {
+                Ok(lock) => break lock,
+                Err(std::sync::TryLockError::Poisoned(error)) => break error.into_inner(),
+                Err(std::sync::TryLockError::WouldBlock) => {
+                    thread::sleep(Duration::from_millis(20))
+                }
+            }
+        };
         for attempt in 0..2 {
             if running.is_none() {
                 *running = Some(self.spawn()?);
             }
             let helper = running.as_mut().expect("helper was just started");
-            match helper.request(&instructions, &prompt, on_delta) {
+            match helper.request(&instructions, &prompt, on_delta, cancelled) {
                 Ok(text) => return Ok(text),
                 Err(Failure::Died) if attempt == 0 => *running = None,
                 Err(Failure::Died) => return Err(died_error()),
                 Err(Failure::Reported(error)) => return Err(error),
+                Err(Failure::Cancelled) => {
+                    *running = None;
+                    return Err(super::cancelled_reply());
+                }
                 Err(Failure::TimedOut) => {
                     *running = None;
                     return Err(ProviderError::new(
@@ -206,6 +244,7 @@ impl AppleHelper {
 }
 
 enum Failure {
+    Cancelled,
     Died,
     TimedOut,
     Reported(ProviderError),
@@ -224,6 +263,7 @@ impl Running {
         instructions: &str,
         prompt: &str,
         on_delta: &mut dyn FnMut(&str),
+        cancelled: &std::sync::atomic::AtomicBool,
     ) -> Result<String, Failure> {
         let id = self.next_id;
         self.next_id += 1;
@@ -242,9 +282,16 @@ impl Running {
         let deadline = Instant::now() + REQUEST_TIMEOUT;
         let mut reply = String::new();
         loop {
+            if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                return Err(Failure::Cancelled);
+            }
             let remaining = deadline.saturating_duration_since(Instant::now());
-            let event = match self.events.recv_timeout(remaining) {
+            let event = match self
+                .events
+                .recv_timeout(remaining.min(Duration::from_millis(20)))
+            {
                 Ok(event) => event,
+                Err(RecvTimeoutError::Timeout) if Instant::now() < deadline => continue,
                 Err(RecvTimeoutError::Timeout) => return Err(Failure::TimedOut),
                 Err(RecvTimeoutError::Disconnected) if reply.is_empty() => {
                     return Err(Failure::Died)
@@ -271,3 +318,7 @@ impl Running {
 #[cfg(all(test, unix))]
 #[path = "apple_tests.rs"]
 mod tests;
+
+#[cfg(all(test, unix))]
+#[path = "f4_latency_tests.rs"]
+mod f4_latency_tests;
