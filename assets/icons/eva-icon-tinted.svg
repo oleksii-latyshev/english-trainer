@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>English Trainer, tinted</title>
+  <defs>
+    <rect id="tile" x="100" y="100" width="824" height="824" rx="185.4"/>
+    <clipPath id="clip"><use href="#tile"/></clipPath>
+    <linearGradient id="bg" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#BDE4FF"/><stop offset="1" stop-color="#BBD3F6"/></linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.35"/><stop offset="0.38" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+    <radialGradient id="body" cx="0.45" cy="0.3" r="1" gradientTransform="translate(0.45 0.3) scale(0.778 0.99) translate(-0.45 -0.3)"><stop offset="0" stop-color="#F2FAFF"/><stop offset="0.5" stop-color="#CDEBFF"/><stop offset="1" stop-color="#9FD3FF"/></radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0.6" stop-color="#5AA0E6" stop-opacity="0"/><stop offset="1" stop-color="#5AA0E6" stop-opacity="0.4"/></linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B5F0C8"/><stop offset="1" stop-color="#5DB97E"/></linearGradient>
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#0A2864" flood-opacity="0.4"/></filter>
+    <filter id="blush" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="1.2"/></filter>
+    <filter id="ground" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>
+    <filter id="tileShadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000000" flood-opacity="0.3"/></filter>
+  </defs>
+  <use href="#tile" fill="#000000" filter="url(#tileShadow)"/>
+  <g clip-path="url(#clip)">
+    <use href="#tile" fill="url(#bg)"/>
+    <use href="#tile" fill="url(#sheen)"/>
+    <g transform="translate(248.98 322.28) scale(4.61)">
+      <ellipse cx="57" cy="97.5" rx="39.9" ry="3.5" fill="#0A2864" fill-opacity="0.35" filter="url(#ground)"/>
+      <g filter="url(#lift)">
+        <path id="eva" d="M0 52.2A57 52.2 0 0 1 57 0A57 52.2 0 0 1 114 52.2A52.44 37.8 0 0 1 61.56 90H52.44A52.44 37.8 0 0 1 0 52.2Z" fill="url(#body)"/>
+        <use href="#eva" fill="url(#shade)"/>
+      </g>
+      <g transform="translate(57 3)">
+        <rect x="-1.4" y="-12" width="2.8" height="15" rx="1.4" fill="#5DB97E"/>
+        <path d="M0.4 -18A20 12 0 0 1 20.4 -6A20 12 0 0 1 0.4 -18Z" fill="url(#leaf)"/>
+      </g>
+      <ellipse cx="22.8" cy="55.05" rx="7.5" ry="3.75" fill="#FF8CAF" fill-opacity="0.55" filter="url(#blush)"/>
+      <ellipse cx="91.2" cy="55.05" rx="7.5" ry="3.75" fill="#FF8CAF" fill-opacity="0.55" filter="url(#blush)"/>
+      <ellipse cx="39.9" cy="39.6" rx="6" ry="7.25" fill="#123A6B"/>
+      <ellipse cx="74.1" cy="39.6" rx="6" ry="7.25" fill="#123A6B"/>
+      <path d="M50.3 54.6A6.7 6.7 0 0 0 63.7 54.6" fill="none" stroke="#123A6B" stroke-width="2.6"/>
+    </g>
+    <use href="#tile" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="3"/>
+  </g>
+</svg>

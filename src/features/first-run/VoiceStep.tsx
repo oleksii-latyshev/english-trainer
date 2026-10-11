@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Eva } from '@/components/eva/Eva';
 import { useTrainer } from '@/context/TrainerContext';
 import { SegmentedControl } from '@/features/settings/SettingsControls';
 import { SPEECH_RATE_OPTIONS } from '@/features/speech/voicePreferences';
+import { Eva } from '@/shared/ui/eva';
 import { voiceChoices } from './lib/voiceChoices';
 
 const PREVIEW_LINE = 'Hi! What have you been up to today?';

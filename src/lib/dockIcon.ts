@@ -2,9 +2,10 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import { createLocalPreference, isRecord } from './localPreference';
 
 /** Mirrors `DockIcon` in Rust `dock_icon.rs`. */
-export type DockIconId = 'dark' | 'light';
+export type DockIconId = 'eva' | 'dark' | 'light';
 
 export const DOCK_ICONS = [
+  { value: 'eva', label: 'Eva' },
   { value: 'dark', label: 'Dark' },
   { value: 'light', label: 'Light' },
 ] as const satisfies readonly { value: DockIconId; label: string }[];
@@ -14,8 +15,8 @@ export type DockIconPreference = { icon: DockIconId };
 export const DOCK_ICON_KEY = 'english_trainer_dock_icon';
 
 export function parseDockIcon(value: unknown): DockIconPreference {
-  if (!isRecord(value)) return { icon: 'dark' };
-  return { icon: value.icon === 'light' ? 'light' : 'dark' };
+  const match = isRecord(value) ? DOCK_ICONS.find((option) => option.value === value.icon) : null;
+  return { icon: match ? match.value : 'eva' };
 }
 
 export const dockIconPreference = createLocalPreference<DockIconPreference>(

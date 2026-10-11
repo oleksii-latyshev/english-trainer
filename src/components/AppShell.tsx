@@ -11,6 +11,7 @@ import {
   SETTINGS_SECTIONS,
   type SettingsSectionId,
 } from '@/lib/settingsSections';
+import { NavItem } from '@/shared/ui/nav-item';
 import { micStatusBox } from './lib/micStatusBox';
 import { WordTranslationLayer } from './WordTranslationLayer';
 
@@ -45,12 +46,19 @@ function navLabel(item: NavEntry, dueCount: number): string {
 function MicStatus({ status }: { status: MicrophoneStatus }) {
   const box = micStatusBox(status);
   return (
-    <section aria-label="Microphone status" className="app-mic" role="status">
-      <div className="app-mic-title">
-        <span aria-hidden="true" className="app-mic-dot" data-on={box.isOn} />
+    <section
+      aria-label="Microphone status"
+      className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-line-soft bg-quiet p-3 max-rail:hidden"
+      role="status"
+    >
+      <div className="flex items-center gap-2 font-semibold text-caption text-quiet-foreground">
+        <span
+          aria-hidden="true"
+          className={box.isOn ? 'size-2 rounded-full bg-warn' : 'size-2 rounded-full bg-faint'}
+        />
         {box.title}
       </div>
-      <div className="app-mic-hint">{box.hint}</div>
+      <div className="text-faint text-xs leading-snug">{box.hint}</div>
     </section>
   );
 }
@@ -89,55 +97,55 @@ export function AppShell() {
   const isFocusedPage = currentPath === '/summary' || currentPath === FIRST_RUN_PATH;
 
   return (
-    <div className="app-shell">
+    <div className="flex h-dvh gap-3 overflow-hidden p-3 text-foreground">
       {!isFocusedPage && (
-        <nav aria-label="Main" className="app-sidebar">
-          <div className="app-brand">English Trainer</div>
+        <nav
+          aria-label="Main"
+          className="flex w-55 flex-none flex-col gap-1.5 overflow-y-auto rounded-card border border-line bg-surface px-3 py-4 shadow-overlay backdrop-blur-glass backdrop-saturate-170 max-rail:w-17 max-rail:px-2.5"
+        >
+          <div className="px-2.5 pt-1 pb-3.5 font-bold text-lg tracking-tight max-rail:hidden">
+            English Trainer
+          </div>
           {NAVIGATION.map((item) => {
             const Icon = item.icon;
-            const active = item.matches.includes(currentPath);
             return (
-              <button
-                aria-current={active ? 'page' : undefined}
+              <NavItem
+                active={item.matches.includes(currentPath)}
                 aria-label={navLabel(item, dueCount)}
-                className="nav-item"
+                badge={
+                  item.path === '/memory' && dueCount > 0
+                    ? { count: dueCount, suffix: ' due' }
+                    : undefined
+                }
                 disabled={navigationLocked}
+                icon={<Icon size={18} strokeWidth={1.8} />}
                 key={item.path}
                 onClick={() => handleNavigate(item)}
                 title={item.label}
-                type="button"
               >
-                <Icon size={18} strokeWidth={1.8} />
-                <span className="nav-item-label">{item.label}</span>
-                {item.path === '/memory' && dueCount > 0 && (
-                  <span aria-hidden="true" className="nav-badge">
-                    <span className="nav-badge-count">{dueCount}</span>
-                    <span className="nav-badge-text"> due</span>
-                  </span>
-                )}
-              </button>
+                {item.label}
+              </NavItem>
             );
           })}
           {isSettingsPath(currentPath) && (
-            <div className="app-subnav">
+            <div className="mt-4 flex flex-col pl-4.5 max-rail:hidden">
               {SETTINGS_SECTIONS.map((section) => (
-                <button
-                  aria-current={activeSection === section.id ? 'true' : undefined}
-                  className="sub-item"
+                <NavItem
+                  active={activeSection === section.id}
                   disabled={navigationLocked}
                   key={section.id}
+                  level="sub"
                   onClick={() => handleSettingsSection(section.id)}
-                  type="button"
                 >
                   {section.label}
-                </button>
+                </NavItem>
               ))}
             </div>
           )}
           <MicStatus status={mic.status} />
         </nav>
       )}
-      <main className="screen-content">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-8 pb-16 max-rail:px-4 max-rail:pt-6 max-rail:pb-12 fills-screen:flex fills-screen:flex-col fills-screen:overflow-hidden fills-screen:p-0 sm:px-8 xl:px-12">
         <Outlet />
       </main>
       <WordTranslationLayer />

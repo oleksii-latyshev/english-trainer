@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @custom-variant svg (& svg);
+@custom-variant fills-screen (&:has(.practice-screen, .review-screen, .first-run));
+@custom-variant eva-full (:root[data-eva-motion="full"] &);
+@custom-variant eva-live (:root:not([data-eva-motion="still"]) &);
 
 @theme static {
   --color-background: #05070c;
@@ -64,6 +67,8 @@
   --shadow-glow: 0 0 16px var(--color-accent-glow);
   --shadow-knob: 0 2px 6px rgba(0, 0, 0, 0.3);
   --shadow-key: inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  --shadow-nav-active:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px var(--color-accent-line);
   --blur-glass: 28px;
   --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
   --radius-card: 24px;
@@ -72,11 +77,55 @@
   --text-caption: 13px;
   --text-control: 14px;
   --text-body: 15px;
+  --text-pip: 10px;
   --leading-copy: 1.45;
   --breakpoint-narrow: 1100px;
+  --breakpoint-rail: 961px;
   --font-sans:
     -apple-system, blinkmacsystemfont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", menlo, monospace;
+  --color-eva-ink: var(--eva-ink);
+  --color-eva-leaf-dark: var(--eva-leaf-dark);
+  --color-eva-petal: var(--eva-petal);
+  --color-eva-petal-centre: var(--eva-petal-centre);
+  --color-eva-blush: rgba(255, 140, 175, 0.5);
+  --color-eva-ground: rgba(0, 0, 0, 0.55);
+  --color-eva-spark: #fff4c2;
+  --color-eva-spark-warm: #ffe08a;
+  --animate-eva-breathe: eva-breathe 3.4s ease-in-out infinite;
+  --animate-eva-sway: eva-sway 3.4s ease-in-out infinite;
+  --animate-eva-blink: eva-blink 5.2s ease-in-out infinite;
+
+  @keyframes eva-breathe {
+    0%,
+    100% {
+      transform: scale(1, 1);
+    }
+    50% {
+      transform: scale(1.04, 0.96);
+    }
+  }
+
+  @keyframes eva-sway {
+    0%,
+    100% {
+      transform: rotate(-7deg);
+    }
+    50% {
+      transform: rotate(7deg);
+    }
+  }
+
+  @keyframes eva-blink {
+    0%,
+    92%,
+    100% {
+      transform: scaleY(1);
+    }
+    96% {
+      transform: scaleY(0.1);
+    }
+  }
 }
 
 :root[data-theme="light"] {
@@ -123,6 +172,15 @@
 }
 
 :root {
+  --eva-body-hi: #ffffff;
+  --eva-body-mid: #eef8ff;
+  --eva-body-edge: #c4e6ff;
+  --eva-body-shade: rgba(120, 185, 240, 0.45);
+  --eva-ink: #22304f;
+  --eva-leaf-light: #b5f0c8;
+  --eva-leaf-dark: #6fc08c;
+  --eva-petal: #ff9ec0;
+  --eva-petal-centre: #ffd66b;
   --et-bg: var(--color-background);
   --et-surface: var(--color-surface);
   --et-surface2: var(--color-surface-2);

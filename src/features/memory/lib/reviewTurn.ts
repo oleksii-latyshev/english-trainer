@@ -1,7 +1,7 @@
-import type { EvaMood } from '@/components/eva/Eva';
 import type { MicVariant } from '@/components/MicControl';
 import type { RecordingStatus } from '@/features/speech/captureView';
 import type { LearningItemType } from '@/lib/learningTypes';
+import type { EvaMood } from '@/shared/ui/eva';
 
 /** Where the learner is while one item waits for an answer. */
 export type ReviewPhase = 'prompt' | 'starting' | 'listening' | 'transcribing' | 'saving';

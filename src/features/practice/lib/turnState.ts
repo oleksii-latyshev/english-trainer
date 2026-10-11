@@ -1,7 +1,7 @@
 import type { MicrophoneStatus } from '@/audio/microphoneManager';
-import type { EvaMood } from '@/components/eva/Eva';
 import type { MicVariant } from '@/components/MicControl';
 import type { RecordingMode, RecordingStatus } from '@/features/speech/captureView';
+import type { EvaMood } from '@/shared/ui/eva';
 import type { TurnFix, TurnIssue } from './turnIssue';
 
 /** The voice turn as the learner experiences it (docs/DESIGN.md). */

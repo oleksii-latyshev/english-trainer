@@ -1,17 +1,22 @@
+import { useAtom } from '@effect/atom-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Eva } from '@/components/eva/Eva';
-import { DOCK_ICONS, dockIconPreference } from '@/lib/dockIcon';
 import {
+  BODY_COLOURS,
+  bodySwatch,
   DEFAULT_EVA_LOOK,
   EVA_MOTIONS,
-  EYE_COLOURS,
-  evaLookPreference,
-  SPHERE_COLOURS,
-  sphereGradient,
-  withSphere,
-} from '@/lib/evaLook';
+  evaLookAtom,
+  INK_COLOURS,
+  LEAF_COLOURS,
+  leafSwatch,
+  PETAL_COLOURS,
+  petalSwatch,
+  withBody,
+} from '@/core/eva-look';
+import { DOCK_ICONS, dockIconPreference } from '@/lib/dockIcon';
 import { Button } from '@/shared/ui/button';
+import { Eva } from '@/shared/ui/eva';
 import { EVA_MOOD_GUIDE, nextMoodIndex } from './lib/evaMoods';
 import { SegmentedControl } from './SettingsControls';
 import './settings.css';
@@ -24,11 +29,13 @@ function Swatch({
   name,
   background,
   isSelected,
+  lockedHint,
   onSelect,
 }: {
   name: string;
   background: string;
   isSelected: boolean;
+  lockedHint?: string;
   onSelect: () => void;
 }) {
   return (
@@ -36,9 +43,10 @@ function Swatch({
       aria-label={name}
       aria-pressed={isSelected}
       className="settings-swatch"
+      disabled={lockedHint !== undefined}
       onClick={onSelect}
-      style={{ background }}
-      title={name}
+      style={{ background, opacity: lockedHint === undefined ? undefined : 0.35 }}
+      title={lockedHint ?? name}
       type="button"
     />
   );
@@ -46,7 +54,8 @@ function Swatch({
 
 export function EvaSettingsView() {
   const navigate = useNavigate();
-  const [look, setLook] = evaLookPreference.use();
+  const [look, setLookValue] = useAtom(evaLookAtom);
+  const setLook = (patch: Partial<typeof look>) => setLookValue({ ...look, ...patch });
   const [dockIcon, setDockIcon] = dockIconPreference.use();
   const [moodIndex, setMoodIndex] = useState(0);
   const [isCycling, setIsCycling] = useState(true);
@@ -58,8 +67,10 @@ export function EvaSettingsView() {
   }, [isCycling]);
 
   const currentMood = EVA_MOOD_GUIDE[moodIndex] ?? EVA_MOOD_GUIDE[0];
-  const sphere = SPHERE_COLOURS.find((option) => option.id === look.sphere) ?? SPHERE_COLOURS[0];
-  const eye = EYE_COLOURS.find((option) => option.id === look.eye) ?? EYE_COLOURS[0];
+  const body = BODY_COLOURS.find((option) => option.id === look.body) ?? BODY_COLOURS[0];
+  const ink = INK_COLOURS.find((option) => option.id === look.ink) ?? INK_COLOURS[0];
+  const leaf = LEAF_COLOURS.find((option) => option.id === look.leaf) ?? LEAF_COLOURS[0];
+  const petal = PETAL_COLOURS.find((option) => option.id === look.petal) ?? PETAL_COLOURS[0];
   const motion = EVA_MOTIONS.find((option) => option.id === look.motion) ?? EVA_MOTIONS[0];
 
   return (
@@ -87,36 +98,70 @@ export function EvaSettingsView() {
         <div className="settings-look-controls">
           <h2 id="eva-look-heading">Look</h2>
           <div className="settings-look-field">
-            <div className="settings-label">Sphere</div>
+            <div className="settings-label">Body</div>
             <fieldset className="settings-swatches">
-              <legend className="sr-only">Sphere colour</legend>
-              {SPHERE_COLOURS.map((option) => (
+              <legend className="sr-only">Body colour</legend>
+              {BODY_COLOURS.map((option) => (
                 <Swatch
-                  background={sphereGradient(option.id)}
-                  isSelected={look.sphere === option.id}
+                  background={bodySwatch(option)}
+                  isSelected={look.body === option.id}
                   key={option.id}
                   name={option.name}
-                  onSelect={() => setLook(withSphere(look, option.id))}
+                  onSelect={() => setLookValue(withBody(look, option.id))}
                 />
               ))}
             </fieldset>
-            <div className="settings-look-value">{sphere.name} sphere</div>
+            <div className="settings-look-value">{body.name}</div>
           </div>
           <div className="settings-look-field">
             <div className="settings-label">Eyes</div>
             <fieldset className="settings-swatches">
               <legend className="sr-only">Eye colour</legend>
-              {EYE_COLOURS.map((option) => (
+              {INK_COLOURS.map((option) => (
                 <Swatch
-                  background={option.color}
-                  isSelected={look.eye === option.id}
+                  background={option.colour}
+                  isSelected={look.ink === option.id}
                   key={option.id}
                   name={option.name}
-                  onSelect={() => setLook({ eye: option.id })}
+                  onSelect={() => setLook({ ink: option.id })}
                 />
               ))}
             </fieldset>
-            <div className="settings-look-value">{eye.name} eyes</div>
+            <div className="settings-look-value">{ink.name} eyes</div>
+          </div>
+          <div className="settings-look-field">
+            <div className="settings-label">Leaves</div>
+            <fieldset className="settings-swatches">
+              <legend className="sr-only">Leaf colour</legend>
+              {LEAF_COLOURS.map((option) => (
+                <Swatch
+                  background={leafSwatch(option)}
+                  isSelected={look.leaf === option.id}
+                  key={option.id}
+                  lockedHint={'lockedHint' in option ? option.lockedHint : undefined}
+                  name={option.name}
+                  onSelect={() => setLook({ leaf: option.id })}
+                />
+              ))}
+            </fieldset>
+            <div className="settings-look-value">{leaf.name} leaves</div>
+          </div>
+          <div className="settings-look-field">
+            <div className="settings-label">Bloom</div>
+            <fieldset className="settings-swatches">
+              <legend className="sr-only">Bloom colour</legend>
+              {PETAL_COLOURS.map((option) => (
+                <Swatch
+                  background={petalSwatch(option)}
+                  isSelected={look.petal === option.id}
+                  key={option.id}
+                  lockedHint={'lockedHint' in option ? option.lockedHint : undefined}
+                  name={option.name}
+                  onSelect={() => setLook({ petal: option.id })}
+                />
+              ))}
+            </fieldset>
+            <div className="settings-look-value">{petal.name}</div>
           </div>
           <div className="settings-look-inline">
             <div className="settings-label">Animation</div>
@@ -137,11 +182,11 @@ export function EvaSettingsView() {
               value={dockIcon.icon}
             />
             <span className="settings-quiet">
-              Only the Dock changes; Finder and Launchpad keep the default icon.
+              Only the Dock changes; Finder and Launchpad keep Eva's icon.
             </span>
           </div>
           <div className="settings-look-reset">
-            <Button onClick={() => setLook(DEFAULT_EVA_LOOK)} tone="ghost">
+            <Button onClick={() => setLookValue(DEFAULT_EVA_LOOK)} tone="ghost">
               Reset to default
             </Button>
           </div>
@@ -172,10 +217,6 @@ export function EvaSettingsView() {
             </li>
           ))}
         </ul>
-        <p className="settings-quiet">
-          The ring around Eva shows whose turn it is: teal while you speak, violet while Eva speaks
-          or thinks.
-        </p>
       </section>
     </div>
   );
