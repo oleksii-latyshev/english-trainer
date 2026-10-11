@@ -50,13 +50,13 @@ The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one 
 
 ## In progress
 
-- **Code-quality migration** — layered frontend with Effect, ts-rs IPC types, Rust contexts. Plan and
-  order: [engineering/MIGRATION.md](engineering/MIGRATION.md). Each step is its own commit and changes
-  no behaviour.
+- **Migration and redesign, one pass** — each screen is rebuilt in the target architecture and the
+  glass design together; plan, order and issues: [engineering/MIGRATION.md](engineering/MIGRATION.md)
+  §3. Work items live in GitHub issues (milestones *MVP*, *Architecture migration*, *After MVP*).
 
 ## Designed, not built
 
-Approved in the glass design canvas ([DESIGN](DESIGN.md)); each needs its own feature entry before work starts.
+Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in the migration plan.
 
 - **Eva grows** — the sprout grows with speaking time (1 min = 1 drop; stages Seed → Sprout → Two
   leaves → Bud → Bloom → Full bloom at 10/30/60/100/150 drops); days off make Eva nap, nothing wilts,

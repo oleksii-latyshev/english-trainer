@@ -6,7 +6,8 @@ translate), Wrap-up, Review, Write-then-speak, Mistake practice, Memory, Setting
 app icon, components. It supersedes the earlier violet canvas and the HTML prototypes (in git history).
 
 Every element of the canvas is either built or listed in [ROADMAP](ROADMAP.md); none is dropped
-silently. Not yet designed: light theme, the "Your own character" card.
+silently. Light boards exist for Talk and Start; the other screens follow their tokens. Not yet designed: the
+"Your own character" card. Which boards each migration step builds: [MIGRATION.md](engineering/MIGRATION.md) §3.
 
 ## Principles
 
