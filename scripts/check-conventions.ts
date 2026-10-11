@@ -213,7 +213,7 @@ function newStructureFeatures(root: string): string[] {
 function newStructureFiles(root: string, extensions: readonly string[]): string[] {
   const layerDirs = LAYER_DIRS.map((name) => join(root, 'src', name));
   const featureDirs = newStructureFeatures(root).map((name) => join(root, 'src', 'features', name));
-  return [...layerDirs, ...featureDirs]
+  return [...layerDirs, ...featureDirs, join(root, 'e2e')]
     .flatMap((directory) => filesUnder(directory, extensions))
     .filter((file) => !relative(root, file).startsWith(GENERATED_BINDINGS_DIR));
 }

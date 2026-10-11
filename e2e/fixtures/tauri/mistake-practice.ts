@@ -1,7 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { PracticeSession } from '@/lib/practiceSessionTypes';
 
-/** The new command is faked at IPC; Talk and Memory still use their real components. */
 export async function installMistakePractice(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const internals = window.__TAURI_INTERNALS__;

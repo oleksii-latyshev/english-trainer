@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test';
 
 export type AudioEdgeCounts = { mediaRequests: number; speechRequests: number };
 
-/** Completes browser TTS calls immediately so tests never play real audio or wait on platform voices. */
 export async function installSpeech(page: Page): Promise<void> {
   await page.addInitScript(() => {
     type FakeUtterance = {

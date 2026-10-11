@@ -19,7 +19,6 @@ declare global {
   }
 }
 
-/** Typed provider and persistence edges; the actual planner UI runs unchanged. */
 export async function installPlanner(page: Page, options: PlannerOptions = {}) {
   await page.addInitScript((seed: PlannerOptions) => {
     const edge: PlannerEdgeState = { requested: 0, completed: 0, cueWrites: 0, cueAcknowledged: 0 };

@@ -23,7 +23,6 @@ declare global {
   }
 }
 
-/** Fake only local STT IPC; recording still travels through the real PCM/audio graph. */
 export async function installLiveReview(page: Page, options: LiveReviewOptions = {}) {
   const status: SpeechEngineStatus = {
     server: options.cold ? 'not_running' : 'ready',

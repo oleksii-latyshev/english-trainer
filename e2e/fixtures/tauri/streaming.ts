@@ -15,7 +15,6 @@ declare global {
   }
 }
 
-/** Controlled provider/TTS edges expose real queue and interruption behavior without playing audio. */
 export type StreamingOptions = {
   holdVoice?: boolean;
   noDeltas?: boolean;
@@ -96,7 +95,6 @@ export async function installStreaming(page: Page, options: StreamingOptions = {
           edge.finishProvider = resolve;
         });
       } else await delay(700);
-      // A deliberately late event exercises the UI generation guard even after cancellation.
       if (!seed.noDeltas)
         callback?.({ index: 1, message: { kind: 'delta', text: ' How did you choose it?' } });
       if (epoch !== requestEpoch) throw { code: 'cancelled', message: 'Reply interrupted.' };

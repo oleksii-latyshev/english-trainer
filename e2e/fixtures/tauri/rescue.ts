@@ -23,7 +23,6 @@ declare global {
   }
 }
 
-/** Provider/STT IPC is faked while a live oscillator feeds the app's real PCM capture path. */
 export async function installRescue(page: Page, options: RescueOptions = {}) {
   await page.addInitScript((seed: RescueOptions) => {
     if (seed.handsFree || seed.autoListen) {
@@ -41,7 +40,6 @@ export async function installRescue(page: Page, options: RescueOptions = {}) {
     const edge: RescueEdge = { requests: [], snapshots: 0, completed: 0, finalTranscriptions: 0 };
     window.__ET_RESCUE__ = edge;
     const retainedAudioContexts: AudioContext[] = [];
-    // A synthetic microphone must obey Chromium's Web Audio activation policy too.
     const activated = new Promise<void>((resolve) => {
       function onActivation(event: Event) {
         if (!event.isTrusted) return;

@@ -21,7 +21,6 @@ export type TranslationOptions = {
   failNextExplanation?: boolean;
 };
 
-/** macOS translation is the IPC edge; selection and panel behavior use the real React UI. */
 export async function installTranslation(
   page: Page,
   options: TranslationOptions = {},

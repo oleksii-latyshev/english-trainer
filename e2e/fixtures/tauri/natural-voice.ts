@@ -13,7 +13,6 @@ declare global {
     __ET_NATURAL__: NaturalVoiceEdge;
   }
 }
-/** Only the native speech IPC and browser media edge are faked; the real queue runs. */
 export async function installNaturalVoice(
   page: Page,
   options: {

@@ -24,7 +24,6 @@ declare global {
   }
 }
 
-/** Configures typed IPC/provider edges for finished-session wrap-up flows. */
 export async function installWrapup(page: Page, options: WrapupOptions): Promise<void> {
   await page.addInitScript((config: WrapupOptions) => {
     const harness = window.__ET_HARNESS__;
