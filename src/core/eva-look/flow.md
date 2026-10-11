@@ -9,17 +9,17 @@ in the WebView's `localStorage`; it never crosses IPC.
 sequenceDiagram
     actor Learner
     participant Settings as Settings › Eva
-    participant Look as evaLookAtom
-    participant Applied as evaLookAppliedAtom
-    participant Storage as localStorage
+    participant Look as evaLookAtom (Atom.kvs)
+    participant Store as KeyValueStore.layerStorage
+    participant Applier as EvaLookApplier
     participant Root as document root
     participant Eva as every Eva
 
     Learner->>Settings: picks a body, ink, leaf, bloom or motion
     Settings->>Look: set(look)
-    Look-->>Applied: changed
-    Applied->>Storage: store(look)
-    Applied->>Root: custom properties --eva-* and data-eva-motion
+    Look->>Store: encode with EvaLookSchema, write to localStorage
+    Look-->>Applier: new value
+    Applier->>Root: layout effect sets --eva-* properties and data-eva-motion
     Root-->>Eva: new colours and animations
 ```
 
@@ -30,16 +30,16 @@ sequenceDiagram
     participant Main as main.tsx
     participant Applier as EvaLookApplier
     participant Look as evaLookAtom
-    participant Storage as localStorage
+    participant Store as KeyValueStore.layerStorage
     participant Root as document root
 
     Main->>Applier: mounts once
     Applier->>Look: reads
-    Look->>Storage: readStoredEvaLook
-    alt stored value parses
-        Storage-->>Look: look, legacy ids mapped (pearl to cloud)
+    Look->>Store: get, decode with EvaLookSchema
+    alt stored value decodes
+        Store-->>Look: look, legacy fields renamed (sphere, eye, pearl to cloud)
     else missing, blocked or invalid
-        Storage-->>Look: default look, per field
+        Store-->>Look: default look, per field
     end
     Applier->>Root: applies the look
 ```

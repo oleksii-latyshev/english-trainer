@@ -1,6 +1,3 @@
-//! The Dock icon the learner chose in Settings > Eva. The app bundle's own icon (Finder, Launchpad)
-//! is Eva's icon and cannot change at runtime; this swaps only the running app's Dock tile.
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -11,9 +8,7 @@ pub enum DockIcon {
     Light,
 }
 
-/// `assets/icons/eva-icon-dark.svg` at 512 px.
 const DARK_ICON_PNG: &[u8] = include_bytes!("../icons/dock-dark.png");
-/// `assets/icons/eva-icon-tinted.svg` at 512 px.
 const LIGHT_ICON_PNG: &[u8] = include_bytes!("../icons/dock-light.png");
 
 impl DockIcon {
@@ -26,7 +21,6 @@ impl DockIcon {
     }
 }
 
-/// Shows `icon` in the Dock. A no-op outside macOS.
 #[cfg(target_os = "macos")]
 pub fn apply(app: &tauri::AppHandle, icon: DockIcon) -> Result<(), String> {
     app.run_on_main_thread(move || set_application_icon(icon))
@@ -49,7 +43,6 @@ fn set_application_icon(icon: DockIcon) {
     };
     let application = NSApplication::sharedApplication(main_thread);
     match icon.png() {
-        // `None` restores the icon from the app bundle.
         None => unsafe { application.setApplicationIconImage(None) },
         Some(png) => {
             let data = NSData::with_bytes(png);

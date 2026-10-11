@@ -1,11 +1,11 @@
 import { expect, it } from 'bun:test';
 import { DEFAULT_EVA_LOOK, type EvaLook } from '../../palette';
-import { parseEvaLook } from '.';
+import { decodeEvaLook } from '.';
 
 it('falls back to the default look for anything that is not a record', () => {
-  expect(parseEvaLook(undefined)).toEqual(DEFAULT_EVA_LOOK);
-  expect(parseEvaLook('mint')).toEqual(DEFAULT_EVA_LOOK);
-  expect(parseEvaLook([])).toEqual(DEFAULT_EVA_LOOK);
+  expect(decodeEvaLook(undefined)).toEqual(DEFAULT_EVA_LOOK);
+  expect(decodeEvaLook('mint')).toEqual(DEFAULT_EVA_LOOK);
+  expect(decodeEvaLook([])).toEqual(DEFAULT_EVA_LOOK);
 });
 
 it('keeps a stored look written in the new shape', () => {
@@ -16,20 +16,20 @@ it('keeps a stored look written in the new shape', () => {
     petal: 'lilac',
     motion: 'gentle',
   };
-  expect(parseEvaLook(stored)).toEqual(stored);
+  expect(decodeEvaLook(stored)).toEqual(stored);
 });
 
 it('reads the legacy sphere and eye fields and maps pearl to cloud', () => {
-  expect(parseEvaLook({ sphere: 'pearl', eye: 'navy', motion: 'still' })).toEqual({
+  expect(decodeEvaLook({ sphere: 'pearl', eye: 'navy', motion: 'still' })).toEqual({
     ...DEFAULT_EVA_LOOK,
     ink: 'navy',
     motion: 'still',
   });
-  expect(parseEvaLook({ sphere: 'graphite', eye: 'moonlight' }).body).toBe('graphite');
+  expect(decodeEvaLook({ sphere: 'graphite', eye: 'moonlight' }).body).toBe('graphite');
 });
 
 it('falls back per field and never selects a locked option', () => {
-  expect(parseEvaLook({ body: 'rainbow', ink: 'cocoa', leaf: 'autumn', petal: 'sun' })).toEqual({
+  expect(decodeEvaLook({ body: 'rainbow', ink: 'cocoa', leaf: 'autumn', petal: 'sun' })).toEqual({
     ...DEFAULT_EVA_LOOK,
     ink: 'cocoa',
   });

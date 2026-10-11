@@ -1,11 +1,14 @@
 import { Atom } from 'effect/reactivity';
-import { applyEvaLook } from '../helpers/apply-eva-look';
-import { readStoredEvaLook, storeEvaLook } from '../helpers/eva-look-storage';
+import { EvaLookSchema } from '../helpers/eva-look-schema';
+import { DEFAULT_EVA_LOOK } from '../palette';
+import { evaLookRuntime } from './runtime';
 
-export const evaLookAtom = Atom.make(readStoredEvaLook()).pipe(Atom.keepAlive);
+export const EVA_LOOK_KEY = 'english_trainer_eva_look';
 
-export const evaLookAppliedAtom = Atom.make((get) => {
-  const look = get(evaLookAtom);
-  applyEvaLook(look);
-  storeEvaLook(look);
-}).pipe(Atom.keepAlive);
+export const evaLookAtom = Atom.kvs({
+  runtime: evaLookRuntime,
+  key: EVA_LOOK_KEY,
+  schema: EvaLookSchema,
+  defaultValue: () => DEFAULT_EVA_LOOK,
+  mode: 'sync',
+});
