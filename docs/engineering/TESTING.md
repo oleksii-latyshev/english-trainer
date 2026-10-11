@@ -104,32 +104,41 @@ pages stay small and tests read like the product spec.
 ```text
 e2e/
   fixtures/
-    index.ts              test = base.extend<{ app, talk, memory, settings, tauri }>
-    tauri/                typed fake commands, one file per area (session, memory, speech, …)
+    index.ts              test = base.extend<{ app, start, talk, wrapup, memory, review, settings, tauri }>
+    tauri/                FakeBackend (`tauri`): one controller per area (session, memory, review,
+                          translation, planner, streaming, rescue, …) over typed command fakes
   pages/
-    talk-page.ts          one class per screen: navigation + screen-level actions
+    app.ts                open, reload, sidebar, shared overlays, quiet-period and clock helpers
+    talk-page.ts          one class per screen: locators + screen-level actions
     memory-page.ts
   components/
     composer.ts           one class per reusable widget, composed into pages
+    recorder.ts
     sidebar.ts
-    coaching-note.ts
   data/
-    builders.ts           test data builders typed against src/core/ipc/bindings
+    builders.ts           test data builders typed against the app's types
+    sessions.ts           shared constants and sessions
   specs/
     talk.e2e.ts           tests only: user intent + expectations
+    practice.feature      Gherkin scenarios next to the specs that implement them
 ```
 
 ```ts
 // e2e/specs/talk.e2e.ts
-test('coaching appears under the answer without delaying the reply', async ({ talk, tauri }) => {
-  tauri.session.replyWith('Nice! What did you change?');
-  tauri.coaching.delayBy(2_000);
+test('a failed send keeps the draft available for retry', async ({
+  app,
+  start,
+  talk,
+  tauri,
+}) => {
+  tauri.session.failingNextSend();
+  await app.open();
+  await app.sidebar.openSpeak();
+  await start.start();
+  await talk.composer.typeInsteadAndSend(writtenAnswer);
 
-  await talk.open();
-  await talk.composer.say('I fixed the bug in the login');
-
-  await expect(talk.lastReply).toHaveText('Nice! What did you change?');
-  await expect(talk.coachingNoteFor('I fixed the bug in the login')).toBeVisible();
+  await expect(app.alert).toContainText('could not be generated');
+  await expect(talk.composer.answer).toHaveValue(writtenAnswer);
 });
 ```
 
@@ -138,21 +147,23 @@ Rules:
 - **Specs hold intent and assertions**; page objects hold locators and multi-step actions. A spec never
   contains a raw selector.
 - **Fixtures, not constructors.** Specs receive page objects and the fake-backend controller through
-  `test.extend` fixtures; a spec never writes `new TalkPage(page)` or installs fakes by hand.
+  `test.extend` fixtures; a spec never writes `new TalkPage(page)` or installs fakes by hand. Fakes are
+  configured on `tauri` before `app.open()`, which installs them once.
 - **Keep page classes small.** A page owns only its own screen. Anything reusable (composer, sidebar,
   coaching note, dialogs) is a component object composed into pages (`talk.composer`). When a page
   class passes ~150 lines or mixes two areas, split a component out.
 - **Fake backend per area.** `tauri.session`, `tauri.memory`, `tauri.speech` are small controllers
   over typed command fakes; they replace the single growing harness. Scenario setup reads as
-  `tauri.memory.withDue(3)`, not an options bag.
+  `tauri.review.withDuePhrase()`, not an options bag.
 - Locate by role and visible English text (`getByRole`, `getByLabel`); never by CSS class.
 - Page objects return locators or perform actions; they do not assert, except for waiting helpers
   whose name says so (`waitUntilListening`).
-- No `waitForTimeout`; wait for a visible state.
-- Each spec is independent: fresh page, fresh fake backend, no order dependence.
-
-The current `e2e/*Fixture.ts` files migrate to this layout with step 1 of
-[`MIGRATION.md`](MIGRATION.md); new specs use it from the start.
+- No `waitForTimeout` in specs; wait for a visible state. When the passing of time is itself the
+  assertion (nothing happens for 1.8 s), use the named `app.waitForQuietPeriod(ms)`.
+- Each spec is independent: fresh page, fresh fake backend, no order dependence. Unhandled fake
+  commands fail the test in the `tauri` fixture teardown.
+- The dev server port comes from `E2E_PORT` (default 1431); give each worktree its own so that
+  `reuseExistingServer` never tests another checkout.
 
 ## 4. Rust
 
