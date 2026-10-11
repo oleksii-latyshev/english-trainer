@@ -61,6 +61,34 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Diagnose fake whisper-server (temporary)
+        run: |
+          set -x
+          which -a python3 || true
+          python3 --version
+          env | grep -iE 'proxy|DEVELOPER_DIR|TMPDIR' || true
+          dir=$(mktemp -d)
+          python3 - "$dir" <<'PY'
+          import re, sys, pathlib
+          src = pathlib.Path("src-tauri/src/audio/server_tests.rs").read_text()
+          body = re.search(r'const FAKE_SERVER: &str = r#"(.*?)"#;', src, re.S).group(1)
+          path = pathlib.Path(sys.argv[1]) / "whisper-server"
+          path.write_text(body)
+          path.chmod(0o755)
+          PY
+          touch "$dir/ggml-small.en.bin"
+          "$dir/whisper-server" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18765 > "$dir/out.log" 2>&1 &
+          pid=$!
+          for i in $(seq 1 40); do
+            if nc -z 127.0.0.1 18765; then echo "listening after ${i}x0.5s"; break; fi
+            if ! kill -0 $pid 2>/dev/null; then echo "server exited"; break; fi
+            sleep 0.5
+          done
+          ps -o pid,stat,etime,command -p $pid || true
+          cat "$dir/out.log"
+          kill $pid 2>/dev/null || true
+          time python3 -c 'import http.server; print("imports ok")'
+
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
 
