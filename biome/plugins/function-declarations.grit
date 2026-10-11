@@ -1,0 +1,10 @@
+language js
+
+or {
+  `const $name = ($args) => $body`,
+  `const $name = async ($args) => $body`,
+  `const $name: $type = ($args) => $body`,
+  `const $name = function ($args) { $body }`
+} where {
+  register_diagnostic(span=$name, message="Declare named functions with `function`, not a const arrow or function expression (CODE_REQUIREMENTS §2).", severity="error")
+}

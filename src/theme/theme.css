@@ -1,5 +1,5 @@
 /*
- * Design tokens, single source of truth (docs/ui/DESIGN_BRIEF.md section 4).
+ * Design tokens, single source of truth (docs/DESIGN.md).
  * Dark is the default; `data-theme="light"` on <html> switches to the light set (see applyTheme.ts).
  * Tokens are declared unlayered so they win over the HeroUI theme layer; HeroUI's own variables are
  * mapped onto them below, so HeroUI components pick up the look without per-component overrides.

@@ -74,10 +74,10 @@ export function TalkStart({
     (customTopic.trim().length > 0 && Array.from(customTopic.trim()).length <= 150);
 
   function start(selectedId: TopicId = effectiveTopicId) {
-    const useCustom = selectedId === 'free_topic';
+    const isCustom = selectedId === 'free_topic';
     const options: PracticeOptions = {
       topic_id: selectedId,
-      topic_custom: useCustom ? customTopic.trim() : null,
+      topic_custom: isCustom ? customTopic.trim() : null,
       duration_goal_seconds: duration,
       practice_mode: practiceMode,
     };

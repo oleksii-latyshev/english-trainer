@@ -1,4 +1,4 @@
-/* First run (docs/ui/DESIGN_BRIEF.md 6.9): a focused page with its own header, no sidebar. */
+/* First run (docs/DESIGN.md): a focused page with its own header, no sidebar. */
 .first-run {
   display: flex;
   flex: 1;

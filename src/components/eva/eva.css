@@ -1,5 +1,5 @@
 /*
- * Eva, the mascot (docs/ui/DESIGN_BRIEF.md 8.1): a pearl sphere with two dark eyes, ported from the
+ * Eva, the mascot (docs/DESIGN.md): a pearl sphere with two dark eyes, ported from the
  * approved mockup as pure CSS. Customisable from outside through --shell-hi/1/2/3 and --eye-color.
  * The halo (--eva-tone) carries whose turn it is; the sphere looks the same in both themes.
  */

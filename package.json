@@ -1,6 +1,7 @@
 {
   "name": "english-trainer",
   "private": true,
+  "packageManager": "bun@1.4.0",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -20,9 +21,12 @@
     "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json",
     "verify": "sh ./scripts/verify.sh",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "check:effect": "effect-language-service diagnostics --project tsconfig.json --strict",
+    "check:conventions": "bun run scripts/check-conventions.ts"
   },
   "dependencies": {
+    "@effect/atom-react": "4.0.2",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@heroui/react": "^3.2.6",
@@ -30,15 +34,19 @@
     "@tanstack/react-router": "^1.170.39",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "effect": "4.0.2",
     "lucide-react": "^1.48.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
+    "@effect/language-service": "0.87.4",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2",
+    "@types/bun": "1.4.2",
+    "@types/node": "^22.12.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^6.0.2",
@@ -46,5 +54,6 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
     "vite": "^8.0.16"
-  }
+  },
+  "license": "AGPL-3.0-or-later"
 }

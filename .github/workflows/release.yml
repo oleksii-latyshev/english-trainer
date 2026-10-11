@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: macOS installer (Apple Silicon)
+    needs: checks
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag matches the app version
+        run: |
+          expected="${VERSION#v}"
+          for found in \
+            "$(jq -r .version package.json)" \
+            "$(jq -r .version src-tauri/tauri.conf.json)" \
+            "$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)"; do
+            if [ "$found" != "$expected" ]; then
+              echo "::error::Tag $VERSION does not match version $found in package.json, tauri.conf.json or Cargo.toml"
+              exit 1
+            fi
+          done
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Setup Rust (version from rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build app and DMG
+        run: bun run build:desktop
+
+      - name: Archive app preserving its bundle metadata
+        run: ditto -c -k --sequesterRsrc --keepParent "src-tauri/target/release/bundle/macos/English Trainer.app" "English-Trainer-${VERSION}-macos-arm64.app.zip"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp src-tauri/target/release/bundle/dmg/*.dmg "English-Trainer-${VERSION}-macos-arm64.dmg"
+          gh release create "$VERSION" \
+            "English-Trainer-${VERSION}-macos-arm64.dmg" \
+            "English-Trainer-${VERSION}-macos-arm64.app.zip" \
+            --title "English Trainer ${VERSION}" \
+            --generate-notes \
+            --verify-tag

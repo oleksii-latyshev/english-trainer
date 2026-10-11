@@ -1,0 +1,11 @@
+language js
+
+or {
+  `Effect.runPromise($args)`,
+  `Effect.runPromiseExit($args)`,
+  `Effect.runSync($args)`,
+  `Effect.runSyncExit($args)`,
+  `Effect.runFork($args)`
+} as $call where {
+  register_diagnostic(span=$call, message="Do not run Effects here: expose them through an atom (runtime.atom / runtime.fn). Only app/ and tests run Effects (EFFECT.md §5).", severity="error")
+}

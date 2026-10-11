@@ -1,8 +1,7 @@
-# Product Specification: English Trainer
+# Product specification
 
-What the app is for and how it should behave. Delivery order is in [ROADMAP.md](ROADMAP.md);
-runtime structure in [ARCHITECTURE.md](ARCHITECTURE.md); contracts in
-[TECHNICAL_REQUIREMENTS.md](TECHNICAL_REQUIREMENTS.md).
+What the app is for and how it should behave. Status in [ROADMAP](ROADMAP.md), look in
+[DESIGN](DESIGN.md), contracts in [TECHNICAL_REQUIREMENTS](TECHNICAL_REQUIREMENTS.md).
 
 ## 1. Vision
 
@@ -48,8 +47,6 @@ Principles:
 7. **Privacy by default.** Speech is transcribed locally and raw audio is discarded unless the learner turns on "Keep raw audio" (local, deletable). The speech check recordings the learner makes are kept locally until deleted.
 
 ## 4. Talk screen (main experience)
-
-One chat-style screen replaces the former separate Conversation and Coach modes.
 
 - **Top:** topic and current question; Eva shows listening, thinking and speaking states. Her
   listening visual follows actual microphone level; system speech events drive the speaking state.
@@ -171,21 +168,9 @@ Microphone choice with a short record/playback check; conversation provider and 
 voice and rate; personal glossary and profile; hands-free pause length; local data and privacy
 notes; native language for on-demand word translation.
 
-## 10. Later (after the MVP)
+## 10. Later
 
-Ordered by expected value; each needs real usage data before it starts.
-
-1. Avatar: 2D character with audio-driven animation, then a 3D avatar with lip-sync (needs a
-   neural TTS whose audio the app can analyse).
-2. Natural neural voice.
-3. Interview packs with realistic follow-ups.
-4. Progress view: weekly trends with examples.
-5. Eva check-ins: an opt-in floating panel that asks one spontaneous question during the day
-   ("What are you working on right now?") for a 30–90 s spoken answer, with a user-set frequency,
-   quiet hours and Less often / More often / Not now in the panel; also opened from the menu bar.
-   No screen access, no guilt mechanics, no punishment for missed check-ins.
-6. Pronunciation: shadowing timing feedback, later phoneme-level scoring as a separate pipeline.
-   Whisper transcripts are never presented as pronunciation grades.
+Post-MVP ideas and their order are in [ROADMAP](ROADMAP.md#after-the-mvp).
 
 ## 11. Success signals
 

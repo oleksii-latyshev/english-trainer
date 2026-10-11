@@ -2,6 +2,7 @@ name: CI
 
 on:
   workflow_dispatch:
+  workflow_call:
   push:
     branches: [main]
   pull_request:
@@ -21,7 +22,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version-file: package.json
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -32,6 +33,12 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      - name: Effect diagnostics
+        run: bun run check:effect
+
+      - name: Conventions (no comments, feature flow diagrams)
+        run: bun run check:conventions
+
       - name: Run unit tests
         run: bun run test
 
@@ -41,10 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      - name: Setup Rust (version and components from rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -63,7 +68,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version-file: package.json
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -87,43 +92,3 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 7
-
-  macos-build:
-    name: Installable macOS alpha (Apple Silicon)
-    needs: [frontend, rust, e2e]
-    if: github.event_name != 'pull_request'
-    runs-on: macos-26
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
-      - name: Install frontend dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build app and DMG
-        run: bun run build:desktop
-
-      - name: Archive app preserving its bundle metadata
-        run: ditto -c -k --sequesterRsrc --keepParent "src-tauri/target/release/bundle/macos/English Trainer.app" "src-tauri/target/release/bundle/English-Trainer-macos-arm64.app.zip"
-
-      - name: Upload installer and app
-        uses: actions/upload-artifact@v4
-        with:
-          name: English-Trainer-macos-arm64-${{ github.sha }}
-          path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/English-Trainer-macos-arm64.app.zip
-          if-no-files-found: error
-          retention-days: 14

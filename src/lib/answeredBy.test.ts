@@ -1,4 +1,3 @@
-// @ts-expect-error Bun's test API is available to the runner but not declared in the app's TypeScript config.
 import { describe, expect, it } from 'bun:test';
 import { type AnsweredBy, answeredByLabel, isAnsweredBy, isOptionalAnsweredBy } from './answeredBy';
 

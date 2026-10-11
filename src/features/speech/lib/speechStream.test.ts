@@ -1,4 +1,3 @@
-// @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, test } from 'bun:test';
 import { appendSpeechDelta, createSpeechStreamState, finishSpeechStream } from './speechStream';
 

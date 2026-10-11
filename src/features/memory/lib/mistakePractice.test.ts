@@ -1,4 +1,3 @@
-// @ts-expect-error Bun provides this test module at runtime.
 import { describe, expect, it } from 'bun:test';
 import type { MistakeRecord } from '@/lib/learningTypes';
 import { eligibleMistakePracticeCount, isEligibleMistakePracticeTarget } from './mistakePractice';

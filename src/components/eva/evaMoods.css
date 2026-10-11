@@ -1,4 +1,4 @@
-/* Per-mood looks and the motion they use (docs/ui/DESIGN_BRIEF.md 8.1). */
+/* Per-mood looks and the motion they use (docs/DESIGN.md). */
 /* Idle: waiting, blinks now and then. */
 .eva-idle {
   --eva-tone: var(--et-orb-idle);
