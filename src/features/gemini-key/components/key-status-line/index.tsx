@@ -12,8 +12,8 @@ type Props = {
 function SavedKeyLine({ status }: { status: GeminiKeyStatus | null }) {
   if (!status?.configured || status.source === null) return <>No API key saved.</>;
   return (
-    <span className="gemini-key-field__status">
-      <Check aria-hidden="true" size={12} strokeWidth={2.4} />
+    <span className="flex items-center gap-1.5">
+      <Check aria-hidden="true" className="flex-none text-ok" size={12} strokeWidth={2.4} />
       {keySourceLabel(status.source)}
     </span>
   );

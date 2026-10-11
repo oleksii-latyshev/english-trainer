@@ -70,7 +70,7 @@ e2e/            Playwright flows against Vite with typed fake commands
   import only that (`@/features/gemini-key`), never a deep path. No other barrels, no `export *`.
 - Inside a feature, imports are relative. Across layers, imports use `@/…`.
 - Feature anatomy: `components/<name>/index.tsx` (+ `helpers.ts`, `constants.ts`, `types.ts`,
-  `styles.css`), `helpers/<name>/index.ts` (+ `<name>.test.ts`, `types.ts`), `model/` (runtime and
+  `styles.ts`), `helpers/<name>/index.ts` (+ `<name>.test.ts`, `types.ts`), `model/` (runtime and
   atoms), `services/` (Effect services), `tests/` (behaviour tests), `flow.md` (sequence diagram).
   Create a file only when it has content.
 - Rust: one module folder per bounded context, layered inside; commands are thin; `domain` is pure.
@@ -128,8 +128,19 @@ e2e/            Playwright flows against Vite with typed fake commands
 - Render `AsyncResult` with `AsyncResult.match` so loading, failure and success are all handled.
 - One level of ternary in JSX; past that, return early or extract a component.
 - Read `event.target.value` into a local variable before using it.
-- Styles live beside the component in `styles.css`, classes prefixed with the component name,
-  tokens from `shared/theme`.
+- **Our own UI kit lives in `src/shared/ui/`**, built on unstyled **Base UI** primitives
+  (`@base-ui/react`) styled with Tailwind. Need a basic component (button, input, switch, tabs,
+  dialog, tooltip, toast, chip, kbd …)? **First look in `src/shared/ui/`. If it is not there, create it
+  there** on the matching Base UI primitive (or a plain semantic element when Base UI has none) with
+  Tailwind and `tv()` variants — never style a basic control inline inside a feature, never add
+  another UI library. A kit component is generic (no product words), accessible, and covers the
+  states the design needs (hover, focus-visible, disabled, pressed). HeroUI is legacy and leaves
+  with migration step 1.
+- Styling is **Tailwind utility classes only**. No `.css` files except the one global stylesheet
+  `src/app/styles.css` (Tailwind import, fonts, design tokens as `@theme` variables, the
+  light/dark sets). Colours, radii and blur come from tokens (`bg-surface`, `text-muted`), never hex
+  values or arbitrary `[...]` classes. A component with variants or long class lists defines them
+  with `tv()` from `@/shared/ui/tv` in its `styles.ts`.
 - Controls are accessible and semantic.
 
 ## 5. Rust

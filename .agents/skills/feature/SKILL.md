@@ -26,7 +26,8 @@ Open it first and mirror its shape; read `docs/engineering/FRONTEND.md` §2 only
 4. **Model** `model/runtime.ts` (`Atom.runtime(Service.layer.pipe(Layer.provide(CoreLive)))`) and
    `model/atoms.ts` (remote `runtime.atom`, commands `runtime.fn` + `reactivityKeys`).
 5. **Helpers** `helpers/<name>/index.ts` + `<name>.test.ts` for pure logic (copy from error codes, formatting).
-6. **Components** `components/<name>/index.tsx` (+ `styles.css`, `types.ts`); render `AsyncResult.match`.
+6. **Components** `components/<name>/index.tsx` (+ `types.ts`): compose controls from `src/shared/ui`
+   (missing one → `ui-component` skill), Tailwind only for layout, no `.css`; render `AsyncResult.match`.
 7. **Behaviour test** `tests/<feature>.test.ts`: real atoms, fresh `AtomRegistry`, fake `Ipc` layer.
 8. **Public API** `index.ts`: explicit named exports only.
 9. **Flow** `flow.md`: Mermaid `sequenceDiagram` per user action, success and typed failures

@@ -1,9 +1,15 @@
 import { expect, it } from 'bun:test';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import {
+  collectViolations,
   findCssComments,
   findRustComments,
   findTypeScriptComments,
   hasSequenceDiagram,
+  importsLegacyUiLibrary,
+  isGlobalStylesheet,
   listLegacyFeatures,
 } from './check-conventions';
 
@@ -89,4 +95,58 @@ it('css comments are found but comment markers inside strings are not', () => {
   const hits = findCssComments(source);
 
   expect(hits.map((hit) => hit.line)).toEqual([2]);
+});
+
+it('detects HeroUI imports in static, side-effect and dynamic form', () => {
+  expect(importsLegacyUiLibrary("import { Toast } from '@heroui/react';")).toBe(true);
+  expect(importsLegacyUiLibrary('import "@heroui/styles";')).toBe(true);
+  expect(importsLegacyUiLibrary("const mod = await import('@heroui/react');")).toBe(true);
+  expect(importsLegacyUiLibrary("import { Button } from '@base-ui/react/button';")).toBe(false);
+});
+
+it('accepts only src/app/styles.css as the global stylesheet', () => {
+  expect(isGlobalStylesheet(join('src', 'app', 'styles.css'))).toBe(true);
+  expect(isGlobalStylesheet(join('src', 'app', 'other.css'))).toBe(false);
+  expect(isGlobalStylesheet(join('src', 'shared', 'ui', 'button', 'styles.css'))).toBe(false);
+});
+
+function withProject(files: Record<string, string>, run: (root: string) => void) {
+  const root = mkdtempSync(join(tmpdir(), 'conventions-'));
+  try {
+    writeFileSync(join(root, 'biome.json'), '{}');
+    for (const [path, content] of Object.entries(files)) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), content);
+    }
+    run(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+it('reports stray .css files and HeroUI imports in the new structure', () => {
+  withProject(
+    {
+      'src/app/styles.css': '@import "tailwindcss";',
+      'src/shared/ui/button/styles.css': '.a { color: red; }',
+      'src/shared/ui/button/index.tsx': "import { Button } from '@heroui/react';",
+    },
+    (root) => {
+      const messages = collectViolations(root).map(
+        (violation) => `${violation.location}: ${violation.message}`,
+      );
+      expect(messages).toHaveLength(2);
+      expect(messages.some((line) => line.includes('button/styles.css'))).toBe(true);
+      expect(messages.some((line) => line.includes('button/index.tsx'))).toBe(true);
+    },
+  );
+});
+
+it('allows the global stylesheet but still rejects comments in it', () => {
+  withProject({ 'src/app/styles.css': '@import "tailwindcss";' }, (root) => {
+    expect(collectViolations(root)).toEqual([]);
+  });
+  withProject({ 'src/app/styles.css': '/* note */\n@import "tailwindcss";' }, (root) => {
+    expect(collectViolations(root)).toHaveLength(1);
+  });
 });

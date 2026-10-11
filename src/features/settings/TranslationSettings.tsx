@@ -14,9 +14,9 @@ import {
   type TranslationSettings as TranslationSettingsData,
   type TranslationStatus,
 } from '@/lib/translationTypes';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; error: TranslationError };
@@ -140,21 +140,18 @@ export function TranslationSettings() {
   return (
     <SettingsGroup id="translation" title="Translation">
       {load.tag === 'loading' && (
-        <SettingsBlock role="status" tone="quiet">
+        <Notice role="status" tone="quiet">
           Loading translation settings…
-        </SettingsBlock>
+        </Notice>
       )}
       {load.tag === 'error' && (
-        <SettingsRow
-          description={load.error.message}
-          title="Translation settings could not be loaded"
-        >
-          <SettingsButton onClick={() => void reload()}>Retry</SettingsButton>
-        </SettingsRow>
+        <FormRow description={load.error.message} title="Translation settings could not be loaded">
+          <Button onClick={() => void reload()}>Retry</Button>
+        </FormRow>
       )}
       {load.tag === 'ready' && settings && (
         <>
-          <SettingsRow
+          <FormRow
             description="Selected English words are translated into this language on demand."
             htmlFor="translation-language"
             title="Native language"
@@ -172,8 +169,8 @@ export function TranslationSettings() {
                 </option>
               ))}
             </select>
-          </SettingsRow>
-          <SettingsRow
+          </FormRow>
+          <FormRow
             description={
               status.tag === 'ready'
                 ? status.status.message
@@ -184,27 +181,25 @@ export function TranslationSettings() {
             title="Language availability"
           >
             {currentStatus?.status === 'download_required' && selectedLanguage && (
-              <SettingsButton
+              <Button
                 disabled={isPreparing}
                 onClick={() => void prepareLanguages(selectedLanguage)}
               >
                 {isPreparing ? 'Preparing…' : 'Prepare languages'}
-              </SettingsButton>
+              </Button>
             )}
             {status.tag === 'error' && selectedLanguage && (
-              <SettingsButton onClick={() => void refreshStatus(selectedLanguage)}>
-                Retry
-              </SettingsButton>
+              <Button onClick={() => void refreshStatus(selectedLanguage)}>Retry</Button>
             )}
-          </SettingsRow>
-          <SettingsBlock>
+          </FormRow>
+          <Notice>
             Translation stays on this Mac. English explanations use Apple Intelligence and may be
             unavailable independently.
-          </SettingsBlock>
+          </Notice>
           {problem && (
-            <SettingsBlock role="alert" tone="error">
+            <Notice role="alert" tone="error">
               {problem.message}
-            </SettingsBlock>
+            </Notice>
           )}
         </>
       )}

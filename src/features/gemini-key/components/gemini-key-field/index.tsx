@@ -2,9 +2,10 @@ import { useAtom, useAtomSet, useAtomValue } from '@effect/atom-react';
 import { Option } from 'effect';
 import { AsyncResult } from 'effect/reactivity';
 import type { ChangeEvent, FormEvent } from 'react';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Input } from '@/shared/ui/input';
+import { Notice } from '@/shared/ui/notice';
 import { keyErrorMessage } from '../../helpers/key-error-message';
 import { keyFieldControls } from '../../helpers/key-field-controls';
 import {
@@ -16,7 +17,6 @@ import {
   saveGeminiKeyAtom,
 } from '../../model/atoms';
 import { KeyStatusLine } from '../key-status-line';
-import './styles.css';
 
 export function GeminiKeyField() {
   const statusResult = useAtomValue(geminiKeyStatusAtom);
@@ -41,15 +41,14 @@ export function GeminiKeyField() {
 
   return (
     <>
-      <SettingsRow
+      <FormRow
         description={<KeyStatusLine result={statusResult} />}
         htmlFor="gemini-key"
         onSubmit={handleSubmit}
         title="Gemini API key"
       >
-        <input
+        <Input
           autoComplete="off"
-          className="gemini-key-field__input"
           disabled={isBusy}
           id="gemini-key"
           onChange={handleKeyInput}
@@ -58,32 +57,28 @@ export function GeminiKeyField() {
           type="password"
           value={draft}
         />
-        <SettingsButton disabled={!controls.canSave} type="submit">
+        <Button disabled={!controls.canSave} type="submit">
           Save
-        </SettingsButton>
-        <SettingsButton
-          disabled={!controls.canRemove}
-          onClick={() => remove(undefined)}
-          variant="ghost"
-        >
+        </Button>
+        <Button disabled={!controls.canRemove} onClick={() => remove(undefined)} tone="ghost">
           Remove
-        </SettingsButton>
-      </SettingsRow>
+        </Button>
+      </FormRow>
       {Option.isSome(failure) && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {keyErrorMessage(failure.value)}
-        </SettingsBlock>
+        </Notice>
       )}
-      <SettingsBlock tone="quiet">
+      <Notice tone="quiet">
         <p>
           On the free tier, Google may use what you send to improve its models. Don't share anything
           private in practice sessions.
         </p>
-        <p>
+        <p className="mt-1.5">
           When a free limit is reached, replies come from Apple on-device instead. Limits and usage
           are in Google AI Studio.
         </p>
-      </SettingsBlock>
+      </Notice>
     </>
   );
 }

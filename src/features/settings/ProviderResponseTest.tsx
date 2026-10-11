@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { answeredByLabel } from '@/lib/answeredBy';
 import { createReplyChannel } from '@/lib/replyStream';
 import { type ConversationProviderId, isConversationTurn, isProviderError } from '@/lib/types';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { formatSeconds } from './lib/levelMeter';
 
 type TestState =
@@ -121,31 +121,31 @@ export function ProviderResponseTest({ provider }: { provider: ConversationProvi
 
   return (
     <>
-      <SettingsRow
+      <FormRow
         description={<RowDescription provider={provider} state={state} />}
         title="Test AI response"
       >
-        <SettingsButton disabled={state.tag === 'checking'} onClick={() => void handleTest()}>
+        <Button disabled={state.tag === 'checking'} onClick={() => void handleTest()}>
           {state.tag === 'checking' ? 'Testing…' : 'Run test'}
-        </SettingsButton>
-      </SettingsRow>
+        </Button>
+      </FormRow>
       {state.tag === 'checking' && state.streamed && (
-        <SettingsBlock tone="plain">
+        <Notice tone="plain">
           <p aria-live="polite">{state.streamed}</p>
-        </SettingsBlock>
+        </Notice>
       )}
       {state.tag === 'reply' && (
-        <SettingsBlock tone="plain">
+        <Notice tone="plain">
           <p aria-live="polite" style={{ whiteSpace: 'pre-line' }}>
             {state.text}
           </p>
           {state.answeredBy && <p className="settings-quiet">Answered by: {state.answeredBy}</p>}
-        </SettingsBlock>
+        </Notice>
       )}
       {state.tag === 'error' && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {state.message}
-        </SettingsBlock>
+        </Notice>
       )}
     </>
   );

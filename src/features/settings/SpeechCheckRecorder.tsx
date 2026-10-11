@@ -7,9 +7,9 @@ import {
   saveSpeechCheckRecording,
   speechErrorMessage,
 } from '@/lib/speechTypes';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { nextSentenceIndex, startingSentenceIndex } from './lib/speechCheck';
 import { type SentenceRecorderState, useSentenceRecorder } from './useSentenceRecorder';
 
@@ -58,13 +58,13 @@ function SentenceControls({
 }) {
   return (
     <div className="speech-sentence-controls">
-      <SettingsButton
+      <Button
         disabled={current <= 1 || isRecording || isBusy}
         onClick={() => onGo(current - 1)}
-        variant="ghost"
+        tone="ghost"
       >
         Previous
-      </SettingsButton>
+      </Button>
       <MicButton
         icon={isRecording ? 'stop' : 'mic'}
         isDisabled={isDisabled || isBusy}
@@ -76,13 +76,13 @@ function SentenceControls({
         isActive={isRecording}
         level={recorder.state.tag === 'recording' ? recorder.state.level : 0}
       />
-      <SettingsButton
+      <Button
         disabled={current >= total || isRecording || isBusy}
         onClick={() => onGo(current + 1)}
-        variant="ghost"
+        tone="ghost"
       >
         {sentence.is_recorded ? 'Next' : 'Skip'}
-      </SettingsButton>
+      </Button>
     </div>
   );
 }
@@ -128,24 +128,24 @@ export function SpeechCheckRecorder({
   if (!sentence) return null;
   return (
     <>
-      <SettingsRow
+      <FormRow
         description={`${recordedCount} of ${total} sentences recorded. The recordings stay on this Mac as a test set, only because you made one, until you delete them.`}
         title="Speech check"
       >
-        <SettingsButton
+        <Button
           disabled={recordedCount === 0 || isRecording || isBusy}
           onClick={() => void handleDelete()}
-          variant="ghost"
+          tone="ghost"
         >
           Delete recordings
-        </SettingsButton>
-      </SettingsRow>
+        </Button>
+      </FormRow>
       {deleteError && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {deleteError}
-        </SettingsBlock>
+        </Notice>
       )}
-      <SettingsBlock>
+      <Notice>
         <div className="speech-sentence">
           <p className="speech-sentence-count">
             Sentence {sentence.index} of {total}
@@ -174,7 +174,7 @@ export function SpeechCheckRecorder({
             </p>
           )}
         </div>
-      </SettingsBlock>
+      </Notice>
     </>
   );
 }

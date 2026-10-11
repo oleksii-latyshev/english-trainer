@@ -32,6 +32,8 @@
   migrate the whole slice per `MIGRATION.md` §2 — never half-move it.
 - Everything is English. Code is self-describing with no comments; SOLID, KISS, DRY of knowledge
   (CODE_REQUIREMENTS › Principles). Every feature has a `flow.md` sequence diagram.
+- Basic UI controls come from our kit in `src/shared/ui/`; if one is missing, create it there on Base UI
+  + Tailwind (`ui-component` skill). Styling is Tailwind only; no `.css` besides `src/app/styles.css`.
 - Frontend: layers `app → screens → features → core → shared`, features never import each other,
   side effects are Effects, state is atoms, errors are tagged values, functions use `function`,
   types use `type`, files are `kebab-case`.
@@ -42,7 +44,7 @@
   `Schema.Literals`, atoms in `effect/reactivity`). Before using an API you have not seen in this
   repo, check the pilot, the relevant section of `node_modules/effect/AGENTS.md` (the official guide
   shipped with the package) or `node_modules/effect/dist/*.d.ts`.
-- Task recipes live in `.agents/skills/` (`feature`, `effect`, `e2e`, `writing`, `dod`); use the one
+- Task recipes live in `.agents/skills/` (`feature`, `ui-component`, `effect`, `e2e`, `writing`, `dod`); use the one
   that matches the task.
 
 ## Done

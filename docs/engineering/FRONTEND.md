@@ -54,7 +54,7 @@ features/gemini-key/
   components/
     gemini-key-field/
       index.tsx                    the component (named export, PascalCase)
-      styles.css                   styles for this component only
+      styles.ts                    tailwind-variants `tv()` recipes, only when classes have variants
       helpers.ts, constants.ts, types.ts   added beside it only when it needs them
     key-status-line/
       index.tsx
@@ -78,7 +78,7 @@ Rules:
 
 - **Everything is a folder once it has a second file.** A component or helper starts as
   `components/<name>/index.tsx` or `helpers/<name>/index.ts`; its `helpers.ts`, `constants.ts`,
-  `types.ts`, `styles.css` and tests are added beside it only when needed. Do not create empty files.
+  `types.ts`, `styles.ts` and tests are added beside it only when needed. Do not create empty files.
 - Folders and files are `kebab-case`. Exports inside are `PascalCase` (components, types, services,
   errors) or `camelCase` (functions, atoms). One component per `index.tsx`.
 - `index.ts` at the feature root is the **public API**: explicit named exports only
@@ -135,7 +135,7 @@ Gemini, it is not `shared/`.
 
 ```text
 shared/
-  ui/<component-name>/index.tsx    design-system components on top of HeroUI
+  ui/<component-name>/index.tsx    our UI kit: Base UI primitives styled with Tailwind (+ styles.ts)
   helpers/<helper-name>/index.ts   generic pure helpers (formatting, text, arrays)
   theme/                           tokens, light/dark switch
 ```
@@ -156,6 +156,28 @@ shared/
 
 ## 7. Styles
 
-CSS lives beside the component (`styles.css`) and is imported by its `index.tsx`. Class names are
-prefixed with the component name (`.gemini-key-field__status`). Tokens come from `shared/theme`.
-No feature-wide or screen-wide CSS files that style other folders' components.
+- **Components come from our kit, `src/shared/ui/`.** Need a basic component? Look there first.
+  If it is missing, add it there: wrap the matching unstyled Base UI primitive (`@base-ui/react`:
+  `Button`, `Input`, `Field`, `Switch`, `Tabs`, `Dialog`, `AlertDialog`, `Popover`, `Tooltip`,
+  `Toast`, `Menu`, `Select`, …) or a plain semantic element when Base UI has none (`kbd`, a chip),
+  style it with Tailwind and `tv()` variants, and export a small, product-agnostic API
+  (`<Button tone="primary" size="sm">`). Features compose kit components and only add layout
+  classes (spacing, grid); they never restyle a control. No other UI library is added; HeroUI is
+  legacy and is removed by migration step 1.
+- **Styling:** Tailwind utility classes in `className`. Design tokens live once, as `@theme`
+  variables in `src/app/styles.css`, so they become utilities (`bg-surface`, `text-muted`,
+  `rounded-card`); no hex values, no arbitrary `[...]` values, no inline `style` except values
+  computed at runtime (a level meter's width).
+- **Variants:** when a component has variants or a class list stops reading at a glance, define a
+  `tv()` recipe in its `styles.ts` and call it in `index.tsx`. Import `tv` from `@/shared/ui/tv` (it
+  registers our token classes with tailwind-merge), never from `tailwind-variants` directly:
+
+  ```ts
+  export const button = tv({
+    base: 'h-8.5 rounded-full border px-3.5 font-medium text-control',
+    variants: { tone: { neutral: 'border-line bg-surface-2', ghost: 'border-transparent text-muted' } },
+  });
+  ```
+
+- **No `.css` files** anywhere except `src/app/styles.css` (`bun run check:conventions`). Class
+  order is kept sorted by Biome (`useSortedClasses`).

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useTrainer } from '@/context/TrainerContext';
 import { saveLiveTranscript, saveSpeechModel, speechErrorMessage } from '@/lib/speechTypes';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { engineLabel, engineProblem, liveTranscriptDescription } from './lib/engineStatus';
 import { modelOptionLabel, plainRun } from './lib/speechCheck';
 import { Switch } from './SettingsControls';
@@ -43,14 +43,14 @@ export function SpeechSettings() {
   return (
     <SettingsGroup id="speech" title="Speech recognition">
       {state.tag === 'loading' && (
-        <SettingsBlock role="status" tone="quiet">
+        <Notice role="status" tone="quiet">
           Loading…
-        </SettingsBlock>
+        </Notice>
       )}
       {state.tag === 'error' && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {state.message}
-        </SettingsBlock>
+        </Notice>
       )}
       {state.tag === 'ready' && (
         <ReadyBody
@@ -93,12 +93,12 @@ function ReadyBody({
   return (
     <>
       {models.override_path && (
-        <SettingsBlock role="status" tone="warn">
+        <Notice role="status" tone="warn">
           ENG_TRAINER_WHISPER_MODEL is set, so the app uses {models.override_path} whatever you
           choose here.
-        </SettingsBlock>
+        </Notice>
       )}
-      <SettingsRow
+      <FormRow
         description="Larger models recognise more words correctly but take longer. Measure them on your voice below, then choose."
         htmlFor="speech-model"
         title="Model"
@@ -121,40 +121,37 @@ function ReadyBody({
             </option>
           ))}
         </select>
-      </SettingsRow>
+      </FormRow>
       {engine && (
-        <SettingsRow
+        <FormRow
           description="The model stays in memory between answers, so an answer is transcribed in a fraction of a second."
           title="Model in memory"
         >
           <span role="status">{engineLabel(engine)}</span>
-        </SettingsRow>
+        </FormRow>
       )}
       {engine && engineProblem(engine) && (
-        <SettingsBlock role="status" tone="warn">
+        <Notice role="status" tone="warn">
           {engineProblem(engine)}
-        </SettingsBlock>
+        </Notice>
       )}
-      <SettingsRow
-        description={liveTranscriptDescription(settings, engine)}
-        title="Live transcript"
-      >
+      <FormRow description={liveTranscriptDescription(settings, engine)} title="Live transcript">
         <Switch
           checked={settings.live_transcript}
           label="Live transcript"
           onChange={onLiveTranscript}
         />
-      </SettingsRow>
+      </FormRow>
       {saveError && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {saveError}
-        </SettingsBlock>
+        </Notice>
       )}
       {models.models.length === 0 && (
-        <SettingsBlock role="status" tone="warn">
+        <Notice role="status" tone="warn">
           No models were found in the app's models folder. Put ggml-*.bin files there (see the
           README, Local transcription setup).
-        </SettingsBlock>
+        </Notice>
       )}
       <SpeechCheckRecorder
         check={check}

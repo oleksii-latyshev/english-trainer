@@ -168,6 +168,15 @@
                 "maxLines": 80
               }
             }
+          },
+          "nursery": {
+            "useSortedClasses": {
+              "level": "error",
+              "fix": "safe",
+              "options": {
+                "functions": ["tv", "clsx", "cn"]
+              }
+            }
           }
         }
       }

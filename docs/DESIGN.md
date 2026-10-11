@@ -22,8 +22,9 @@ silently. Not yet designed: light theme, the "Your own character" card.
 
 - macOS Tauri WebView. Default window 1280×800, minimum 960×640 (sidebar collapses to an icon rail);
   must also work at 1440×900 and full screen.
-- React + HeroUI v3 + Tailwind v4: prefer HeroUI components and theme tokens; custom drawing only for
-  the voice visual and Eva.
+- React + Tailwind v4 + our UI kit in `src/shared/ui/` (Base UI primitives styled with Tailwind on
+  the tokens below, defined once as `@theme` variables in `src/app/styles.css`); custom drawing only
+  for the voice visual and Eva.
 - Fully keyboard operable: Space hold = push-to-talk, Esc = cancel / stop Eva, H = help, S = stuck,
   ⌘↩ = send typed text.
 - Respect Reduce Motion (static fallbacks), WCAG AA contrast, states never by colour alone.

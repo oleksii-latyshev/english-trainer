@@ -5,7 +5,7 @@ import {
   END_PAUSE_CHOICES_MS,
   useConversationFlow,
 } from '@/lib/conversationFlowPreferences';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { FormRow } from '@/shared/ui/form-row';
 import { SegmentedControl, Switch } from './SettingsControls';
 import { SettingsGroup } from './SettingsGroup';
 
@@ -23,7 +23,7 @@ export function ConversationFlowSettings() {
   const { preferences, update } = useConversationFlow();
   return (
     <SettingsGroup id="flow" title="Conversation flow">
-      <SettingsRow
+      <FormRow
         description="A pause ends your turn — no button needed. Esc cancels listening."
         title="Hands-free"
       >
@@ -32,8 +32,8 @@ export function ConversationFlowSettings() {
           label="Hands-free"
           onChange={(handsFree) => update({ handsFree })}
         />
-      </SettingsRow>
-      <SettingsRow title="End-of-turn pause">
+      </FormRow>
+      <FormRow title="End-of-turn pause">
         <SegmentedControl
           isDisabled={!preferences.handsFree}
           label="End-of-turn pause"
@@ -41,15 +41,15 @@ export function ConversationFlowSettings() {
           options={END_PAUSE_OPTIONS}
           value={preferences.endPauseMs}
         />
-      </SettingsRow>
-      <SettingsRow title="Listen automatically after Eva speaks">
+      </FormRow>
+      <FormRow title="Listen automatically after Eva speaks">
         <Switch
           checked={preferences.autoListen}
           label="Listen automatically after Eva speaks"
           onChange={(autoListen) => update({ autoListen })}
         />
-      </SettingsRow>
-      <SettingsRow
+      </FormRow>
+      <FormRow
         description="Uses echo cancellation. If the microphone cannot enable it, use the mic button or Esc."
         title="Interrupt Eva by voice"
       >
@@ -58,8 +58,8 @@ export function ConversationFlowSettings() {
           label="Interrupt Eva by voice"
           onChange={(voiceInterrupt) => update({ voiceInterrupt })}
         />
-      </SettingsRow>
-      <SettingsRow
+      </FormRow>
+      <FormRow
         description="With hands-free and auto-listen both on, answers are sent as soon as they are transcribed."
         title="Auto-send after review"
       >
@@ -69,7 +69,7 @@ export function ConversationFlowSettings() {
           options={AUTO_SEND_OPTIONS}
           value={autoSendChoice(preferences)}
         />
-      </SettingsRow>
+      </FormRow>
     </SettingsGroup>
   );
 }

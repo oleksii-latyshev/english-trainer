@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type ApiUsageOverview, getApiUsage, type LimitNote } from '@/lib/apiUsageTypes';
 import { openExternal } from '@/lib/openExternal';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { formatRemaining, quotaResetText, requestsLabel } from './lib/usageText';
 import { SettingsGroup } from './SettingsGroup';
 
@@ -53,17 +53,17 @@ export function UsageSettings() {
   return (
     <SettingsGroup id="usage" title="Usage">
       {state.tag === 'loading' && (
-        <SettingsBlock role="status" tone="quiet">
+        <Notice role="status" tone="quiet">
           Loading usage…
-        </SettingsBlock>
+        </Notice>
       )}
       {state.tag === 'error' && (
-        <SettingsRow
+        <FormRow
           description="The counts are saved on this Mac. Try again in a moment."
           title="Usage could not be loaded"
         >
-          <SettingsButton onClick={() => void load()}>Retry</SettingsButton>
-        </SettingsRow>
+          <Button onClick={() => void load()}>Retry</Button>
+        </FormRow>
       )}
       {state.tag === 'ready' && <UsageDetails onRefresh={() => void load()} state={state} />}
     </SettingsGroup>
@@ -81,23 +81,21 @@ function UsageDetails({
   const { gemini, antigravity } = usage;
   return (
     <>
-      <SettingsRow
+      <FormRow
         description={`Counted by this app. The daily count starts over at midnight Pacific time, in ${formatRemaining(gemini.resets_at_ms - loadedAtMs)}.`}
         title="Gemini API: requests today"
       >
-        <SettingsButton onClick={onRefresh} variant="ghost">
+        <Button onClick={onRefresh} tone="ghost">
           Refresh
-        </SettingsButton>
-      </SettingsRow>
-      {gemini.models.length === 0 && (
-        <SettingsBlock tone="quiet">No Gemini requests yet today.</SettingsBlock>
-      )}
+        </Button>
+      </FormRow>
+      {gemini.models.length === 0 && <Notice tone="quiet">No Gemini requests yet today.</Notice>}
       {gemini.models.map((entry) => (
-        <SettingsRow key={entry.model} title={entry.model}>
+        <FormRow key={entry.model} title={entry.model}>
           {requestsLabel(entry.requests)}
-        </SettingsRow>
+        </FormRow>
       ))}
-      <SettingsBlock tone={gemini.last_limit ? 'warn' : 'quiet'}>
+      <Notice tone={gemini.last_limit ? 'warn' : 'quiet'}>
         {gemini.last_limit ? (
           <>
             Rate limit reached today.{' '}
@@ -106,9 +104,9 @@ function UsageDetails({
         ) : (
           'No rate-limit errors from Gemini today.'
         )}
-      </SettingsBlock>
-      <SettingsRow description="Google shows your exact limits there." title="Gemini API limits">
-        <SettingsButton
+      </Notice>
+      <FormRow description="Google shows your exact limits there." title="Gemini API limits">
+        <Button
           onClick={() =>
             void openExternal(AI_STUDIO_USAGE_URL).catch((cause: unknown) =>
               console.warn('Could not open the AI Studio usage page.', cause),
@@ -116,16 +114,16 @@ function UsageDetails({
           }
         >
           Open AI Studio
-        </SettingsButton>
-      </SettingsRow>
+        </Button>
+      </FormRow>
 
-      <SettingsRow
+      <FormRow
         description="Coaching, answer examples and memory checks. Antigravity reports no remaining quota, so only what this app sent is counted."
         title="Antigravity: requests today"
       >
         {requestsLabel(antigravity.requests_today)}
-      </SettingsRow>
-      <SettingsBlock tone={antigravity.last_quota_error ? 'warn' : 'quiet'}>
+      </FormRow>
+      <Notice tone={antigravity.last_quota_error ? 'warn' : 'quiet'}>
         {antigravity.last_quota_error ? (
           <>
             Last quota error.{' '}
@@ -134,7 +132,7 @@ function UsageDetails({
         ) : (
           'No Antigravity quota errors recorded.'
         )}
-      </SettingsBlock>
+      </Notice>
     </>
   );
 }

@@ -11,6 +11,7 @@ description: Review a finished English Trainer change before it is committed or 
    - principles: no comments (`bun run check:conventions`), names say intent, one job per unit,
      no speculative abstraction, every fact in one place, English only;
    - feature `flow.md` matches the changed flow;
+   - UI: controls from `src/shared/ui` (Base UI + Tailwind), no new `.css`, no hex or `[...]` values;
    - layers: imports go down, no feature→feature, public `index.ts` only, no new code in legacy folders;
    - IPC: Rust type changed → bindings regenerated and schema updated in the same change;
    - errors: typed end to end, no `throw`, no message matching, no swallowed `Result`;

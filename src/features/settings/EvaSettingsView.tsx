@@ -11,7 +11,7 @@ import {
   sphereGradient,
   withSphere,
 } from '@/lib/evaLook';
-import { SettingsButton } from '@/shared/ui/settings-button';
+import { Button } from '@/shared/ui/button';
 import { EVA_MOOD_GUIDE, nextMoodIndex } from './lib/evaMoods';
 import { SegmentedControl } from './SettingsControls';
 import './settings.css';
@@ -80,9 +80,9 @@ export function EvaSettingsView() {
         <div className="settings-preview">
           <Eva label={`Eva preview, ${currentMood.name}`} mood={currentMood.mood} size={200} />
           <div className="settings-preview-name">{currentMood.name}</div>
-          <SettingsButton onClick={() => setIsCycling(!isCycling)} variant="ghost">
+          <Button onClick={() => setIsCycling(!isCycling)} tone="ghost">
             {isCycling ? 'Pause preview' : 'Play all moods'}
-          </SettingsButton>
+          </Button>
         </div>
         <div className="settings-look-controls">
           <h2 id="eva-look-heading">Look</h2>
@@ -141,9 +141,9 @@ export function EvaSettingsView() {
             </span>
           </div>
           <div className="settings-look-reset">
-            <SettingsButton onClick={() => setLook(DEFAULT_EVA_LOOK)} variant="ghost">
+            <Button onClick={() => setLook(DEFAULT_EVA_LOOK)} tone="ghost">
               Reset to default
-            </SettingsButton>
+            </Button>
           </div>
         </div>
       </section>

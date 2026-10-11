@@ -7,8 +7,8 @@
 
 ## Claude Code specifics
 
-- Project skills live in `.agents/skills` (`.claude/skills` links to it): `feature`, `effect`, `e2e`,
-  `writing`, `dod`. Load the one that matches the task instead of reading whole docs.
+- Project skills live in `.agents/skills` (`.claude/skills` links to it): `feature`, `ui-component`,
+  `effect`, `e2e`, `writing`, `dod`. Load the one that matches the task instead of reading whole docs.
 - A PostToolUse hook runs `biome check --write` on every edited TS/JSON/CSS file; do not run a separate
   format pass, and re-read a file only if a later edit fails to match.
 - Dev server for the browser pane: the `web` entry in `.claude/launch.json` (`:1420`, `bun run dev:web`),

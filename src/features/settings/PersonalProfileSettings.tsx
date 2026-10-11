@@ -9,9 +9,9 @@ import {
   type PersonalProfile,
   personalProfileSummary,
 } from '@/lib/personalProfileTypes';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { GlossarySettings } from './GlossarySettings';
 import { SettingsGroup } from './SettingsGroup';
 
@@ -75,22 +75,22 @@ export function PersonalProfileSettings() {
   return (
     <SettingsGroup id="personalisation" title="Personalisation">
       {state.tag === 'error' ? (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           Your profile could not be loaded. Reopen Settings to try again.
-        </SettingsBlock>
+        </Notice>
       ) : (
-        <SettingsRow
+        <FormRow
           description={state.tag === 'loading' ? 'Loading…' : personalProfileSummary(state.profile)}
           title="About you"
         >
-          <SettingsButton
+          <Button
             aria-expanded={isEditing}
             disabled={state.tag !== 'ready' || isSaving}
             onClick={isEditing ? () => setIsEditing(false) : beginEdit}
           >
             {isEditing ? 'Cancel' : 'Edit'}
-          </SettingsButton>
-        </SettingsRow>
+          </Button>
+        </FormRow>
       )}
       {isEditing && (
         <form className="personal-profile-form" onSubmit={(event) => void handleSave(event)}>
@@ -120,9 +120,9 @@ export function PersonalProfileSettings() {
             </p>
           )}
           <div className="personal-profile-actions">
-            <SettingsButton disabled={isSaving} type="submit">
+            <Button disabled={isSaving} type="submit">
               {isSaving ? 'Saving…' : 'Save profile'}
-            </SettingsButton>
+            </Button>
           </div>
         </form>
       )}

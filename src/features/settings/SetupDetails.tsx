@@ -1,5 +1,5 @@
 import type { SetupDiagnostics } from '@/lib/types';
-import { SettingsButton } from '@/shared/ui/settings-button';
+import { Button } from '@/shared/ui/button';
 
 export type DiagnosticsState =
   | { tag: 'loading' }
@@ -75,16 +75,16 @@ export function SetupDetails({
           </>
         )}
         <div className="settings-details-actions">
-          <SettingsButton onClick={onRecheck} variant="ghost">
+          <Button onClick={onRecheck} tone="ghost">
             Recheck files
-          </SettingsButton>
-          <SettingsButton
+          </Button>
+          <Button
             disabled={setupDisabledReason !== undefined}
             onClick={onRunSetupAgain}
-            variant="ghost"
+            tone="ghost"
           >
             Run setup again
-          </SettingsButton>
+          </Button>
         </div>
         {setupDisabledReason && <p role="status">{setupDisabledReason}</p>}
       </div>

@@ -24,11 +24,13 @@ Targets: [`FRONTEND.md`](FRONTEND.md), [`EFFECT.md`](EFFECT.md), [`BACKEND.md`](
 
 1. Files moved into the target layout; old files deleted; imports updated.
 2. Side effects through Effect services; state in atoms; no `useEffect` data loading left.
-3. IPC types come from `core/ipc/bindings` + schemas; the slice's hand-written guards deleted.
-4. Tests: helpers have unit tests, the feature has behaviour tests in `tests/`, existing e2e flows
+3. Controls come from `src/shared/ui` (Base UI + Tailwind); no HeroUI imports and no `.css` files
+   left in the slice.
+4. IPC types come from `core/ipc/bindings` + schemas; the slice's hand-written guards deleted.
+5. Tests: helpers have unit tests, the feature has behaviour tests in `tests/`, existing e2e flows
    pass unchanged.
-5. The slice's paths removed from the legacy list in `biome.json`.
-6. `bun run verify` passes; the touched flow is checked by hand in the desktop app
+6. The slice's paths removed from the legacy list in `biome.json`.
+7. `bun run verify` passes; the touched flow is checked by hand in the desktop app
    (`bun run dev`) and the commit message says what was checked manually.
 
 ## 3. Order
@@ -40,7 +42,7 @@ are proven.
 | # | Step | Frontend | Rust |
 | :--- | :--- | :--- | :--- |
 | 0 | Foundation + pilot (this branch) | tooling, `core/ipc`, `core/runtime`, `RegistryProvider`, `features/gemini-key` | `core::IpcError`, ts-rs, `gemini_key` context with its commands |
-| 1 | Shared kit + e2e layout | `theme/` → `shared/theme`, generic `components/` → `shared/ui`, generic `lib/` helpers → `shared/helpers`; `e2e/` → `fixtures/ pages/ components/ data/ specs/` (TESTING.md §3) | — |
+| 1 | Shared kit + e2e layout | UI kit in `shared/ui` on Base UI + Tailwind replacing every HeroUI component (Button, Kbd, Toast, Tooltip, Tabs, Switch, SearchField, Popover, Chip, AlertDialog), then `@heroui/react` and `@heroui/styles` removed; `App.css` + `theme/theme.css` → `src/app/styles.css` (tokens as `@theme`); each migrated slice replaces its `.css` with Tailwind classes; `theme/` logic → `shared/theme`, generic `components/` → `shared/ui`, generic `lib/` helpers → `shared/helpers`; `e2e/` → `fixtures/ pages/ components/ data/ specs/` (TESTING.md §3) | — |
 | 2 | Settings slices | each settings group becomes a feature (`appearance`, `privacy`, `translation-settings`, `ai-provider`, …); `screens/settings` composes them | `ai_settings`, `api_usage`, `setup` contexts |
 | 3 | Small features | `coach` → `features/coaching-note`, `talk-start`, `first-run` (+ `screens/first-run`) | `translation` |
 | 4 | Core audio & speech | `audio/` → `core/audio` with Scope-managed microphone; `speech/` → `core/speech` (TTS, STT client, live transcript as `Stream`) | `audio` → `speech` context (whisper server as an `infra` adapter) |

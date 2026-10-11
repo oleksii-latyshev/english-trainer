@@ -1,8 +1,8 @@
 import { useTrainer } from '@/context/TrainerContext';
 import { SPEECH_RATE_OPTIONS } from '@/features/speech/voicePreferences';
-import { SettingsBlock } from '@/shared/ui/settings-block';
-import { SettingsButton } from '@/shared/ui/settings-button';
-import { SettingsRow } from '@/shared/ui/settings-row';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { SegmentedControl } from './SettingsControls';
 import { SettingsGroup } from './SettingsGroup';
 import { VoiceSelection } from './VoiceSelection';
@@ -17,7 +17,7 @@ export function VoiceSettings() {
 
   return (
     <SettingsGroup id="voice" title="Voice">
-      <SettingsRow
+      <FormRow
         title="Voice engine"
         description="Natural speech runs on this Mac. A system voice keeps replies moving if it is unavailable or slow."
       >
@@ -30,32 +30,32 @@ export function VoiceSettings() {
             { value: 'system', label: 'System' },
           ]}
         />
-      </SettingsRow>
+      </FormRow>
       {speech.engine === 'natural' && speech.naturalAvailability !== 'ready' && (
-        <SettingsBlock role="status">
+        <Notice role="status">
           {speech.naturalAvailability === 'loading'
             ? 'Preparing local voice. System speech is available meanwhile.'
             : 'Local voice is unavailable. Using system speech.'}
           {speech.naturalAvailability === 'unavailable' && (
-            <SettingsButton onClick={speech.retryNaturalVoice} variant="ghost">
+            <Button onClick={speech.retryNaturalVoice} tone="ghost">
               Retry local voice
-            </SettingsButton>
+            </Button>
           )}
-        </SettingsBlock>
+        </Notice>
       )}
       <VoiceSelection />
-      <SettingsRow title="Speed">
+      <FormRow title="Speed">
         <SegmentedControl
           label="Speed"
           onChange={speech.setRate}
           options={RATE_OPTIONS}
           value={SPEECH_RATE_OPTIONS.find((rate) => rate === speech.rate)}
         />
-      </SettingsRow>
+      </FormRow>
       {speech.state.tag === 'error' && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           Voice playback is unavailable.
-        </SettingsBlock>
+        </Notice>
       )}
     </SettingsGroup>
   );

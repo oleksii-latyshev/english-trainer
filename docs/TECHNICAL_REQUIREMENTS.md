@@ -9,7 +9,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 | :--- | :--- |
 | OS | macOS 14+, Apple Silicon. Apple Foundation Models and `apple-translation` need macOS 26+ (Apple Intelligence for the model). |
 | Desktop | Tauri v2, Rust stable, SQLite via `rusqlite` (bundled). |
-| Frontend | React 19, TypeScript (strict), Vite, Bun, Tailwind CSS v4, HeroUI v3, TanStack Router, Lucide. |
+| Frontend | React 19, TypeScript (strict), Vite, Bun, Tailwind CSS v4, Base UI (own kit in `src/shared/ui`; HeroUI v3 until migration step 1), TanStack Router, Lucide. |
 | Quality | Biome, `tsc --noEmit`, `bun test`, rustfmt, Clippy with warnings as errors, `cargo test`; run by Lefthook pre-commit and GitHub Actions CI. |
 | Packaging | `bun run build:desktop` → ad-hoc signed `.app` and DMG; the Apple helpers are compiled at build time and bundled. |
 

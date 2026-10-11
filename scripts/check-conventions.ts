@@ -10,6 +10,8 @@ const STRICT_LINT_MARKER = 'deny(clippy::unwrap_used';
 const GENERATED_BINDINGS_DIR = join('src', 'core', 'ipc', 'bindings');
 const LAYER_DIRS = ['app', 'screens', 'core', 'shared'];
 const IDENTIFIER_CHARACTER = /[A-Za-z0-9_]/;
+const GLOBAL_STYLESHEET = join('src', 'app', 'styles.css');
+const LEGACY_UI_LIBRARY_IMPORT = /(?:\bfrom|\bimport)\s*\(?\s*['"]@heroui\//;
 const RAW_STRING_OPENING = /b?r(#*)"/y;
 
 function lineOf(source: string, index: number): number {
@@ -67,6 +69,14 @@ export function findTypeScriptComments(source: string, fileName = 'file.ts'): Co
     .filter(({ text }) => !isDirective(text))
     .map(({ range, text }) => ({ line: lineOf(source, range.pos), text }))
     .sort((left, right) => left.line - right.line);
+}
+
+export function importsLegacyUiLibrary(source: string): boolean {
+  return LEGACY_UI_LIBRARY_IMPORT.test(source);
+}
+
+export function isGlobalStylesheet(relativePath: string): boolean {
+  return relativePath === GLOBAL_STYLESHEET;
 }
 
 function stringEnd(source: string, start: number): number {
@@ -246,10 +256,25 @@ export function collectViolations(root: string): Violation[] {
   const rust = commentViolations(root, rustFiles, (file) =>
     findRustComments(readFileSync(file, 'utf8')),
   );
-  const css = commentViolations(root, newStructureFiles(root, ['.css']), (file) =>
-    findCssComments(readFileSync(file, 'utf8')),
+  const cssFiles = newStructureFiles(root, ['.css']);
+  const strayCss = cssFiles
+    .filter((file) => !isGlobalStylesheet(relative(root, file)))
+    .map((file) => ({
+      location: relative(root, file),
+      message: `.css is not allowed; style with Tailwind classes (only ${GLOBAL_STYLESHEET} exists)`,
+    }));
+  const globalCss = commentViolations(
+    root,
+    cssFiles.filter((file) => isGlobalStylesheet(relative(root, file))),
+    (file) => findCssComments(readFileSync(file, 'utf8')),
   );
-  return [...typeScript, ...css, ...rust, ...flowViolations(root)];
+  const legacyUi = newStructureFiles(root, ['.ts', '.tsx'])
+    .filter((file) => importsLegacyUiLibrary(readFileSync(file, 'utf8')))
+    .map((file) => ({
+      location: relative(root, file),
+      message: 'HeroUI is legacy; use the kit in src/shared/ui',
+    }));
+  return [...typeScript, ...strayCss, ...globalCss, ...legacyUi, ...rust, ...flowViolations(root)];
 }
 
 function main(): void {
