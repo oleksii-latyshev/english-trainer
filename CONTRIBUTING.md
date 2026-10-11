@@ -54,6 +54,14 @@ issues hold the work.
   latency or STT work, and what was checked by hand on the Mac.
 - Never merge with red or pending checks. CI (`ci.yml`) and Security (`security.yml`) run on every PR.
 
-## 5. Releases
+## 5. Protection of `main`
+
+`main` accepts changes only through a PR, for everyone including admins. Required checks: Frontend
+(Biome, Typecheck, Test), Rust (Format, Clippy, Test), Browser flows (Playwright), JS advisories
+(bun audit) and Rust advisories and licences (cargo-deny). History stays linear; force-pushes and
+deleting `main` are refused. No review approval is required. Branches need not be up to date before
+merging. Read it with `gh api repos/oleksii-latyshev/english-trainer/branches/main/protection`.
+
+## 6. Releases
 
 A `v*.*.*` tag on `main` builds and publishes the installer (`docs/SETUP.md` › Release).
