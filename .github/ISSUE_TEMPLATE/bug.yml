@@ -1,0 +1,50 @@
+name: Bug
+description: Something behaves differently from what the docs or the UI promise
+title: "fix(scope): imperative subject"
+labels: ["type:fix"]
+body:
+  - type: markdown
+    attributes:
+      value: Never attach recordings of your voice, transcripts or API keys. Describe them instead.
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Exact error copy, if there is any.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: App version, macOS and Mac
+      placeholder: v0.2.0, macOS 26.1, MacBook Pro M1 Pro
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings
+      description: Conversation provider, voice engine, Whisper model, microphone.
+    validations:
+      required: false

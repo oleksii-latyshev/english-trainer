@@ -44,13 +44,15 @@
   `Schema.Literals`, atoms in `effect/reactivity`). Before using an API you have not seen in this
   repo, check the pilot, the relevant section of `node_modules/effect/AGENTS.md` (the official guide
   shipped with the package) or `node_modules/effect/dist/*.d.ts`.
-- Task recipes live in `.agents/skills/` (`feature`, `ui-component`, `effect`, `e2e`, `writing`, `dod`); use the one
+- Task recipes live in `.agents/skills/` (`task`, `feature`, `ui-component`, `effect`, `e2e`, `writing`, `dod`); use the one
   that matches the task.
 
 ## Done
 
-- One roadmap feature or one migration step = one commit of meaningful size. A feature is not
-  accepted because code exists; acceptance is checked in the built app on a physical Mac.
+- Work follows the issue → PR loop in `CONTRIBUTING.md` (`task` skill): one issue, one linked branch,
+  one PR, squash merge after CI is green. Nothing is pushed to `main` directly.
+- A roadmap feature is not accepted because code exists; acceptance is checked in the built app on
+  a physical Mac, and the PR says what was checked by hand.
 - Run the checks relevant to the change (`bun run verify` runs all of them). Report what was
   verified automatically and what by hand.
 
