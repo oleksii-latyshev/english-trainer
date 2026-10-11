@@ -56,7 +56,7 @@ Speech model, AI keys, checks and building the installer: [`docs/SETUP.md`](docs
 | [Product](docs/PRODUCT_SPEC.md) · [Roadmap](docs/ROADMAP.md) · [Design](docs/DESIGN.md) | what it does, what is next, how it looks |
 | [Architecture](docs/ARCHITECTURE.md) · [Technical requirements](docs/TECHNICAL_REQUIREMENTS.md) | runtime structure and contracts |
 | [Code requirements](CODE_REQUIREMENTS.md) · [`docs/engineering/`](docs/engineering) | how code is written: layers, Effect, Rust, tests |
-| [AGENTS.md](AGENTS.md) | entry point for AI coding agents |
+| [Contributing](CONTRIBUTING.md) · [AGENTS.md](AGENTS.md) | issue → PR workflow; entry point for AI coding agents |
 
 ## License
 
