@@ -61,42 +61,23 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Diagnose fake whisper-server (temporary)
+      - name: Diagnose fake whisper-server under cargo test (temporary)
         run: |
-          dir=$(mktemp -d)
-          python3 - "$dir" <<'PY'
-          import re, sys, pathlib
-          src = pathlib.Path("src-tauri/src/audio/server_tests.rs").read_text()
-          body = re.search(r'const FAKE_SERVER: &str = r#"(.*?)"#;', src, re.S).group(1)
-          path = pathlib.Path(sys.argv[1]) / "whisper-server"
-          path.write_text(body)
-          path.chmod(0o755)
-          PY
-          touch "$dir/ggml-small.en.bin"
-          xattr -l "$dir/whisper-server" || true
-          head -1 "$dir/whisper-server"
-          echo "== A: python3 script directly, 12 s, import trace"
-          perl -e 'alarm 12; exec @ARGV' python3 -X importtime "$dir/whisper-server" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18766 2>&1 | tail -15 || echo "A ended: $?"
-          echo "== B: executed via shebang in background, stack sample"
-          "$dir/whisper-server" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18767 > "$dir/b.log" 2>&1 &
-          pid=$!
-          sleep 4
-          nc -z 127.0.0.1 18767 && echo "B listening" || echo "B not listening"
-          sample $pid 2 -file "$dir/b.sample" >/dev/null 2>&1 || true
-          grep -E 'Thread|^ +[0-9]+ ' "$dir/b.sample" | head -40 || true
-          kill $pid 2>/dev/null || true
-          echo "== C: same code via python3 -c in background"
-          python3 -c "$(cat "$dir/whisper-server")" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18768 &
-          pid=$!
-          sleep 4
-          nc -z 127.0.0.1 18768 && echo "C listening" || echo "C not listening"
-          kill $pid 2>/dev/null || true
-          echo "== D: minimal socket bind in background"
-          python3 -c "import socket,time; s=socket.socket(); s.bind(('127.0.0.1',18769)); s.listen(); print('bound', flush=True); time.sleep(20)" &
-          pid=$!
-          sleep 4
-          nc -z 127.0.0.1 18769 && echo "D listening" || echo "D not listening"
-          kill $pid 2>/dev/null || true
+          if [ -d /Library/Developer/CommandLineTools ]; then export DEVELOPER_DIR=/Library/Developer/CommandLineTools; fi
+          echo "DEVELOPER_DIR=${DEVELOPER_DIR:-unset}"
+          cargo test --locked --manifest-path src-tauri/Cargo.toml --no-run 2>&1 | tail -2
+          cargo test --locked --manifest-path src-tauri/Cargo.toml audio::server_tests::shutting_down_leaves_no_process -- --test-threads=1 > /tmp/one.log 2>&1 &
+          tpid=$!
+          sleep 12
+          pgrep -fl 'whisper-server|english_trainer' || echo "no matching processes"
+          for pid in $(pgrep -f 'whisper-server -m'); do
+            echo "== pid $pid"
+            lsof -nP -p "$pid" -a -i || echo "no sockets"
+            lsof -nP -p "$pid" | head -25
+            sample "$pid" 1 -file "/tmp/s.$pid" >/dev/null 2>&1 && grep -E '^ +[0-9]+ ' "/tmp/s.$pid" | head -25
+          done
+          wait $tpid || true
+          tail -25 /tmp/one.log
 
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
