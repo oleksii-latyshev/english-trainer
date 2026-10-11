@@ -16,7 +16,7 @@ How the running system is shaped. Numbers, limits and error codes live in
 ```text
 ┌──────────────────────── React UI (Tauri WebView) ────────────────────────┐
 │ Talk screen · Learning Memory · Settings                                  │
-│ Web Audio capture (PCM 16 kHz) · system TTS (speechSynthesis) · visuals   │
+│ Web Audio capture (PCM 16 kHz) · speech playback queue · visuals          │
 └───────────────┬──────────────────────────────────────────▲───────────────┘
                 │ invoke() (typed)                         │ Channel (streamed chunks)
 ┌───────────────▼──────────────────────────────────────────┴───────────────┐
@@ -25,13 +25,14 @@ How the running system is shaped. Numbers, limits and error codes live in
 │ learning/      normalisation, scheduling, usage and mastery rules         │
 │ persistence/   SQLite (single connection behind a mutex)                  │
 │ audio/         WAV validation, local Whisper                              │
+│ voice/         local natural voice (Supertonic 3 helper)                  │
 │ providers/     conversation engines, batch coaching, UsageReviewEngine    │
 │ translation/   on-device word lookup and bundled helper control           │
 │ setup/         diagnostics for local dependencies                         │
 └───────┬───────────────────────────┬──────────────────────────────────────┘
         │                           │
-  Local Whisper              Conversation / evaluation providers
-  (whisper.cpp)              Apple Foundation Models helper · Gemini API · agy
+  Local helpers               Conversation / evaluation providers
+  whisper.cpp · Supertonic 3  Apple Foundation Models helper · Gemini API · agy
 ```
 
 ## 3. Frontend and Rust split
@@ -44,7 +45,7 @@ How the running system is shaped. Numbers, limits and error codes live in
   [engineering/BACKEND.md](engineering/BACKEND.md).
 - UI lifecycle states (capture, practice) are discriminated unions.
 
-## 4. Audio and speech recognition
+## 4. Audio, speech recognition and speech output
 
 ```text
 record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
@@ -66,6 +67,11 @@ record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
   Memory review recorders and never opens a second microphone.
 - Raw audio exists only in memory and a temporary directory and is deleted after transcription,
   unless the learner opts in to keeping it (TR §8).
+- Speech output: `voice::VoiceEngine` owns one persistent bundled Supertonic 3 helper, prewarmed
+  outside the conversation queue, returning PCM WAV over typed binary IPC; its process lifecycle
+  stays in Rust. The UI speech facade (play, stream, pause, resume, stop) renders one phrase ahead
+  and falls back to macOS system voices for the rest of a stream when the engine is busy, slow or
+  unavailable. Limits and timings: TR §4.
 
 ## 5. Conversation vs evaluation
 
@@ -93,7 +99,7 @@ sequenceDiagram
     end
 ```
 
-- The reply streams from `send_practice_turn`; the UI queues completed sentences to system TTS
+- The reply streams from `send_practice_turn`; the UI queues completed sentences to the speech facade
   independently of coaching.
 - Each saved answer joins a per-session coaching queue in Rust. Batches of up to five answers run in
   the background through `agy`; notes appear under the answers when a batch lands (`coaching-updated`
@@ -170,3 +176,4 @@ storage.
 
 Screen or active-app monitoring, cloud speech recognition, a native Swift rewrite, menu-bar and
 notification surfaces, WidgetKit, phoneme-level pronunciation scoring, multi-user features.
+

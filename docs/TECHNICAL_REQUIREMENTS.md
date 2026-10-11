@@ -95,13 +95,30 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 
 ## 4. Speech output
 
-- System voices through `speechSynthesis`, discovered at runtime, English preferred, no named voice
-  assumed. Adjustable rate; pause, resume, stop, replay. A new recording or AI turn cancels speech.
+- **Natural voice (default):** local Supertonic 3 INT8 in one persistent bundled helper, prewarmed
+  outside conversation turns. `prewarm_natural_voice() -> bool`; `synthesize_natural_voice(text,
+  voice_id, speed) -> binary PCM WAV` accepts nonempty text ≤ 4096 bytes, voice IDs 0–9 and a finite
+  rate 0.85–1.2. `VoiceError.code`: `unavailable | busy | invalid_input | timeout | process_failed`.
+  WAV frames ≤ 60 s; inference deadline 750 ms, after which the helper is killed and recovered. A
+  busy engine never queues. Generated audio is never retained or sent anywhere.
+- Each stream freezes voice and rate, splits phrases at clause/word boundaries to ≤ 48 characters
+  (a single oversized token stays whole), renders one phrase ahead and plays serially. Rust trims
+  model padding in 10 ms RMS windows at 0.0002, keeping 50 ms before and 120 ms after speech;
+  mid-phrase pauses stay.
+- **Fallback:** an unavailable, loading or busy engine uses system speech; slow or failed rendering
+  switches the rest of the stream to system speech within the 800 ms UI guard. One background
+  warm-up retries for later turns; if it fails, Settings offers Retry. Late audio after cancel or
+  unmount never plays. First audio = media `playing`; completion = final `ended`.
+- **System voices** (`speechSynthesis`) stay selectable: non-novelty English voices first, Premium →
+  Enhanced → standard, US → UK → other English, stable order; an explicit saved choice wins.
+  Adjustable rate; pause, resume, stop, replay. Engine choice and natural voice ID are UI
+  preferences, separate from the system voice URI and rate.
+- A new recording or AI turn cancels speech.
 - Streaming: `beginStream` queues completed English sentences serially, buffering partial words,
   abbreviations, decimals and quotation marks. `finish` adds the unspoken tail once; providers
-  without deltas speak the final reply once. Cancel, replacement and unmount invalidate utterance
-  callbacks. Auto-listening starts only after provider finish and final speech end, never between
-  sentences or after playback failure.
+  without deltas speak the final reply once. Cancel, replacement and unmount invalidate playback
+  callbacks. Auto-listening starts only after provider finish and the final speech end, never
+  between sentences or after playback failure.
 - `cancel_practice_reply(session_id) -> bool` atomically invalidates the pending turn before
   persistence. `ProviderError.code = cancelled` is recoverable; committed turns stay saved. Apple
   cancellation kills/restarts the helper; Gemini cancellation releases the caller promptly and drops

@@ -9,8 +9,8 @@ macOS · Apple Silicon · local speech recognition · your history never leaves 
 
 ## Features
 
-- **Talk** — a voice conversation: push-to-talk or hands-free, Eva starts speaking while her reply is
-  still being generated, and you can interrupt her
+- **Talk** — a voice conversation: push-to-talk or hands-free, Eva answers in a natural local voice
+  while her reply is still being generated, and you can interrupt her
 - **Inline coaching** — "More natural: …" and one focus point under each answer, without ever
   delaying the conversation; say it again and see what changed
 - **Help while speaking** — a frame, phrases and a model answer prepared before you start, plus a
@@ -31,7 +31,8 @@ flowchart LR
   core -->|"stream"| conv["Gemini API / Apple on-device<br/>conversation"]
   core -.->|"background"| eval["agy (Gemini Flash)<br/>coaching · wrap-up · review"]
   core --> db[("SQLite<br/>history · Memory")]
-  ui --> tts["macOS voices"]
+  core --> tts["Natural voice<br/>local Supertonic 3"]
+  tts -.->|"fallback"| sys["macOS voices"]
 ```
 
 The reply streams to the UI and is spoken sentence by sentence; coaching, help and wrap-up run in

@@ -1,4 +1,7 @@
+import { isNoveltyVoice, voiceQuality } from '@/features/speech/lib/voiceMetadata';
 import { getVoiceOptions, type SpeechVoiceInfo } from '@/features/speech/voices';
+
+export { isNoveltyVoice, voiceQuality } from '@/features/speech/lib/voiceMetadata';
 
 export type VoiceChoice = {
   voiceURI: string;
@@ -11,34 +14,6 @@ type VoiceLike = SpeechVoiceInfo & { name: string };
 
 const MAX_CHOICES = 4;
 
-/** macOS ships these joke and effect voices as English; none of them is a voice to practise with. */
-const NOVELTY_VOICES = new Set([
-  'albert',
-  'bad news',
-  'bahh',
-  'bells',
-  'boing',
-  'bubbles',
-  'cellos',
-  'good news',
-  'jester',
-  'organ',
-  'superstar',
-  'trinoids',
-  'whisper',
-  'wobble',
-  'zarvox',
-]);
-
-export function isNoveltyVoice(name: string): boolean {
-  return NOVELTY_VOICES.has(
-    name
-      .replace(/\s*\(.*\)\s*$/, '')
-      .trim()
-      .toLowerCase(),
-  );
-}
-
 const ACCENTS: Record<string, string> = {
   'en-us': 'American English',
   'en-gb': 'British English',
@@ -49,14 +24,6 @@ const ACCENTS: Record<string, string> = {
   'en-za': 'South African English',
   'en-nz': 'New Zealand English',
 };
-
-/** macOS marks better voices in the name: "Ava (Premium)", "Zoe (Enhanced)". */
-export function voiceQuality(name: string): 'premium' | 'enhanced' | 'standard' {
-  const lower = name.toLowerCase();
-  if (lower.includes('(premium)')) return 'premium';
-  if (lower.includes('(enhanced)')) return 'enhanced';
-  return 'standard';
-}
 
 const QUALITY_RANK = { premium: 0, enhanced: 1, standard: 2 } as const;
 

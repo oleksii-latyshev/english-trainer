@@ -17,9 +17,43 @@ describe('speech voice selection', () => {
     expect(getVoiceOptions(voices).map((option) => option.isEnglish)).toEqual([false, true, true]);
   });
 
+  it('skips novelty voices and ranks quality before accent', () => {
+    const voices = [
+      { ...voice('en-US', 'albert'), name: 'Albert' },
+      { ...voice('en-US', 'samantha'), name: 'Samantha' },
+    ];
+    expect(getPreferredVoice(voices)?.voiceURI).toBe('samantha');
+
+    const qualityVoices = [
+      { ...voice('en-US', 'standard-us'), name: 'Standard' },
+      { ...voice('en-GB', 'premium-uk'), name: 'Premium (Premium)' },
+    ];
+    expect(getPreferredVoice(qualityVoices)?.voiceURI).toBe('premium-uk');
+  });
+
+  it('preserves stable locale order when metadata is missing', () => {
+    const voices = [
+      voice('en-GB', 'english-uk'),
+      voice('en-US', 'english-us-first'),
+      voice('en-US', 'english-us-second'),
+    ];
+    expect(getPreferredVoice(voices)?.voiceURI).toBe('english-us-first');
+  });
+
   it('falls back to a system voice when no English voice exists', () => {
     expect(getPreferredVoice([voice('fr-FR', 'french')])?.voiceURI).toBe('french');
     expect(getPreferredVoice([])).toBeNull();
+  });
+
+  it('prefers a non-novelty installed voice when no suitable English voice exists', () => {
+    const voices = [
+      { ...voice('en-US', 'novelty'), name: 'Albert' },
+      { ...voice('fr-FR', 'french'), name: 'Amelie' },
+    ];
+    expect(getPreferredVoice(voices)?.voiceURI).toBe('french');
+
+    const noveltyOnly = [{ ...voice('en-US', 'novelty'), name: 'Albert' }];
+    expect(getPreferredVoice(noveltyOnly)?.voiceURI).toBe('novelty');
   });
 
   it('clamps speaking rate to the supported range', () => {

@@ -5,6 +5,7 @@ import { SettingsButton } from '@/shared/ui/settings-button';
 import { SettingsRow } from '@/shared/ui/settings-row';
 import { SegmentedControl } from './SettingsControls';
 import { SettingsGroup } from './SettingsGroup';
+import { VoiceSelection } from './VoiceSelection';
 
 const RATE_OPTIONS = SPEECH_RATE_OPTIONS.map((rate) => ({
   value: rate,
@@ -13,48 +14,36 @@ const RATE_OPTIONS = SPEECH_RATE_OPTIONS.map((rate) => ({
 
 export function VoiceSettings() {
   const { speech } = useTrainer();
-  const selectedVoice = speech.voices.find(
-    (option) => option.voice.voiceURI === speech.selectedVoiceURI,
-  );
-  const isPlaying = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
 
   return (
     <SettingsGroup id="voice" title="Voice">
-      {speech.voices.length === 0 ? (
-        <SettingsBlock role="status" tone="warn">
-          No system speech voices are available right now. Eva's voice uses the voices installed in
-          macOS.
+      <SettingsRow
+        title="Voice engine"
+        description="Natural speech runs on this Mac. A system voice keeps replies moving if it is unavailable or slow."
+      >
+        <SegmentedControl
+          label="Voice engine"
+          value={speech.engine}
+          onChange={speech.setEngine}
+          options={[
+            { value: 'natural', label: 'Natural' },
+            { value: 'system', label: 'System' },
+          ]}
+        />
+      </SettingsRow>
+      {speech.engine === 'natural' && speech.naturalAvailability !== 'ready' && (
+        <SettingsBlock role="status">
+          {speech.naturalAvailability === 'loading'
+            ? 'Preparing local voice. System speech is available meanwhile.'
+            : 'Local voice is unavailable. Using system speech.'}
+          {speech.naturalAvailability === 'unavailable' && (
+            <SettingsButton onClick={speech.retryNaturalVoice} variant="ghost">
+              Retry local voice
+            </SettingsButton>
+          )}
         </SettingsBlock>
-      ) : (
-        <SettingsRow
-          description="Voices come from macOS; Premium and Enhanced ones sound most natural."
-          htmlFor="eva-voice"
-          title="Eva's voice"
-        >
-          <select
-            className="settings-select"
-            id="eva-voice"
-            onChange={(event) => {
-              const value = event.target.value;
-              speech.selectVoice(value);
-            }}
-            value={speech.selectedVoiceURI ?? ''}
-          >
-            {speech.voices.map(({ voice, isEnglish }) => (
-              <option key={voice.voiceURI} value={voice.voiceURI}>
-                {voice.name} ({voice.lang}){isEnglish ? '' : ' · not English'}
-              </option>
-            ))}
-          </select>
-          <SettingsButton
-            disabled={!selectedVoice || isPlaying}
-            onClick={() => speech.play('Hi, I am Eva. This is how I will sound.')}
-            variant="ghost"
-          >
-            Preview
-          </SettingsButton>
-        </SettingsRow>
       )}
+      <VoiceSelection />
       <SettingsRow title="Speed">
         <SegmentedControl
           label="Speed"

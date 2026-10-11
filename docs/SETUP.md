@@ -47,6 +47,19 @@ curl -fL https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en
 
 Settings › Speech recognition measures every installed model on your own recordings.
 
+## Natural voice
+
+The Supertonic 3 helper, model and runtime are pinned build assets (`scripts/prepare-voice.sh`) and
+ship with their licences. Measure real latency before changing phrase length or the helper:
+
+```bash
+python3 scripts/check-voice.py
+cargo test --manifest-path src-tauri/Cargo.toml voice::tests::real_bundled_voice_latency_and_padding -- --ignored --nocapture
+```
+
+The first fails when warm p95 generation exceeds 750 ms; the second exercises the persistent engine
+and padding trimming.
+
 ## AI providers
 
 - **Gemini API** (default): create a key in [Google AI Studio](https://aistudio.google.com/apikey)

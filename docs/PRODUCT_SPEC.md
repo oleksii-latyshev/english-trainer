@@ -164,9 +164,9 @@ the background; the drill is cued practice and does not establish independent ma
 
 ## 9. Settings
 
-Microphone choice with a short record/playback check; conversation provider and API key; system
-voice and rate; personal glossary and profile; hands-free pause length; local data and privacy
-notes; native language for on-demand word translation.
+Microphone choice with a short record/playback check; conversation provider and API key; voice
+(natural local voice or a system voice) and rate; personal glossary and profile; hands-free pause
+length; local data and privacy notes; native language for on-demand word translation.
 
 ## 10. Later
 

@@ -31,6 +31,9 @@ test-results/
 src-tauri/binaries/apple-conversation
 src-tauri/binaries/apple-translation
 
+src-tauri/binaries/natural-voice/*
+!src-tauri/binaries/natural-voice/.keep
+
 # Claude Code local state
 .claude/settings.local.json
 .claude/worktrees/

@@ -44,8 +44,9 @@ only F1–F10 and reports that answers are easier to structure than in the first
 | F11 | Write, then speak | `[~]` | full write → review → speak → review run with real audio |
 | F12 | Practice my usual mistakes | `[~]` | five relevant questions, real audio, resume |
 | F13 | Translate a word | `[~]` | selection in Talk/notes/Memory; translation relevant; model download consent |
+| V1 | Natural local voice (Supertonic 3, four voices, system fallback) — taken ahead of the avatar | `[~]` | sounds natural; first audio quick; busy or slow engine falls back without a gap |
 
-The learner chose to batch the physical-Mac checks for F3–F13 into one later pass.
+The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one later pass.
 
 ## In progress
 
@@ -69,17 +70,16 @@ Approved in the glass design canvas ([DESIGN](DESIGN.md)); each needs its own fe
 
 Ordered by expected value; start only with real usage data.
 
-1. **Avatar** — 2D Eva animated by real audio, later 3D with lip-sync (needs analysable TTS audio);
-   experimental own character (Rive/Lottie, ten states, fallback to Eva) in Settings › Eva.
-2. **Natural voice** — neural TTS the learner enjoys; curated voice descriptions in first run.
-3. **Interview packs** — structured mock interviews on the Talk screen.
-4. **Progress view** — weekly trends with examples from real answers.
-5. **Eva check-ins, menu-bar quick practice and widgets** — opt-in floating panel with one
+1. **Avatar** — 2D Eva animated by real audio, later 3D with lip-sync driven by the natural voice's
+   PCM; experimental own character (Rive/Lottie, ten states, fallback to Eva) in Settings › Eva.
+2. **Interview packs** — structured mock interviews on the Talk screen.
+3. **Progress view** — weekly trends with examples from real answers.
+4. **Eva check-ins, menu-bar quick practice and widgets** — opt-in floating panel with one
    spontaneous question (30–90 s answer), frequency and quiet hours, never over full-screen apps or
    Focus, no guilt mechanics.
-6. **Windows build** — Gemini as the provider; needs a Windows CI job and installer.
-7. **4/3/2 retelling drill.**
-8. **Pronunciation** — shadowing feedback, later phoneme-level scoring as a separate pipeline.
+5. **Windows build** — Gemini as the provider; needs a Windows CI job and installer.
+6. **4/3/2 retelling drill.**
+7. **Pronunciation** — shadowing feedback, later phoneme-level scoring as a separate pipeline.
 
 ## Decisions
 
@@ -88,7 +88,7 @@ Ordered by expected value; start only with real usage data.
 | Practice language | English only. One exception: on-demand translation of a selected word into the native language (F13), on device. |
 | Conversation provider | Gemini API (default, free tier) and Apple Foundation Models (on-device fallback), both streaming behind one trait. Default chosen by measured time to first spoken word. |
 | Background AI | Coaching (batches of ≤ 5 answers), wrap-up, review material and rescue run through `agy` pinned to Gemini Flash models; the Gemini API free quota is reserved for conversation and the F6 planner. `agy` never runs on the real-time path. |
-| Speech | Local Whisper (`small.en` when installed). macOS system voices; neural TTS only with the avatar. |
+| Speech | Local Whisper (`small.en` when installed). Local natural voice (Supertonic 3) with macOS system voices as fallback; it came before the avatar at the learner's request. |
 | Gemini key | Pasted in Settings, encrypted file bound to this Mac (no Keychain prompt); `ENG_TRAINER_GEMINI_API_KEY` for development. Free-tier data use is stated next to the field. |
 | Usage-review / mastery streak | Frozen: kept working, not extended. |
 | Portability | macOS only for now; core code must not block Windows (providers behind traits, no macOS APIs outside adapters). |
