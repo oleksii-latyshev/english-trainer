@@ -2,30 +2,26 @@ import { Toast } from '@base-ui/react/toast';
 import { Button } from '@/shared/ui/button';
 import { StatusIcon } from '@/shared/ui/status-icon';
 import { toastManager } from './manager';
+import { toastStyles } from './styles';
 
 export { toast } from './manager';
 
-import { toastStyles } from './styles';
-
 const TIMEOUT_MS = 4000;
 
-function isTone(type: string | undefined): type is 'success' | 'danger' {
+function isStatusTone(type: string | undefined): type is 'success' | 'danger' {
   return type === 'success' || type === 'danger';
-}
-
-function statusOf(type: string | undefined) {
-  return type === 'success' || type === 'danger' ? type : 'info';
 }
 
 function ToastList() {
   const { toasts } = Toast.useToastManager();
   return toasts.map((item) => {
-    const tone = isTone(item.type) ? item.type : 'neutral';
+    const statusTone = isStatusTone(item.type) ? item.type : undefined;
+    const tone = statusTone ?? 'neutral';
     const { root, indicator, content, title, close } = toastStyles({ tone });
     return (
       <Toast.Root className={root()} key={item.id} toast={item}>
         <div className={indicator()}>
-          <StatusIcon status={statusOf(item.type)} />
+          <StatusIcon status={statusTone ?? 'info'} />
         </div>
         <Toast.Content className={content()}>
           <Toast.Title className={title()} />
