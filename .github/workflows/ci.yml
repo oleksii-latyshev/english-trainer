@@ -56,6 +56,11 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Setup Python for the fake whisper-server in Rust tests
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
 
