@@ -1,6 +1,7 @@
-import { Button, Kbd } from '@heroui/react';
 import { isTauri } from '@tauri-apps/api/core';
 import { Fragment } from 'react';
+import { Button } from '@/shared/ui/button';
+import { Kbd } from '@/shared/ui/kbd';
 import { GuidedAnswerPanel } from './GuidedAnswerPanel';
 import { HELP_LEVELS, type HelpLevel } from './lib/helpLevels';
 import { PlanningTimer } from './PlanningTimer';
@@ -51,9 +52,9 @@ export function HelpBar({
           <Button
             aria-pressed={level === item.id}
             className="talk-chip"
-            isDisabled={disabled}
+            disabled={disabled}
             key={item.id}
-            onPress={() => {
+            onClick={() => {
               if (level === item.id) {
                 if (item.id === 'example') timer.cancel();
                 onLevelChange(null);
@@ -62,7 +63,7 @@ export function HelpBar({
               onLevelChange(item.id);
             }}
             size="sm"
-            variant="outline"
+            tone="outline"
           >
             <span aria-hidden="true" className="talk-chip-number">
               {item.keyNumber}

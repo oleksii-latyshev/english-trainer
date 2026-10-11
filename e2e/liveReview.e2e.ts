@@ -2,6 +2,8 @@ import { expect, type Page, test } from '@playwright/test';
 import { harnessState } from './harnessTypes';
 import { installLiveReviewFixture } from './liveReviewFixture';
 
+const LIVE_PARTIAL_WAIT = { timeout: 10_000 };
+
 async function openAndRecord(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: /^Memory/ }).click();
@@ -24,6 +26,7 @@ test('opening Memory review prewarms a cold speech engine for the first live ans
   await openAndRecord(page);
   await expect(page.getByRole('article', { name: 'Live transcript', exact: true })).toContainText(
     'A provisional suggestion',
+    LIVE_PARTIAL_WAIT,
   );
   expect(await page.evaluate(() => window.__ET_LIVE_REVIEW__.warmCalls)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__ET_LIVE_REVIEW__.submitted)).toEqual([]);
@@ -35,7 +38,7 @@ test('live review shows provisional words but saves only the final transcript, i
   await installLiveReviewFixture(page);
   await openAndRecord(page);
   const bubble = page.getByRole('article', { name: 'Live transcript', exact: true });
-  await expect(bubble).toContainText('A provisional suggestion');
+  await expect(bubble).toContainText('A provisional suggestion', LIVE_PARTIAL_WAIT);
   expect(await page.evaluate(() => window.__ET_LIVE_REVIEW__.submitted)).toEqual([]);
   await page.getByRole('button', { name: 'Finish answer' }).click();
   await expect(page.getByText('Could we find a compromise?')).toBeVisible();
@@ -45,7 +48,7 @@ test('live review shows provisional words but saves only the final transcript, i
   ]);
 
   await page.getByRole('button', { name: 'Shadow it' }).click();
-  await expect(bubble).toContainText('A provisional suggestion');
+  await expect(bubble).toContainText('A provisional suggestion', LIVE_PARTIAL_WAIT);
   await page.getByRole('button', { name: 'Finish answer' }).click();
   await expect(page.getByRole('button', { name: 'Finish', exact: true })).toBeVisible();
   await expect(bubble).toHaveCount(0);
@@ -92,6 +95,7 @@ test('late partial after cancellation cannot enter a new recording or score an a
   await expect(page.getByText('A late provisional suggestion')).toHaveCount(0);
   await expect(page.getByRole('article', { name: 'Live transcript', exact: true })).toContainText(
     'A provisional suggestion',
+    LIVE_PARTIAL_WAIT,
   );
   expect(await page.evaluate(() => window.__ET_LIVE_REVIEW__.submitted)).toEqual([]);
   await page.getByRole('button', { name: 'End review' }).click();

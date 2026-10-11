@@ -1,4 +1,3 @@
-import { Button } from '@heroui/react';
 import { useEffect, useRef, useState } from 'react';
 import { showSavedToast } from '@/components/savedToast';
 import { deletePhraseCard } from '@/features/memory/memoryApi';
@@ -10,6 +9,7 @@ import {
   practicePhaseLabel,
 } from '@/lib/practiceOptions';
 import { isProviderError } from '@/lib/types';
+import { Button } from '@/shared/ui/button';
 import { checkingLine, formatDuration } from './lib/wrapup';
 import { getSessionWrapup, retrySessionWrapup, saveWrapupPhrases } from './sessionApi';
 import { useWrapupUpdates } from './useWrapupUpdates';
@@ -172,10 +172,10 @@ export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdat
           <h1>Nice session. Here’s what to keep.</h1>
         </div>
         <div className="wrapup-header-actions">
-          <Button onPress={onTalkMore} variant="secondary">
+          <Button onClick={onTalkMore} tone="secondary">
             Talk more
           </Button>
-          <Button onPress={onDone} variant="primary">
+          <Button onClick={onDone} tone="primary">
             Done
           </Button>
         </div>

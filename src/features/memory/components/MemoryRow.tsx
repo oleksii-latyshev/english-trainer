@@ -1,4 +1,3 @@
-import { Button } from '@heroui/react';
 import { Archive, ChevronDown, Trash2 } from 'lucide-react';
 import { type MouseEvent, useId } from 'react';
 import {
@@ -7,6 +6,7 @@ import {
   phraseSourceLine,
 } from '@/features/memory/lib/memoryState';
 import type { MistakeRecord, PhraseCardRecord } from '@/lib/learningTypes';
+import { Button } from '@/shared/ui/button';
 import '@/features/memory/memoryDetail.css';
 import { StatusChip } from './StatusChip';
 import { UsageEvidenceSection } from './UsageEvidenceSection';
@@ -129,20 +129,14 @@ export function MemoryRow({ entry, isOpen, onToggle, onArchive, onDelete }: Prop
         <div className="memory-actions">
           <Button
             aria-label={`Archive ${label}`}
-            isIconOnly
-            onPress={onArchive}
+            iconOnly
+            onClick={onArchive}
             size="sm"
-            variant="ghost"
+            tone="quiet"
           >
             <Archive aria-hidden="true" size={16} />
           </Button>
-          <Button
-            aria-label={`Delete ${label}`}
-            isIconOnly
-            onPress={onDelete}
-            size="sm"
-            variant="ghost"
-          >
+          <Button aria-label={`Delete ${label}`} iconOnly onClick={onDelete} size="sm" tone="quiet">
             <Trash2 aria-hidden="true" size={16} />
           </Button>
         </div>

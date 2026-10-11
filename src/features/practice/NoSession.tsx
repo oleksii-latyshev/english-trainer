@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react';
+import { Button } from '@/shared/ui/button';
 
 type Props = {
   title: string;
@@ -14,7 +14,7 @@ export function NoSession({ title, text, actionLabel, isDisabled, onStart }: Pro
     <section aria-label={title} className="talk-empty">
       <h1>{title}</h1>
       <p>{text}</p>
-      <Button isDisabled={isDisabled} onPress={onStart} variant="primary">
+      <Button disabled={isDisabled} onClick={onStart} tone="primary">
         {actionLabel}
       </Button>
     </section>

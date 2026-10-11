@@ -1,6 +1,6 @@
-import { Tabs } from '@heroui/react';
 import { Bookmark } from 'lucide-react';
 import { useState } from 'react';
+import { Tabs, TabsList, TabsPanel, TabsTab } from '@/shared/ui/tabs';
 import { type MemoryEntry, MemoryRow } from './MemoryRow';
 
 export type MemoryTab = 'phrases' | 'mistakes';
@@ -14,7 +14,7 @@ type Props = {
   onDelete: (entry: MemoryEntry) => void;
 };
 
-function isMemoryTab(key: unknown): key is MemoryTab {
+function isMemoryTab(key: string): key is MemoryTab {
   return key === 'phrases' || key === 'mistakes';
 }
 
@@ -58,7 +58,7 @@ export function MemoryTabs({ phrases, mistakes, query, onArchive, onDelete }: Pr
   function renderPanel(id: MemoryTab) {
     const entries = lists[id];
     return (
-      <Tabs.Panel id={id}>
+      <TabsPanel value={id}>
         {entries.length === 0 ? (
           <EmptyTab query={query} tab={id} />
         ) : (
@@ -84,30 +84,22 @@ export function MemoryTabs({ phrases, mistakes, query, onArchive, onDelete }: Pr
             })}
           </ul>
         )}
-      </Tabs.Panel>
+      </TabsPanel>
     );
   }
 
   return (
     <Tabs
-      onSelectionChange={(key) => {
+      onValueChange={(key) => {
         if (isMemoryTab(key)) setTab(key);
       }}
-      selectedKey={tab}
+      value={tab}
     >
       <div className="memory-tabs-bar">
-        <Tabs.ListContainer>
-          <Tabs.List aria-label="Memory lists">
-            <Tabs.Tab id="phrases">
-              Phrases · {phrases.length}
-              <Tabs.Indicator />
-            </Tabs.Tab>
-            <Tabs.Tab id="mistakes">
-              Mistakes · {mistakes.length}
-              <Tabs.Indicator />
-            </Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
+        <TabsList label="Memory lists">
+          <TabsTab value="phrases">Phrases · {phrases.length}</TabsTab>
+          <TabsTab value="mistakes">Mistakes · {mistakes.length}</TabsTab>
+        </TabsList>
         <span className="memory-tabs-bar-note">Archived items are hidden</span>
       </div>
       {renderPanel('phrases')}

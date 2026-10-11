@@ -1,5 +1,5 @@
-import { Button } from '@heroui/react';
 import { Mic2 } from 'lucide-react';
+import { Button } from '@/shared/ui/button';
 import './mistakePracticeCard.css';
 
 type Props = {
@@ -48,9 +48,9 @@ export function MistakePracticeCard(props: Props) {
       </div>
       <Button
         className="memory-mistake-practice-action"
-        isDisabled={isDisabled}
-        onPress={props.onStart}
-        variant="primary"
+        disabled={isDisabled}
+        onClick={props.onStart}
+        tone="primary"
       >
         {props.isStarting ? 'Preparing…' : 'Start practice'}
       </Button>

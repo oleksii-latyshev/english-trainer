@@ -50,7 +50,7 @@ for a screen are built inside that screen's step.
 | # | Step | Issue | Canvas boards | Folds in |
 | :--- | :--- | :--- | :--- | :--- |
 | 0 | Foundation + `gemini-key` pilot | #1 (done) | — | — |
-| 1 | Glass UI kit, tokens, SF Pro; HeroUI removed; e2e layout | #15 | Glass components & tokens | — |
+| 1 | Glass UI kit, tokens, SF Pro; HeroUI removed; e2e layout | #15 (done), #34 | Glass components & tokens | — |
 | 2 | App shell, Eva (Mochi + sprout), app and Dock icon | #21 | Talk, Start, Icon, Components | — |
 | 3 | Settings | #22 | Settings › Eva, Settings — all sections | #14 voice picker |
 | 4 | First run | #23 | First run | — |

@@ -142,6 +142,28 @@ it('reports stray .css files and HeroUI imports in the new structure', () => {
   );
 });
 
+it('rejects HeroUI imports anywhere in src, including legacy features and stylesheets', () => {
+  withProject(
+    {
+      'src/features/old/View.tsx': "import { Button } from '@heroui/react';",
+      'src/components/toast.ts': "import { toast } from '@heroui/react';",
+      'src/app/styles.css': '@import "tailwindcss";\n@import "@heroui/styles";',
+      'src/features/old/ok.tsx': "import { Button } from '@/shared/ui/button';",
+    },
+    (root) => {
+      const locations = collectViolations(root)
+        .filter((violation) => violation.message.includes('HeroUI'))
+        .map((violation) => violation.location)
+        .sort();
+      expect(locations).toEqual([
+        join('src', 'app', 'styles.css'),
+        join('src', 'components', 'toast.ts'),
+        join('src', 'features', 'old', 'View.tsx'),
+      ]);
+    },
+  );
+});
+
 it('allows the global stylesheet but still rejects comments in it', () => {
   withProject({ 'src/app/styles.css': '@import "tailwindcss";' }, (root) => {
     expect(collectViolations(root)).toEqual([]);

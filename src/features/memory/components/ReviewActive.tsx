@@ -1,9 +1,9 @@
-import { Button } from '@heroui/react';
 import { isRunFinished } from '@/features/memory/lib/memoryRecallState';
 import { describeResult } from '@/features/memory/lib/reviewResult';
 import { resultEvaMood, reviewEvaMood, reviewMicCopy } from '@/features/memory/lib/reviewTurn';
 import type { useReviewFlow } from '@/features/memory/useReviewFlow';
 import type { LearningStatus } from '@/lib/learningTypes';
+import { Button } from '@/shared/ui/button';
 import { ReviewComposer, ReviewIssueNotice } from './ReviewComposer';
 import { ReviewHeader } from './ReviewHeader';
 import { ReviewContext, ReviewResult, ReviewSituation } from './ReviewStage';
@@ -26,10 +26,10 @@ function MaterialNotice({ flow, isAnswering }: { flow: Flow; isAnswering: boolea
       <div className="review-material-error" role="status">
         <span>{failure}</span>
         <Button
-          isDisabled={flow.materialBusy}
-          onPress={flow.retryMaterials}
+          disabled={flow.materialBusy}
+          onClick={flow.retryMaterials}
           size="sm"
-          variant="secondary"
+          tone="secondary"
         >
           Retry situations
         </Button>
@@ -59,7 +59,7 @@ function PhraseHint({ flow, item }: { flow: Flow; item: Flow['shownItem'] }) {
   }
   if (flow.step.tag !== 'answering') return null;
   return (
-    <Button isDisabled={flow.isBusy} onPress={flow.revealPhrase} variant="secondary">
+    <Button disabled={flow.isBusy} onClick={flow.revealPhrase} tone="secondary">
       Show phrase
     </Button>
   );

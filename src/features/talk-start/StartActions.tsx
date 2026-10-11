@@ -1,6 +1,6 @@
-import { Button } from '@heroui/react';
 import { Keyboard, Mic } from 'lucide-react';
 import type { PracticeMode, TopicId } from '@/lib/practiceOptions';
+import { Button } from '@/shared/ui/button';
 import { PRIMARY_ACTION_LABEL, type PrimaryAction } from './lib/talkStartState';
 
 export function StartActions({
@@ -20,9 +20,9 @@ export function StartActions({
     <div className="talk-start-primary">
       <Button
         className="talk-start-cta"
-        isDisabled={isDisabled || !isCustomTopicValid}
-        onPress={() => onStart()}
-        variant="primary"
+        disabled={isDisabled || !isCustomTopicValid}
+        onClick={() => onStart()}
+        tone="primary"
       >
         {practiceMode === 'voice' ? (
           <Mic aria-hidden="true" size={18} strokeWidth={2.2} />
@@ -37,9 +37,9 @@ export function StartActions({
       </Button>
       <Button
         className="talk-start-random"
-        isDisabled={isDisabled}
-        onPress={() => onStart('random')}
-        variant="secondary"
+        disabled={isDisabled}
+        onClick={() => onStart('random')}
+        tone="secondary"
       >
         Random topic
       </Button>

@@ -35,11 +35,16 @@ silently. Light boards exist for Talk and Start; the other screens follow their 
 | Token | Value |
 | :--- | :--- |
 | Ground | `#05070C`, soft radial glow |
-| Glass surface | white 5.5 % + `backdrop-filter: blur(28px) saturate(170%)`, ~20 px radius |
+| Glass inset | white 4 % + line 8 % (rows inside a card) |
+| Glass card | white 5.5 % + line 11 % + top highlight 16 % + shadow `0 24px 60px -24px` black 65 % + `backdrop-filter: blur(28px) saturate(170%)`, 24 px radius |
+| Sky glass | accent 16 % + accent line 42 % + glow 60 % (selected, learner turn) |
 | Accent (Eva, primary actions) | sky `#6CC4FF`, text on it `#04192C` |
 | "More natural" | green `#8BE3A9` |
 | Attention | amber `#F5C26B` (no red) |
-| Type | SF Pro (system font) |
+| Text | `#F2F5FA`, secondary `#A9B3C4`, tertiary `#8E99AC` |
+| Buttons | primary: accent fill, 48 px pill, 15/700, glow; secondary: white 8.5 % + line 14 %, 40 px, 600; quiet: white 6 % + line 10 %; round mic 56 px |
+| Controls | switch 42×26 (on: accent + glow, off: white 16 %); segmented control: white 8.5 % track, selected white 16 %; chip selected = sky glass, default = quiet |
+| Type | SF Pro (system font): large title 34/700, title 20/700, message 15/1.45, secondary 13, label 11/700 caps |
 
 Layout: sidebar (Talk · Memory · Settings, Eva's growth card at the bottom); screens put Eva large and
 centred on top; Talk floats a translucent chat over Eva (video-call feel), hands-free and pause as

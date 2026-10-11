@@ -134,8 +134,8 @@ e2e/            Playwright flows against Vite with typed fake commands
   there** on the matching Base UI primitive (or a plain semantic element when Base UI has none) with
   Tailwind and `tv()` variants — never style a basic control inline inside a feature, never add
   another UI library. A kit component is generic (no product words), accessible, and covers the
-  states the design needs (hover, focus-visible, disabled, pressed). HeroUI is legacy and leaves
-  with migration step 1.
+  states the design needs (hover, focus-visible, disabled, pressed). HeroUI is removed; importing
+  `@heroui/*` anywhere in `src/` fails `bun run check:conventions`.
 - Styling is **Tailwind utility classes only**. No `.css` files except the one global stylesheet
   `src/app/styles.css` (Tailwind import, fonts, design tokens as `@theme` variables, the
   light/dark sets). Colours, radii and blur come from tokens (`bg-surface`, `text-muted`), never hex

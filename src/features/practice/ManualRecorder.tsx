@@ -1,8 +1,8 @@
-import { Button } from '@heroui/react';
 import { MicButton } from '@/components/MicControl';
 import { TurnNotice } from '@/components/TurnNotice';
 import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
 import type { RecordingStatus } from '@/features/speech/useSpeechCapture';
+import { Button } from '@/shared/ui/button';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 
 type Props = {
@@ -111,10 +111,10 @@ export function ManualRecorder({
         </div>
         {playbackUrl && (
           <Button
-            isDisabled={transcribing}
-            onPress={actions.transcribeRecording}
+            disabled={transcribing}
+            onClick={actions.transcribeRecording}
             size="sm"
-            variant="secondary"
+            tone="secondary"
           >
             {transcribeButtonLabel(transcribing, failure)}
           </Button>

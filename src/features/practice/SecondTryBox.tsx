@@ -1,8 +1,8 @@
-import { Button } from '@heroui/react';
 import { Check } from 'lucide-react';
 import { TurnNotice } from '@/components/TurnNotice';
 import { secondTryHint, usedImprovedWording } from '@/features/coach/lib/note';
 import type { AttemptComparison } from '@/lib/types';
+import { Button } from '@/shared/ui/button';
 import { ManualRecorder } from './ManualRecorder';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import type { SecondTryStatus } from './useSecondTry';
@@ -58,7 +58,7 @@ export function SecondTryBox({ cue, evidence, isActive, status, model, actions, 
       )}
       {status.tag === 'error' && <TurnNotice message={status.message} />}
       <div className="talk-card-actions">
-        <Button onPress={onCancel} size="sm" variant="ghost">
+        <Button onClick={onCancel} size="sm" tone="quiet">
           Cancel
         </Button>
       </div>

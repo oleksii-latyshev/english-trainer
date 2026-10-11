@@ -1,6 +1,7 @@
-import { Button, Kbd } from '@heroui/react';
 import { useState } from 'react';
 import type { useSpeechCapture } from '@/features/speech/useSpeechCapture';
+import { Button } from '@/shared/ui/button';
+import { Kbd } from '@/shared/ui/kbd';
 import { type RescueState, useRescue } from './useRescue';
 
 type Props = {
@@ -27,26 +28,26 @@ function RescueModes({
     <fieldset className="talk-rescue-modes">
       <legend className="talk-rescue-legend">Rescue type</legend>
       <Button
-        isDisabled={isLoading}
-        onPress={() => onChoose('next_step')}
+        disabled={isLoading}
+        onClick={() => onChoose('next_step')}
         size="sm"
-        variant={kind === 'next_step' ? 'secondary' : 'ghost'}
+        tone={kind === 'next_step' ? 'secondary' : 'quiet'}
       >
         Next step
       </Button>
       <Button
-        isDisabled={isLoading}
-        onPress={() => onChoose('simpler')}
+        disabled={isLoading}
+        onClick={() => onChoose('simpler')}
         size="sm"
-        variant={kind === 'simpler' ? 'secondary' : 'ghost'}
+        tone={kind === 'simpler' ? 'secondary' : 'quiet'}
       >
         Say it simpler
       </Button>
       <Button
-        isDisabled={isLoading}
-        onPress={onMissingWord}
+        disabled={isLoading}
+        onClick={onMissingWord}
         size="sm"
-        variant={kind === 'missing_word' ? 'secondary' : 'ghost'}
+        tone={kind === 'missing_word' ? 'secondary' : 'quiet'}
       >
         Missing word
       </Button>
@@ -69,7 +70,7 @@ export function RescuePanel(props: Props) {
 
   if (state.tag === 'closed') {
     return (
-      <Button onPress={rescue.open} size="sm" variant="secondary" aria-keyshortcuts="S">
+      <Button onClick={rescue.open} size="sm" tone="secondary" aria-keyshortcuts="S">
         Stuck <Kbd>S</Kbd>
       </Button>
     );
@@ -87,7 +88,7 @@ export function RescuePanel(props: Props) {
     <section className="talk-rescue" aria-label="Stuck rescue">
       <div className="talk-rescue-head">
         <strong>Need a little help?</strong>
-        <Button onPress={rescue.close} size="sm" variant="ghost">
+        <Button onClick={rescue.close} size="sm" tone="quiet">
           Continue speaking
         </Button>
       </div>
@@ -119,7 +120,7 @@ export function RescuePanel(props: Props) {
             }}
             value={description}
           />
-          <Button isDisabled={!description.trim()} size="sm" type="submit" variant="secondary">
+          <Button disabled={!description.trim()} size="sm" type="submit" tone="secondary">
             Find a word
           </Button>
         </form>
@@ -136,9 +137,9 @@ export function RescuePanel(props: Props) {
           {candidates.map((candidate) => (
             <Button
               key={candidate}
-              onPress={() => rescue.selectTerm(candidate)}
+              onClick={() => rescue.selectTerm(candidate)}
               size="sm"
-              variant="ghost"
+              tone="quiet"
             >
               {candidate}
             </Button>
@@ -153,7 +154,7 @@ export function RescuePanel(props: Props) {
       {state.tag === 'error' && (
         <div className="talk-rescue-error" role="alert">
           <span>{shownError}</span>
-          <Button onPress={rescue.retry} size="sm" variant="secondary">
+          <Button onClick={rescue.retry} size="sm" tone="secondary">
             Retry
           </Button>
         </div>

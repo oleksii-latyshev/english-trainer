@@ -1,8 +1,9 @@
-import { Button, Chip } from '@heroui/react';
 import { TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { getPracticeMemoryUsage, reviewPracticeMemoryUsage } from '@/features/memory/memoryApi';
 import type { TurnUsageAssessment } from '@/lib/usageTypes';
+import { Button } from '@/shared/ui/button';
+import { Chip } from '@/shared/ui/chip';
 
 type Props = {
   sessionId: number;
@@ -99,16 +100,9 @@ export function MemoryUsageReview({ sessionId, sequence }: Props) {
         <span className="talk-card-label" data-tone="accent">
           Learning use review
         </span>
-        <Chip color="default" size="sm" variant="soft">
-          Answer {sequence}
-        </Chip>
+        <Chip>Answer {sequence}</Chip>
         {showCheckButton && (
-          <Button
-            className="ml-auto"
-            onPress={() => void handleCheck()}
-            size="sm"
-            variant="secondary"
-          >
+          <Button className="ml-auto" onClick={() => void handleCheck()} size="sm" tone="secondary">
             Check learning use
           </Button>
         )}
@@ -131,9 +125,9 @@ export function MemoryUsageReview({ sessionId, sequence }: Props) {
           <TriangleAlert aria-hidden="true" size={18} />
           <span>{errorMessage}</span>
           <Button
-            onPress={() => void (state.tag === 'review-error' ? handleCheck() : handleRestore())}
+            onClick={() => void (state.tag === 'review-error' ? handleCheck() : handleRestore())}
             size="sm"
-            variant="secondary"
+            tone="secondary"
           >
             Retry
           </Button>
@@ -174,30 +168,14 @@ function AssessmentResult({ assessment }: { assessment: TurnUsageAssessment }) {
 
 function FindingOutcome({ finding }: { finding: TurnUsageAssessment['findings'][number] }) {
   if (finding.outcome === 'correct' && finding.credited) {
-    return (
-      <Chip color="success" size="sm" variant="soft">
-        Correct use credited
-      </Chip>
-    );
+    return <Chip tone="success">Correct use credited</Chip>;
   }
   if (finding.outcome === 'incorrect' && finding.credited) {
     // A language mistake is information, never an alarm: no red.
-    return (
-      <Chip color="warning" size="sm" variant="soft">
-        Incorrect use observed
-      </Chip>
-    );
+    return <Chip tone="warning">Incorrect use observed</Chip>;
   }
   if (finding.outcome === 'uncertain') {
-    return (
-      <Chip color="default" size="sm" variant="soft">
-        Uncertain / no progress
-      </Chip>
-    );
+    return <Chip>Uncertain / no progress</Chip>;
   }
-  return (
-    <Chip color="default" size="sm" variant="soft">
-      No progress recorded
-    </Chip>
-  );
+  return <Chip>No progress recorded</Chip>;
 }

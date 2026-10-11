@@ -1,5 +1,5 @@
-import { Button } from '@heroui/react';
 import { TurnNotice } from '@/components/TurnNotice';
+import { Button } from '@/shared/ui/button';
 import type { useDailyRecall } from './useDailyRecall';
 
 type Recall = ReturnType<typeof useDailyRecall>;
@@ -27,11 +27,11 @@ function RecallResult({ recall }: { recall: Recall }) {
       </p>
       <div className="talk-card-actions">
         {currentItem ? (
-          <Button onPress={recall.next} size="sm" variant="secondary">
+          <Button onClick={recall.next} size="sm" tone="secondary">
             Next phrase
           </Button>
         ) : (
-          <Button onPress={recall.leave} size="sm" variant="secondary">
+          <Button onClick={recall.leave} size="sm" tone="secondary">
             Return to conversation
           </Button>
         )}
@@ -58,7 +58,7 @@ export function DailyRecallPanel({ recall, transcript, resetCapture, canStart, c
       )}
       {state.tag === 'error' && (
         <TurnNotice message={state.message}>
-          <Button onPress={() => void recall.reload()} size="sm" variant="secondary">
+          <Button onClick={() => void recall.reload()} size="sm" tone="secondary">
             Retry loading
           </Button>
         </TurnNotice>
@@ -76,7 +76,7 @@ export function DailyRecallPanel({ recall, transcript, resetCapture, canStart, c
       )}
       {state.tag === 'ready' && currentItem && !active && (
         <div className="talk-card-actions">
-          <Button isDisabled={!canStart} onPress={recall.start} size="sm" variant="secondary">
+          <Button disabled={!canStart} onClick={recall.start} size="sm" tone="secondary">
             Start spoken recall
           </Button>
         </div>
@@ -94,22 +94,22 @@ export function DailyRecallPanel({ recall, transcript, resetCapture, canStart, c
           <div className="talk-card-actions">
             {transcript && (
               <Button
-                isDisabled={recall.saving}
-                onPress={() => void recall.submit(currentItem.phrase_id, transcript, resetCapture)}
+                disabled={recall.saving}
+                onClick={() => void recall.submit(currentItem.phrase_id, transcript, resetCapture)}
                 size="sm"
-                variant="primary"
+                tone="primary"
               >
                 {recall.saving ? 'Saving recall…' : 'Save spoken recall'}
               </Button>
             )}
             <Button
-              isDisabled={recall.saving || !canLeave}
-              onPress={() => {
+              disabled={recall.saving || !canLeave}
+              onClick={() => {
                 resetCapture();
                 recall.leave();
               }}
               size="sm"
-              variant="ghost"
+              tone="quiet"
             >
               Leave recall
             </Button>

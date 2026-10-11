@@ -1,7 +1,7 @@
-import { Button } from '@heroui/react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { TurnNotice } from '@/components/TurnNotice';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
+import { Button } from '@/shared/ui/button';
 import { buildDialogueMessages, type DialogueMessage } from './lib/dialogueMessages';
 import { EvaMessage, EvaThinking, LearnerMessage } from './Messages';
 
@@ -47,7 +47,7 @@ export function Dialogue({
       <div className="talk-dialogue-inner">
         {historyError && (
           <TurnNotice message={historyError}>
-            <Button onPress={retryHistory} size="sm" variant="secondary">
+            <Button onClick={retryHistory} size="sm" tone="secondary">
               Retry history
             </Button>
           </TurnNotice>

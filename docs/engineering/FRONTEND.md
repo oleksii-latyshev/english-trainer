@@ -163,7 +163,7 @@ shared/
   style it with Tailwind and `tv()` variants, and export a small, product-agnostic API
   (`<Button tone="primary" size="sm">`). Features compose kit components and only add layout
   classes (spacing, grid); they never restyle a control. No other UI library is added; HeroUI is
-  legacy and is removed by migration step 1.
+  removed and `bun run check:conventions` rejects any `@heroui/*` import in `src/`.
 - **Styling:** Tailwind utility classes in `className`. Design tokens live once, as `@theme`
   variables in `src/app/styles.css`, so they become utilities (`bg-surface`, `text-muted`,
   `rounded-card`); no hex values, no arbitrary `[...]` values, no inline `style` except values

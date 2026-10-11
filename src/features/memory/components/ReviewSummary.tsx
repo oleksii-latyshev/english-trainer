@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react';
+import { Button } from '@/shared/ui/button';
 import '@/features/memory/reviewSummary.css';
 import type {
   ReviewSummary as Summary,
@@ -31,10 +31,10 @@ export function ReviewSummary({ summary, onStartTalk, onBackToMemory }: Props) {
         ))}
       </ul>
       <div className="review-summary-actions">
-        <Button onPress={onStartTalk} variant="primary">
+        <Button onClick={onStartTalk} tone="primary">
           Start a conversation
         </Button>
-        <Button onPress={onBackToMemory} variant="secondary">
+        <Button onClick={onBackToMemory} tone="secondary">
           Back to Memory
         </Button>
       </div>

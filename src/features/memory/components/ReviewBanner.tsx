@@ -1,6 +1,6 @@
-import { Button } from '@heroui/react';
 import { Check, Mic } from 'lucide-react';
 import { type ActiveReview, reviewBannerCopy } from '@/features/memory/lib/reviewBanner';
+import { Button } from '@/shared/ui/button';
 
 type Props = {
   dueCount: number;
@@ -23,12 +23,7 @@ export function ReviewBanner({ dueCount, active, isBusy, onStart }: Props) {
         <div className="memory-review-hint">{copy.hint}</div>
       </div>
       {copy.actionLabel && (
-        <Button
-          className="memory-review-action"
-          isDisabled={isBusy}
-          onPress={onStart}
-          variant="primary"
-        >
+        <Button className="memory-review-action" disabled={isBusy} onClick={onStart} tone="primary">
           {copy.actionLabel}
         </Button>
       )}

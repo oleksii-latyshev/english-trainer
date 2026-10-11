@@ -1,7 +1,7 @@
-import { Button } from '@heroui/react';
 import { CircleHelp, Smartphone, Volume2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EvaMini } from '@/components/eva/Eva';
+import { Button } from '@/shared/ui/button';
 import type { DialogueMessage } from './lib/dialogueMessages';
 import { inputSourceLabel } from './lib/inputSource';
 import { formatAnswerDuration, formatReplyTime } from './lib/messageMeta';
@@ -40,9 +40,9 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: EvaPr
               <Button
                 aria-label="Replay Eva's reply"
                 className="talk-replay"
-                onPress={() => onPlaySpeech(fullText)}
+                onClick={() => onPlaySpeech(fullText)}
                 size="sm"
-                variant="ghost"
+                tone="quiet"
               >
                 <Volume2 aria-hidden="true" size={14} />
                 Replay
