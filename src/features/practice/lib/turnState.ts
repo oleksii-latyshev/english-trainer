@@ -4,7 +4,7 @@ import type { MicVariant } from '@/components/MicControl';
 import type { RecordingMode, RecordingStatus } from '@/features/speech/captureView';
 import type { TurnFix, TurnIssue } from './turnIssue';
 
-/** The voice turn as the learner experiences it (docs/ui/DESIGN_BRIEF.md section 7). */
+/** The voice turn as the learner experiences it (docs/DESIGN.md). */
 export type TurnState =
   | { tag: 'idle' }
   | { tag: 'listening' | 'auto-listen'; isLive: boolean; isHeld: boolean }

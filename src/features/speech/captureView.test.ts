@@ -1,4 +1,3 @@
-// @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, it } from 'bun:test';
 import { isCapturing, PRE_ROLL_MS, preRollMsFor, stopMeansCancel, viewFor } from './captureView';
 

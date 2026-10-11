@@ -1,6 +1,6 @@
 import type { EvaMood } from '@/components/eva/Eva';
 
-/** Every face Eva makes and when it appears (docs/ui/DESIGN_BRIEF.md 8.1), in the order Settings shows them. */
+/** Every face Eva makes and when it appears (docs/DESIGN.md), in the order Settings shows them. */
 export const EVA_MOOD_GUIDE: readonly { mood: EvaMood; name: string; when: string }[] = [
   { mood: 'idle', name: 'Idle', when: 'Waiting for you' },
   { mood: 'listening', name: 'Listening', when: 'You are speaking' },

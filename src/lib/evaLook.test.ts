@@ -1,4 +1,3 @@
-// @ts-expect-error Bun supplies this test module at runtime.
 import { describe, expect, it } from 'bun:test';
 import { DEFAULT_EVA_LOOK, evaLookCssVars, parseEvaLook, withSphere } from './evaLook';
 

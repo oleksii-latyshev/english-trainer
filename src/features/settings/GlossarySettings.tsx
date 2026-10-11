@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getGlossary, saveGlossary, speechErrorMessage } from '@/lib/speechTypes';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { glossarySummary } from './lib/speechCheck';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type LoadState =
   | { tag: 'loading' }
@@ -56,11 +57,11 @@ export function GlossarySettings() {
   return (
     <>
       {state.tag === 'error' ? (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {state.message}
-        </SettingsBlock>
+        </Notice>
       ) : (
-        <SettingsRow
+        <FormRow
           description={
             state.tag === 'loading'
               ? 'Loading…'
@@ -68,17 +69,17 @@ export function GlossarySettings() {
           }
           title="Personal glossary"
         >
-          <SettingsButton
+          <Button
             aria-expanded={isEditing}
             disabled={state.tag !== 'ready'}
             onClick={() => setIsEditing(!isEditing)}
           >
             {isEditing ? 'Done' : `Edit · ${terms.length}`}
-          </SettingsButton>
-        </SettingsRow>
+          </Button>
+        </FormRow>
       )}
       {isEditing && state.tag === 'ready' && (
-        <SettingsBlock>
+        <Notice>
           <ul aria-label="Glossary words" className="glossary-terms">
             {terms.map((term) => (
               <li key={term}>
@@ -110,12 +111,12 @@ export function GlossarySettings() {
               placeholder="A word, name or term"
               value={draft}
             />
-            <SettingsButton disabled={draft.trim() === ''} type="submit">
+            <Button disabled={draft.trim() === ''} type="submit">
               Add
-            </SettingsButton>
+            </Button>
           </form>
           {problem && <p role="alert">{problem}</p>}
-        </SettingsBlock>
+        </Notice>
       )}
     </>
   );

@@ -4,11 +4,13 @@ import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
 import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { LevelMeter } from './LevelMeter';
 import { MicrophoneDeviceSelect } from './MicrophoneDeviceSelect';
 import { MicrophoneTestControls } from './MicrophoneTestControls';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();
@@ -47,23 +49,23 @@ export function MicrophoneSettings() {
   return (
     <SettingsGroup id="microphone" title="Microphone">
       {practiceCapturing && (
-        <SettingsBlock role="status" tone="warn">
+        <Notice role="status" tone="warn">
           Finish the active practice recording before testing or changing the microphone.
-        </SettingsBlock>
+        </Notice>
       )}
       {!storageStatus.available && (
-        <SettingsBlock role="status" tone="warn">
+        <Notice role="status" tone="warn">
           {storageStatus.warning ||
             'Local storage is unavailable; device selection will only apply to the current session.'}
-        </SettingsBlock>
+        </Notice>
       )}
       {deviceError && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {deviceError}
-        </SettingsBlock>
+        </Notice>
       )}
 
-      <SettingsRow
+      <FormRow
         description={deviceDescription || undefined}
         htmlFor="microphone-select"
         title="Input device"
@@ -77,21 +79,21 @@ export function MicrophoneSettings() {
           selectRef={deviceSelectRef}
           selectedDeviceId={selectedDeviceId}
         />
-        <SettingsButton
+        <Button
           disabled={test.isCapturing || practiceCapturing}
           onClick={() => void loadDevices()}
-          variant="ghost"
+          tone="ghost"
         >
           Refresh
-        </SettingsButton>
-      </SettingsRow>
+        </Button>
+      </FormRow>
 
-      <SettingsRow
+      <FormRow
         description="Speak normally — the bar should reach the middle. It moves while you record the check below."
         title="Level"
       >
         <LevelMeter level={test.state.tag === 'recording' ? test.state.level : undefined} />
-      </SettingsRow>
+      </FormRow>
 
       <MicrophoneTestControls
         disabled={practiceCapturing}

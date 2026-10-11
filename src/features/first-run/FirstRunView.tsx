@@ -15,7 +15,7 @@ import './firstRun.css';
 import './firstRunControls.css';
 
 /**
- * First run (docs/ui/DESIGN_BRIEF.md 6.9): three short steps, skippable, ending on the Talk start
+ * First run (docs/DESIGN.md): three short steps, skippable, ending on the Talk start
  * screen. Finish and Skip both record the marker so launch never shows it again; opening it from
  * Settings later uses the same screen.
  */

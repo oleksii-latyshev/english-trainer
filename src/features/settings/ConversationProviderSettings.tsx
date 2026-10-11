@@ -1,4 +1,5 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { GeminiKeyField } from '@/features/gemini-key';
 import { getAiSettings, isEvaStyleId, saveAiSettings } from '@/lib/aiSettings';
 import {
   type AiSettings,
@@ -7,10 +8,11 @@ import {
   isAgyModelId,
   isProviderError,
 } from '@/lib/types';
-import { GeminiKeyField } from './GeminiKeyField';
+import { Button } from '@/shared/ui/button';
+import { FormRow, FormRowDescription, FormRowTitle } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { ProviderResponseTest } from './ProviderResponseTest';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; message: string };
 
@@ -119,15 +121,15 @@ export function ConversationProviderSettings() {
   return (
     <SettingsGroup id="ai" title="Conversation AI">
       {loadState.tag === 'loading' && (
-        <SettingsBlock role="status" tone="quiet">
+        <Notice role="status" tone="quiet">
           Loading conversation AI settings…
-        </SettingsBlock>
+        </Notice>
       )}
 
       {loadState.tag === 'error' && (
-        <SettingsRow description={loadState.message} title="Settings could not be loaded">
-          <SettingsButton onClick={() => void loadSettings()}>Retry</SettingsButton>
-        </SettingsRow>
+        <FormRow description={loadState.message} title="Settings could not be loaded">
+          <Button onClick={() => void loadSettings()}>Retry</Button>
+        </FormRow>
       )}
 
       {loadState.tag === 'ready' && (
@@ -145,27 +147,25 @@ export function ConversationProviderSettings() {
                 />
                 <span aria-hidden="true" className="settings-radio-dot" />
                 <span>
-                  <span className="settings-row-title">
+                  <FormRowTitle>
                     {card.name}
                     {'badge' in card && <span className="settings-badge">{card.badge}</span>}
                     {'legacy' in card && <span className="settings-legacy"> · legacy</span>}
-                  </span>
-                  <span className="settings-row-description" style={{ display: 'block' }}>
-                    {card.description}
-                  </span>
+                  </FormRowTitle>
+                  <FormRowDescription>{card.description}</FormRowDescription>
                 </span>
               </label>
             ))}
           </div>
 
           {saveState.tag === 'error' && (
-            <SettingsBlock role="alert" tone="error">
+            <Notice role="alert" tone="error">
               {saveState.message}
-            </SettingsBlock>
+            </Notice>
           )}
 
           {settings.provider === 'agy' && (
-            <SettingsRow
+            <FormRow
               description="Every Antigravity request names a Gemini model, so Antigravity's own default is never used."
               htmlFor="agy-model"
               title="Antigravity model"
@@ -181,12 +181,12 @@ export function ConversationProviderSettings() {
                 <option value="gemini-3.8-flash-low">Gemini 3.8 Flash Low</option>
                 <option value="gemini-3.8-flash-high">Gemini 3.8 Flash High</option>
               </select>
-            </SettingsRow>
+            </FormRow>
           )}
 
           {settings.provider === 'gemini' && <GeminiKeyField />}
 
-          <SettingsRow
+          <FormRow
             description="Natural: two to four sentences with her own reactions. Short and simple: one or two plain sentences. Eva always ends with one question."
             htmlFor="eva-style"
             title="Eva's style"
@@ -201,17 +201,17 @@ export function ConversationProviderSettings() {
               <option value="natural">Natural</option>
               <option value="short_and_simple">Short and simple</option>
             </select>
-          </SettingsRow>
+          </FormRow>
 
           <ProviderResponseTest provider={settings.provider} />
 
-          <SettingsBlock tone="quiet">
+          <Notice tone="quiet">
             <p>
               Coaching under your answers runs in the background through Antigravity with Gemini 3.8
               Flash, whichever conversation provider you choose, so it never slows Eva down. Answer
               examples and memory checks use Antigravity too.
             </p>
-          </SettingsBlock>
+          </Notice>
         </>
       )}
     </SettingsGroup>

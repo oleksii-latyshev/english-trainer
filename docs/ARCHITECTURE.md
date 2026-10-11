@@ -1,11 +1,12 @@
 # Architecture
 
-Runtime structure and boundaries. Each section states the **current** implementation and, where it
-differs, the **target** that the roadmap feature named in brackets delivers.
+How the running system is shaped. Numbers, limits and error codes live in
+[TECHNICAL_REQUIREMENTS.md](TECHNICAL_REQUIREMENTS.md) (TR); behaviour in
+[PRODUCT_SPEC.md](PRODUCT_SPEC.md).
 
 ## 1. Goals
 
-1. **Low perceived latency:** end of learner speech → first AI audio under 2.5 s (p50).
+1. **Low perceived latency:** end of learner speech to first AI audio under 2.5 s (p50).
 2. **Conversation never waits for evaluation:** coaching, help and wrap-up run in parallel.
 3. **Local first:** speech recognition, history and Learning Memory stay on the Mac.
 4. **Replaceable providers:** product logic depends on engine traits, not on a model or CLI.
@@ -15,7 +16,7 @@ differs, the **target** that the roadmap feature named in brackets delivers.
 ```text
 ┌──────────────────────── React UI (Tauri WebView) ────────────────────────┐
 │ Talk screen · Learning Memory · Settings                                  │
-│ Web Audio capture (PCM 16 kHz) · system TTS (speechSynthesis) · visuals   │
+│ Web Audio capture (PCM 16 kHz) · speech playback queue · visuals          │
 └───────────────┬──────────────────────────────────────────▲───────────────┘
                 │ invoke() (typed)                         │ Channel (streamed chunks)
 ┌───────────────▼──────────────────────────────────────────┴───────────────┐
@@ -24,62 +25,53 @@ differs, the **target** that the roadmap feature named in brackets delivers.
 │ learning/      normalisation, scheduling, usage and mastery rules         │
 │ persistence/   SQLite (single connection behind a mutex)                  │
 │ audio/         WAV validation, local Whisper                              │
+│ voice/         local natural voice (Supertonic 3 helper)                  │
 │ providers/     conversation engines, batch coaching, UsageReviewEngine    │
-│ translation/   on-device word lookup and bundled helper control          │
+│ translation/   on-device word lookup and bundled helper control           │
 │ setup/         diagnostics for local dependencies                         │
 └───────┬───────────────────────────┬──────────────────────────────────────┘
         │                           │
-  Local Whisper              Conversation / evaluation providers
-  (whisper.cpp)              Apple Foundation Models helper · Gemini API · agy (coaching)
+  Local helpers               Conversation / evaluation providers
+  whisper.cpp · Supertonic 3  Apple Foundation Models helper · Gemini API · agy
 ```
 
-## 3. Frontend
+## 3. Frontend and Rust split
 
-- **Routes:** `/` (home), `/conversation` (the one Talk screen), `/memory`, `/settings`, `/summary`.
-  The sidebar shows Talk, Memory and Settings.
-- **State:** `TrainerContext` holds the speech, capture and practice hooks shared by routes.
-  Lifecycle states are discriminated unions (`captureView.ts`, `practiceState.ts`).
-- **Shared audio** lives in `src/audio/` (recorder, device preference, signal diagnostics).
-- **Feature dependencies** are one-way (`practice → conversation, coach, memory, speech`). `coach`
-  holds the presentational coaching note and imports no feature.
+- React/TypeScript owns UI, audio capture and playback controls. Rust owns sessions, providers,
+  persistence, metrics and learning decisions. IPC is typed (TR §10).
+- Routes: `/` (home), `/conversation` (the one Talk screen), `/memory`, `/settings`, `/summary`.
+- Frontend layers, state and migration rules: [engineering/FRONTEND.md](engineering/FRONTEND.md) and
+  [engineering/MIGRATION.md](engineering/MIGRATION.md). Backend conventions:
+  [engineering/BACKEND.md](engineering/BACKEND.md).
+- UI lifecycle states (capture, practice) are discriminated unions.
 
-## 4. Audio and speech recognition
-
-Current:
+## 4. Audio, speech recognition and speech output
 
 ```text
 record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
   → WAV in memory → invoke(raw bytes) → validate WAV
   → POST to the whisper-server child (model kept loaded) → JSON → transcript
-    (fallback: temp dir → spawn whisper-cli → JSON → transcript → delete temp dir)
+    (fallback: temp dir → whisper-cli → JSON → transcript → delete temp dir)
 ```
 
-`audio/server.rs` owns the `whisper-server` child process: one per app run for the chosen model,
-bound to 127.0.0.1 on a free port, started when a practice session or unfinished Memory review opens,
-or on the first answer,
-restarted once if it dies, replaced when the model changes, stopped on app exit (and, through a pid
-note in the app data folder, after a crash). It is the only long-lived process on the speech path;
-Rust builds the initial prompt (question, recent names, glossary) and the UI never talks to it.
-While an answer is recorded, `transcribe_partial` re-runs the same loaded model on the audio so far
-for the live transcript; the final transcription is separate.
-The same live ticker observes the existing one-shot recorder in Memory review, warm-up and
-unscored shadowing. Opening an unfinished review prewarms the local speech engine in the background.
-The ticker neither opens a second microphone nor changes manual turn completion.
-Capture cleanup stops the ticker and rejects late updates; only the final transcript is scored.
-
-Practice keeps one warm microphone session open (`audio/microphoneSession.ts`, owned by
-`audio/microphoneManager.ts` and the `useMicrophoneSession` hook): the three-second input warm-up
-that avoids the quiet start observed on the MacBook microphone happens once when the session opens,
-not per answer. Recording starts at once with a 300 ms pre-roll, `audio/turnDetector.ts` ends a
-turn after a pause, and `useSpeechCapture` falls back to a one-shot session where no warm one is
-provided (recall drill, Settings test).
-
-F3 part 2 built (the learner checked the new model in the app on 2026-10-09 and reported that it
-works well): the model is kept loaded by the `whisper-server` child, `small.en` is the default when installed (chosen by measurement), the initial prompt is the
-question + names from recent answers + the glossary, and a live transcript follows the learner
-while they speak.
-
-Raw audio is never written outside the temporary directory and is deleted after transcription.
+- One warm microphone session stays open while a practice session is active. Warm-up happens once
+  at open, not per answer; a short pre-roll keeps the first syllable. Energy-based turn detection
+  ends a turn after a pause.
+- The `whisper-server` child (Rust `audio` module) holds the model: one per app run, bound to
+  127.0.0.1, started when a session or unfinished Memory review opens or on the first answer,
+  restarted once if it dies, stopped on exit (a pid note cleans up after a crash). It is the only
+  long-lived process on the speech path; the UI never talks to it. Restart and fallback rules: TR §3.
+- Rust builds the initial prompt (question, recent names, glossary).
+- While an answer is recorded, a live transcript re-runs the loaded model on the audio so far. It is
+  presentation only; only the final transcript is scored. The same ticker serves Talk and the spoken
+  Memory review recorders and never opens a second microphone.
+- Raw audio exists only in memory and a temporary directory and is deleted after transcription,
+  unless the learner opts in to keeping it (TR §8).
+- Speech output: `voice::VoiceEngine` owns one persistent bundled Supertonic 3 helper, prewarmed
+  outside the conversation queue, returning PCM WAV over typed binary IPC; its process lifecycle
+  stays in Rust. The UI speech facade (play, stream, pause, resume, stop) renders one phrase ahead
+  and falls back to macOS system voices for the rest of a stream when the engine is busy, slow or
+  unavailable. Limits and timings: TR §4.
 
 ## 5. Conversation vs evaluation
 
@@ -107,102 +99,76 @@ sequenceDiagram
     end
 ```
 
-Current: the reply streams from `send_practice_turn`. Each saved answer joins a per-session coaching
-queue in Rust; batches of up to five answers run in the background through `agy` and the notes appear
-under the answers when a batch lands (`coaching-updated` event). F4 queues sentence-level system
-TTS from those deltas, independently of coaching. A turn cancellation token is owned by Rust and
-checked atomically before saving; the UI also invalidates late stream and speech callbacks.
-Voice interruption is opt-in and gated by actual input echo cancellation. F6 help is prefetched independently of the speech queue.
+- The reply streams from `send_practice_turn`; the UI queues completed sentences to the speech facade
+  independently of coaching.
+- Each saved answer joins a per-session coaching queue in Rust. Batches of up to five answers run in
+  the background through `agy`; notes appear under the answers when a batch lands (`coaching-updated`
+  event). The UI re-reads on events and never polls.
+- A turn cancellation token is owned by Rust and checked atomically before saving; the UI also
+  invalidates late stream and speech callbacks. Voice interruption is opt-in and gated by actual
+  echo cancellation.
+- Help (answer plan, stuck rescue), session wrap-up and review material are separate background
+  calls. None holds the session lock, and none blocks answering.
 
 ## 6. Providers
 
-| Engine | Purpose | Current adapters | Target |
-| :--- | :--- | :--- | :--- |
-| `ConversationEngine` | Short spoken reply + one question | Gemini API (HTTPS streaming, default); Apple helper (one long-lived process, `prewarm()`, streamed plain text); `agy` (legacy: process per turn, JSON schema, two attempts in 45 s) | Sentence-level system speech from the stream (F4 built) |
-| Batch coaching (`coach_answers`) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, pinned to `gemini-3.8-flash-medium`; the Gemini API is not used (its free quota is reserved for conversation) | Same |
-| Answer planner | Frame, phrases and hidden example for the current question; separate bounded cache and per-answer cue tracking | Gemini API, question-only prefetched request [F6]; `agy` guided-answer IPC remains for compatibility | Same |
-| `RescueEngine` | One next step, simpler wording, or 3–5 missing-word candidates during recording; saves a per-answer cue before generation | `agy`, explicitly pinned to `gemini-3.8-flash-high` [F7], one request with a 20 s process bound | Same |
-| `UsageReviewEngine` | Semantic check of phrase use | `agy` | Gemini API when touched; frozen otherwise |
-| `ReviewMaterialEngine` | One situation and model sentence per due review item | `agy`, pinned to `gemini-3.8-flash-high` [F10], one 90 s background request and durable SQLite cache | Same |
+| Engine | Purpose | Adapters |
+| :--- | :--- | :--- |
+| `ConversationEngine` (tier: conversation) | Short spoken reply + one question | Gemini API (HTTPS streaming, default) raced against the Apple helper as backup; Apple helper (one long-lived process, `prewarm()`); `agy` (legacy: process per turn) |
+| Batch coaching (tier: coaching) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, `gemini-3.8-flash-medium`. The Gemini API is not used (its free quota is reserved for conversation) |
+| Answer planner | Frame, phrases and hidden example for the current question | Gemini API, question-only prefetch; `agy` guided-answer IPC remains for compatibility |
+| `RescueEngine` | Next step, simpler wording or missing-word candidates during recording | `agy`, `gemini-3.8-flash-high` |
+| `SessionWrapupEngine` | Zero to three phrases from a finished session | `agy`, `gemini-3.8-flash-high` |
+| `ReviewMaterialEngine` | One situation and model sentence per due review item | `agy`, `gemini-3.8-flash-high` |
+| Mistake-practice planner | Five questions from recurring mistakes | `agy`, background tier |
+| `UsageReviewEngine` | Semantic check of phrase use (frozen subsystem) | `agy` (Gemini API when touched) |
+| Word lookup | Native-language word + English explanation | Bundled one-shot Swift helper `apple-translation` (macOS Translation + local Foundation Models) |
 
 Rules:
 
-- Call sites choose a **tier** (conversation, coaching), not a model ID. Every `agy` call names a
-  Gemini model; `CliOptions.model` is mandatory and a test runs each entry point against a fake CLI.
+- Call sites choose a **tier**, not a model ID. Every `agy` call names a Gemini model;
+  `CliOptions.model` is mandatory and a test runs each entry point against a fake CLI.
 - Provider output is parsed into typed Rust values; invalid output is a recoverable typed error.
-- Only transcript and the minimum prompt context leave the Mac. API keys live in
-  an encrypted, owner-only file in the app data folder, never in SQLite or logs.
+- Only transcript and minimum prompt context leave the Mac. API keys live in an encrypted,
+  owner-only file in the app data folder, never in SQLite or logs.
 - `agy` runs only in a private temporary directory, never in the repository.
-
-F13 word lookup uses a separate one-shot bundled Swift helper (`apple-translation`). macOS
-Translation handles the native-language word; an independent local Foundation Models session
-provides a simple English explanation. Its process never uses the conversation helper's queue,
-Gemini or Antigravity. Rust owns the native-language preference, request/output validation,
-concurrency guard and bounded process lifetime. Explicit language preparation opens a small native
-SwiftUI window so macOS can obtain download consent. React observes selection only within marked
-English content and requires an explicit lookup action; stale results cannot replace newer ones.
+- The word-lookup helper never uses the conversation helper's queue, Gemini or `agy`. Rust owns the
+  language preference, validation, concurrency guard and process lifetime. React offers lookup only
+  on explicit action within marked English content.
 
 ## 7. Learning engine
 
 - Mistakes and phrase cards with review events and a simple interval schedule. Mistake observations
-  are retained immediately; Memory and due learning surfaces require two distinct observations.
+  are stored at once; Memory and due surfaces need two distinct observations.
 - Due items enter conversation context on selected turns (at most two targets).
-- Spoken recall (daily recall and Memory review) records transcript evidence and updates the
-  schedule atomically.
-- An explicit usage review can assess the first two conversation answers against prior targets and
-  maintain a multi-week mastery streak. This subsystem is frozen; rules in
-  TECHNICAL_REQUIREMENTS §9.
-- Input source (`voice`, `edited`, `text`) and cue exposure (help shown) are stored so cued or
-  typed answers never count as independent spoken evidence.
+- Spoken recall (daily recall, Memory review) records transcript evidence and updates the schedule
+  atomically.
+- Input source (`voice`, `edited`, `text`) and cue exposure (help shown) are stored, so cued or typed
+  answers never count as independent spoken evidence.
+- An explicit usage review may assess the first two conversation answers against prior targets and
+  maintain a multi-week mastery streak. This subsystem is frozen (TR §9.2).
+- Session variants share one session model: topic and time goal with an active-time clock kept in
+  Rust, write-then-speak phases, and a five-question mistake-practice plan. Rust validates phase
+  transitions. Rehearsal and mistake practice are cued, so they never become independent-use
+  evidence. Rules: TR §7.
+- Session finish commits a durable wrap-up job. A `WrapupQueue` resumes pending jobs at startup and
+  calls the engine outside the session mutex; results or typed failures persist before events
+  refresh the UI. Review material has its own SQLite cache so background generation cannot delay
+  first-answer scoring.
 
 ## 8. Persistence
 
-F8 adds a persisted topic and suggested time goal to each session, plus a local personal profile.
-The session clock uses accumulated active milliseconds and a monotonic anchor in Rust. It is
-checkpointed periodically and on pause/exit; restored sessions start paused, so time while the app
-is closed is excluded. React displays and extrapolates the returned snapshot while Talk is open.
-The profile reaches the conversation as bounded JSON data and contributes terms to the effective
-Whisper glossary without changing the editable glossary.
-
-F11 adds a persisted practice mode, phase and frozen written-answer count. Rust validates phase
-transitions and derives the spoken replay from the original questions; no second conversation
-provider call is needed to rehearse them. The written and spoken answers share the same session and
-absolute sequence numbers, including coaching and phrase provenance. Entering spoken rehearsal
-records cue exposure, preserving the distinction from independent mastery. React controls audio
-from the returned phase and presents corrections without waiting for the coaching queue.
-
-F12 keeps a five-question mistake-practice plan beside its voice session. One background-tier
-provider call prepares it from recurring mistakes; saved answers then advance through the local
-questions without conversation generation. The plan and cue exposure are committed with the
-session, so restoring preserves the same questions and practice cannot become independent-use
-evidence. The existing coaching queue still checks each answer asynchronously.
-
-F9 commits a durable phrase-preparation job with session finish (schema version 19). A separate
-`WrapupQueue` resumes pending jobs on startup and calls `SessionWrapupEngine` outside the session
-mutex. The background `agy` adapter uses one explicitly pinned Flash 3.8 High request; strict Rust
-validation requires quotes from the numbered answer snapshot. Results and typed failures persist
-before events refresh the UI. Coaching still supplies recurring mistakes independently. Batch saving
-phrases is transactional and returns newly created IDs so Undo preserves existing duplicate cards.
-
-SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in
-`persistence/schema.rs`. Provider calls run on blocking worker threads and never hold the lock.
-
-F10 snapshots at most six due items, or three phrases for a fresh pre-session warm-up. Review
-material has a separate SQLite cache (`review_material_preparations`, schema version 20), so
-background situation generation cannot delay first-answer scoring or mutate the saved queue.
-`ReviewMaterialEngine` receives only that queue's targets and notes. The session layer validates
-the whole generated batch, masks model sentences until the first score, persists hint exposure
-before returning wording, and rejects a result for an ended run. The UI freezes the situation
-during capture and uses the existing unscored retry path for shadowing. Warm-up hands off the
-selected conversation options only when the learner finishes or explicitly skips it.
-Tables are listed in TECHNICAL_REQUIREMENTS §8.
+SQLite in the app data directory, one connection behind `Arc<Mutex<_>>`, migrations in the
+persistence schema module. Provider calls run on blocking worker threads and never hold the lock.
+Tables: TR §8. UI-only conveniences (microphone device, flow preferences, Dock icon) live in WebView
+storage.
 
 ## 9. Failure handling
 
 - STT failure: the recording stays in memory for retry until reset; the session is untouched.
-- Provider failure or timeout: the learner's answer stays editable and can be resent; nothing is
-  saved for the failed turn.
-- Coaching or help failure: the conversation continues.
+- Provider failure or timeout: the answer stays editable and can be resent; nothing is saved for the
+  failed turn.
+- Coaching, help or wrap-up failure: the conversation continues; failures are visible with retry.
 - Missing dependency (Whisper, model, Apple model, API key): Settings shows the status and a
   recovery step; no crash.
 
@@ -211,20 +177,3 @@ Tables are listed in TECHNICAL_REQUIREMENTS §8.
 Screen or active-app monitoring, cloud speech recognition, a native Swift rewrite, menu-bar and
 notification surfaces, WidgetKit, phoneme-level pronunciation scoring, multi-user features.
 
-## Local natural speech
-
-`voice::VoiceEngine` owns one persistent, separately bundled Supertonic 3 helper. It prewarms
-outside the conversation queue, validates bounded English text/voice/rate requests, and returns
-PCM WAV through typed binary IPC. A busy engine never adds a backend queue; failed or >750 ms
-inference kills the helper. The UI attempts one background warm-up after fallback; if recovery
-fails, Settings offers an explicit retry. Session and coaching locks
-are independent. The helper/model/runtime are pinned build assets, with licenses bundled.
-
-The speech facade keeps the existing play/stream/pause/resume/stop API. Its natural queue uses
-the existing sentence splitter, bounds neural phrases to 48 characters at clause/word boundaries,
-and prepares one next phrase during current playback. Each
-stream freezes its voice/rate. Generation failure or the 800 ms UI deadline uses the installed
-system voice for the remaining stream; model warm-up never blocks a first answer. Actual media
-`playing` reports first audio, and final media `ended` permits auto-listening. Cancellation drops
-late audio, releases media/blob URLs and prevents stale completion callbacks. Preferences are
-UI-only; voice inference and its bounded process lifecycle remain Rust-owned.

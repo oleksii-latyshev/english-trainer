@@ -1,21 +1,22 @@
 import { useTrainer } from '@/context/TrainerContext';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 export function VoiceSelection() {
   const { speech } = useTrainer();
   const isPlaying = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
   const preview = (
-    <SettingsButton
+    <Button
       disabled={isPlaying}
       onClick={() => speech.play('Hi, I am Eva. This is how I will sound.')}
-      variant="ghost"
+      tone="ghost"
     >
       Preview
-    </SettingsButton>
+    </Button>
   );
   if (speech.engine === 'natural' && speech.naturalAvailability === 'ready') {
     return (
-      <SettingsRow
+      <FormRow
         title="Eva's voice"
         htmlFor="eva-natural-voice"
         description="English neural voices, generated locally. Preview to choose the one you enjoy."
@@ -36,18 +37,18 @@ export function VoiceSelection() {
           ))}
         </select>
         {preview}
-      </SettingsRow>
+      </FormRow>
     );
   }
   if (!speech.voices.length)
     return (
-      <SettingsBlock role="status" tone="warn">
+      <Notice role="status" tone="warn">
         No system speech voices are available right now. Add an English voice in macOS System
         Settings.
-      </SettingsBlock>
+      </Notice>
     );
   return (
-    <SettingsRow
+    <FormRow
       description="Voices come from macOS; Premium and Enhanced ones sound most natural."
       htmlFor="eva-voice"
       title="Eva's voice"
@@ -68,6 +69,6 @@ export function VoiceSelection() {
         ))}
       </select>
       {preview}
-    </SettingsRow>
+    </FormRow>
   );
 }

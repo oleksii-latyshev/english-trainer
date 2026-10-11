@@ -12,7 +12,7 @@ import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeOptions } from '@/lib/practiceOptions';
 import { TrainerProvider } from './context/TrainerContext';
 import { router } from './router';
-import './App.css';
+import './app/styles.css';
 import './appShell.css';
 
 function App() {

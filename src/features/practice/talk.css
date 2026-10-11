@@ -1,5 +1,5 @@
 /*
- * The Talk conversation screen (docs/ui/DESIGN_BRIEF.md 6.2 to 6.5, 7), built on the --et-* tokens.
+ * The Talk conversation screen (docs/DESIGN.md), built on the --et-* tokens.
  * Below 1180px the Eva stage column leaves and a small Eva joins the header; below 1100px (the
  * rail breakpoint) shortcut hints go too.
  */

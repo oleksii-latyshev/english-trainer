@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { MICROPHONE_TEST_DURATION_MS, type useMicrophoneTest } from '@/audio/useMicrophoneTest';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { MicrophoneSignalDetails } from './MicrophoneSignalDetails';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type Test = ReturnType<typeof useMicrophoneTest>;
 
@@ -51,9 +52,9 @@ function PlayBack({ url }: { url: string }) {
         ref={audio}
         src={url}
       />
-      <SettingsButton onClick={handleToggle} variant="ghost">
+      <Button onClick={handleToggle} tone="ghost">
         {isPlaying ? 'Stop' : 'Play back'}
-      </SettingsButton>
+      </Button>
     </>
   );
 }
@@ -71,32 +72,32 @@ export function MicrophoneTestControls({
   const isBusy = state.tag === 'requesting' || state.tag === 'stopping';
   return (
     <>
-      <SettingsRow description={testDescription(test)} title="10-second check">
+      <FormRow description={testDescription(test)} title="10-second check">
         {state.tag === 'recording' ? (
-          <SettingsButton onClick={test.stopTest}>Stop</SettingsButton>
+          <Button onClick={test.stopTest}>Stop</Button>
         ) : (
-          <SettingsButton disabled={disabled || isBusy || test.isCapturing} onClick={onStart}>
+          <Button disabled={disabled || isBusy || test.isCapturing} onClick={onStart}>
             {state.tag === 'recorded' || state.tag === 'error' ? 'Record again' : 'Record'}
-          </SettingsButton>
+          </Button>
         )}
         {state.tag === 'recorded' && (
           <>
             <PlayBack url={state.playbackUrl} />
-            <SettingsButton onClick={test.discardTest} variant="ghost">
+            <Button onClick={test.discardTest} tone="ghost">
               Discard
-            </SettingsButton>
+            </Button>
           </>
         )}
         {state.tag === 'error' && (
-          <SettingsButton onClick={test.discardTest} variant="ghost">
+          <Button onClick={test.discardTest} tone="ghost">
             Dismiss
-          </SettingsButton>
+          </Button>
         )}
-      </SettingsRow>
+      </FormRow>
       {state.tag === 'recorded' && (
-        <SettingsBlock tone="quiet">
+        <Notice tone="quiet">
           <MicrophoneSignalDetails input={state.actualInput} signal={state.signal} />
-        </SettingsBlock>
+        </Notice>
       )}
     </>
   );

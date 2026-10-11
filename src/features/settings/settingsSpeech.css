@@ -140,7 +140,11 @@
   font-family: inherit;
 }
 
-.settings-block[data-tone="plain"] .speech-results-note,
-.settings-block .settings-details {
+[data-slot="notice"][data-tone="plain"] .speech-results-note,
+[data-slot="notice"] .settings-details {
   margin-top: 8px;
+}
+
+[data-slot="notice"] p + p {
+  margin-top: 6px;
 }

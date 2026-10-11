@@ -1,6 +1,6 @@
 //! One-shot Gemini answer-help request. It has no conversation race or transcript context.
 
-use super::{key, wire::error_for_status, BASE_URL};
+use super::{resolve_key, wire::error_for_status, BASE_URL};
 use crate::{
     api_usage::{self, UsageSource},
     providers::{parse_answer_plan, AnswerPlan, ProviderError, ProviderErrorCode},
@@ -17,10 +17,10 @@ const MODEL: &str = super::super::answered_by::GEMINI_CONVERSATION_MODEL;
 /// Generates a bounded answer plan using only the current question.
 pub fn generate_answer_plan(question: &str) -> Result<AnswerPlan, ProviderError> {
     validate_question(question)?;
-    let api_key = key::resolve_key()?;
+    let api_key = resolve_key()?;
     let result = generate_from(BASE_URL, &api_key, question);
     if matches!(&result, Err(error) if error.code == ProviderErrorCode::Unauthorized) {
-        key::forget_cached_key();
+        crate::gemini_key::forget_cached_key();
     }
     result
 }

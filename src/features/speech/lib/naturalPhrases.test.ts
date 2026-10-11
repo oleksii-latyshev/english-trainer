@@ -1,4 +1,3 @@
-// @ts-expect-error Bun supplies this test module at runtime.
 import { expect, test } from 'bun:test';
 import { splitNaturalPhrases } from './naturalPhrases';
 

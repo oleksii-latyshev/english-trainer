@@ -7,9 +7,11 @@ import {
   type SpeechModel,
   speechErrorMessage,
 } from '@/lib/speechTypes';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { formatPercent, formatSeconds, modelName, progressText } from './lib/speechCheck';
-import { SettingsButton, Switch } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
+import { Switch } from './SettingsControls';
 
 const ALL_MODELS = 'all';
 
@@ -120,7 +122,7 @@ export function SpeechMeasurement({
 
   return (
     <>
-      <SettingsRow
+      <FormRow
         description={
           recordedCount === 0
             ? 'Record at least one sentence above first.'
@@ -146,11 +148,11 @@ export function SpeechMeasurement({
             </option>
           ))}
         </select>
-        <SettingsButton disabled={!canMeasure} onClick={() => void handleMeasure()}>
+        <Button disabled={!canMeasure} onClick={() => void handleMeasure()}>
           {isRunning ? 'Measuring…' : 'Measure'}
-        </SettingsButton>
-      </SettingsRow>
-      <SettingsRow
+        </Button>
+      </FormRow>
+      <FormRow
         description="Also measures each model with your glossary as Whisper's initial prompt, to show how much it helps."
         title="Also try the glossary prompt"
       >
@@ -160,9 +162,9 @@ export function SpeechMeasurement({
           label="Also try the glossary prompt"
           onChange={setIncludePrompt}
         />
-      </SettingsRow>
+      </FormRow>
       {run.tag === 'running' && (
-        <SettingsBlock role="status" tone="quiet">
+        <Notice role="status" tone="quiet">
           <progress
             aria-label="Measurement progress"
             className="speech-progress"
@@ -170,15 +172,15 @@ export function SpeechMeasurement({
             value={run.progress?.done ?? 0}
           />
           <p>{run.progress ? progressText(run.progress) : 'Starting…'}</p>
-        </SettingsBlock>
+        </Notice>
       )}
       {run.tag === 'error' && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {run.message}
-        </SettingsBlock>
+        </Notice>
       )}
       {check.results.runs.length > 0 && (
-        <SettingsBlock>
+        <Notice>
           <ResultsTable runs={check.results.runs} />
           <p className="settings-quiet speech-results-note">
             Time is the whole local Whisper run, including loading the model. Terms right counts
@@ -187,7 +189,7 @@ export function SpeechMeasurement({
           {check.results.runs.map((item) => (
             <Transcripts key={`${item.model_file}-${item.uses_prompt}`} run={item} />
           ))}
-        </SettingsBlock>
+        </Notice>
       )}
     </>
   );

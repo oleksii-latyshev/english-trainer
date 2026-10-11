@@ -1,4 +1,4 @@
-/* The Memory screen (docs/ui/DESIGN_BRIEF.md 6.7), built on the --et-* tokens. */
+/* The Memory screen (docs/DESIGN.md), built on the --et-* tokens. */
 .memory {
   display: flex;
   flex-direction: column;

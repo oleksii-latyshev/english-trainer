@@ -1,4 +1,3 @@
-// @ts-expect-error Bun's test API is available to the runner but not declared in the app's TypeScript config.
 import { expect, it } from 'bun:test';
 import { DEFAULT_AI_SETTINGS, isAiSettings } from './aiSettings';
 

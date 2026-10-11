@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import type { GeminiKeyStatus } from '../src/core/ipc/bindings/GeminiKeyStatus';
 import type { FinishedPracticeSession } from '../src/lib/finishedPracticeSession';
 import type { PracticeOptions, PracticePhase } from '../src/lib/practiceOptions';
 import type { PracticeSession } from '../src/lib/practiceSessionTypes';
@@ -50,7 +51,6 @@ export async function installTauriCommands(page: Page): Promise<void> {
       value === 'writing_review' ||
       value === 'speaking' ||
       value === 'speaking_review';
-
     function consumeFailure(
       fail: 'failNextStart' | 'failNextSend' | 'failNextTransition',
       message: string,
@@ -246,7 +246,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
     const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
       get_active_practice_session: () => harness.activeSession,
       get_ai_settings: () => ({ provider: 'gemini', agy_model: 'default', eva_style: 'natural' }),
-      get_gemini_key_status: () => ({ configured: false, source: null }),
+      get_gemini_key_status: (): GeminiKeyStatus => ({ configured: false, source: null }),
       get_learning_memory: () => ({ mistakes: [], phrase_cards: [], due_count: 0 }),
       get_question_scaffold: () => ({
         sentence_starters: ['One tool I use is…'],

@@ -1,7 +1,9 @@
 mod api_usage;
 mod audio;
 mod conversation;
+mod core;
 mod dock_icon;
+mod gemini_key;
 mod learning;
 mod persistence;
 mod providers;
@@ -67,33 +69,6 @@ async fn prewarm_conversation_provider(
     tauri::async_runtime::spawn_blocking(move || providers::prewarm_provider(&settings, &apple))
         .await
         .map_err(conversation_task_failed("Provider warm-up failed."))?
-}
-
-#[tauri::command]
-async fn get_gemini_key_status() -> Result<providers::GeminiKeyStatus, providers::ProviderError> {
-    tauri::async_runtime::spawn_blocking(providers::key_status)
-        .await
-        .map_err(conversation_task_failed(
-            "Could not read the Gemini key status.",
-        ))?
-}
-
-#[tauri::command]
-async fn save_gemini_api_key(key: String) -> Result<(), providers::ProviderError> {
-    tauri::async_runtime::spawn_blocking(move || providers::save_api_key(&key))
-        .await
-        .map_err(conversation_task_failed(
-            "Could not save the Gemini API key.",
-        ))?
-}
-
-#[tauri::command]
-async fn delete_gemini_api_key() -> Result<(), providers::ProviderError> {
-    tauri::async_runtime::spawn_blocking(providers::delete_api_key)
-        .await
-        .map_err(conversation_task_failed(
-            "Could not remove the Gemini API key.",
-        ))?
 }
 
 #[tauri::command]
@@ -657,7 +632,10 @@ pub fn run() {
         .setup(|app| {
             let app_data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_data)?;
-            providers::configure_key_store(&app_data);
+            let key_service =
+                gemini_key::KeyService::new(gemini_key::EncryptedFileStore::in_folder(&app_data));
+            gemini_key::install(key_service.clone());
+            app.manage(key_service);
             let database_path = app_data.join("english-trainer.sqlite3");
             let sessions = conversation::SessionStore::open(&database_path).map_err(|error| {
                 std::io::Error::other(format!(
@@ -741,9 +719,9 @@ pub fn run() {
             get_api_usage,
             save_ai_settings,
             prewarm_conversation_provider,
-            get_gemini_key_status,
-            save_gemini_api_key,
-            delete_gemini_api_key,
+            gemini_key::commands::get_gemini_key_status,
+            gemini_key::commands::save_gemini_api_key,
+            gemini_key::commands::delete_gemini_api_key,
             generate_follow_up,
             retry_practice_turn,
             start_practice_session,

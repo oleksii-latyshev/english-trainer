@@ -27,11 +27,11 @@ export function createNaturalStream(options: Options) {
   let finished = false;
   let didStart = false;
   let busy = false;
-  let useSystem = false;
+  let isUsingSystemVoice = false;
   let paused = false;
   let playback: Playback | null = null;
   const prepare = (sentence: Sentence) => {
-    if (sentence.audio || useSystem) return;
+    if (sentence.audio || isUsingSystemVoice) return;
     sentence.audio = new Promise<ArrayBuffer | null>((resolve) => {
       const settle = (bytes: ArrayBuffer | null) => {
         clearTimeout(timer);
@@ -99,11 +99,11 @@ export function createNaturalStream(options: Options) {
       },
       onError: () => {
         if (!active) return;
-        if (sentenceStarted || useSystem) {
+        if (sentenceStarted || isUsingSystemVoice) {
           fail();
           return;
         }
-        useSystem = true;
+        isUsingSystemVoice = true;
         options.onFallback();
         playback = playSystemSentence(
           sentence.text,
@@ -122,8 +122,8 @@ export function createNaturalStream(options: Options) {
     options.onState({ tag: 'paused' });
   };
   const fallback = (sentence: Sentence) => {
-    if (useSystem) return;
-    useSystem = true;
+    if (isUsingSystemVoice) return;
+    isUsingSystemVoice = true;
     if (!sentence.wasBusy) options.onFallback();
   };
   const pump = async () => {
@@ -137,7 +137,7 @@ export function createNaturalStream(options: Options) {
     const startedAt = performance.now();
     options.onState({ tag: 'starting' });
     prepare(sentence);
-    const audio = useSystem ? null : await sentence.audio;
+    const audio = isUsingSystemVoice ? null : await sentence.audio;
     if (!active) return;
     if (!audio) fallback(sentence);
     const callbacks = playbackCallbacks(sentence, startedAt);
@@ -150,7 +150,7 @@ export function createNaturalStream(options: Options) {
   const enqueue = (utterances: string[]) => {
     queue.push(...utterances.flatMap(splitNaturalPhrases).map((text) => ({ text })));
     // Later provider deltas may complete a sentence while audio is already playing.
-    if (playback && !useSystem) prefetch();
+    if (playback && !isUsingSystemVoice) prefetch();
     void pump();
   };
   const stop = () => {

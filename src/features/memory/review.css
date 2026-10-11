@@ -1,5 +1,5 @@
 /*
- * The spoken review (docs/ui/DESIGN_BRIEF.md 6.7), built on the --et-* tokens. A focused screen
+ * The spoken review (docs/DESIGN.md), built on the --et-* tokens. A focused screen
  * like Talk: a header with the progress, a scrolling stage and the microphone card pinned below.
  */
 .review-screen {

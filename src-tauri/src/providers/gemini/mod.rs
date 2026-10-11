@@ -1,6 +1,5 @@
 //! Gemini API conversation adapter: streamed plain-text replies over HTTPS.
 
-mod key;
 mod planner;
 mod stream;
 #[cfg(test)]
@@ -14,9 +13,14 @@ use super::{
     reply_text::plain_turn,
     AnsweredBy, ConversationContext, ConversationTurn, ProviderError, ProviderErrorCode,
 };
+use crate::gemini_key;
 use std::{sync::OnceLock, time::Duration};
 
-pub use key::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
+/// The key as providers see it: a failure becomes the provider error the callers already handle.
+fn resolve_key() -> Result<String, ProviderError> {
+    gemini_key::resolve_key()
+        .map_err(|error| ProviderError::from(crate::core::IpcError::from(error)))
+}
 
 pub use planner::generate_answer_plan;
 
@@ -49,18 +53,18 @@ pub(super) fn generate_turn_cancellable(
     cancelled: &std::sync::atomic::AtomicBool,
 ) -> Result<ConversationTurn, ProviderError> {
     validate_plain_context(context, MAX_CONTEXT_CHARS)?;
-    let api_key = key::resolve_key()?;
+    let api_key = resolve_key()?;
     let result =
         generate_from_cancellable(BASE_URL, &api_key, context, backup, on_delta, cancelled);
     if matches!(&result, Err(error) if error.code == ProviderErrorCode::Unauthorized) {
-        key::forget_cached_key();
+        gemini_key::forget_cached_key();
     }
     result
 }
 
 /// Decrypts the API key into memory before the first reply.
 pub(super) fn prewarm() -> Result<(), ProviderError> {
-    key::resolve_key().map(|_| ())
+    resolve_key().map(|_| ())
 }
 
 #[cfg(test)]

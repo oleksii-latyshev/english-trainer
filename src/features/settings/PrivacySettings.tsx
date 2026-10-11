@@ -7,9 +7,12 @@ import {
   saveKeepRawAudio,
   speechErrorMessage,
 } from '@/lib/speechTypes';
+import { Button } from '@/shared/ui/button';
+import { FormRow } from '@/shared/ui/form-row';
+import { Notice } from '@/shared/ui/notice';
 import { formatSize } from './lib/speechCheck';
-import { SettingsButton, Switch } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { Switch } from './SettingsControls';
+import { SettingsGroup } from './SettingsGroup';
 
 type RetentionState =
   | { tag: 'loading' }
@@ -70,17 +73,17 @@ export function PrivacySettings() {
 
   return (
     <SettingsGroup id="privacy" title="Privacy">
-      <SettingsRow
+      <FormRow
         description="Speech recognition, your history, Memory, session numbers."
         title="Stays on this Mac"
       />
-      <SettingsRow
+      <FormRow
         description="The text of your answers and Eva's recent replies — never audio."
         title="Sent to the AI"
       />
       {state.tag === 'ready' && (
         <>
-          <SettingsRow
+          <FormRow
             description={
               state.keepsAudio
                 ? 'On: each answer is kept on this Mac as a recording, after transcription, until you delete it. Nothing is uploaded.'
@@ -93,32 +96,32 @@ export function PrivacySettings() {
               label="Keep raw audio"
               onChange={(next) => void handleToggle(next)}
             />
-          </SettingsRow>
-          <SettingsRow description={keptText(state.kept)} title="Kept recordings">
-            <SettingsButton
+          </FormRow>
+          <FormRow description={keptText(state.kept)} title="Kept recordings">
+            <Button
               disabled={state.kept.count === 0}
               onClick={() => void handleDelete()}
-              variant="ghost"
+              tone="ghost"
             >
               Delete kept recordings
-            </SettingsButton>
-          </SettingsRow>
+            </Button>
+          </FormRow>
         </>
       )}
       {state.tag === 'loading' && (
-        <SettingsBlock role="status" tone="quiet">
+        <Notice role="status" tone="quiet">
           Loading…
-        </SettingsBlock>
+        </Notice>
       )}
       {state.tag === 'error' && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {state.message}
-        </SettingsBlock>
+        </Notice>
       )}
       {problem && (
-        <SettingsBlock role="alert" tone="error">
+        <Notice role="alert" tone="error">
           {problem}
-        </SettingsBlock>
+        </Notice>
       )}
     </SettingsGroup>
   );

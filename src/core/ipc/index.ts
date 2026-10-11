@@ -1,0 +1,10 @@
+export type { GeminiKeyStatus } from './bindings/GeminiKeyStatus';
+export type { IpcErrorCode } from './bindings/IpcErrorCode';
+export type { KeySource } from './bindings/KeySource';
+export { IpcDecodeError, IpcError } from './errors';
+export { invokeCommand, invokeUnitCommand } from './invoke-command';
+export type { IpcArgs, IpcShape } from './ipc';
+export { Ipc } from './ipc';
+export { bindingSchema } from './schemas/binding-schema';
+export { GeminiKeyStatusSchema, KeySourceSchema } from './schemas/gemini-key-status';
+export { IpcErrorCodeSchema } from './schemas/ipc-error';

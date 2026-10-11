@@ -5,6 +5,10 @@ pre-commit:
       run: bun run check
     typecheck:
       run: bun run typecheck
+    effect:
+      run: bun run check:effect
+    conventions:
+      run: bun run check:conventions
     frontend-tests:
       run: bun run test
     rust:

@@ -12,7 +12,7 @@
       "!**/target",
       "!bun.lock",
       "!src-tauri/gen",
-      "!docs/ui/*_prototype.html"
+      "!src/core/ipc/bindings"
     ]
   },
   "formatter": {
@@ -32,7 +32,9 @@
           "options": {
             "allow": ["warn", "error"]
           }
-        }
+        },
+        "noReactForwardRef": "error",
+        "noNestedPromises": "error"
       },
       "style": {
         "noNonNullAssertion": "error",
@@ -53,7 +55,28 @@
             "maxAllowedComplexity": 15
           }
         }
+      },
+      "nursery": {
+        "noFloatingPromises": "error",
+        "noMisusedPromises": "error",
+        "useExhaustiveSwitchCases": "error",
+        "noComponentHookFactories": "error",
+        "noReactStringRefs": "error",
+        "useAwaitThenable": "error",
+        "noPlaywrightMissingAwait": "error",
+        "noPlaywrightUselessAwait": "error",
+        "useTestHooksOnTop": "error"
+      },
+      "correctness": {
+        "noNestedComponentDefinitions": "error",
+        "noReactPropAssignments": "error"
       }
+    },
+    "domains": {
+      "react": "recommended",
+      "test": "recommended",
+      "playwright": "recommended",
+      "project": "recommended"
     }
   },
   "javascript": {
@@ -80,6 +103,432 @@
       "json": {
         "parser": {
           "allowComments": true
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/app/**",
+        "src/screens/**",
+        "src/features/**",
+        "src/core/**",
+        "src/shared/**",
+        "!src/features/coach/**",
+        "!src/features/conversation/**",
+        "!src/features/first-run/**",
+        "!src/features/memory/**",
+        "!src/features/practice/**",
+        "!src/features/settings/**",
+        "!src/features/speech/**",
+        "!src/features/talk-start/**"
+      ],
+      "plugins": ["./biome/plugins/function-declarations.grit"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": {
+              "level": "error",
+              "options": {
+                "filenameCases": ["kebab-case"],
+                "requireAscii": true
+              }
+            },
+            "noDefaultExport": "error",
+            "useConsistentTypeDefinitions": {
+              "level": "error",
+              "options": {
+                "style": "type"
+              }
+            },
+            "noEnum": "error",
+            "noNestedTernary": "error",
+            "useImportType": "error",
+            "useExportType": "error"
+          },
+          "performance": {
+            "noReExportAll": "error",
+            "noBarrelFile": "off"
+          },
+          "suspicious": {
+            "noImportCycles": "error"
+          },
+          "correctness": {
+            "noUnusedImports": "error"
+          },
+          "complexity": {
+            "noExcessiveCognitiveComplexity": {
+              "level": "error",
+              "options": {
+                "maxAllowedComplexity": 12
+              }
+            },
+            "noExcessiveLinesPerFunction": {
+              "level": "error",
+              "options": {
+                "maxLines": 80
+              }
+            }
+          },
+          "nursery": {
+            "useSortedClasses": {
+              "level": "error",
+              "fix": "safe",
+              "options": {
+                "functions": ["tv", "clsx", "cn"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/app/**",
+        "src/screens/**",
+        "src/features/**",
+        "src/core/**",
+        "src/shared/**",
+        "!src/features/coach/**",
+        "!src/features/conversation/**",
+        "!src/features/first-run/**",
+        "!src/features/memory/**",
+        "!src/features/practice/**",
+        "!src/features/settings/**",
+        "!src/features/speech/**",
+        "!src/features/talk-start/**",
+        "!src/app/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/tests/**"
+      ],
+      "plugins": [
+        "./biome/plugins/no-effect-run.grit",
+        "./biome/plugins/no-promise-control-flow.grit"
+      ]
+    },
+    {
+      "includes": ["src/shared/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/app/**",
+                      "@/screens/**",
+                      "@/features/**",
+                      "@/core/**",
+                      "@/app",
+                      "@/screens",
+                      "@/features",
+                      "@/core"
+                    ],
+                    "message": "shared/ is the bottom layer and imports nothing above it."
+                  },
+                  {
+                    "group": [
+                      "@/lib/**",
+                      "@/components/**",
+                      "@/context/**",
+                      "@/audio/**",
+                      "@/theme/**",
+                      "@/features/coach/**",
+                      "@/features/conversation/**",
+                      "@/features/first-run/**",
+                      "@/features/memory/**",
+                      "@/features/practice/**",
+                      "@/features/settings/**",
+                      "@/features/speech/**",
+                      "@/features/talk-start/**",
+                      "@/features/coach",
+                      "@/features/conversation",
+                      "@/features/first-run",
+                      "@/features/memory",
+                      "@/features/practice",
+                      "@/features/settings",
+                      "@/features/speech",
+                      "@/features/talk-start"
+                    ],
+                    "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
+                  },
+                  {
+                    "group": ["@tauri-apps/api/core"],
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/core/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/app/**",
+                      "@/screens/**",
+                      "@/features/**",
+                      "@/app",
+                      "@/screens",
+                      "@/features"
+                    ],
+                    "message": "core/ never imports app/, screens/ or features/."
+                  },
+                  {
+                    "group": [
+                      "@/lib/**",
+                      "@/components/**",
+                      "@/context/**",
+                      "@/audio/**",
+                      "@/theme/**",
+                      "@/features/coach/**",
+                      "@/features/conversation/**",
+                      "@/features/first-run/**",
+                      "@/features/memory/**",
+                      "@/features/practice/**",
+                      "@/features/settings/**",
+                      "@/features/speech/**",
+                      "@/features/talk-start/**",
+                      "@/features/coach",
+                      "@/features/conversation",
+                      "@/features/first-run",
+                      "@/features/memory",
+                      "@/features/practice",
+                      "@/features/settings",
+                      "@/features/speech",
+                      "@/features/talk-start"
+                    ],
+                    "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
+                  },
+                  {
+                    "group": ["@tauri-apps/api/core"],
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                  },
+                  {
+                    "group": ["@/shared/*/*/**"],
+                    "message": "Import the public API (`@/features/x`, `@/core/x`, `@/shared/ui/x`), not a deep path."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/core/ipc/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/app/**",
+                      "@/screens/**",
+                      "@/features/**",
+                      "@/app",
+                      "@/screens",
+                      "@/features"
+                    ],
+                    "message": "core/ never imports app/, screens/ or features/."
+                  },
+                  {
+                    "group": [
+                      "@/lib/**",
+                      "@/components/**",
+                      "@/context/**",
+                      "@/audio/**",
+                      "@/theme/**",
+                      "@/features/coach/**",
+                      "@/features/conversation/**",
+                      "@/features/first-run/**",
+                      "@/features/memory/**",
+                      "@/features/practice/**",
+                      "@/features/settings/**",
+                      "@/features/speech/**",
+                      "@/features/talk-start/**",
+                      "@/features/coach",
+                      "@/features/conversation",
+                      "@/features/first-run",
+                      "@/features/memory",
+                      "@/features/practice",
+                      "@/features/settings",
+                      "@/features/speech",
+                      "@/features/talk-start"
+                    ],
+                    "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
+                  },
+                  {
+                    "group": ["@/shared/*/*/**"],
+                    "message": "Import the public API (`@/features/x`, `@/core/x`, `@/shared/ui/x`), not a deep path."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/features/**",
+        "!src/features/coach/**",
+        "!src/features/conversation/**",
+        "!src/features/first-run/**",
+        "!src/features/memory/**",
+        "!src/features/practice/**",
+        "!src/features/settings/**",
+        "!src/features/speech/**",
+        "!src/features/talk-start/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/app/**",
+                      "@/screens/**",
+                      "@/features/**",
+                      "@/app",
+                      "@/screens",
+                      "@/features"
+                    ],
+                    "message": "A feature imports only core/ and shared/ (its own files relatively); screens compose features."
+                  },
+                  {
+                    "group": [
+                      "@/lib/**",
+                      "@/components/**",
+                      "@/context/**",
+                      "@/audio/**",
+                      "@/theme/**",
+                      "@/features/coach/**",
+                      "@/features/conversation/**",
+                      "@/features/first-run/**",
+                      "@/features/memory/**",
+                      "@/features/practice/**",
+                      "@/features/settings/**",
+                      "@/features/speech/**",
+                      "@/features/talk-start/**",
+                      "@/features/coach",
+                      "@/features/conversation",
+                      "@/features/first-run",
+                      "@/features/memory",
+                      "@/features/practice",
+                      "@/features/settings",
+                      "@/features/speech",
+                      "@/features/talk-start"
+                    ],
+                    "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
+                  },
+                  {
+                    "group": ["@tauri-apps/api/core"],
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                  },
+                  {
+                    "group": ["@/core/*/**", "@/shared/*/*/**"],
+                    "message": "Import the public API (`@/features/x`, `@/core/x`, `@/shared/ui/x`), not a deep path."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/screens/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@/app/**", "@/screens/**", "@/app", "@/screens"],
+                    "message": "A screen never imports app/ or another screen."
+                  },
+                  {
+                    "group": [
+                      "@/lib/**",
+                      "@/components/**",
+                      "@/context/**",
+                      "@/audio/**",
+                      "@/theme/**",
+                      "@/features/coach/**",
+                      "@/features/conversation/**",
+                      "@/features/first-run/**",
+                      "@/features/memory/**",
+                      "@/features/practice/**",
+                      "@/features/settings/**",
+                      "@/features/speech/**",
+                      "@/features/talk-start/**",
+                      "@/features/coach",
+                      "@/features/conversation",
+                      "@/features/first-run",
+                      "@/features/memory",
+                      "@/features/practice",
+                      "@/features/settings",
+                      "@/features/speech",
+                      "@/features/talk-start"
+                    ],
+                    "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
+                  },
+                  {
+                    "group": ["@tauri-apps/api/core"],
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                  },
+                  {
+                    "group": ["@/features/*/**", "@/core/*/**", "@/shared/*/*/**"],
+                    "message": "Import the public API (`@/features/x`, `@/core/x`, `@/shared/ui/x`), not a deep path."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@tauri-apps/api/core"],
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                  },
+                  {
+                    "group": ["@/features/*/**", "@/core/*/**", "@/shared/*/*/**"],
+                    "message": "Import the public API (`@/features/x`, `@/core/x`, `@/shared/ui/x`), not a deep path."
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }
