@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react';
+import { Button } from '@/shared/ui/button';
 
 export function PlanningTimer({
   remainingSeconds,
@@ -17,7 +17,7 @@ export function PlanningTimer({
     return (
       <div aria-live="polite" className="talk-help-actions">
         <span className="talk-help-text">Planning time: {remainingSeconds}s</span>
-        <Button onPress={onCancel} size="sm" variant="ghost">
+        <Button onClick={onCancel} size="sm" tone="quiet">
           Cancel planning
         </Button>
       </div>
@@ -26,10 +26,10 @@ export function PlanningTimer({
   return (
     <div className="talk-help-actions">
       <span className="talk-help-text">Plan before you speak</span>
-      <Button isDisabled={isDisabled} onPress={() => onStart(15)} size="sm" variant="secondary">
+      <Button disabled={isDisabled} onClick={() => onStart(15)} size="sm" tone="secondary">
         15 seconds
       </Button>
-      <Button isDisabled={isDisabled} onPress={() => onStart(30)} size="sm" variant="secondary">
+      <Button disabled={isDisabled} onClick={() => onStart(30)} size="sm" tone="secondary">
         30 seconds
       </Button>
     </div>

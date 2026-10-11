@@ -1,7 +1,7 @@
-import { Button } from '@heroui/react';
 import type { TurnCoaching } from '@/lib/coachingTypes';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { PracticePhase } from '@/lib/practiceOptions';
+import { Button } from '@/shared/ui/button';
 import type { NoteTools } from './AnswerNote';
 import { AnswerNote } from './AnswerNote';
 import type { SessionDetails } from './lib/practiceState';
@@ -188,11 +188,11 @@ export function PracticeReview({
           <p>{copy.detail}</p>
         </div>
         <Button
-          isDisabled={
+          disabled={
             model.busy || !model.canChangeSession || model.practice.tag !== 'active' || isRetrying
           }
-          onPress={actions.finishPractice}
-          variant="secondary"
+          onClick={actions.finishPractice}
+          tone="secondary"
         >
           Finish
         </Button>
@@ -206,7 +206,7 @@ export function PracticeReview({
       {historyError && (
         <div className="practice-review-error" role="alert">
           <span>{historyError}</span>
-          <Button onPress={onRetryHistory} size="sm" variant="secondary">
+          <Button onClick={onRetryHistory} size="sm" tone="secondary">
             Retry history
           </Button>
         </div>
@@ -240,11 +240,11 @@ export function PracticeReview({
       {canMoveToSpeaking && (
         <div className="practice-review-next">
           <Button
-            isDisabled={
+            disabled={
               model.busy || !model.canChangeSession || model.practice.tag !== 'active' || isRetrying
             }
-            onPress={() => actions.transitionPracticePhase('speaking')}
-            variant="primary"
+            onClick={() => actions.transitionPracticePhase('speaking')}
+            tone="primary"
           >
             Ready to speak
           </Button>

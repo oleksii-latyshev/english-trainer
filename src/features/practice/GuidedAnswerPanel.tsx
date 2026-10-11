@@ -1,7 +1,7 @@
-import { Button } from '@heroui/react';
 import { Play } from 'lucide-react';
 import { useTrainer } from '@/context/TrainerContext';
 import type { AnswerPlan } from '@/lib/answerPlanTypes';
+import { Button } from '@/shared/ui/button';
 
 function panelMessage(hasError: boolean, errorMessage: string | null, isLoading: boolean): string {
   if (hasError) return errorMessage ?? 'Answer help is unavailable. You can keep speaking.';
@@ -35,7 +35,7 @@ export function GuidedAnswerPanel({
         </p>
         {hasError && (
           <div className="talk-help-actions">
-            <Button onPress={onRetry} size="sm" variant="secondary">
+            <Button onClick={onRetry} size="sm" tone="secondary">
               Retry help
             </Button>
           </div>
@@ -49,21 +49,21 @@ export function GuidedAnswerPanel({
       <p className="talk-help-example">{plan.model_answer}</p>
       <div className="talk-help-actions">
         <Button
-          isDisabled={isRecording}
-          onPress={() => speech.play(plan.model_answer)}
+          disabled={isRecording}
+          onClick={() => speech.play(plan.model_answer)}
           size="sm"
-          variant="secondary"
+          tone="secondary"
         >
           <Play aria-hidden="true" fill="currentColor" size={12} />
           Play
         </Button>
         <Button
-          onPress={() => {
+          onClick={() => {
             speech.stop();
             onHide();
           }}
           size="sm"
-          variant="ghost"
+          tone="quiet"
         >
           Hide before speaking
         </Button>

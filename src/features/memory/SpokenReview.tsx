@@ -1,4 +1,3 @@
-import { Button } from '@heroui/react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { ReviewSession } from '@/features/memory/components/ReviewSession';
 import { getLearningMemory } from '@/features/memory/memoryApi';
@@ -6,6 +5,7 @@ import { startMemoryReview } from '@/features/memory/memoryRecallApi';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { LearningStatus } from '@/lib/learningTypes';
 import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
+import { Button } from '@/shared/ui/button';
 import './review.css';
 
 type Props = {
@@ -89,7 +89,7 @@ export function SpokenReview({
       {load.tag === 'nothing-to-review' && (
         <Notice
           actions={
-            <Button onPress={onBackToMemory} variant="primary">
+            <Button onClick={onBackToMemory} tone="primary">
               {warmup ? 'Skip and start conversation' : 'Back to Memory'}
             </Button>
           }
@@ -106,15 +106,15 @@ export function SpokenReview({
           actions={
             <>
               <Button
-                onPress={() => {
+                onClick={() => {
                   setLoad({ tag: 'loading' });
                   setAttempt((count) => count + 1);
                 }}
-                variant="primary"
+                tone="primary"
               >
                 Try again
               </Button>
-              <Button onPress={onBackToMemory} variant="secondary">
+              <Button onClick={onBackToMemory} tone="secondary">
                 {warmup ? 'Skip and start conversation' : 'Back to Memory'}
               </Button>
             </>

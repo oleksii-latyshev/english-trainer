@@ -1,4 +1,3 @@
-import { Button, Tooltip } from '@heroui/react';
 import { Pause, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
@@ -10,6 +9,8 @@ import {
   practiceModeLabel,
   practicePhaseLabel,
 } from '@/lib/practiceOptions';
+import { Button } from '@/shared/ui/button';
+import { Tooltip } from '@/shared/ui/tooltip';
 import { mistakePracticeProgress } from './lib/mistakePracticeProgress';
 import type { PauseControl } from './lib/pauseControl';
 import type { SessionDetails } from './lib/practiceState';
@@ -43,7 +44,7 @@ type Props = {
 function PauseButton({ pause }: { pause: Props['pause'] }) {
   if (pause.isPaused) {
     return (
-      <Button onPress={pause.onResume} size="sm" variant="ghost">
+      <Button onClick={pause.onResume} size="sm" tone="quiet">
         <Play aria-hidden="true" fill="currentColor" size={14} />
         Resume
       </Button>
@@ -51,21 +52,18 @@ function PauseButton({ pause }: { pause: Props['pause'] }) {
   }
   if (pause.disabledReason === undefined) {
     return (
-      <Button onPress={pause.onPause} size="sm" variant="ghost">
+      <Button onClick={pause.onPause} size="sm" tone="quiet">
         <Pause aria-hidden="true" fill="currentColor" size={14} />
         Pause
       </Button>
     );
   }
   return (
-    <Tooltip>
-      <Tooltip.Trigger className="talk-pause-trigger">
-        <Button isDisabled size="sm" variant="ghost">
-          <Pause aria-hidden="true" fill="currentColor" size={14} />
-          Pause
-        </Button>
-      </Tooltip.Trigger>
-      <Tooltip.Content>{pause.disabledReason}</Tooltip.Content>
+    <Tooltip className="talk-pause-trigger" content={pause.disabledReason}>
+      <Button disabled size="sm" tone="quiet">
+        <Pause aria-hidden="true" fill="currentColor" size={14} />
+        Pause
+      </Button>
     </Tooltip>
   );
 }
@@ -145,15 +143,15 @@ export function TalkHeader({
         {isAudioStage && <PauseButton pause={pause} />}
         {stageAction && (
           <Button
-            isDisabled={stageAction.isDisabled}
-            onPress={stageAction.onPress}
+            disabled={stageAction.isDisabled}
+            onClick={stageAction.onPress}
             size="sm"
-            variant="secondary"
+            tone="secondary"
           >
             {stageAction.label}
           </Button>
         )}
-        <Button isDisabled={isFinishDisabled} onPress={onFinish} size="sm" variant="secondary">
+        <Button disabled={isFinishDisabled} onClick={onFinish} size="sm" tone="secondary">
           {isFinishing ? 'Finishing…' : 'Finish'}
         </Button>
       </div>

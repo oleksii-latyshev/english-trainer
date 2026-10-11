@@ -1,4 +1,4 @@
-import { toast } from '@heroui/react';
+import { toast } from '@/shared/ui/toast';
 
 const SAVED_MESSAGE = 'Saved to Memory — it’ll come back in a later session.';
 
@@ -14,9 +14,9 @@ export function showSavedToast({ onUndo }: Options = {}): void {
     return;
   }
   const toastId = toast.success(SAVED_MESSAGE, {
-    actionProps: {
-      children: 'Undo',
-      onPress: () => {
+    action: {
+      label: 'Undo',
+      onClick: () => {
         toast.close(toastId);
         onUndo().then(
           () => toast('Removed from Memory'),

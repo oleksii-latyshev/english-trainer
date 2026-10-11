@@ -1,4 +1,3 @@
-import { Button, SearchField, toast } from '@heroui/react';
 import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteMemoryDialog } from '@/features/memory/components/DeleteMemoryDialog';
@@ -10,9 +9,11 @@ import { searchMemory, visibleMemory } from '@/features/memory/lib/memoryState';
 import { eligibleMistakePracticeCount } from '@/features/memory/lib/mistakePractice';
 import { useActiveReview } from '@/features/memory/useActiveReview';
 import { useMemoryLibrary } from '@/features/memory/useMemoryLibrary';
+import { Button } from '@/shared/ui/button';
+import { SearchField } from '@/shared/ui/search-field';
+import { toast } from '@/shared/ui/toast';
 import { archiveLearningItem, deleteMistake, deletePhraseCard } from './memoryApi';
 import './memory.css';
-import './memoryControls.css';
 
 type Props = {
   /** The microphone is in use elsewhere, so a spoken review cannot start. */
@@ -85,17 +86,12 @@ export function LearningMemoryPanel({
       <header className="memory-header">
         <h1>Memory</h1>
         <SearchField
-          aria-label="Search memory"
           className="memory-search"
-          onChange={setQuery}
+          label="Search memory"
+          onValueChange={setQuery}
+          placeholder="Search phrases and mistakes"
           value={query}
-        >
-          <SearchField.Group>
-            <SearchField.SearchIcon />
-            <SearchField.Input placeholder="Search phrases and mistakes" />
-            <SearchField.ClearButton />
-          </SearchField.Group>
-        </SearchField>
+        />
       </header>
 
       <ReviewBanner
@@ -120,7 +116,7 @@ export function LearningMemoryPanel({
         <div className="memory-notice" role="alert">
           <TriangleAlert aria-hidden="true" size={18} />
           <span>Could not load Memory from local storage.</span>
-          <Button onPress={retry} size="sm" variant="secondary">
+          <Button onClick={retry} size="sm" tone="secondary">
             Try again
           </Button>
         </div>

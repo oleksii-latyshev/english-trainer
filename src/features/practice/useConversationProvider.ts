@@ -1,7 +1,7 @@
-import { toast } from '@heroui/react';
 import { useEffect, useState } from 'react';
 import { getAiSettings, saveAiSettings } from '@/lib/aiSettings';
 import type { ConversationProviderId } from '@/lib/types';
+import { toast } from '@/shared/ui/toast';
 
 /** The saved conversation model, and the one-press switch to the on-device one after a stalled reply. */
 export function useConversationProvider() {

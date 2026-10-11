@@ -1,7 +1,7 @@
-import { Button } from '@heroui/react';
 import { Bookmark, ChevronDown, ChevronUp, Mic, Volume2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { TurnFeedback } from '@/lib/types';
+import { Button } from '@/shared/ui/button';
 import type { NoteView } from './lib/note';
 import { highlightRewrite } from './lib/rewriteDiff';
 
@@ -79,7 +79,7 @@ function ReadyNote(props: Props & { feedback: TurnFeedback }) {
   const { feedback } = props;
   if (!props.isOpen) {
     return (
-      <Button className="talk-collapsed" onPress={props.onToggle} size="sm" variant="ghost">
+      <Button className="talk-collapsed" onClick={props.onToggle} size="sm" tone="quiet">
         <span className="talk-card-label">More natural</span>
         <span className="talk-collapsed-text">{feedback.b2_rewrite}</span>
         <ChevronDown aria-hidden="true" size={14} />
@@ -93,10 +93,10 @@ function ReadyNote(props: Props & { feedback: TurnFeedback }) {
         <Button
           aria-label="Collapse note"
           className="ml-auto"
-          isIconOnly
-          onPress={props.onToggle}
+          iconOnly
+          onClick={props.onToggle}
           size="sm"
-          variant="ghost"
+          tone="quiet"
         >
           <ChevronUp aria-hidden="true" size={14} />
         </Button>
@@ -106,10 +106,10 @@ function ReadyNote(props: Props & { feedback: TurnFeedback }) {
       {props.secondTry}
       <div className="talk-card-actions">
         <Button
-          isDisabled={props.isSayAgainDisabled}
-          onPress={props.onSayAgain}
+          disabled={props.isSayAgainDisabled}
+          onClick={props.onSayAgain}
           size="sm"
-          variant="secondary"
+          tone="secondary"
         >
           <Mic aria-hidden="true" size={14} />
           Say it again
@@ -117,10 +117,10 @@ function ReadyNote(props: Props & { feedback: TurnFeedback }) {
         {props.canSavePhrase && (
           <Button
             aria-pressed={props.phraseSaveState === 'saved'}
-            isDisabled={props.phraseSaveState === 'saving'}
-            onPress={props.onSavePhrase}
+            disabled={props.phraseSaveState === 'saving'}
+            onClick={props.onSavePhrase}
             size="sm"
-            variant="secondary"
+            tone="secondary"
           >
             <Bookmark
               aria-hidden="true"
@@ -130,7 +130,7 @@ function ReadyNote(props: Props & { feedback: TurnFeedback }) {
             {saveLabel(props.phraseSaveState)}
           </Button>
         )}
-        <Button onPress={() => props.onSpeakRewrite(feedback.b2_rewrite)} size="sm" variant="ghost">
+        <Button onClick={() => props.onSpeakRewrite(feedback.b2_rewrite)} size="sm" tone="quiet">
           <Volume2 aria-hidden="true" size={14} />
           Hear it
         </Button>
@@ -158,7 +158,7 @@ export function CoachingNote(props: Props) {
       return (
         <p className="talk-quiet-note">
           Coaching is paused for now because Antigravity has no quota left. Talking is not affected.{' '}
-          <Button onPress={props.onRetryCoaching} size="sm" variant="ghost">
+          <Button onClick={props.onRetryCoaching} size="sm" tone="quiet">
             Try again
           </Button>
         </p>
@@ -167,7 +167,7 @@ export function CoachingNote(props: Props) {
       return (
         <p className="talk-quiet-note">
           Couldn’t check this answer.{' '}
-          <Button onPress={props.onRetryCoaching} size="sm" variant="ghost">
+          <Button onClick={props.onRetryCoaching} size="sm" tone="quiet">
             Retry
           </Button>
         </p>

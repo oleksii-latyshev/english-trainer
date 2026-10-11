@@ -3,8 +3,26 @@ import type { VariantProps } from 'tailwind-variants';
 import { button } from './styles';
 
 type Props = VariantProps<typeof button> &
-  Omit<BaseButton.Props, 'className' | 'render'> & { className?: string };
+  Omit<BaseButton.Props, 'className' | 'render'> & { className?: string; pending?: boolean };
 
-export function Button({ tone, className, type = 'button', ...rest }: Props) {
-  return <BaseButton className={button({ tone, className })} type={type} {...rest} />;
+export function Button({
+  tone,
+  size,
+  iconOnly,
+  pending = false,
+  className,
+  type = 'button',
+  onClick,
+  ...rest
+}: Props) {
+  return (
+    <BaseButton
+      aria-disabled={pending || undefined}
+      className={button({ tone, size, iconOnly, className })}
+      data-pending={pending || undefined}
+      onClick={pending ? undefined : onClick}
+      type={type}
+      {...rest}
+    />
+  );
 }

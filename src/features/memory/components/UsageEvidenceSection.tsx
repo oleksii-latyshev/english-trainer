@@ -1,8 +1,8 @@
-import { Button } from '@heroui/react';
 import { useEffect, useState } from 'react';
 import { getMemoryUsageEvidence } from '@/features/memory/memoryApi';
 import type { LearningItemType } from '@/lib/learningTypes';
 import type { MemoryUsageEvidence } from '@/lib/usageTypes';
+import { Button } from '@/shared/ui/button';
 import '@/features/memory/memoryDetail.css';
 
 type Props = {
@@ -51,7 +51,7 @@ export function UsageEvidenceSection({ itemType, itemId }: Props) {
       {state.tag === 'error' && (
         <div className="evidence-error" role="alert">
           <span>Could not load the evidence from conversations.</span>
-          <Button onPress={() => setAttempt((count) => count + 1)} size="sm" variant="secondary">
+          <Button onClick={() => setAttempt((count) => count + 1)} size="sm" tone="secondary">
             Retry
           </Button>
         </div>

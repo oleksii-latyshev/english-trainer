@@ -1,5 +1,5 @@
-import { Button } from '@heroui/react';
 import type { MemoryReviewItem } from '@/lib/memoryRecallTypes';
+import { Button } from '@/shared/ui/button';
 
 type Props = {
   items: MemoryReviewItem[];
@@ -33,7 +33,7 @@ export function ReviewHeader({ items, position, isBusy, onEnd, endLabel }: Props
           {position === null ? 'Done' : `${position} of ${items.length}`}
         </span>
       </div>
-      <Button className="review-end" isDisabled={isBusy} onPress={onEnd} size="sm" variant="ghost">
+      <Button className="review-end" disabled={isBusy} onClick={onEnd} size="sm" tone="quiet">
         {endLabel ?? (position === null ? 'Back to Memory' : 'End review')}
       </Button>
     </header>

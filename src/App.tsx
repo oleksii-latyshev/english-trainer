@@ -1,4 +1,3 @@
-import { Toast } from '@heroui/react';
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
@@ -10,6 +9,7 @@ import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
 import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeOptions } from '@/lib/practiceOptions';
+import { ToastProvider } from '@/shared/ui/toast';
 import { TrainerProvider } from './context/TrainerContext';
 import { router } from './router';
 import './app/styles.css';
@@ -114,7 +114,7 @@ function App() {
   return (
     <TrainerProvider value={trainerContext}>
       <RouterProvider router={router} />
-      <Toast.Provider />
+      <ToastProvider />
     </TrainerProvider>
   );
 }

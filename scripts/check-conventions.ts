@@ -268,11 +268,11 @@ export function collectViolations(root: string): Violation[] {
     cssFiles.filter((file) => isGlobalStylesheet(relative(root, file))),
     (file) => findCssComments(readFileSync(file, 'utf8')),
   );
-  const legacyUi = newStructureFiles(root, ['.ts', '.tsx'])
+  const legacyUi = filesUnder(join(root, 'src'), ['.ts', '.tsx', '.css'])
     .filter((file) => importsLegacyUiLibrary(readFileSync(file, 'utf8')))
     .map((file) => ({
       location: relative(root, file),
-      message: 'HeroUI is legacy; use the kit in src/shared/ui',
+      message: 'HeroUI is removed; use the kit in src/shared/ui',
     }));
   return [...typeScript, ...strayCss, ...globalCss, ...legacyUi, ...rust, ...flowViolations(root)];
 }

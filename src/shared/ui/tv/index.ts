@@ -8,6 +8,7 @@ export const tv = createTV({
         'font-size': [{ text: ['caption', 'control', 'body'] }],
         leading: [{ leading: ['copy'] }],
         rounded: [{ rounded: ['card', 'nav', 'control'] }],
+        shadow: [{ shadow: ['overlay', 'control', 'primary', 'sky', 'glow', 'knob', 'key'] }],
       },
     },
   },

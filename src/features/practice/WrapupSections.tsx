@@ -1,4 +1,3 @@
-import { Button } from '@heroui/react';
 import { Bookmark, Check, X } from 'lucide-react';
 import type {
   FinishedPracticeSession,
@@ -6,6 +5,7 @@ import type {
   Trend,
   WrapupPhrase,
 } from '@/lib/finishedPracticeSession';
+import { Button } from '@/shared/ui/button';
 import { formatDuration, savePhrasesLabel, trendLine } from './lib/wrapup';
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -77,10 +77,10 @@ function PhraseCard(props: { phrase: WrapupPhrase; canRemove: boolean; onRemove:
       {props.canRemove && (
         <Button
           aria-label={`Remove phrase “${props.phrase.phrase}”`}
-          isIconOnly
-          onPress={props.onRemove}
+          iconOnly
+          onClick={props.onRemove}
           size="sm"
-          variant="ghost"
+          tone="quiet"
         >
           <X aria-hidden="true" size={16} strokeWidth={2} />
         </Button>
@@ -116,7 +116,7 @@ function PreparationState(props: {
         <p className="wrapup-error" role="alert">
           {props.retryMessage ?? props.preparation.error.message}
         </p>
-        <Button isDisabled={props.isRetrying} onPress={props.onRetry} variant="secondary">
+        <Button disabled={props.isRetrying} onClick={props.onRetry} tone="secondary">
           Retry phrases
         </Button>
       </div>
@@ -130,7 +130,7 @@ function PreparationState(props: {
             {props.retryMessage}
           </p>
         )}
-        <Button isDisabled={props.isRetrying} onPress={props.onRetry} variant="secondary">
+        <Button disabled={props.isRetrying} onClick={props.onRetry} tone="secondary">
           Prepare phrases
         </Button>
       </>
@@ -196,9 +196,9 @@ function PhraseSaveButton(props: {
     <>
       <Button
         className="wrapup-save"
-        isDisabled={props.saveState === 'saving' || props.isSaved}
-        onPress={props.onSave}
-        variant="primary"
+        disabled={props.saveState === 'saving' || props.isSaved}
+        onClick={props.onSave}
+        tone="primary"
       >
         {props.isSaved ? (
           <Check aria-hidden="true" size={16} strokeWidth={2.2} />

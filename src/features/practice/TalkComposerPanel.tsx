@@ -1,7 +1,8 @@
-import { Button, Kbd } from '@heroui/react';
 import { TurnNotice } from '@/components/TurnNotice';
 import { useTrainer } from '@/context/TrainerContext';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import { Button } from '@/shared/ui/button';
+import { Kbd } from '@/shared/ui/kbd';
 import { Composer } from './Composer';
 import { HelpBar } from './HelpBar';
 import type { HelpLevel } from './lib/helpLevels';
@@ -81,9 +82,9 @@ export function TalkComposerPanel({
                 {fixes.map((fix, index) => (
                   <Button
                     key={fix.label}
-                    onPress={fix.run}
+                    onClick={fix.run}
                     size="sm"
-                    variant={index === 0 ? 'secondary' : 'ghost'}
+                    tone={index === 0 ? 'secondary' : 'quiet'}
                   >
                     {fix.label}
                   </Button>

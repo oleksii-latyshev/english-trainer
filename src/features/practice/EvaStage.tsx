@@ -1,9 +1,9 @@
-import { Switch } from '@heroui/react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
 import {
   type ConversationFlowPreferences,
   END_PAUSE_RANGE_MS,
 } from '@/lib/conversationFlowPreferences';
+import { Switch } from '@/shared/ui/switch';
 import type { TurnPresentation } from './lib/turnState';
 
 const PAUSE_PRESETS_MS = [1000, 1500, 2000, 3000];
@@ -32,16 +32,12 @@ function FlowSwitch({
 }) {
   return (
     <Switch
+      checked={isSelected}
       className="talk-switch"
-      isDisabled={isDisabled}
-      isSelected={isSelected}
-      onChange={onChange}
-    >
-      <Switch.Content>{label}</Switch.Content>
-      <Switch.Control>
-        <Switch.Thumb />
-      </Switch.Control>
-    </Switch>
+      disabled={isDisabled}
+      label={label}
+      onCheckedChange={onChange}
+    />
   );
 }
 

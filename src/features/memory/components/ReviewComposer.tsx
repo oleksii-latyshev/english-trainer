@@ -1,5 +1,5 @@
-import { Button } from '@heroui/react';
 import { LevelMeter, MicButton } from '@/components/MicControl';
+import { Button } from '@/shared/ui/button';
 import '@/features/memory/reviewComposer.css';
 import { REVIEW_FIX_LABEL, type ReviewIssue } from '@/features/memory/lib/reviewIssue';
 import type { ReviewMicCopy } from '@/features/memory/lib/reviewTurn';
@@ -9,7 +9,7 @@ export function ReviewIssueNotice({ issue, onFix }: { issue: ReviewIssue; onFix:
   return (
     <div className="review-issue" role="alert">
       <span>{issue.message}</span>
-      <Button onPress={onFix} size="sm" variant="secondary">
+      <Button onClick={onFix} size="sm" tone="secondary">
         {REVIEW_FIX_LABEL[issue.fix]}
       </Button>
     </div>
@@ -57,7 +57,7 @@ export function ReviewComposer({
           <span className="review-mic-hint">{copy.hint}</span>
         </div>
         <LevelMeter isActive={isLive} level={level} />
-        <Button isDisabled={isSecondaryDisabled} onPress={onSecondary} variant="ghost">
+        <Button disabled={isSecondaryDisabled} onClick={onSecondary} tone="quiet">
           {secondaryLabel}
         </Button>
       </div>

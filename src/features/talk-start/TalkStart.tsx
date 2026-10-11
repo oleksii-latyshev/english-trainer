@@ -1,4 +1,3 @@
-import { Button } from '@heroui/react';
 import { Bookmark, Clock, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { Eva } from '@/components/eva/Eva';
@@ -13,6 +12,7 @@ import {
   type TopicId,
   topicLabel,
 } from '@/lib/practiceOptions';
+import { Button } from '@/shared/ui/button';
 import { primaryAction, resumeDetail, reviewHint, reviewTitle } from './lib/talkStartState';
 import { PracticeModeChooser } from './PracticeModeChooser';
 import { introduction } from './practiceModeCopy';
@@ -105,9 +105,9 @@ export function TalkStart({
           </div>
           <Button
             className="talk-start-card-action"
-            isDisabled={isRestoring}
-            onPress={onStartOrResume}
-            variant="secondary"
+            disabled={isRestoring}
+            onClick={onStartOrResume}
+            tone="secondary"
           >
             Continue
           </Button>
@@ -126,7 +126,7 @@ export function TalkStart({
             <div className="talk-start-card-hint">{reviewHint(due.dueCount)}</div>
           </div>
           {due.dueCount > 0 && (
-            <Button className="talk-start-card-action" onPress={onOpenMemory} variant="secondary">
+            <Button className="talk-start-card-action" onClick={onOpenMemory} tone="secondary">
               Review now
             </Button>
           )}
@@ -226,10 +226,10 @@ export function TalkStart({
           <span>{error}</span>
           {!openSession && (
             <Button
-              isDisabled={isBusy}
-              onPress={() => start(effectiveTopicId)}
+              disabled={isBusy}
+              onClick={() => start(effectiveTopicId)}
               size="sm"
-              variant="secondary"
+              tone="secondary"
             >
               Try again
             </Button>

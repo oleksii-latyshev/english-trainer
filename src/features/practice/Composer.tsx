@@ -1,7 +1,8 @@
-import { Button, Kbd } from '@heroui/react';
 import { Keyboard } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { LevelMeter, MicButton } from '@/components/MicControl';
+import { Button } from '@/shared/ui/button';
+import { Kbd } from '@/shared/ui/kbd';
 import { type ComposerInteraction, canEditDraft, canOfferTypeInstead } from './lib/composerDraft';
 import { canPressMic, type TurnPresentation, type TurnState } from './lib/turnState';
 
@@ -88,14 +89,14 @@ function ListeningActions({ state, props }: { state: ListeningState; props: Prop
       {props.isHandsFree && (
         <Button
           aria-pressed={state.isHeld}
-          onPress={() => props.onHold(!state.isHeld)}
+          onClick={() => props.onHold(!state.isHeld)}
           size="sm"
-          variant="secondary"
+          tone="secondary"
         >
           {state.isHeld ? 'Done thinking' : 'Keep listening'}
         </Button>
       )}
-      <Button onPress={props.onCancel} size="sm" variant="ghost">
+      <Button onClick={props.onCancel} size="sm" tone="quiet">
         <Kbd>Esc</Kbd>
         Cancel
       </Button>
@@ -120,15 +121,15 @@ function EditingActions({
   return (
     <>
       {state.tag !== 'idle' && interaction !== 'writing' && (
-        <Button isDisabled={isUnavailable} onPress={props.onStart} size="sm" variant="ghost">
+        <Button disabled={isUnavailable} onClick={props.onStart} size="sm" tone="quiet">
           Re-record
         </Button>
       )}
       <Button
-        isDisabled={!draft.trim() || isSending || isUnavailable}
-        onPress={props.onSend}
+        disabled={!draft.trim() || isSending || isUnavailable}
+        onClick={props.onSend}
         size="sm"
-        variant="primary"
+        tone="primary"
       >
         {sendLabel(state, isSending)}
         <Kbd aria-hidden="true" className="talk-kbd-on-accent">
@@ -160,17 +161,17 @@ function TurnActions({
       {listening && <ListeningActions props={props} state={listening} />}
       {isEditing && <EditingActions interaction={interaction} props={props} />}
       {interaction !== 'writing' && state.tag === 'speaking' && (
-        <Button onPress={props.onStopEva} size="sm" variant="ghost">
+        <Button onClick={props.onStopEva} size="sm" tone="quiet">
           <Kbd>Esc</Kbd>
           Stop Eva
         </Button>
       )}
       {canTypeInstead && (
         <Button
-          isDisabled={props.isLocked || props.isBusy}
-          onPress={onTypeInstead}
+          disabled={props.isLocked || props.isBusy}
+          onClick={onTypeInstead}
           size="sm"
-          variant="ghost"
+          tone="quiet"
         >
           <Keyboard aria-hidden="true" size={16} />
           Type instead

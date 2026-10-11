@@ -1,10 +1,10 @@
-import { Button } from '@heroui/react';
 import { Bookmark, Check, Minus, Volume2 } from 'lucide-react';
 import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { ResultView } from '@/features/memory/lib/reviewResult';
 import type { ReviewPrompt } from '@/features/memory/lib/reviewTurn';
 import type { WordingSegment } from '@/features/memory/lib/wordingMatch';
 import type { LearningItemType, LearningStatus } from '@/lib/learningTypes';
+import { Button } from '@/shared/ui/button';
 import '@/features/memory/reviewResult.css';
 import { StatusChip } from './StatusChip';
 
@@ -47,10 +47,10 @@ export function ReviewSituation({ prompt, mood, canReplay, onReplay }: Situation
         <p className="review-situation-text">{prompt.text}</p>
         <Button
           className="review-replay"
-          isDisabled={!canReplay}
-          onPress={onReplay}
+          disabled={!canReplay}
+          onClick={onReplay}
           size="sm"
-          variant="ghost"
+          tone="quiet"
         >
           <Volume2 aria-hidden="true" size={14} />
           Replay
@@ -109,7 +109,7 @@ export function ReviewResult({
 }: ResultProps) {
   const isUsed = view.tone === 'used';
   const nextButton = (
-    <Button isDisabled={isBusy} onPress={onNext} variant="primary">
+    <Button disabled={isBusy} onClick={onNext} tone="primary">
       {nextLabel}
     </Button>
   );
@@ -138,14 +138,14 @@ export function ReviewResult({
           {modelAnswer || target}
         </div>
         <div className="review-result-actions">
-          <Button onPress={onPlayExample} variant="secondary">
+          <Button onClick={onPlayExample} tone="secondary">
             Play example
           </Button>
-          <Button isDisabled={isBusy} onPress={onTryAgain} variant="secondary">
+          <Button disabled={isBusy} onClick={onTryAgain} tone="secondary">
             Shadow it
           </Button>
           {view.canTryAgain && (
-            <Button isDisabled={isBusy} onPress={onTryAgain} variant="secondary">
+            <Button disabled={isBusy} onClick={onTryAgain} tone="secondary">
               Try again
             </Button>
           )}

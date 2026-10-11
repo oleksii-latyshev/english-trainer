@@ -1,48 +1,82 @@
 @import "tailwindcss";
-@import "@heroui/styles";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+
+@custom-variant svg (& svg);
 
 @theme static {
-  --color-background: #0d0d10;
-  --color-surface: #16161a;
-  --color-surface-2: #1e1e23;
-  --color-surface-3: #27272d;
-  --color-sidebar: #111114;
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-soft: rgba(255, 255, 255, 0.06);
-  --color-foreground: #f2f2f4;
-  --color-muted: #a3a3ad;
-  --color-faint: #8c8c96;
-  --color-accent: #9d8cff;
-  --color-on-accent: #17142b;
-  --color-me: #5bd4c0;
-  --color-on-me: #06201c;
-  --color-ok: #a6ebbb;
-  --color-on-ok: #0d2415;
-  --color-ok-bg: rgba(166, 235, 187, 0.12);
-  --color-ok-line: rgba(166, 235, 187, 0.3);
-  --color-warn: #f2b65a;
+  --color-background: #05070c;
+  --color-surface: rgba(255, 255, 255, 0.055);
+  --color-surface-2: rgba(255, 255, 255, 0.085);
+  --color-surface-3: rgba(255, 255, 255, 0.16);
+  --color-sidebar: rgba(255, 255, 255, 0.04);
+  --color-overlay: rgba(18, 23, 34, 0.82);
+  --color-line: rgba(255, 255, 255, 0.11);
+  --color-line-soft: rgba(255, 255, 255, 0.08);
+  --color-foreground: #f2f5fa;
+  --color-muted: #a9b3c4;
+  --color-faint: #8e99ac;
+  --color-accent: #6cc4ff;
+  --color-on-accent: #04192c;
+  --color-me: #6cc4ff;
+  --color-on-me: #04192c;
+  --color-ok: #8be3a9;
+  --color-on-ok: #062414;
+  --color-ok-bg: rgba(139, 227, 169, 0.12);
+  --color-ok-line: rgba(139, 227, 169, 0.3);
+  --color-warn: #f5c26b;
   --color-on-warn: #2a1a00;
-  --color-warn-bg: rgba(242, 182, 90, 0.12);
-  --color-warn-line: rgba(242, 182, 90, 0.35);
-  --color-eva-text: #d9d9de;
-  --color-live-text: #cfefea;
-  --color-link: #c4b8ff;
-  --color-link-hover: #e0d9ff;
+  --color-warn-bg: rgba(245, 194, 107, 0.12);
+  --color-warn-line: rgba(245, 194, 107, 0.35);
+  --color-eva-text: #d5dce8;
+  --color-live-text: #d6eeff;
+  --color-link: #8ad8ff;
+  --color-link-hover: #b8e6ff;
   --color-knob: #ffffff;
   --color-orb-idle: #8e8aa8;
   --color-orb-dim: #55555e;
-  --radius-card: 20px;
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  --color-accent-line: color-mix(in srgb, var(--color-accent) 42%, transparent);
+  --color-accent-glow: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  --color-accent-hover: color-mix(in oklab, var(--color-accent) 90%, var(--color-foreground) 10%);
+  --color-accent-text: var(--color-accent);
+  --color-quiet: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+  --color-quiet-line: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  --color-quiet-foreground: color-mix(
+    in oklab,
+    var(--color-foreground) 85%,
+    var(--color-background)
+  );
+  --color-control-line: color-mix(in srgb, var(--color-foreground) 14%, transparent);
+  --color-danger: oklch(0.594 0.1967 24.63);
+  --color-on-danger: oklch(0.9911 0 0);
+  --color-danger-hover: color-mix(in oklab, var(--color-danger) 90%, var(--color-on-danger) 10%);
+  --color-danger-soft: color-mix(in oklab, var(--color-danger) 15%, transparent);
+  --color-danger-text: color-mix(in oklab, var(--color-danger) 80%, var(--color-foreground) 30%);
+  --color-ok-soft: color-mix(in oklab, var(--color-ok) 12%, transparent);
+  --color-ok-text: var(--color-ok);
+  --color-warn-soft: color-mix(in oklab, var(--color-warn) 12%, transparent);
+  --color-warn-text: var(--color-warn);
+  --color-backdrop: rgba(0, 0, 0, 0.6);
+  --shadow-overlay: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 24px 60px -24px rgba(0, 0, 0, 0.65);
+  --shadow-control: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  --shadow-primary:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 14px 40px -10px var(--color-accent-glow);
+  --shadow-sky: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 20px 50px -20px var(--color-accent-glow);
+  --shadow-glow: 0 0 16px var(--color-accent-glow);
+  --shadow-knob: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-key: inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  --blur-glass: 28px;
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+  --radius-card: 24px;
   --radius-nav: 12px;
   --radius-control: 12px;
-  --text-caption: 12px;
-  --text-control: 13px;
-  --text-body: 14px;
+  --text-caption: 13px;
+  --text-control: 14px;
+  --text-body: 15px;
   --leading-copy: 1.45;
   --breakpoint-narrow: 1100px;
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", monospace;
+  --font-sans:
+    -apple-system, blinkmacsystemfont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", menlo, monospace;
 }
 
 :root[data-theme="light"] {
@@ -74,6 +108,18 @@
   --color-link-hover: #3f2db5;
   --color-orb-idle: #9c98b8;
   --color-orb-dim: #c4c4cc;
+  --color-accent-text: color-mix(in oklab, var(--color-accent) 70%, var(--color-foreground) 30%);
+  --color-danger: oklch(0.6532 0.2328 25.74);
+  --color-danger-text: color-mix(in oklab, var(--color-danger) 70%, var(--color-foreground) 40%);
+  --color-ok-soft: color-mix(in oklab, var(--color-ok) 15%, transparent);
+  --color-ok-text: color-mix(in oklab, var(--color-ok) 80%, var(--color-foreground) 60%);
+  --color-warn-soft: color-mix(in oklab, var(--color-warn) 15%, transparent);
+  --color-warn-text: color-mix(in oklab, var(--color-warn) 80%, var(--color-foreground) 70%);
+  --color-backdrop: rgba(0, 0, 0, 0.5);
+  --shadow-overlay:
+    0 2px 8px 0 rgba(0, 0, 0, 0.06), 0 -6px 12px 0 rgba(0, 0, 0, 0.03),
+    0 14px 28px 0 rgba(0, 0, 0, 0.08);
+  --color-overlay: #f1f1f4;
 }
 
 :root {
@@ -108,35 +154,6 @@
   --et-orb-dim: var(--color-orb-dim);
   --et-radius-card: var(--radius-card);
   --et-radius-nav: var(--radius-nav);
-  --background: var(--et-bg);
-  --foreground: var(--et-fg);
-  --surface: var(--et-surface);
-  --surface-foreground: var(--et-fg);
-  --surface-secondary: var(--et-surface2);
-  --surface-secondary-foreground: var(--et-fg);
-  --surface-tertiary: var(--et-surface3);
-  --surface-tertiary-foreground: var(--et-fg);
-  --overlay: var(--et-surface2);
-  --overlay-foreground: var(--et-fg);
-  --muted: var(--et-muted);
-  --accent: var(--et-accent);
-  --accent-foreground: var(--et-on-accent);
-  --default: var(--et-surface3);
-  --default-foreground: var(--et-fg);
-  --field-background: var(--et-surface);
-  --field-foreground: var(--et-fg);
-  --field-border: var(--et-line);
-  --success: var(--et-ok);
-  --success-foreground: var(--et-on-ok);
-  --warning: var(--et-warn);
-  --warning-foreground: var(--et-on-warn);
-  --segment: var(--et-surface3);
-  --segment-foreground: var(--et-fg);
-  --border: var(--et-line);
-  --separator: var(--et-line2);
-  --focus: var(--et-accent);
-  --link: var(--et-link);
-  --radius: 0.5rem;
 }
 
 html,
@@ -144,6 +161,14 @@ body {
   margin: 0;
   min-width: 320px;
   background-color: var(--et-bg);
+  background-image:
+    radial-gradient(
+      circle at 0% 0%,
+      color-mix(in srgb, var(--et-accent) 30%, transparent) 0%,
+      transparent 38%
+    ),
+    radial-gradient(circle at 100% 100%, rgba(88, 86, 214, 0.26) 0%, transparent 42%);
+  background-attachment: fixed;
   color: var(--et-fg);
   font-family: var(--font-sans);
   font-synthesis: none;
@@ -152,6 +177,14 @@ body {
 }
 
 @layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--et-line);
+  }
+
   button,
   input,
   select,
@@ -161,11 +194,21 @@ body {
   }
 }
 
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  appearance: none;
+}
+
+:root[data-theme="light"],
+:root[data-theme="light"] body {
+  background-image: none;
+}
+
 h1,
 h2,
 h3,
 h4 {
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 ::-webkit-scrollbar {
@@ -176,9 +219,9 @@ h4 {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklab, var(--foreground) 14%, transparent);
+  background: color-mix(in oklab, var(--et-fg) 14%, transparent);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklab, var(--foreground) 26%, transparent);
+  background: color-mix(in oklab, var(--et-fg) 26%, transparent);
 }
