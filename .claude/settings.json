@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(bun run typecheck*)",
+      "Bash(bun run typecheck:e2e*)",
+      "Bash(bun run check*)",
+      "Bash(bun run test*)",
+      "Bash(bun run verify*)",
+      "Bash(bun test*)",
+      "Bash(bunx biome *)",
+      "Bash(bunx playwright test*)",
+      "Bash(sh ./scripts/check-rust.sh*)",
+      "Bash(cargo test --manifest-path src-tauri/Cargo.toml*)",
+      "Bash(cargo clippy --manifest-path src-tauri/Cargo.toml*)",
+      "Bash(cargo fmt --manifest-path src-tauri/Cargo.toml*)",
+      "Bash(cargo deny --manifest-path src-tauri/Cargo.toml*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)"
+    ],
+    "deny": [
+      "Read(./.env*)",
+      "Read(~/Library/Application Support/com.user.english-trainer/gemini-api-key.enc)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-edited.sh" }
+        ]
+      }
+    ]
+  }
+}
