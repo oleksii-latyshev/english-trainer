@@ -7,6 +7,7 @@ mod persistence;
 mod providers;
 mod setup;
 mod translation;
+mod voice;
 
 pub use conversation::{
     FinishedPracticeSession, InputSource, PracticeMode, PracticePhase, PracticeSession,
@@ -696,6 +697,12 @@ pub fn run() {
                 app_data.join("whisper-server.pid"),
             ))));
             app.manage(providers::AppleHelper::new(apple_binary(app)));
+            let voice_directory = app
+                .path()
+                .resource_dir()
+                .ok()
+                .map(|p| p.join("binaries/natural-voice"));
+            app.manage(voice::VoiceEngine::new(voice_directory));
             app.manage(translation::TranslationService::new(
                 apple_translation_binary(app),
             ));
@@ -703,6 +710,8 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            voice::prewarm_natural_voice,
+            voice::synthesize_natural_voice,
             audio::commands::transcribe_audio,
             audio::commands::transcribe_partial,
             audio::rescue_commands::transcribe_rescue,

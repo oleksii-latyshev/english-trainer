@@ -20,10 +20,17 @@ export function VoiceStep() {
     stopRef.current = speech.stop;
   });
   const isPlaying = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
-  const choices = voiceChoices(
-    speech.voices.map((option) => option.voice),
-    speech.selectedVoiceURI,
-  );
+  const choices =
+    speech.engine === 'natural' && speech.naturalAvailability === 'ready'
+      ? speech.naturalVoices.map((voice) => ({
+          voiceURI: `natural:${voice.id}`,
+          name: voice.name,
+          description: voice.description,
+        }))
+      : voiceChoices(
+          speech.voices.map((option) => option.voice),
+          speech.selectedVoiceURI,
+        );
 
   // Leaving the step (Back, Skip, Start talking) cuts off a sample that is still playing.
   useEffect(() => () => stopRef.current(), []);

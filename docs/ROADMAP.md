@@ -27,7 +27,7 @@ Everything not needed for these five outcomes is deferred.
 | Conversation provider | Two streaming adapters behind one interface: **Apple Foundation Models** (on-device, free, private; measured 1.6 s warm / 4.6 s cold for a whole non-streamed reply on 2026-10-06) and the **Gemini API** (Flash / Flash-Lite, API key from Google AI Studio). The default is chosen by measured time to first spoken word. |
 | Coaching, planning and wrap-up | Coaching runs through Antigravity CLI with `gemini-3.8-flash-medium`, in batches of up to five answers (decided 2026-10-08 from a measurement on 66 real answers: Apple on-device rewrites whole answers, "corrects" recognition artefacts or finds nothing; one `agy` call per answer exhausted the Antigravity quota after about 54 calls; the Gemini API free quota is reserved for conversation). Planning (F6) stays on the Gemini API. F9 prepares session phrases in one background `gemini-3.8-flash-high` call. |
 | Antigravity CLI (`agy`) | Leaves the real-time path: an agent CLI adds process start, agent loop and schema enforcement (6–30 s measured; 14–136 s for a batch of five) and cannot stream. It stays as the slow background tier (coaching, answer examples, usage review), always with an explicit Gemini model. |
-| TTS | macOS system voices (the standard voice is acceptable). Neural TTS only together with the avatar. |
+| TTS | Fast local natural speech, with system voices as fallback. Natural voice now precedes the avatar at the learner’s request. |
 | Usage-review / mastery-streak subsystem | Frozen: keeps working, is not extended. F10 reuses its data; simplifying it is reconsidered after the MVP with real usage data. |
 | Gemini API key | Only the API key is needed (no client secret). Pasted in Settings and stored in an encrypted, owner-only file in the app data folder, bound to this computer (no system Keychain prompt, which looked alarming in the alpha). Developer override: environment variable `ENG_TRAINER_GEMINI_API_KEY` (not inherited by a Finder launch). Never in SQLite, logs or the repository. |
 | Portability | macOS stays the only MVP target, but new core code must not block a later Windows build: providers behind traits, cross-platform key file, no macOS-only APIs outside adapters. |
@@ -447,17 +447,32 @@ Ordered by expected value; revisit with real usage data before starting any of t
 
 1. **Avatar.** A 2D character with state animation driven by real audio amplitude, then a 3D
    avatar (e.g. VRM with viseme lip-sync). Real lip-sync needs TTS audio the app can analyse, so it
-   likely comes with a neural local TTS (e.g. Kokoro) instead of the Web Speech API.
+   can use the PCM audio from the local natural voice implemented below.
    Includes the experimental upload of an own character (Rive or Lottie with Eva's states;
    missing states fall back to Eva). Design: Settings > Eva has the card "Your own
    character" (Experimental badge, drop area "Drop a Rive (.riv) or Lottie (.lottie) file", the
    ten states idle, listening, processing, thinking, speaking, happy, encouraging, curious,
    concerned, asleep, "Choose file" and "Get template"); hidden until this item.
-2. **Natural voice.** Neural TTS (local or API) with a voice the user enjoys listening to.
-   Design: first run's voice step describes each voice with a character ("warm, clear", "calm",
-   "lively"). macOS gives only the name, accent and quality tier, so first run shows those
-   ("American English · Premium"); the character words need curated voice metadata, which comes with
-   this item.
+2. **Natural voice.** `[~]` (built; physical Mac listening/latency acceptance deferred)
+   - Local Supertonic 3 INT8, prewarmed on launch, four English voice choices and saved speed.
+   - Sentence streaming with <=48-character phrases and one-phrase audio prefetch; system fallback when unavailable/busy
+     or inference exceeds its 750 ms budget (800 ms UI guard). One background warm-up recovers
+     local speech for later turns; interruptions discard late audio.
+   - Automatic system selection prefers Premium/Enhanced and excludes novelty voices; explicit
+     saved system voice choices remain available.
+   - `python3 scripts/check-voice.py` measures the real helper on synthetic English and fails when
+     warm p95 generation exceeds 750 ms. The Rust opt-in check also exercises the real persistent
+     engine and padding removal:
+     `cargo test --manifest-path src-tauri/Cargo.toml voice::tests::real_bundled_voice_latency_and_padding -- --ignored --nocapture`.
+     M1 Pro: median 474 ms, p95/max 528 ms across 15 warmed phrase requests; full prewarm 1248 ms
+     separately. These are WAV-generation times, not acoustic speaker onset or a guarantee for
+     arbitrary reply lengths/CPU load. The 64-character candidate exceeded 750 ms in the same
+     check, so the shipped phrase bound is 48 characters. A post-build bundled-helper run had
+     one 776.5 ms outlier; the repeat measured median 474.5 ms, p95/max 610.9 ms. The runtime
+     deadline and background recovery protect the conversation from such transient stalls.
+   - The learner requested voice quality before the avatar; avatar/audio-amplitude lip-sync stays
+     separate. Perceived naturalness and actual first-sound latency need the built app on a Mac.
+
 3. **Interview packs.** Structured mock interviews with the same Talk screen.
 4. **Progress view.** Weekly trends of speaking time, words per minute, pauses and saved phrases,
    with examples from real answers.

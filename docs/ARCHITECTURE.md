@@ -210,3 +210,21 @@ Tables are listed in TECHNICAL_REQUIREMENTS §8.
 
 Screen or active-app monitoring, cloud speech recognition, a native Swift rewrite, menu-bar and
 notification surfaces, WidgetKit, phoneme-level pronunciation scoring, multi-user features.
+
+## Local natural speech
+
+`voice::VoiceEngine` owns one persistent, separately bundled Supertonic 3 helper. It prewarms
+outside the conversation queue, validates bounded English text/voice/rate requests, and returns
+PCM WAV through typed binary IPC. A busy engine never adds a backend queue; failed or >750 ms
+inference kills the helper. The UI attempts one background warm-up after fallback; if recovery
+fails, Settings offers an explicit retry. Session and coaching locks
+are independent. The helper/model/runtime are pinned build assets, with licenses bundled.
+
+The speech facade keeps the existing play/stream/pause/resume/stop API. Its natural queue uses
+the existing sentence splitter, bounds neural phrases to 48 characters at clause/word boundaries,
+and prepares one next phrase during current playback. Each
+stream freezes its voice/rate. Generation failure or the 800 ms UI deadline uses the installed
+system voice for the remaining stream; model warm-up never blocks a first answer. Actual media
+`playing` reports first audio, and final media `ended` permits auto-listening. Cancellation drops
+late audio, releases media/blob URLs and prevents stale completion callbacks. Preferences are
+UI-only; voice inference and its bounded process lifecycle remain Rust-owned.

@@ -27,6 +27,18 @@ fn main() {
             true,
         );
     }
+    println!("cargo:rerun-if-changed=voice/Speech.cpp");
+    println!("cargo:rerun-if-changed=voice/licenses");
+    println!("cargo:rerun-if-changed=../scripts/prepare-voice.sh");
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")
+        && env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("aarch64")
+    {
+        let status = Command::new("sh")
+            .arg("../scripts/prepare-voice.sh")
+            .status()
+            .expect("Could not prepare bundled local voice");
+        assert!(status.success(), "Could not prepare bundled local voice");
+    }
     tauri_build::build()
 }
 

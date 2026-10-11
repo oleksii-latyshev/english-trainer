@@ -30,3 +30,6 @@ test-results/
 # Compiled locally by the Rust build script; bundled with the app.
 src-tauri/binaries/apple-conversation
 src-tauri/binaries/apple-translation
+
+src-tauri/binaries/natural-voice/*
+!src-tauri/binaries/natural-voice/.keep

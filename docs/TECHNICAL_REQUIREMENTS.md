@@ -134,8 +134,25 @@ Recognition uncertainty is never presented as a pronunciation or knowledge error
 
 ## 4. Speech output
 
-- System voices through `speechSynthesis`; voices are discovered at runtime, English voices are
-  preferred, no named voice is assumed. Rate is adjustable; pause, resume, stop and replay exist.
+- Local Supertonic 3 INT8 is the default speech output, prewarmed outside conversation turns.
+  `prewarm_natural_voice() -> bool` reports readiness; `synthesize_natural_voice(text, voice_id,
+  speed) -> binary PCM WAV` validates nonempty <=4096-byte text, voice IDs 0–9 and finite rate
+  0.85–1.2. `VoiceError.code` is `unavailable | busy | invalid_input | timeout | process_failed`.
+  A persistent helper returns bounded <=60-second WAV frames; inference has a 750 ms deadline,
+  with process termination/recovery on failure. No generated audio is retained or sent to a cloud.
+- Natural speech freezes voice/rate per stream, bounds phrases to 48 characters at clause/word
+  boundaries (oversized single tokens stay intact), renders one phrase ahead and plays serially.
+  Very quiet model padding is trimmed in Rust in 10 ms RMS windows at 0.0002, retaining 50 ms
+  before and 120 ms after speech so soft consonants survive; original mid-phrase pauses remain.
+  An unavailable/loading/busy engine uses system speech; slow or failed rendering falls back for
+  the rest of the stream within the 800 ms UI guard. One background warm-up attempts recovery
+  for later turns; failure leaves an explicit Retry in Settings. Late results after cancel/unmount cannot
+  play. First audio is measured at media `playing`, completion at final `ended`.
+- System voices through `speechSynthesis` remain selectable and the fast fallback. Discovery
+  prefers non-novelty English voices, Premium then Enhanced then standard, US then UK then other
+  English, stable original order. Explicit saved voice choices remain honored. Rate is adjustable;
+  pause, resume, stop and replay exist. Natural/system engine and local voice choice persist as
+  UI preferences separately from the existing system voice URI/rate.
 - A new recording or a new AI turn cancels current speech.
 - F4: `beginStream` queues completed English sentences serially, buffering partial words,
   abbreviations, decimals and quotation marks. `finish` adds the unspoken canonical tail once;
