@@ -63,10 +63,6 @@ jobs:
 
       - name: Diagnose fake whisper-server (temporary)
         run: |
-          set -x
-          which -a python3 || true
-          python3 --version
-          env | grep -iE 'proxy|DEVELOPER_DIR|TMPDIR' || true
           dir=$(mktemp -d)
           python3 - "$dir" <<'PY'
           import re, sys, pathlib
@@ -77,17 +73,30 @@ jobs:
           path.chmod(0o755)
           PY
           touch "$dir/ggml-small.en.bin"
-          "$dir/whisper-server" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18765 > "$dir/out.log" 2>&1 &
+          xattr -l "$dir/whisper-server" || true
+          head -1 "$dir/whisper-server"
+          echo "== A: python3 script directly, 12 s, import trace"
+          perl -e 'alarm 12; exec @ARGV' python3 -X importtime "$dir/whisper-server" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18766 2>&1 | tail -15 || echo "A ended: $?"
+          echo "== B: executed via shebang in background, stack sample"
+          "$dir/whisper-server" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18767 > "$dir/b.log" 2>&1 &
           pid=$!
-          for i in $(seq 1 40); do
-            if nc -z 127.0.0.1 18765; then echo "listening after ${i}x0.5s"; break; fi
-            if ! kill -0 $pid 2>/dev/null; then echo "server exited"; break; fi
-            sleep 0.5
-          done
-          ps -o pid,stat,etime,command -p $pid || true
-          cat "$dir/out.log"
+          sleep 4
+          nc -z 127.0.0.1 18767 && echo "B listening" || echo "B not listening"
+          sample $pid 2 -file "$dir/b.sample" >/dev/null 2>&1 || true
+          grep -E 'Thread|^ +[0-9]+ ' "$dir/b.sample" | head -40 || true
           kill $pid 2>/dev/null || true
-          time python3 -c 'import http.server; print("imports ok")'
+          echo "== C: same code via python3 -c in background"
+          python3 -c "$(cat "$dir/whisper-server")" -m "$dir/ggml-small.en.bin" --host 127.0.0.1 --port 18768 &
+          pid=$!
+          sleep 4
+          nc -z 127.0.0.1 18768 && echo "C listening" || echo "C not listening"
+          kill $pid 2>/dev/null || true
+          echo "== D: minimal socket bind in background"
+          python3 -c "import socket,time; s=socket.socket(); s.bind(('127.0.0.1',18769)); s.listen(); print('bound', flush=True); time.sleep(20)" &
+          pid=$!
+          sleep 4
+          nc -z 127.0.0.1 18769 && echo "D listening" || echo "D not listening"
+          kill $pid 2>/dev/null || true
 
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
