@@ -56,33 +56,6 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Setup Python for the fake whisper-server in Rust tests
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-
-      - name: Diagnose fake whisper-server under cargo test (temporary)
-        run: |
-          test_one() {
-            cargo test --locked --manifest-path src-tauri/Cargo.toml audio::server_tests::shutting_down_leaves_no_process -- --test-threads=1 > /tmp/one.log 2>&1 &
-            tpid=$!
-            for _ in $(seq 1 240); do grep -q 'running 1 test' /tmp/one.log && break; sleep 0.5; done
-            sleep 5
-            pgrep -fl 'whisper-server' || echo "no whisper-server process"
-            for pid in $(pgrep -f 'whisper-server -m'); do
-              lsof -nP -p "$pid" -a -i || echo "no sockets"
-              sample "$pid" 1 -file "/tmp/s.$pid" >/dev/null 2>&1 && grep -E '^ +[0-9]+ ' "/tmp/s.$pid" | head -30
-            done
-            wait "$tpid" || true
-            grep -E 'test result|panicked' /tmp/one.log
-          }
-          cargo test --locked --manifest-path src-tauri/Cargo.toml --lib --no-run 2>&1 | tail -1
-          echo "== without DEVELOPER_DIR"
-          test_one
-          echo "== with DEVELOPER_DIR=/Library/Developer/CommandLineTools"
-          if [ -d /Library/Developer/CommandLineTools ]; then export DEVELOPER_DIR=/Library/Developer/CommandLineTools; fi
-          test_one
-
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
 

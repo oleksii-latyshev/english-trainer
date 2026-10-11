@@ -14,8 +14,8 @@ use std::{
 /// model's file name, the prompt and the size of the audio it received, so a test can see what
 /// the request carried.
 const FAKE_SERVER: &str = r#"#!/usr/bin/env python3
-import json, re, sys
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import json, re, socketserver, sys
+from http.server import BaseHTTPRequestHandler
 args = sys.argv[1:]
 model = args[args.index("-m") + 1].rsplit("/", 1)[-1]
 port = int(args[args.index("--port") + 1])
@@ -37,7 +37,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+socketserver.TCPServer(("127.0.0.1", port), Handler).serve_forever()
 "#;
 
 const CRASHING_SERVER: &str = "#!/bin/sh\nexit 3\n";
