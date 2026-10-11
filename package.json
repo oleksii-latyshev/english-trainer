@@ -23,7 +23,8 @@
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "prepare": "lefthook install",
     "check:effect": "effect-language-service diagnostics --project tsconfig.json --strict",
-    "check:conventions": "bun run scripts/check-conventions.ts"
+    "check:conventions": "bun run scripts/check-conventions.ts",
+    "repo:taxonomy": "bun scripts/repo-taxonomy.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
