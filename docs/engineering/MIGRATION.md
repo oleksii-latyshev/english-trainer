@@ -2,7 +2,12 @@
 
 The app is feature-complete and in daily use, so it is rewritten **incrementally** (strangler fig):
 new structure grows beside the legacy code, one slice at a time, and the app keeps working after
-every commit. There is no long-lived rewrite branch.
+every merged PR. There is no long-lived rewrite branch.
+
+**Refactor and redesign happen in one pass.** Each step rebuilds a slice in the target architecture
+*and* in the approved glass design ([canvas](https://claude.ai/artifact/2JbngoUp7LVQToZZgzzmuK),
+summarised in [`DESIGN.md`](../DESIGN.md)), so no screen is rewritten twice. Until a screen's step
+lands it keeps its old layout but already uses the new palette through the shared tokens.
 
 Targets: [`FRONTEND.md`](FRONTEND.md), [`EFFECT.md`](EFFECT.md), [`BACKEND.md`](BACKEND.md).
 
@@ -15,8 +20,9 @@ Targets: [`FRONTEND.md`](FRONTEND.md), [`EFFECT.md`](EFFECT.md), [`BACKEND.md`](
   code never imports legacy folders (`@/lib`, `@/components`, `@/context`, `@/audio`,
   `@/theme`, legacy `@/features/*`); Biome enforces this.
 - A slice is migrated when its old files are **deleted**, not when a new copy exists.
-- Behaviour is preserved: a migration commit changes no product behaviour, copy or styling. Fixing
-  a bug found on the way is a separate commit that starts with a failing test.
+- Behaviour is preserved: a step changes the look to its canvas boards, never product behaviour.
+  Copy changes only where a board changes it. Fixing a bug found on the way is a separate issue
+  that starts with a failing test.
 - Rust: a context is migrated when it follows `BACKEND.md` §1 and its `mod.rs` carries the strict
   lint attribute. Its commands move out of `lib.rs`; its errors stop using `ProviderError`.
 
@@ -24,33 +30,40 @@ Targets: [`FRONTEND.md`](FRONTEND.md), [`EFFECT.md`](EFFECT.md), [`BACKEND.md`](
 
 1. Files moved into the target layout; old files deleted; imports updated.
 2. Side effects through Effect services; state in atoms; no `useEffect` data loading left.
-3. Controls come from `src/shared/ui` (Base UI + Tailwind); no HeroUI imports and no `.css` files
+3. The screen matches its canvas boards (dark, and light where a light board exists); every element
+   on the boards is built or tracked in an issue.
+4. Controls come from `src/shared/ui` (Base UI + Tailwind); no HeroUI imports and no `.css` files
    left in the slice.
-4. IPC types come from `core/ipc/bindings` + schemas; the slice's hand-written guards deleted.
-5. Tests: helpers have unit tests, the feature has behaviour tests in `tests/`, existing e2e flows
+5. IPC types come from `core/ipc/bindings` + schemas; the slice's hand-written guards deleted.
+6. Tests: helpers have unit tests, the feature has behaviour tests in `tests/`, existing e2e flows
    pass unchanged.
-6. The slice's paths removed from the legacy list in `biome.json`.
-7. `bun run verify` passes; the touched flow is checked by hand in the desktop app
+7. The slice's paths removed from the legacy list in `biome.json`.
+8. `bun run verify` passes; the touched flow is checked by hand in the desktop app
    (`bun run dev`) and the commit message says what was checked manually.
 
 ## 3. Order
 
-Each step is one commit of meaningful size (or a few, if a step is large). The order front-loads
-infrastructure and leaves the riskiest area — the real-time Talk loop — for last, when the patterns
-are proven.
+One issue per step (milestone *Architecture migration*), each merged as one PR. Infrastructure and the
+shell come first; the real-time Talk loop comes last, when the patterns are proven. Feature requests
+for a screen are built inside that screen's step.
 
-| # | Step | Frontend | Rust |
-| :--- | :--- | :--- | :--- |
-| 0 | Foundation + pilot (this branch) | tooling, `core/ipc`, `core/runtime`, `RegistryProvider`, `features/gemini-key` | `core::IpcError`, ts-rs, `gemini_key` context with its commands |
-| 1 | Shared kit + e2e layout | **Done:** UI kit in `shared/ui` on Base UI + Tailwind replacing every HeroUI component (Button, Kbd, Toast, Tooltip, Tabs, Switch, SearchField, Popover, Chip, AlertDialog), `@heroui/react` and `@heroui/styles` removed. **Remaining:** `App.css` + `theme/theme.css` → `src/app/styles.css` (tokens as `@theme`); each migrated slice replaces its `.css` with Tailwind classes; `theme/` logic → `shared/theme`, generic `components/` → `shared/ui`, generic `lib/` helpers → `shared/helpers`; `e2e/` → `fixtures/ pages/ components/ data/ specs/` (TESTING.md §3) | — |
-| 2 | Settings slices | each settings group becomes a feature (`appearance`, `privacy`, `translation-settings`, `ai-provider`, …); `screens/settings` composes them | `ai_settings`, `api_usage`, `setup` contexts |
-| 3 | Small features | `coach` → `features/coaching-note`, `talk-start`, `first-run` (+ `screens/first-run`) | `translation` |
-| 4 | Core audio & speech | `audio/` → `core/audio` with Scope-managed microphone; `speech/` → `core/speech` (TTS, STT client, live transcript as `Stream`) | `audio` → `speech` context (whisper server as an `infra` adapter) |
-| 5 | Memory | `memory` → `features/memory-library`, `features/spoken-review`; `screens/memory` | `learning`, `persistence` split into context repositories |
-| 6 | Talk | `practice` split into features (`practice-session`, `dialogue`, `composer`, `answer-help`, `rescue`, `wrap-up`, …); `screens/talk`; delete `TrainerContext` | `conversation`: split `SessionStore` into services; queues behind ports |
-| 7 | Ratchet | delete the legacy override from `biome.json`; enable `knip` in CI | move strict lints into `Cargo.toml [lints]`; remove `ProviderError` from non-provider code and the `ProviderError ↔ IpcError` bridge from `core` (core must not depend on a context) |
+| # | Step | Issue | Canvas boards | Folds in |
+| :--- | :--- | :--- | :--- | :--- |
+| 0 | Foundation + `gemini-key` pilot | #1 (done) | — | — |
+| 1 | Glass UI kit, tokens, SF Pro; HeroUI removed; e2e layout | #15 (done), #34 | Glass components & tokens | — |
+| 2 | App shell, Eva (Mochi + sprout), app and Dock icon | #21 | Talk, Start, Icon, Components | — |
+| 3 | Settings | #22 | Settings › Eva, Settings — all sections | #14 voice picker |
+| 4 | First run | #23 | First run | — |
+| 5 | Start screen with speaking activity | #24 | Start, Start — light | — |
+| 6 | Core audio and speech | #25 | — | #12 natural voice without gaps |
+| 7 | Talk and its flows (split into child issues) | #26 | Talk, F6, F7, thinking, errors, F13, F9, F11, F12, Talk — light | #13 phrase translation |
+| 8 | Memory and spoken review | #27 | Memory, F10 Review | — |
+| 9 | Eva grows | #28 | Eva grows as you speak | — |
+| 10 | Ratchet | — | — | — |
 
-Steps 1–3 can be reordered freely; 4 must precede 5 and 6.
+Ratchet: delete the legacy override from `biome.json`, enable `knip` in CI, move strict lints into
+`Cargo.toml [lints]`, remove `ProviderError` from non-provider code and the `ProviderError ↔ IpcError`
+bridge from `core`. Widgets and the menu-bar panel stay *After MVP*. Steps 2–5 may swap; 6 precedes 7.
 
 ## 4. Mapping legacy → target
 
