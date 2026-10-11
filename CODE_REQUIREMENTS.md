@@ -195,5 +195,7 @@ Patterns and examples: [`TESTING.md`](docs/engineering/TESTING.md).
   Rust. Do not disable a rule to make code pass; fix the code or, if the rule is wrong for a line,
   add a `biome-ignore` with the reason.
 - Generated files (`src/core/ipc/bindings`, `src-tauri/gen`) are never edited by hand.
+- Third-party GitHub Actions are pinned to a commit SHA with the version as the trailing
+  `# vX.Y.Z` marker Dependabot reads; never a moving tag.
 - No dependency for what the platform or an installed package already does. Versions of `effect`
   and `@effect/atom-react` are pinned exactly and upgraded together.
