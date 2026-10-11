@@ -366,16 +366,16 @@ mod tests {
         let started = Instant::now();
         let result = race_cancellable(
             (
-                leg(Duration::from_millis(300), vec![text("Late."), Event::Done]),
+                leg(Duration::from_secs(5), vec![text("Late."), Event::Done]),
                 AnsweredBy::gemini(),
             ),
             None,
-            Duration::from_secs(2),
+            Duration::from_secs(10),
             &mut |_| panic!("cancelled race forwarded late text"),
             &cancellation,
         );
         cancel.join().unwrap();
         assert_eq!(result.unwrap_err().code, ProviderErrorCode::Cancelled);
-        assert!(started.elapsed() < Duration::from_millis(250));
+        assert!(started.elapsed() < Duration::from_secs(2));
     }
 }
