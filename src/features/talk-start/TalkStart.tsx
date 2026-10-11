@@ -1,6 +1,5 @@
 import { Bookmark, Clock, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
-import { Eva } from '@/components/eva/Eva';
 import type { DueCount } from '@/features/memory/useDuePhraseCount';
 import {
   DEFAULT_PRACTICE_OPTIONS,
@@ -13,6 +12,7 @@ import {
   topicLabel,
 } from '@/lib/practiceOptions';
 import { Button } from '@/shared/ui/button';
+import { Eva } from '@/shared/ui/eva';
 import { primaryAction, resumeDetail, reviewHint, reviewTitle } from './lib/talkStartState';
 import { PracticeModeChooser } from './PracticeModeChooser';
 import { introduction } from './practiceModeCopy';

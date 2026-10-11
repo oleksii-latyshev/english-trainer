@@ -1,17 +1,12 @@
-import type { EvaMood } from '@/components/eva/Eva';
+import type { EvaMood } from '@/shared/ui/eva';
 
-/** Every face Eva makes and when it appears (docs/DESIGN.md), in the order Settings shows them. */
 export const EVA_MOOD_GUIDE: readonly { mood: EvaMood; name: string; when: string }[] = [
-  { mood: 'idle', name: 'Idle', when: 'Waiting for you' },
   { mood: 'listening', name: 'Listening', when: 'You are speaking' },
-  { mood: 'processing', name: 'Processing', when: 'Turning speech into text' },
-  { mood: 'thinking', name: 'Thinking', when: 'Preparing a reply' },
-  { mood: 'speaking', name: 'Speaking', when: 'Eva is talking' },
-  { mood: 'happy', name: 'Happy', when: 'You used a saved phrase' },
-  { mood: 'encouraging', name: 'Encouraging', when: 'Not yet — try again' },
-  { mood: 'curious', name: 'Curious', when: 'Follow-up or help open' },
-  { mood: 'concerned', name: 'Concerned', when: 'Mic or AI problem' },
-  { mood: 'asleep', name: 'Asleep', when: 'Session paused' },
+  { mood: 'thinking', name: 'Thinking', when: 'Eva prepares a reply' },
+  { mood: 'speaking', name: 'Speaking', when: 'Eva talks' },
+  { mood: 'happy', name: 'Happy', when: 'You said it well' },
+  { mood: 'idle', name: 'Encouraging', when: 'Try again, no rush' },
+  { mood: 'asleep', name: 'Asleep', when: 'Paused or days off' },
 ];
 
 export function nextMoodIndex(index: number): number {

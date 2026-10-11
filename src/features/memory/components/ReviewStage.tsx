@@ -1,10 +1,10 @@
 import { Bookmark, Check, Minus, Volume2 } from 'lucide-react';
-import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { ResultView } from '@/features/memory/lib/reviewResult';
 import type { ReviewPrompt } from '@/features/memory/lib/reviewTurn';
 import type { WordingSegment } from '@/features/memory/lib/wordingMatch';
 import type { LearningItemType, LearningStatus } from '@/lib/learningTypes';
 import { Button } from '@/shared/ui/button';
+import { Eva, type EvaMood } from '@/shared/ui/eva';
 import '@/features/memory/reviewResult.css';
 import { StatusChip } from './StatusChip';
 

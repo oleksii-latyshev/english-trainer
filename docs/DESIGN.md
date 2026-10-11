@@ -46,7 +46,7 @@ silently. Light boards exist for Talk and Start; the other screens follow their 
 | Controls | switch 42×26 (on: accent + glow, off: white 16 %); segmented control: white 8.5 % track, selected white 16 %; chip selected = sky glass, default = quiet |
 | Type | SF Pro (system font): large title 34/700, title 20/700, message 15/1.45, secondary 13, label 11/700 caps |
 
-Layout: sidebar (Talk · Memory · Settings, Eva's growth card at the bottom); screens put Eva large and
+Layout: floating glass sidebar (Talk · Memory · Settings, microphone status at the bottom; Eva's growth card follows with growth); screens put Eva large and
 centred on top; Talk floats a translucent chat over Eva (video-call feel), hands-free and pause as
 header pills; 8 px spacing grid.
 
@@ -55,11 +55,18 @@ header pills; 8 px spacing grid.
 Eva is the conversation partner and the mascot: **Mochi** — a squishy cloud-white blob with rosy
 cheeks and a smile — with a **sprout** on top that grows with speaking (see ROADMAP › Eva grows).
 
-- Emotions: idle (blink), listening (looks at the learner), processing, thinking (glance away),
-  speaking (moves with her voice), happy, encouraging, curious, concerned, asleep (paused).
-- She appears on Talk, the start greeting, review, first run, message avatars and the app icon —
-  never twice on one screen. Colours (body, eyes, leaves, bloom) are adjustable in Settings › Eva.
-- With Reduce Motion she keeps still and only changes expression.
+- Six designed faces: idle, listening (looks at the learner), thinking (glance away), speaking,
+  happy, asleep (paused). The ten moods the app uses map onto them: processing → thinking,
+  encouraging → idle, curious → listening, concerned → idle.
+- Sprout stages 0–5 (seed, sprout, two leaves, bud, bloom, full bloom). Until growth lands the app
+  shows the bud (`DEFAULT_EVA_STAGE`).
+- She appears on Talk, the start greeting, review, first run and the app icon — never twice on one
+  screen. Colours (body, eyes, leaves, bloom) are adjustable in Settings › Eva; locked leaf and
+  bloom colours are listed but not selectable.
+- Animation: Full breathes, blinks and sways her leaf; Gentle only sways the leaf; Still changes
+  faces and nothing else. The system Reduce Motion setting always stops all three.
+- App icon: Eva at stage 1 on a sky-blue squircle. The Dock setting offers Eva (the bundle icon),
+  Dark and Light (the board's Tinted style). Sources are in `assets/icons/`.
 
 ## Turn states
 

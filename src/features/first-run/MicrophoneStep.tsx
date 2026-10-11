@@ -4,10 +4,10 @@ import { usePreferredMicrophone } from '@/audio/devicePreference';
 import type { AudioInputOption } from '@/audio/types';
 import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
 import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
-import { Eva } from '@/components/eva/Eva';
 import { useTrainer } from '@/context/TrainerContext';
 import { LevelMeter } from '@/features/settings/LevelMeter';
 import { MicrophoneDeviceSelect } from '@/features/settings/MicrophoneDeviceSelect';
+import { Eva } from '@/shared/ui/eva';
 import { checkStatus, isHearingSpeech } from './lib/heardSpeech';
 
 type CardProps = {

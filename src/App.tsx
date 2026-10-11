@@ -13,7 +13,6 @@ import { ToastProvider } from '@/shared/ui/toast';
 import { TrainerProvider } from './context/TrainerContext';
 import { router } from './router';
 import './app/styles.css';
-import './appShell.css';
 
 function App() {
   const speech = useSystemSpeech();

@@ -9,6 +9,7 @@
     "dev:web": "vite",
     "dev:browser": "vite --open",
     "build": "tsc && vite build",
+    "build:icons": "bun run scripts/build-icons.ts",
     "build:desktop": "sh ./scripts/build-macos.sh",
     "preview": "vite preview",
     "tauri": "tauri",

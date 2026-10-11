@@ -533,10 +533,11 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
   (daylight saving implemented by hand); counts older than 14 days are dropped. `get_api_usage`
   returns today's counts, the last Gemini limit error, the last `agy` quota error and the next Pacific
   midnight; Settings > Usage shows them with a link to the AI Studio usage page.
-- **Dock icon:** `set_dock_icon(icon: "dark" | "light")` swaps the running Dock tile via
+- **Dock icon:** `set_dock_icon(icon: "eva" | "dark" | "light")` swaps the running Dock tile via
   `NSApplication.applicationIconImage` (no-op off macOS). The choice is a localStorage preference
-  re-applied at launch; the bundle icon stays dark. Every size comes from `tauri icon` on the sources
-  in `src-tauri/icons/source/`.
+  re-applied at launch; `eva` restores the bundle icon (Eva with her sprout on sky blue), `dark` and
+  `light` swap in the Icon board's Dark and Tinted styles. The SVG sources live in `assets/icons/`;
+  `bun run build:icons` renders them and runs `tauri icon` for every size.
 
 ## 11. Setup diagnostics
 

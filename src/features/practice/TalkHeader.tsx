@@ -1,6 +1,5 @@
 import { Pause, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Eva, type EvaMood } from '@/components/eva/Eva';
 import type { SpeechTiming } from '@/features/speech/TimingPanel';
 import { TimingPopover } from '@/features/speech/TimingPanel';
 import {
@@ -10,6 +9,7 @@ import {
   practicePhaseLabel,
 } from '@/lib/practiceOptions';
 import { Button } from '@/shared/ui/button';
+import { Eva, type EvaMood } from '@/shared/ui/eva';
 import { Tooltip } from '@/shared/ui/tooltip';
 import { mistakePracticeProgress } from './lib/mistakePracticeProgress';
 import type { PauseControl } from './lib/pauseControl';

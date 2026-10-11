@@ -1,8 +1,8 @@
-import { Eva, type EvaMood } from '@/components/eva/Eva';
 import {
   type ConversationFlowPreferences,
   END_PAUSE_RANGE_MS,
 } from '@/lib/conversationFlowPreferences';
+import { Eva, type EvaMood } from '@/shared/ui/eva';
 import { Switch } from '@/shared/ui/switch';
 import type { TurnPresentation } from './lib/turnState';
 

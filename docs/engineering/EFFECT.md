@@ -17,6 +17,7 @@ reference is the pilot feature `src/features/gemini-key` with `src/core/ipc` —
 | :--- | :--- | :--- |
 | Calling Rust | `Ipc` service + `invokeCommand` + Schema decode | `core/ipc` |
 | Validating outside data (IPC, `localStorage`, LLM JSON) | `Schema` | `core/ipc/schemas`, feature `services/` |
+| UI preferences kept in `localStorage` | `Atom.kvs` + `KeyValueStore.layerStorage` + `Schema` (decoding falls back per field) | `core/eva-look` |
 | Errors | `Schema.TaggedError` (crosses IPC), `Data.TaggedError` (internal) | where they are raised |
 | Dependencies | `Context.Service` + `Layer` | `services/`, `core/*` |
 | Resources (microphone, worklet, timers, listeners) | `Effect.acquireRelease`, `Layer.effect` with `Scope` | `core/audio`, `core/speech` |

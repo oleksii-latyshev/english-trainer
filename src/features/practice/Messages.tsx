@@ -1,6 +1,5 @@
 import { CircleHelp, Smartphone, Volume2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { EvaMini } from '@/components/eva/Eva';
 import { Button } from '@/shared/ui/button';
 import type { DialogueMessage } from './lib/dialogueMessages';
 import { inputSourceLabel } from './lib/inputSource';
@@ -19,7 +18,6 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: EvaPr
   const fullText = message.question ? `${message.text} ${message.question}` : message.text;
   return (
     <article aria-label="Eva says" className="talk-msg">
-      <EvaMini />
       <div className="talk-msg-col">
         <div className="talk-bubble talk-bubble-eva">
           {message.text && (
@@ -65,7 +63,6 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: EvaPr
 export function EvaThinking() {
   return (
     <div className="talk-thinking">
-      <EvaMini />
       <div className="talk-bubble talk-bubble-eva">
         <span aria-label="Eva is thinking" className="talk-dots" role="status">
           <i />
