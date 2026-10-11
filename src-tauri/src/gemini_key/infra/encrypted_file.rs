@@ -148,6 +148,12 @@ mod tests {
 
     const KEY: &str = "AIzaSyExampleExampleExample1";
 
+    fn a_device_secret() -> [u8; 32] {
+        let mut secret = [0u8; 32];
+        getrandom::fill(&mut secret).unwrap();
+        secret
+    }
+
     fn temp_key_file(name: &str) -> PathBuf {
         let dir =
             std::env::temp_dir().join(format!("english-trainer-key-{name}-{}", std::process::id()));
@@ -158,7 +164,7 @@ mod tests {
     #[test]
     fn saved_key_round_trips_and_is_not_stored_in_plain_text() {
         let path = temp_key_file("round-trip");
-        let secret = [7u8; 32];
+        let secret = a_device_secret();
         write_key(&path, &secret, KEY).unwrap();
         let bytes = fs::read(&path).unwrap();
         assert!(!bytes
@@ -179,14 +185,16 @@ mod tests {
     #[test]
     fn a_file_from_another_computer_or_a_damaged_file_is_rejected() {
         let path = temp_key_file("foreign");
-        write_key(&path, &[7u8; 32], KEY).unwrap();
+        let this_computer = a_device_secret();
+        let another_computer = a_device_secret();
+        write_key(&path, &this_computer, KEY).unwrap();
         assert!(matches!(
-            read_key(&path, &[8u8; 32]),
+            read_key(&path, &another_computer),
             Err(GeminiKeyError::Unreadable)
         ));
         fs::write(&path, [FORMAT_VERSION, 1, 2, 3]).unwrap();
         assert!(matches!(
-            read_key(&path, &[7u8; 32]),
+            read_key(&path, &this_computer),
             Err(GeminiKeyError::Unreadable)
         ));
         fs::remove_dir_all(path.parent().unwrap()).unwrap();
@@ -195,7 +203,7 @@ mod tests {
     #[test]
     fn a_missing_file_means_no_key() {
         let path = temp_key_file("missing");
-        assert_eq!(read_key(&path, &[7u8; 32]).unwrap(), None);
+        assert_eq!(read_key(&path, &a_device_secret()).unwrap(), None);
         fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 
