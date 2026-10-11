@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { MICROPHONE_TEST_DURATION_MS, type useMicrophoneTest } from '@/audio/useMicrophoneTest';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { MicrophoneSignalDetails } from './MicrophoneSignalDetails';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type Test = ReturnType<typeof useMicrophoneTest>;
 

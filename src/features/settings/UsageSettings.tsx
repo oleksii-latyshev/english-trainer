@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type ApiUsageOverview, getApiUsage, type LimitNote } from '@/lib/apiUsageTypes';
 import { openExternal } from '@/lib/openExternal';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { formatRemaining, quotaResetText, requestsLabel } from './lib/usageText';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 const AI_STUDIO_USAGE_URL = 'https://aistudio.google.com/usage';
 

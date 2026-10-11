@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { answeredByLabel } from '@/lib/answeredBy';
 import { createReplyChannel } from '@/lib/replyStream';
 import { type ConversationProviderId, isConversationTurn, isProviderError } from '@/lib/types';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { formatSeconds } from './lib/levelMeter';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type TestState =
   | { tag: 'idle' }

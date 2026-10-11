@@ -1,5 +1,5 @@
 import type { SetupDiagnostics } from '@/lib/types';
-import { SettingsButton } from './SettingsControls';
+import { SettingsButton } from '@/shared/ui/settings-button';
 
 export type DiagnosticsState =
   | { tag: 'loading' }

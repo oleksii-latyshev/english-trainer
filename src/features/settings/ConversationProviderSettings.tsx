@@ -1,4 +1,5 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { GeminiKeyField } from '@/features/gemini-key';
 import { getAiSettings, isEvaStyleId, saveAiSettings } from '@/lib/aiSettings';
 import {
   type AiSettings,
@@ -7,10 +8,11 @@ import {
   isAgyModelId,
   isProviderError,
 } from '@/lib/types';
-import { GeminiKeyField } from './GeminiKeyField';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { ProviderResponseTest } from './ProviderResponseTest';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; message: string };
 

@@ -1,6 +1,7 @@
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { appearancePreference, THEME_OPTIONS } from '@/theme/themePreference';
 import { SegmentedControl } from './SettingsControls';
-import { SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 const OPTIONS = THEME_OPTIONS.map((option) => ({ value: option.id, label: option.label }));
 

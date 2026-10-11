@@ -1,13 +1,3 @@
-import type { ButtonHTMLAttributes } from 'react';
-
-export function SettingsButton({
-  variant = 'default',
-  type = 'button',
-  ...rest
-}: { variant?: 'default' | 'ghost' } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'>) {
-  return <button className="settings-button" data-variant={variant} type={type} {...rest} />;
-}
-
 export function Switch({
   label,
   checked,

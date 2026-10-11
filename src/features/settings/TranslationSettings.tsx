@@ -14,8 +14,10 @@ import {
   type TranslationSettings as TranslationSettingsData,
   type TranslationStatus,
 } from '@/lib/translationTypes';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
+import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; error: TranslationError };
 type StatusState =

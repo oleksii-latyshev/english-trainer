@@ -11,8 +11,9 @@ import {
   sphereGradient,
   withSphere,
 } from '@/lib/evaLook';
+import { SettingsButton } from '@/shared/ui/settings-button';
 import { EVA_MOOD_GUIDE, nextMoodIndex } from './lib/evaMoods';
-import { SegmentedControl, SettingsButton } from './SettingsControls';
+import { SegmentedControl } from './SettingsControls';
 import './settings.css';
 import './settingsEva.css';
 

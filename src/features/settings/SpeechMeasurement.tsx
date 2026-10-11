@@ -7,9 +7,11 @@ import {
   type SpeechModel,
   speechErrorMessage,
 } from '@/lib/speechTypes';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { formatPercent, formatSeconds, modelName, progressText } from './lib/speechCheck';
-import { SettingsButton, Switch } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
+import { Switch } from './SettingsControls';
 
 const ALL_MODELS = 'all';
 

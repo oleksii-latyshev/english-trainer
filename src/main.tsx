@@ -1,3 +1,4 @@
+import { RegistryProvider } from '@effect/atom-react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -16,6 +17,8 @@ startDockIcon();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <RegistryProvider>
+      <App />
+    </RegistryProvider>
   </React.StrictMode>,
 );

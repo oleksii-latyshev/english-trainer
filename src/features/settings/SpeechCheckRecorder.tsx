@@ -7,9 +7,10 @@ import {
   saveSpeechCheckRecording,
   speechErrorMessage,
 } from '@/lib/speechTypes';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { nextSentenceIndex, startingSentenceIndex } from './lib/speechCheck';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
 import { type SentenceRecorderState, useSentenceRecorder } from './useSentenceRecorder';
 
 function recorderHint(state: SentenceRecorderState, isRecorded: boolean): string {

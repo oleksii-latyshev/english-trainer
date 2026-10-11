@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getGlossary, saveGlossary, speechErrorMessage } from '@/lib/speechTypes';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { glossarySummary } from './lib/speechCheck';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsRow } from './SettingsGroup';
 
 type LoadState =
   | { tag: 'loading' }

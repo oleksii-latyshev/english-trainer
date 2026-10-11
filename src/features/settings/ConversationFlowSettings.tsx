@@ -5,8 +5,9 @@ import {
   END_PAUSE_CHOICES_MS,
   useConversationFlow,
 } from '@/lib/conversationFlowPreferences';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { SegmentedControl, Switch } from './SettingsControls';
-import { SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 const END_PAUSE_OPTIONS = END_PAUSE_CHOICES_MS.map((ms) => ({
   value: ms,

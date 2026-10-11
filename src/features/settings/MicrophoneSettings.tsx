@@ -4,11 +4,13 @@ import { usePreferredMicrophone } from '@/audio/devicePreference';
 import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
 import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { LevelMeter } from './LevelMeter';
 import { MicrophoneDeviceSelect } from './MicrophoneDeviceSelect';
 import { MicrophoneTestControls } from './MicrophoneTestControls';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();

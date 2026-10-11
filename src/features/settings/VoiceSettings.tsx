@@ -1,7 +1,10 @@
 import { useTrainer } from '@/context/TrainerContext';
 import { SPEECH_RATE_OPTIONS } from '@/features/speech/voicePreferences';
-import { SegmentedControl, SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
+import { SegmentedControl } from './SettingsControls';
+import { SettingsGroup } from './SettingsGroup';
 
 const RATE_OPTIONS = SPEECH_RATE_OPTIONS.map((rate) => ({
   value: rate,

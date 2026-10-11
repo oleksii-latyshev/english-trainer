@@ -1,6 +1,17 @@
+import { useAtom, useAtomSet, useAtomValue } from '@effect/atom-react';
+import { Exit, Option } from 'effect';
+import { AsyncResult } from 'effect/reactivity';
 import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useGeminiKey } from '@/features/settings/useGeminiKey';
+import {
+  geminiKeyDraftAtom,
+  geminiKeyFailureAtom,
+  geminiKeyIsBusyAtom,
+  geminiKeyStatusAtom,
+  keyErrorMessage,
+  keySourceLabel,
+  saveGeminiKeyAtom,
+} from '@/features/gemini-key';
 import { type AiSettings, getAiSettings, saveAiSettings } from '@/lib/aiSettings';
 import { openExternal } from '@/lib/openExternal';
 import { isProviderError } from '@/lib/types';
@@ -54,10 +65,18 @@ function GeminiKeySetup() {
     }
   }
 
-  const { state, status, isWorking, draftKey, setDraftKey, save } = useGeminiKey(() => {
-    void checkFirstWords();
-  });
+  const statusResult = useAtomValue(geminiKeyStatusAtom);
+  const failure = useAtomValue(geminiKeyFailureAtom);
+  const isWorking = useAtomValue(geminiKeyIsBusyAtom);
+  const [draftKey, setDraftKey] = useAtom(geminiKeyDraftAtom);
+  const saveKey = useAtomSet(saveGeminiKeyAtom, { mode: 'promiseExit' });
+  const status = Option.getOrNull(AsyncResult.value(statusResult));
   const configured = status?.configured === true;
+
+  async function save() {
+    const exit = await saveKey(draftKey);
+    if (Exit.isSuccess(exit)) void checkFirstWords();
+  }
 
   return (
     <section aria-label="Gemini API key" className="first-run-card">
@@ -112,9 +131,7 @@ function GeminiKeySetup() {
       {configured && (
         <div className="first-run-ok" role="status">
           <Check aria-hidden="true" size={14} strokeWidth={2.4} />
-          {status.source === 'environment'
-            ? 'Using the ENG_TRAINER_GEMINI_API_KEY environment variable'
-            : 'Saved, encrypted on this Mac'}
+          {status.source !== null && keySourceLabel(status.source)}
           {firstWords.tag === 'checking' && ' · checking a reply…'}
           {firstWords.tag === 'done' && ` · first words in ${(firstWords.ms / 1000).toFixed(1)} s`}
         </div>
@@ -124,12 +141,12 @@ function GeminiKeySetup() {
           {firstWords.message}
         </p>
       )}
-      {state.tag === 'error' && (
+      {Option.isSome(failure) && (
         <p className="first-run-alert" role="alert">
-          {state.message}
+          {keyErrorMessage(failure.value)}
         </p>
       )}
-      {state.tag !== 'loading' && !configured && (
+      {!AsyncResult.isInitial(statusResult) && !configured && (
         <p className="first-run-hint">
           Eva cannot reply with Gemini until a key is saved. Add one, or choose Apple on-device.
         </p>

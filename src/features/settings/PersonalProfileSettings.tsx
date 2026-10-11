@@ -9,9 +9,11 @@ import {
   type PersonalProfile,
   personalProfileSummary,
 } from '@/lib/personalProfileTypes';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { GlossarySettings } from './GlossarySettings';
-import { SettingsButton } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready'; profile: PersonalProfile } | { tag: 'error' };
 

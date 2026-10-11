@@ -18,7 +18,6 @@ pub use answer_plan::{parse_answer_plan, AnswerPlan};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
 pub use gemini::generate_answer_plan;
-pub use gemini::{configure_key_store, delete_api_key, key_status, save_api_key, GeminiKeyStatus};
 pub use rescue::{generate_rescue, RescueKind, RescueRequest, RescueResponse};
 pub use session_wrapup::{
     parse_wrapup_result, GeneratedWrapupPhrase, WrapupAnswer, WrapupRequest, WrapupResult,

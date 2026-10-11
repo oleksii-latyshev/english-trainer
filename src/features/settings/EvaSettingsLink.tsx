@@ -1,7 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { EVA_SETTINGS_PATH } from '@/lib/settingsSections';
-import { SettingsButton } from './SettingsControls';
-import { SettingsGroup, SettingsRow } from './SettingsGroup';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
+import { SettingsGroup } from './SettingsGroup';
 
 export function EvaSettingsLink() {
   const navigate = useNavigate();

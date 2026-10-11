@@ -7,9 +7,12 @@ import {
   saveKeepRawAudio,
   speechErrorMessage,
 } from '@/lib/speechTypes';
+import { SettingsBlock } from '@/shared/ui/settings-block';
+import { SettingsButton } from '@/shared/ui/settings-button';
+import { SettingsRow } from '@/shared/ui/settings-row';
 import { formatSize } from './lib/speechCheck';
-import { SettingsButton, Switch } from './SettingsControls';
-import { SettingsBlock, SettingsGroup, SettingsRow } from './SettingsGroup';
+import { Switch } from './SettingsControls';
+import { SettingsGroup } from './SettingsGroup';
 
 type RetentionState =
   | { tag: 'loading' }
