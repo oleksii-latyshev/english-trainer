@@ -14,6 +14,10 @@ export const switchControl = tv({
       true: { root: 'pointer-events-none opacity-50' },
       false: {},
     },
+    isLabelHidden: {
+      true: { text: 'sr-only' },
+      false: {},
+    },
   },
-  defaultVariants: { disabled: false },
+  defaultVariants: { disabled: false, isLabelHidden: false },
 });

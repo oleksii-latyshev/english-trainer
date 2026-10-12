@@ -62,43 +62,42 @@ export async function installAiSettings(page: Page, options: AiSettingsOptions =
           answered_by: { provider: 'gemini', model: 'gemini-3.5-flash-lite', is_backup: false },
         };
       }
-      internals.invoke = async (command, args = {}) => {
-        if (command === 'get_ai_settings') {
-          record(command, args);
-          return settings;
-        }
-        if (command === 'save_ai_settings') {
-          record(command, args);
-          if (failNextSave) {
-            failNextSave = false;
-            throw {
-              code: 'database_error',
-              message: 'Could not read or save conversation settings locally. Please retry.',
-            };
-          }
-          settings = args.settings as AiSettings;
-          return settings;
-        }
-        if (command === 'generate_follow_up') {
-          record(command, args);
-          return generate(args);
-        }
-        if (command === 'get_api_usage' && seed.usage) {
-          record(command, args);
-          return {
-            day: '2026-10-12',
-            gemini: {
-              models: [
-                { model: 'gemini-3.5-flash-lite', requests: 142 },
-                { model: 'gemini-3.5-flash', requests: 40 },
-              ],
-              last_limit: null,
-              resets_at_ms: Date.now() + 7 * 3_600_000 + 12 * 60_000,
-            },
-            antigravity: { requests_today: 18, last_quota_error: null },
+      function save(args: Record<string, unknown>) {
+        if (failNextSave) {
+          failNextSave = false;
+          throw {
+            code: 'database_error',
+            message: 'Could not read or save conversation settings locally. Please retry.',
           };
         }
-        return original(command, args);
+        settings = args.settings as AiSettings;
+        return settings;
+      }
+      function usage() {
+        return {
+          day: '2026-10-12',
+          gemini: {
+            models: [
+              { model: 'gemini-3.5-flash-lite', requests: 142 },
+              { model: 'gemini-3.5-flash', requests: 40 },
+            ],
+            last_limit: null,
+            resets_at_ms: Date.now() + 7 * 3_600_000 + 12 * 60_000,
+          },
+          antigravity: { requests_today: 18, last_quota_error: null },
+        };
+      }
+      const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
+        get_ai_settings: () => settings,
+        save_ai_settings: save,
+        generate_follow_up: generate,
+      };
+      if (seed.usage) handlers.get_api_usage = usage;
+      internals.invoke = async (command, args = {}) => {
+        const handler = handlers[command];
+        if (!handler) return original(command, args);
+        record(command, args);
+        return handler(args);
       };
     },
     { ...options, defaults: DEFAULT_AI_SETTINGS },

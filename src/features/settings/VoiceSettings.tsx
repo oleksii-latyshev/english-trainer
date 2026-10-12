@@ -2,9 +2,9 @@ import { useTrainer } from '@/context/TrainerContext';
 import { SPEECH_RATE_OPTIONS } from '@/features/speech/voicePreferences';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
+import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
-import { SegmentedControl } from './SettingsControls';
-import { SettingsGroup } from './SettingsGroup';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { VoiceSelection } from './VoiceSelection';
 
 const RATE_OPTIONS = SPEECH_RATE_OPTIONS.map((rate) => ({
@@ -16,7 +16,7 @@ export function VoiceSettings() {
   const { speech } = useTrainer();
 
   return (
-    <SettingsGroup id="voice" title="Voice">
+    <GroupCard id="voice" title="Voice">
       <FormRow
         title="Voice engine"
         description="Natural speech runs on this Mac. A system voice keeps replies moving if it is unavailable or slow."
@@ -57,6 +57,6 @@ export function VoiceSettings() {
           Voice playback is unavailable.
         </Notice>
       )}
-    </SettingsGroup>
+    </GroupCard>
   );
 }

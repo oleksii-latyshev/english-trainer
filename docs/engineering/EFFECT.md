@@ -17,7 +17,7 @@ reference is the pilot feature `src/features/gemini-key` with `src/core/ipc` —
 | :--- | :--- | :--- |
 | Calling Rust | `Ipc` service + `invokeCommand` + Schema decode | `core/ipc` |
 | Validating outside data (IPC, `localStorage`, LLM JSON) | `Schema` | `core/ipc/schemas`, feature `services/` |
-| UI preferences kept in `localStorage` | `Atom.kvs` + `KeyValueStore.layerStorage` + `Schema` (decoding falls back per field) | `core/eva-look` |
+| UI preferences kept in `localStorage` | `Atom.kvs` + `KeyValueStore.layerStorage` + `Schema` (decoding falls back per field) | `core/eva-look`, `core/conversation-flow`, `features/appearance` |
 | Errors | `Schema.TaggedError` (crosses IPC), `Data.TaggedError` (internal) | where they are raised |
 | Dependencies | `Context.Service` + `Layer` | `services/`, `core/*` |
 | Resources (microphone, worklet, timers, listeners) | `Effect.acquireRelease`, `Layer.effect` with `Scope` | `core/audio`, `core/speech` |
@@ -203,6 +203,12 @@ Rules:
 - Parametrised state uses `Atom.family((id) => …)`.
 - Atoms that must survive unmounting (the active practice session) use `Atom.keepAlive`; everything
   else is released when no component reads it.
+- Preferences that are also read by code outside React (the legacy Talk and microphone modules) are
+  read from the shared registry: `main.tsx` provides `appRegistry` from `@/core/runtime` through
+  `RegistryContext`, and the slice exports a reader (`readConversationFlow()`) that mounts and reads
+  the same atom. Never keep a second copy of a preference.
+- A preference field that must survive a wrong or missing stored value uses `withFallback` from
+  `@/shared/schema/with-fallback` inside `Schema.Struct`; tests install `installFakeLocalStorage`.
 - Components never call `Effect.run*`. Only `app/` (bootstrap) and tests run Effects directly; the
   Biome plugin `no-effect-run` enforces it.
 

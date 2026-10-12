@@ -6,7 +6,7 @@ import { aiSettingsAtom, aiSettingsErrorMessage, updateAiSettingsAtom } from '@/
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';
-import { NativeSelect } from '../native-select';
+import { Select } from '@/shared/ui/select';
 import { ProviderChoice } from '../provider-choice';
 import { ResponseTest } from '../response-test';
 import { AGY_MODEL_OPTIONS, EVA_STYLE_OPTIONS } from './constants';
@@ -61,12 +61,11 @@ export function AiProviderSettings({ geminiKeyField }: Props) {
       {settings.provider === 'agy' && (
         <FormRow
           description="Every Antigravity request names a Gemini model, so Antigravity's own default is never used."
-          htmlFor="agy-model"
           title="Antigravity model"
         >
-          <NativeSelect
+          <Select
             disabled={isSaving}
-            id="agy-model"
+            label="Antigravity model"
             onChange={(agy_model) => update({ agy_model })}
             options={AGY_MODEL_OPTIONS}
             value={settings.agy_model}
@@ -76,12 +75,11 @@ export function AiProviderSettings({ geminiKeyField }: Props) {
       {settings.provider === 'gemini' && geminiKeyField}
       <FormRow
         description="Natural: two to four sentences with her own reactions. Short and simple: one or two plain sentences. Eva always ends with one question."
-        htmlFor="eva-style"
         title="Eva's style"
       >
-        <NativeSelect
+        <Select
           disabled={isSaving}
-          id="eva-style"
+          label="Eva's style"
           onChange={(eva_style) => update({ eva_style })}
           options={EVA_STYLE_OPTIONS}
           value={settings.eva_style}

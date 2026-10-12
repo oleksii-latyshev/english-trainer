@@ -7,33 +7,10 @@
   margin: 0 auto;
 }
 
-.settings-eva {
-  max-width: 880px;
-}
-
 .settings h1 {
   margin: 0 0 4px;
   font-size: 28px;
   font-weight: 600;
-}
-
-.settings-group {
-  overflow: hidden;
-  border: 1px solid var(--et-line);
-  border-radius: var(--et-radius-card);
-  background-color: var(--et-surface);
-  scroll-margin-top: 16px;
-}
-
-.settings-group > h2 {
-  margin: 0;
-  padding: 16px 20px 4px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.settings-group > h2 + [data-slot="form-row"] {
-  border-top: 0;
 }
 
 .settings-mono {
@@ -42,11 +19,7 @@
 }
 
 .settings-select:focus-visible,
-.settings-field:focus-visible,
-.settings-switch:focus-visible,
-.settings-segment button:focus-visible,
-.settings-swatch:focus-visible,
-.settings-mood:focus-visible {
+.settings-field:focus-visible {
   outline: 2px solid var(--et-accent);
   outline-offset: 2px;
 }

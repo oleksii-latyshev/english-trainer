@@ -1,6 +1,8 @@
+import { useAtomValue } from '@effect/atom-react';
 import { useEffect, useRef, useState } from 'react';
 import { useMicrophoneActivity } from '@/audio/useMicrophoneActivity';
 import { useTrainer } from '@/context/TrainerContext';
+import { conversationFlowAtom } from '@/core/conversation-flow';
 import {
   type FollowUpState,
   followUpError,
@@ -16,7 +18,6 @@ import { type SessionDetails, sessionDetails } from '@/features/practice/lib/pra
 import { preparePracticeTurn } from '@/features/practice/lib/preparePracticeTurn';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import { useConversationFlow } from '@/lib/conversationFlowPreferences';
 import { type ConversationTurn, isConversationTurn } from '@/lib/types';
 import type { InputSource } from './lib/inputSource';
 import {
@@ -55,12 +56,11 @@ export function PracticeView({ model, actions, speech, onNavigate }: Props) {
     requestId: number;
     state: FollowUpState;
   }>({ requestId: model.currentRequestId, state: IDLE_FOLLOW_UP });
-
   const generation = useRef(0);
   const pending = useRef(false);
   const planning = usePlanningGuard(actions.cancelRecording, actions.startAutoListen);
   const { mic } = useTrainer();
-  const { preferences: flow } = useConversationFlow();
+  const flow = useAtomValue(conversationFlowAtom);
   const { transcript, practice, currentRequestId } = model;
   const { handlePracticeTurn, isCurrent, onTurnPendingChange } = actions;
   const session = sessionDetails(practice);

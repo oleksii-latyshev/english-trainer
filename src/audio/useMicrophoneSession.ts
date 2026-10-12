@@ -1,5 +1,6 @@
+import { useAtomValue } from '@effect/atom-react';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { useConversationFlow } from '@/lib/conversationFlowPreferences';
+import { conversationFlowAtom } from '@/core/conversation-flow';
 import { getPreferredDeviceId, subscribeDevicePreference } from './devicePreference';
 import { createMicrophoneManager, type MicrophoneStatus } from './microphoneManager';
 import type { MicrophoneSession } from './microphoneSession';
@@ -18,7 +19,7 @@ export function useMicrophoneSession(): MicrophoneController {
   const [manager] = useState(createMicrophoneManager);
   const snapshot = useSyncExternalStore(manager.subscribe, manager.getSnapshot);
   const deviceId = useSyncExternalStore(subscribeDevicePreference, getPreferredDeviceId, () => '');
-  const { preferences } = useConversationFlow();
+  const preferences = useAtomValue(conversationFlowAtom);
 
   useEffect(() => {
     manager.setEchoCancellation(preferences.voiceInterrupt);

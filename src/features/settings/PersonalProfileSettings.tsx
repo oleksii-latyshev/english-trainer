@@ -11,9 +11,9 @@ import {
 } from '@/lib/personalProfileTypes';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
+import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
 import { GlossarySettings } from './GlossarySettings';
-import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready'; profile: PersonalProfile } | { tag: 'error' };
 
@@ -73,7 +73,7 @@ export function PersonalProfileSettings() {
   }
 
   return (
-    <SettingsGroup id="personalisation" title="Personalisation">
+    <GroupCard id="personalisation" title="Personalisation">
       {state.tag === 'error' ? (
         <Notice role="alert" tone="error">
           Your profile could not be loaded. Reopen Settings to try again.
@@ -127,6 +127,6 @@ export function PersonalProfileSettings() {
         </form>
       )}
       <GlossarySettings />
-    </SettingsGroup>
+    </GroupCard>
   );
 }
