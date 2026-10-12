@@ -80,7 +80,7 @@ test('late partial after cancellation cannot enter a new recording or score an a
 }) => {
   tauri.liveReview.holdingPartial();
   await openAndRecord(app, review);
-  await expect.poll(() => tauri.liveReview.partialCalls()).toBe(1);
+  await expect.poll(() => tauri.liveReview.partialCalls(), LIVE_PARTIAL_WAIT).toBe(1);
   await app.pressEscape();
   await expect(review.recorder.startButton).toBeVisible();
   await review.recorder.start();
@@ -127,7 +127,7 @@ test('warmup can finish while a partial is pending and ignores it after the fina
   await start.chooseWarmupFirst();
   await start.start();
   await review.recorder.start();
-  await expect.poll(() => tauri.liveReview.partialCalls()).toBe(1);
+  await expect.poll(() => tauri.liveReview.partialCalls(), LIVE_PARTIAL_WAIT).toBe(1);
   await app.waitForQuietPeriod(PARTIAL_TICK_QUIET_MS);
   expect(await tauri.liveReview.partialCalls()).toBe(1);
   await review.recorder.finishAnswer();

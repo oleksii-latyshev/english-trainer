@@ -5,9 +5,14 @@ import {
   useEffect,
   useRef,
 } from 'react';
+import type { RecordingStatus } from '@/features/speech/captureView';
 import type { HelpLevel } from './lib/helpLevels';
 
 type HelpSnapshot = { key: string; level: HelpLevel | null };
+
+export function isAnswerCaptureStarted(status: RecordingStatus): boolean {
+  return status === 'requesting' || status === 'recording';
+}
 
 export function exampleCueWasInterrupted(
   wasCapturingAtRequest: boolean,
@@ -19,7 +24,7 @@ export function exampleCueWasInterrupted(
 }
 
 export function useExampleCaptureGuard({
-  isCapturing,
+  captureStatus,
   helpLevel,
   helpKey,
   helpRequest,
@@ -27,7 +32,7 @@ export function useExampleCaptureGuard({
   setHelp,
   stopSpeech,
 }: {
-  isCapturing: boolean;
+  captureStatus: RecordingStatus;
   helpLevel: HelpLevel | null;
   helpKey: string;
   helpRequest: MutableRefObject<number>;
@@ -35,6 +40,7 @@ export function useExampleCaptureGuard({
   setHelp: Dispatch<SetStateAction<HelpSnapshot>>;
   stopSpeech: () => void;
 }) {
+  const isCapturing = isAnswerCaptureStarted(captureStatus);
   const isCapturingRef = useRef(isCapturing);
   isCapturingRef.current = isCapturing;
   const captureEpoch = useRef(0);

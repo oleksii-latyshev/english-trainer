@@ -359,7 +359,9 @@ fn an_exhausted_quota_pauses_coaching_without_blocking_talk_or_spending_attempts
     fixture.queue.retry(session.session_id, 1).unwrap();
     assert!(!fixture.store.is_coaching_paused());
     assert_eq!(fixture.next_batch(), [1, 2, 3, 4, 5]);
-    assert_eq!(fixture.batches.lock().unwrap().len(), 2);
+    // The answer flushed during the pause runs right after, in its own batch.
+    assert_eq!(fixture.next_batch(), [6]);
+    assert_eq!(fixture.batches.lock().unwrap().len(), 3);
 }
 
 #[test]
