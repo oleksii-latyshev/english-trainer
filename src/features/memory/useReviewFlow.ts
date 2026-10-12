@@ -19,7 +19,7 @@ import {
 } from '@/features/memory/memoryRecallApi';
 import { useReviewKeyboard } from '@/features/memory/useReviewKeyboard';
 import { useReviewMaterials } from '@/features/memory/useReviewMaterials';
-import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
+import { useSpeechCapture } from '@/app/speech-capture';
 import type { MemoryRecallResult, MemoryReviewRun } from '@/lib/memoryRecallTypes';
 
 const MAX_TRANSCRIPT_CHARS = 4000;

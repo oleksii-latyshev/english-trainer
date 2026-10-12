@@ -1,10 +1,13 @@
-import { invoke } from '@tauri-apps/api/core';
 import type { MutableRefObject } from 'react';
 import type { PcmRecorder } from '@/app/microphone';
-import type { CaptureState } from './captureView';
+import { rescueTranscript } from '@/core/speech';
+import type { CaptureState } from './capture-view';
 import type { TurnWatch } from './listening';
+import { settleSpeech } from './settle-speech';
 
-/** A rescue snapshot never consumes the recorder or changes the authoritative final transcript. */
+const RECORDING_CHANGED = 'Recording changed. Open Stuck during your current answer.';
+const RESCUE_TAIL_MS = 15_000;
+
 export function createRescueCapture(refs: {
   recorder: MutableRefObject<PcmRecorder | null>;
   state: MutableRefObject<CaptureState>;
@@ -24,19 +27,16 @@ export function createRescueCapture(refs: {
       refs.requestId.current !== recordingId ||
       refs.state.current.tag !== 'recording'
     )
-      throw new Error('Recording changed. Open Stuck during your current answer.');
-    const wav = await recorder.snapshot({ tailMs: 15_000 });
-    if (!wav) throw new Error('No audio is ready yet. Say a few words, then try Stuck again.');
-    const text: unknown = await invoke<unknown>(
-      'transcribe_rescue',
-      new Uint8Array(await wav.arrayBuffer()),
-      { headers: { 'x-session-id': String(sessionId), 'x-answer-sequence': String(sequence) } },
+      throw new Error(RECORDING_CHANGED);
+    const text = await settleSpeech(
+      rescueTranscript(recorder.capture.snapshot({ tailMs: RESCUE_TAIL_MS }), {
+        sessionId,
+        sequence,
+      }),
     );
     if (refs.requestId.current !== recordingId || refs.recorder.current !== recorder)
-      throw new Error('Recording changed. Open Stuck during your current answer.');
-    if (typeof text !== 'string' || !text.trim())
-      throw new Error('No speech was recognized. Keep speaking and try Stuck again.');
-    return text.slice(-1500);
+      throw new Error(RECORDING_CHANGED);
+    return text;
   }
   return { holdForRescue: hold, rescueTranscript: transcript };
 }

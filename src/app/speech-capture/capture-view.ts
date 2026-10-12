@@ -1,6 +1,6 @@
 import type { ActualAudioInput, MicrophoneStatus } from '@/core/audio';
-import type { SpeechTiming } from './TimingPanel';
-import type { TranscriptionRecovery } from './transcriptionRecovery';
+import type { TranscriptionRecovery } from '@/core/speech';
+import type { SpeechTiming } from './timing-panel';
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
 

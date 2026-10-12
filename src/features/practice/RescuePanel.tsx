@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { useSpeechCapture } from '@/features/speech/useSpeechCapture';
+import type { useSpeechCapture } from '@/app/speech-capture';
 import { Button } from '@/shared/ui/button';
 import { Kbd } from '@/shared/ui/kbd';
 import { type RescueState, useRescue } from './useRescue';

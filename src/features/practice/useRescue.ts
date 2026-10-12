@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import { keyTarget } from '@/components/keyTarget';
-import type { useSpeechCapture } from '@/features/speech/useSpeechCapture';
+import type { useSpeechCapture } from '@/app/speech-capture';
 import { isRescueResponse, type RescueKind, type RescueResponse } from '@/lib/rescueTypes';
 import { isProviderError } from '@/lib/types';
 

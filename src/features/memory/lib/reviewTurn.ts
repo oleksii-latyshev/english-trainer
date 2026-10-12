@@ -1,5 +1,5 @@
 import type { MicVariant } from '@/components/MicControl';
-import type { RecordingStatus } from '@/features/speech/captureView';
+import type { RecordingStatus } from '@/app/speech-capture';
 import type { LearningItemType } from '@/lib/learningTypes';
 import type { EvaMood } from '@/shared/ui/eva';
 

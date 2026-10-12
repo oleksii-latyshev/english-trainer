@@ -3,6 +3,7 @@ import {
   type ActualAudioInput,
   type AudioServices,
   audioRuntime,
+  type Capture,
   type CaptureOptions,
   MIC_DISCONNECTED_MESSAGE,
   type MicrophoneSession,
@@ -12,6 +13,7 @@ import {
 import { settle, settleSync } from './settle';
 
 export type MicrophoneCapture = {
+  readonly capture: Capture;
   readonly snapshot: (options?: { tailMs: number }) => Promise<Blob | null>;
   readonly stop: () => Promise<RecordedAudio>;
   readonly cancel: () => void;
@@ -87,6 +89,7 @@ export function captureOnSession(
   }).pipe(Scope.provide(scope));
   const capture = beginOrRelease(begin, closeScope);
   return {
+    capture,
     level: () => settleSync(capture.level),
     snapshot: (snapshotOptions) => settle(capture.snapshot(snapshotOptions)),
     stop: async () => {

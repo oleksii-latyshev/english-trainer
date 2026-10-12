@@ -3,9 +3,9 @@ import type { MicrophoneController, WarmSession } from '@/app/microphone';
 import { type PcmRecorder, startPcmRecording } from '@/app/microphone';
 import { readConversationFlow } from '@/core/conversation-flow';
 import type { SpeechControls } from '@/core/speech';
-import { type CaptureState, preRollMsFor, type RecordingMode } from './captureView';
-import { startLiveTranscript } from './liveTranscript';
-import { startWarmRecording } from './warmRecorder';
+import { type CaptureState, preRollMsFor, type RecordingMode } from './capture-view';
+import { watchLiveText } from './live-text';
+import { startWarmRecording } from './warm-recorder';
 
 const ELAPSED_TICK_MS = 100;
 const AUTO_LISTEN_IDLE_MS = 20_000;
@@ -99,7 +99,11 @@ export function watchTurn(
   isCurrent: () => boolean,
 ): TurnWatch {
   let hasHeardSpeech = false;
-  const stopLiveText = startLiveTranscript(recorder, () => hasHeardSpeech, handlers.onLiveText);
+  const stopLiveText = watchLiveText(
+    recorder.capture,
+    () => hasHeardSpeech,
+    handlers.onLiveText,
+  );
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   const clearIdle = () => {
     if (idleTimer) clearTimeout(idleTimer);

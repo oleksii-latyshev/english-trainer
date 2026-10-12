@@ -1,18 +1,14 @@
-import { isTranscriptionError } from '@/lib/types';
+import { IpcError } from '@/core/ipc';
 
 export type TranscriptionRecovery =
   | { kind: 'record_again'; message: string }
   | { kind: 'setup'; message: string }
   | { kind: 'retry'; message: string };
 
-export function transcriptionRecovery(cause: unknown): TranscriptionRecovery {
-  if (!isTranscriptionError(cause)) {
-    return {
-      kind: 'retry',
-      message: 'Local transcription failed unexpectedly. Please retry.',
-    };
-  }
+const UNEXPECTED_FAILURE = 'Local transcription failed unexpectedly. Please retry.';
 
+export function transcriptionRecovery(cause: unknown): TranscriptionRecovery {
+  if (!(cause instanceof IpcError)) return { kind: 'retry', message: UNEXPECTED_FAILURE };
   switch (cause.code) {
     case 'invalid_audio':
     case 'no_speech':

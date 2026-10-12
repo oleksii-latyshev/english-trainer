@@ -12,6 +12,7 @@ export async function startWarmRecording(
   });
   return {
     actualInput,
+    capture: capture.capture,
     level: capture.level,
     snapshot: capture.snapshot,
     stop: capture.stop,

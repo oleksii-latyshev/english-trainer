@@ -1,10 +1,12 @@
-import { isTauri } from '@tauri-apps/api/core';
+import { Effect } from 'effect';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { ActualAudioInput } from '@/core/audio';
-import type { CaptureState, Recording } from './captureView';
-import type { SpeechTiming } from './TimingPanel';
-import { transcribeWav } from './transcribeWav';
-import { transcriptionErrorOutcome, transcriptOutcome } from './transcriptOutcome';
+import { isTauriRuntime } from '@/core/ipc';
+import { SpeechRecognition } from '@/core/speech';
+import type { CaptureState, Recording } from './capture-view';
+import { settleSpeech } from './settle-speech';
+import type { SpeechTiming } from './timing-panel';
+import { transcriptionFailureState, transcriptState } from './transcript-state';
 
 type Deps = {
   requestIdRef: MutableRefObject<number>;
@@ -14,7 +16,15 @@ type Deps = {
   discardRecording: () => void;
 };
 
-/** Transcribes a finished recording; results for a superseded request are dropped. */
+export const BROWSER_ONLY_FAILURE = {
+  kind: 'setup',
+  message: 'Open the desktop app with bun run dev to use local transcription.',
+} as const;
+
+function transcribe(wav: Blob) {
+  return settleSpeech(Effect.flatMap(SpeechRecognition, (recognition) => recognition.transcribe(wav)));
+}
+
 export function createTranscriptionRunner(deps: Deps) {
   const { requestIdRef, transcribingRef, setState, setTiming, discardRecording } = deps;
 
@@ -24,7 +34,7 @@ export function createTranscriptionRunner(deps: Deps) {
     wav: Blob,
     actualInput?: ActualAudioInput,
   ) {
-    if (!isTauri()) {
+    if (!isTauriRuntime()) {
       setState({ ...recording, tag: 'ready', actualInput, failure: BROWSER_ONLY_FAILURE });
       return;
     }
@@ -37,14 +47,14 @@ export function createTranscriptionRunner(deps: Deps) {
       actualInput,
     });
     try {
-      const { text, sttMs } = await transcribeWav(wav);
+      const { text, sttMs } = await transcribe(wav);
       if (requestId !== requestIdRef.current) return;
       setTiming((current) => ({ ...current, sttMs }));
       discardRecording();
-      setState(transcriptOutcome(text, recording, actualInput));
+      setState(transcriptState(text, recording, actualInput));
     } catch (cause) {
       if (requestId !== requestIdRef.current) return;
-      const outcome = transcriptionErrorOutcome(recording, cause, actualInput);
+      const outcome = transcriptionFailureState(recording, cause, actualInput);
       if (!outcome.keepsRecording) discardRecording();
       setState(outcome.state);
     } finally {
@@ -52,9 +62,3 @@ export function createTranscriptionRunner(deps: Deps) {
     }
   };
 }
-
-/** Shown when the UI runs in a plain browser, where local transcription is unavailable. */
-export const BROWSER_ONLY_FAILURE = {
-  kind: 'setup',
-  message: 'Open the desktop app with bun run dev to use local transcription.',
-} as const;

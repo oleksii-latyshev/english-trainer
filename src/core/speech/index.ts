@@ -1,5 +1,6 @@
 export { naturalAvailability } from './helpers/natural-availability';
 export { cleanSpeechText } from './helpers/reply-sentences';
+export { createSpeechGate, type SpeechGate } from './helpers/speech-gate';
 export {
   clampSpeechRate,
   getPreferredVoice,
@@ -9,9 +10,35 @@ export {
 } from './helpers/system-voices';
 export { isNoveltyVoice, voiceQuality } from './helpers/system-voices/voice-metadata';
 export {
+  type TranscriptionFailureOutcome,
+  type TranscriptOutcome,
+  transcriptionFailureOutcome,
+  transcriptOutcome,
+} from './helpers/transcript-outcome';
+export {
+  type TranscriptionRecovery,
+  transcriptionRecovery,
+} from './helpers/transcription-recovery';
+export {
   naturalAvailabilityAtom,
   previewingNaturalVoiceAtom,
   previewNaturalVoiceAtom,
 } from './model/atoms';
+export {
+  type SpeechRecognitionServices,
+  speechRecognitionRuntime,
+} from './model/recognition-runtime';
 export { type SpeechControls, useSpeech } from './model/use-speech';
+export {
+  LIVE_INTERVAL,
+  type LiveTranscriptSource,
+  liveTranscript,
+} from './services/live-transcript';
+export { rescueTranscript } from './services/rescue-transcript';
+export {
+  SpeechRecognition,
+  type SpeechRecognitionFailure,
+  type TranscribedAnswer,
+} from './services/speech-recognition-service';
+export { SpeechRecognitionSettings } from './services/speech-recognition-settings-service';
 export type { NaturalAvailability, SpeechState, StreamHandle, StreamOptions } from './types';

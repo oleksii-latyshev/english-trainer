@@ -9,7 +9,7 @@ import {
   type RecordingMode,
   stopMeansCancel,
   viewFor,
-} from './captureView';
+} from './capture-view';
 import {
   isAssistantSpeaking,
   openRecorder,
@@ -18,12 +18,12 @@ import {
   type TurnWatch,
   watchActiveTurn,
 } from './listening';
-import { startOneShotLiveTranscript } from './oneShotLiveTranscript';
-import { createRescueCapture } from './rescueCapture';
-import type { SpeechTiming } from './TimingPanel';
-import { createTranscriptionRunner } from './transcriptionRunner';
+import { startOneShotLiveText } from './live-text';
+import { createRescueCapture } from './rescue-capture';
+import type { SpeechTiming } from './timing-panel';
+import { createTranscriptionRunner } from './transcription-runner';
 
-export type { CaptureView, RecordingStatus } from './captureView';
+export type { CaptureView, RecordingStatus } from './capture-view';
 
 /**
  * Records and transcribes answers. With a microphone controller the recording uses its warm
@@ -45,7 +45,7 @@ export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneControl
   const speechRef = useRef(speech);
   const micRef = useRef(mic);
   const turnWatchRef = useRef<TurnWatch | null>(null);
-  const oneShotLiveRef = useRef<ReturnType<typeof startOneShotLiveTranscript> | null>(null);
+  const oneShotLiveRef = useRef<ReturnType<typeof startOneShotLiveText> | null>(null);
   const handlersRef = useRef({ stop: () => {}, cancel: () => {} });
   stateRef.current = state;
   speechRef.current = speech;
@@ -134,7 +134,7 @@ export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneControl
     const startedAt = performance.now();
     setTiming({ captureStartMs: startedAt - requestedAtMs });
     if (!session) {
-      oneShotLiveRef.current = startOneShotLiveTranscript(recorder, (liveText) => {
+      oneShotLiveRef.current = startOneShotLiveText(recorder.capture, (liveText) => {
         if (requestId !== requestIdRef.current) return;
         setState((current) => (current.tag === 'recording' ? { ...current, liveText } : current));
       });

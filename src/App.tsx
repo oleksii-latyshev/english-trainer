@@ -7,7 +7,7 @@ import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { practiceKeepsMicrophoneWarm } from '@/features/practice/lib/practiceStage';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
-import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
+import { useSpeechCapture } from '@/app/speech-capture';
 import type { PracticeOptions } from '@/lib/practiceOptions';
 import { ToastProvider } from '@/shared/ui/toast';
 import { TrainerProvider } from './context/TrainerContext';
