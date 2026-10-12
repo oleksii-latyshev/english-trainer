@@ -1,18 +1,20 @@
 use super::{
-    server::{multipart_body, parse_server_output, ServerError, ServerState, WhisperServer},
-    tests::valid_wav,
-    Binaries, SpeechEngine, TranscriptionErrorCode,
+    binaries::resolve_server_binary,
+    whisper_engine::{Binaries, WhisperEngine},
+    whisper_server::{multipart_body, parse_server_output, ServerError, WhisperServer},
 };
 use crate::providers::agy::runner::ScratchDirectory;
+use crate::speech_recognition::{
+    domain::{valid_wav, ServerState},
+    error::SpeechRecognitionError,
+    ports::TranscriptionEngine,
+};
 use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
 };
 
-/// Speaks just enough of `whisper-server`'s HTTP interface: it answers `/inference` with the
-/// model's file name, the prompt and the size of the audio it received, so a test can see what
-/// the request carried.
 const FAKE_SERVER: &str = r#"#!/usr/bin/env python3
 import json, re, socketserver, sys
 from http.server import BaseHTTPRequestHandler
@@ -42,7 +44,6 @@ socketserver.TCPServer(("127.0.0.1", port), Handler).serve_forever()
 
 const CRASHING_SERVER: &str = "#!/bin/sh\nexit 3\n";
 
-/// Writes `ggml-*.bin` stand-ins the engine accepts as installed models.
 fn model(directory: &Path, name: &str) -> PathBuf {
     let path = directory.join(name);
     fs::write(&path, b"model").unwrap();
@@ -123,17 +124,13 @@ fn server_answers_become_transcripts_and_silence_is_no_speech() {
     assert_eq!(transcript.text, "Hello world.");
     assert_eq!(transcript.duration_ms, 7);
     assert_eq!(
-        parse_server_output(r#"{"text":" [BLANK_AUDIO]"}"#, 0)
-            .unwrap_err()
-            .code,
-        TranscriptionErrorCode::NoSpeech
+        parse_server_output(r#"{"text":" [BLANK_AUDIO]"}"#, 0).unwrap_err(),
+        SpeechRecognitionError::NoSpeech
     );
-    assert_eq!(
-        parse_server_output(r#"{"error":"bad"}"#, 0)
-            .unwrap_err()
-            .code,
-        TranscriptionErrorCode::InvalidOutput
-    );
+    assert!(matches!(
+        parse_server_output(r#"{"error":"bad"}"#, 0).unwrap_err(),
+        SpeechRecognitionError::InvalidOutput(_)
+    ));
 }
 
 #[test]
@@ -176,21 +173,18 @@ fn a_dead_server_is_restarted_once_and_then_given_up_on() {
     let second_pid = server.pid().unwrap();
     assert_ne!(second_pid, first_pid);
 
-    // It answered, so the next death is again the first one.
     server.kill_child();
     server
         .transcribe(&f.server, &f.small, &wav, None, 1)
         .unwrap();
     assert_ne!(server.pid().unwrap(), second_pid);
 
-    // Dying twice with no answer in between ends the restarts.
     server.kill_child();
     server.ensure(&f.server, &f.small, false).unwrap();
     server.kill_child();
     let error = server.ensure(&f.server, &f.small, false).unwrap_err();
     assert!(error.contains("keeps stopping"), "{error}");
     assert_eq!(server.status().failure.as_deref(), Some(error.as_str()));
-    // A new session gives it another chance.
     server.ensure(&f.server, &f.small, true).unwrap();
     assert_eq!(server.status().state, ServerState::Ready);
 }
@@ -242,7 +236,6 @@ fn a_server_that_cannot_start_is_unavailable_and_not_retried_for_the_same_model(
     let status = server.status();
     assert_eq!(status.state, ServerState::NotRunning);
     assert!(status.failure.is_some());
-    // Same model: no second slow start. Another model, or a new session, tries again.
     assert!(server.ensure(&f.server, &f.small, false).is_err());
     assert!(server.ensure(&f.server, &f.base, false).is_ok());
     assert!(server.ensure(&f.server, &f.small, true).is_ok());
@@ -265,7 +258,7 @@ fn silence_is_reported_by_the_server_path_without_falling_back() {
             r#"text = " [BLANK_AUDIO]""#,
         ),
     );
-    let engine = SpeechEngine::new(None);
+    let engine = WhisperEngine::new(None);
     let binaries = Binaries {
         server: Some(silent),
         cli: None,
@@ -273,7 +266,7 @@ fn silence_is_reported_by_the_server_path_without_falling_back() {
     let error = engine
         .transcribe_with(&binaries, valid_wav(), &f.small, None)
         .unwrap_err();
-    assert_eq!(error.code, TranscriptionErrorCode::NoSpeech);
+    assert_eq!(error, SpeechRecognitionError::NoSpeech);
 }
 
 const FAKE_CLI: &str = r#"#!/bin/sh
@@ -289,7 +282,7 @@ fn without_a_usable_server_the_one_off_run_transcribes() {
     let f = fixture();
     let cli = script(f.directory.path(), "whisper-cli", FAKE_CLI);
     let crashing = script(f.directory.path(), "crashing-server", CRASHING_SERVER);
-    let engine = SpeechEngine::new(None);
+    let engine = WhisperEngine::new(None);
 
     for server in [Some(crashing), None] {
         let binaries = Binaries {
@@ -306,27 +299,26 @@ fn without_a_usable_server_the_one_off_run_transcribes() {
         server: None,
         cli: None,
     };
-    assert_eq!(
+    assert!(matches!(
         engine
             .transcribe_with(&nothing, valid_wav(), &f.small, None)
-            .unwrap_err()
-            .code,
-        TranscriptionErrorCode::EngineMissing
-    );
+            .unwrap_err(),
+        SpeechRecognitionError::EngineMissing(_)
+    ));
 }
 
 #[test]
 fn live_updates_use_a_loaded_model_only_and_never_start_one() {
     let f = fixture();
-    let engine = SpeechEngine::new(None);
+    let engine = WhisperEngine::new(None);
     let wav = valid_wav();
     assert_eq!(
         engine.transcribe_partial(&f.small, &wav, Some("Vocabulary: Tauri.")),
         None
     );
-    assert_eq!(engine.server_status().state, ServerState::NotRunning);
+    assert_eq!(engine.status().state, ServerState::NotRunning);
     assert_eq!(engine.transcribe_rescue(&f.small, &wav, None), None);
-    assert_eq!(engine.server_status().state, ServerState::NotRunning);
+    assert_eq!(engine.status().state, ServerState::NotRunning);
 
     let binaries = Binaries {
         server: Some(f.server.clone()),
@@ -341,17 +333,16 @@ fn live_updates_use_a_loaded_model_only_and_never_start_one() {
             .as_deref(),
         Some(format!("ggml-small.en.bin|Vocabulary: Tauri.|{}", wav.len()).as_str())
     );
-    let pid = engine.server.pid();
+    let pid = engine.server().pid();
     assert_eq!(
         engine.transcribe_rescue(&f.small, &wav, Some("Question: Why?")),
         Some(format!("ggml-small.en.bin|Question: Why?|{}", wav.len()))
     );
-    assert_eq!(engine.server.pid(), pid);
+    assert_eq!(engine.server().pid(), pid);
     assert!(!engine
         .partial_running
         .load(std::sync::atomic::Ordering::Acquire));
     assert_eq!(engine.transcribe_rescue(&f.base, &wav, None), None);
-    // Another model is not loaded, so there is no live text for it.
     assert_eq!(engine.transcribe_partial(&f.base, &wav, None), None);
 }
 
@@ -366,17 +357,13 @@ fn a_server_left_by_a_crashed_run_is_stopped_before_the_next_start() {
 
     let next_run = WhisperServer::new(Some(pid_file.clone()));
     next_run.ensure(&f.server, &f.small, false).unwrap();
-    // Asking the old run's handle reaps the process the new run stopped.
     assert_eq!(crashed_run.status().state, ServerState::NotRunning);
     let current = next_run.pid().unwrap();
     assert_ne!(current, leftover);
     assert_eq!(fs::read_to_string(&pid_file).unwrap(), current.to_string());
-    // Dropping the old run would delete the pid note the new run now owns.
     std::mem::forget(crashed_run);
 }
 
-/// Real check: needs Homebrew's whisper-server and the models and speech-check recordings in the
-/// app data folder. Run with `cargo test --manifest-path src-tauri/Cargo.toml -- --ignored --nocapture`.
 #[test]
 #[ignore = "needs whisper-server, ggml-small.en.bin and the speech-check recordings"]
 fn the_real_server_transcribes_a_speech_check_recording_quickly() {
@@ -387,11 +374,11 @@ fn the_real_server_transcribes_a_speech_check_recording_quickly() {
         .map(|n| data.join(format!("speech-check/{n:02}.wav")))
         .collect();
     let binaries = Binaries {
-        server: super::resolve_server_binary(),
+        server: resolve_server_binary(),
         cli: None,
     };
     assert!(binaries.server.is_some(), "whisper-server is not installed");
-    let engine = SpeechEngine::new(None);
+    let engine = WhisperEngine::new(None);
     let prompt =
         "Vocabulary: Gemini, Claude Code, Tauri, Rust, TypeScript, Kubernetes, idempotent.";
     for (index, wav) in wavs.iter().enumerate() {

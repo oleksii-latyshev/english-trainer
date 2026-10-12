@@ -16,6 +16,10 @@ const COPY_FOR_EVERY_CODE: Record<IpcErrorCode, string> = {
   busy: FALLBACK,
   invalid_session: FALLBACK,
   database_error: FALLBACK,
+  invalid_audio: FALLBACK,
+  no_speech: FALLBACK,
+  model_missing: FALLBACK,
+  engine_missing: FALLBACK,
 };
 
 export function keyErrorMessage(failure: GeminiKeyFailure): string {

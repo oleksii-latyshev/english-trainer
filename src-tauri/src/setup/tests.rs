@@ -100,9 +100,9 @@ fn reports_non_executable_and_available_cli_files() {
     ));
 }
 
-fn idle_server() -> crate::audio::ServerStatus {
-    crate::audio::ServerStatus {
-        state: crate::audio::ServerState::NotRunning,
+fn idle_server() -> crate::speech_recognition::ServerStatus {
+    crate::speech_recognition::ServerStatus {
+        state: crate::speech_recognition::ServerState::NotRunning,
         failure: None,
     }
 }
@@ -117,16 +117,16 @@ fn the_server_line_says_when_one_off_runs_are_used() {
     let server = temp.path().join("whisper-server");
     fs::write(&server, b"#!/bin/sh\n").unwrap();
     set_mode(&server, 0o700);
-    let failed = crate::audio::ServerStatus {
-        state: crate::audio::ServerState::NotRunning,
+    let failed = crate::speech_recognition::ServerStatus {
+        state: crate::speech_recognition::ServerState::NotRunning,
         failure: Some("the model did not load".into()),
     };
     let message = check_server(Some(server.clone()), &failed).message;
     assert!(message.contains("the model did not load"));
     assert!(message.contains("one-off whisper-cli runs"));
 
-    let ready = crate::audio::ServerStatus {
-        state: crate::audio::ServerState::Ready,
+    let ready = crate::speech_recognition::ServerStatus {
+        state: crate::speech_recognition::ServerState::Ready,
         failure: None,
     };
     let check = check_server(Some(server), &ready);

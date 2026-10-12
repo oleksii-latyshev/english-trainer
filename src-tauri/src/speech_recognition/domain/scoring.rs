@@ -1,11 +1,7 @@
-//! Scores a transcript against the sentence the learner read. Everything here is pure.
-
 const NUMBER_WORDS: [&str; 11] = [
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
 ];
 
-/// Lower-case words without punctuation. Small number words become digits so "CS two" and "CS2"
-/// (and "three" and "3") compare equal on both sides.
 pub fn normalize_words(text: &str) -> Vec<String> {
     let cleaned: String = text
         .chars()
@@ -29,7 +25,6 @@ pub fn normalize_words(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// Word-level edit distance (substitutions, insertions and deletions each count one).
 pub fn word_errors(reference: &[String], hypothesis: &[String]) -> usize {
     let mut previous: Vec<usize> = (0..=hypothesis.len()).collect();
     for (row, reference_word) in reference.iter().enumerate() {
@@ -47,7 +42,6 @@ pub fn word_errors(reference: &[String], hypothesis: &[String]) -> usize {
     previous[hypothesis.len()]
 }
 
-/// Errors per reference word; 0 for an empty reference with nothing wrong, never NaN.
 pub fn word_error_rate(errors: usize, reference_words: usize) -> f64 {
     if reference_words == 0 {
         return if errors == 0 { 0.0 } else { 1.0 };
@@ -55,8 +49,6 @@ pub fn word_error_rate(errors: usize, reference_words: usize) -> f64 {
     errors as f64 / reference_words as f64
 }
 
-/// Whole words only. A term also matches when the transcript splits or joins it ("CS 2",
-/// "Face It"): the window concatenation is compared, never a part of a word.
 fn contains_term(words: &[String], term: &[String]) -> bool {
     let wanted = term.concat();
     if wanted.is_empty() {
@@ -71,8 +63,6 @@ fn contains_term(words: &[String], term: &[String]) -> bool {
         })
 }
 
-/// `(found, total)`: how many glossary terms the reference contains, and how many of those the
-/// transcript has too. Each term counts once per sentence.
 pub fn term_score(reference: &[String], transcript: &[String], terms: &[String]) -> (u32, u32) {
     let mut found = 0;
     let mut total = 0;

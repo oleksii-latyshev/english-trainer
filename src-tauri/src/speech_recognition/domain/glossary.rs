@@ -1,4 +1,3 @@
-/// What the learner's glossary starts with; seeded once when the table is created.
 pub const SEED_GLOSSARY: [&str; 27] = [
     "Gemini",
     "Claude Code",
@@ -31,7 +30,6 @@ pub const SEED_GLOSSARY: [&str; 27] = [
 
 pub const MAX_GLOSSARY_TERMS: usize = 200;
 pub const MAX_TERM_CHARS: usize = 40;
-/// Whisper reads at most half its context (224 tokens) of prompt; this stays well inside it.
 const PROMPT_MAX_CHARS: usize = 500;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -53,7 +51,6 @@ impl GlossaryError {
     }
 }
 
-/// Trims and collapses whitespace, drops empty entries and repeats (ignoring case, first wins).
 pub fn normalize_terms(raw: &[String]) -> Result<Vec<String>, GlossaryError> {
     let mut terms: Vec<String> = Vec::new();
     for entry in raw {
@@ -84,15 +81,13 @@ pub fn normalize_terms(raw: &[String]) -> Result<Vec<String>, GlossaryError> {
     Ok(terms)
 }
 
-/// The initial prompt that tells Whisper which words to expect; empty when there are no terms.
 pub fn prompt_from_terms(terms: &[String]) -> Option<String> {
     vocabulary(terms, PROMPT_MAX_CHARS)
 }
 
-/// `Vocabulary: a, b.` using as many of the terms, in order, as fit in `max_chars` in total.
 pub(super) fn vocabulary(terms: &[String], max_chars: usize) -> Option<String> {
     let mut prompt = String::from("Vocabulary:");
-    let mut length = prompt.chars().count() + 1; // the closing period
+    let mut length = prompt.chars().count() + 1;
     let mut count = 0;
     for term in terms {
         let extra = term.chars().count() + 2;

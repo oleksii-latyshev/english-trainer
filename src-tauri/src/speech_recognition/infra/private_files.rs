@@ -1,4 +1,3 @@
-//! Owner-only files for audio the learner chose to keep.
 use std::{fs, io, path::Path};
 
 pub(super) fn create_dir_all(path: &Path) -> io::Result<()> {

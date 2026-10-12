@@ -57,7 +57,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   `ENG_TRAINER_WHISPER_MODEL` overrides the choice and Settings says so. `small.en` is the default
   by measurement (91% of glossary terms recognised vs 74% for base.en; `large-v3-turbo-q5_0` has
   lower word error but 1.15 s vs 0.32 s median per answer).
-- **Loaded server (`audio/server.rs`):** one `whisper-server` child per app run. Resolved like
+- **Loaded server (`speech_recognition/infra/whisper_server.rs`):** one `whisper-server` child per app run. Resolved like
   `whisper-cli` (`ENG_TRAINER_WHISPER_SERVER_BIN`, `PATH`, Homebrew paths); started with
   `-m <model> --host 127.0.0.1 --port <free port>` on session open, unfinished spoken Memory review
   open (`warm_speech_engine`, never opens the microphone or blocks recording), model change or first
@@ -84,7 +84,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   returns nothing otherwise. Partial audio is not kept. Live text never submits an answer or changes a
   schedule; stop, cancel, skip, end, device loss and unmount dispose updates and late replies cannot
   enter a newer capture. Failures never block the final transcription, which is authoritative.
-- **Speech check** (`audio/speech_check.rs`): 12 fixed sentences read in Settings, stored as `NN.wav`
+- **Speech check** (`speech_recognition/domain/speech_check.rs`): 12 fixed sentences read in Settings, stored as `NN.wav`
   (16 kHz mono) and `NN.txt` in `<app data>/speech-check/` (owner-only; "Delete recordings" removes
   the folder and measurements). Measuring runs the app's `whisper-cli` call per chosen model (and
   optionally with `--prompt "Vocabulary: <glossary>."`, at most 500 characters), off the UI thread,
@@ -130,7 +130,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   returns nothing otherwise. Partial audio is not kept. Live text never submits an answer or changes a
   schedule; stop, cancel, skip, end, device loss and unmount dispose updates and late replies cannot
   enter a newer capture. Failures never block the final transcription, which is authoritative.
-- **Speech check** (`audio/speech_check.rs`): 12 fixed sentences read in Settings, stored as `NN.wav`
+- **Speech check** (`speech_recognition/domain/speech_check.rs`): 12 fixed sentences read in Settings, stored as `NN.wav`
   (16 kHz mono) and `NN.txt` in `<app data>/speech-check/` (owner-only; "Delete recordings" removes
   the folder and measurements). Measuring runs the app's `whisper-cli` call per chosen model (and
   optionally with `--prompt "Vocabulary: <glossary>."`, at most 500 characters), off the UI thread,

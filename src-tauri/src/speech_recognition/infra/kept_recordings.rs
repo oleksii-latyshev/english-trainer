@@ -1,25 +1,19 @@
-//! Raw answers the learner chose to keep ("Keep raw audio" in Settings > Privacy). Off by default;
-//! when on, each answer's WAV lives in `<app data>/recordings/<session>/<sequence>.wav`.
 use super::private_files;
-use serde::Serialize;
+use crate::speech_recognition::{
+    domain::KeptRecordings,
+    error::SpeechRecognitionError,
+    ports::{PortResult, RecordingVault},
+};
 use std::{
     fs, io,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-pub struct KeptRecordings {
-    pub count: u64,
-    pub size_bytes: u64,
-}
-
-pub fn recordings_dir(app_data: &Path) -> PathBuf {
+fn recordings_dir(app_data: &Path) -> PathBuf {
     app_data.join("recordings")
 }
 
-/// Where an answer goes: the session and the sequence its turn will get. Outside a practice
-/// session (a memory review) the file is named by time in a folder of its own.
 fn path_for(app_data: &Path, slot: Option<(u64, usize)>) -> PathBuf {
     let root = recordings_dir(app_data);
     match slot {
@@ -36,8 +30,7 @@ fn path_for(app_data: &Path, slot: Option<(u64, usize)>) -> PathBuf {
     }
 }
 
-/// A second recording of the same answer replaces the first.
-pub fn keep(app_data: &Path, slot: Option<(u64, usize)>, wav: &[u8]) -> io::Result<PathBuf> {
+fn keep(app_data: &Path, slot: Option<(u64, usize)>, wav: &[u8]) -> io::Result<PathBuf> {
     let path = path_for(app_data, slot);
     if let Some(parent) = path.parent() {
         private_files::create_dir_all(parent)?;
@@ -46,7 +39,7 @@ pub fn keep(app_data: &Path, slot: Option<(u64, usize)>, wav: &[u8]) -> io::Resu
     Ok(path)
 }
 
-pub fn summary(app_data: &Path) -> io::Result<KeptRecordings> {
+fn summary(app_data: &Path) -> io::Result<KeptRecordings> {
     let mut kept = KeptRecordings {
         count: 0,
         size_bytes: 0,
@@ -72,11 +65,42 @@ pub fn summary(app_data: &Path) -> io::Result<KeptRecordings> {
     Ok(kept)
 }
 
-/// Removes every kept answer; the "Delete kept recordings" action.
-pub fn delete_all(app_data: &Path) -> io::Result<()> {
+fn delete_all(app_data: &Path) -> io::Result<()> {
     match fs::remove_dir_all(recordings_dir(app_data)) {
         Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
+    }
+}
+
+pub struct KeptRecordingFiles {
+    app_data: PathBuf,
+}
+
+impl KeptRecordingFiles {
+    pub fn new(app_data: PathBuf) -> Self {
+        Self { app_data }
+    }
+}
+
+impl RecordingVault for KeptRecordingFiles {
+    fn keep(&self, slot: Option<(u64, usize)>, wav: &[u8]) -> PortResult<()> {
+        keep(&self.app_data, slot, wav).map(drop).map_err(|_| {
+            SpeechRecognitionError::Storage("Cannot keep the recording. Check disk space.".into())
+        })
+    }
+
+    fn summary(&self) -> PortResult<KeptRecordings> {
+        summary(&self.app_data).map_err(|_| {
+            SpeechRecognitionError::Storage("Cannot read the kept recordings. Please retry.".into())
+        })
+    }
+
+    fn delete_all(&self) -> PortResult<()> {
+        delete_all(&self.app_data).map_err(|_| {
+            SpeechRecognitionError::Storage(
+                "Cannot delete the kept recordings. Close anything using them, then retry.".into(),
+            )
+        })
     }
 }
 

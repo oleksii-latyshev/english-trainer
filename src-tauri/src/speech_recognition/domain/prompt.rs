@@ -1,25 +1,16 @@
-//! The initial prompt for one answer: what Whisper is told before it hears the audio. It primes
-//! spelling of the learner's own words (glossary), the topic (the question being answered) and
-//! names the learner just used, which the glossary cannot know.
 use super::glossary::{vocabulary, WHISPER_PROMPT_MAX_CHARS};
 
-/// The question is context, not vocabulary: a long one is cut so the words keep their room.
 const QUESTION_MAX_CHARS: usize = 160;
 const SESSION_TERMS_MAX: usize = 8;
 const SESSION_TERM_MAX_CHARS: usize = 24;
-/// Only the latest answers say what the conversation is about now.
 const RECENT_ANSWERS_USED: usize = 3;
 
-/// What the open practice session says about the answer being recorded.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AnswerContext {
     pub question: String,
-    /// The learner's earlier answers in this session, oldest first.
     pub recent_answers: Vec<String>,
 }
 
-/// `<question> Vocabulary: <terms from the last answers>, <glossary>.`, never longer than
-/// Whisper reads. `None` when there is neither a question nor a term.
 pub fn answer_prompt(glossary: &[String], context: &AnswerContext) -> Option<String> {
     let question = shorten(&collapse(&context.question), QUESTION_MAX_CHARS);
     let mut terms = session_terms(&context.recent_answers, glossary);
@@ -38,7 +29,6 @@ fn collapse(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Cuts at a word boundary so the prompt never ends in half a word.
 fn shorten(text: &str, max_chars: usize) -> String {
     if text.chars().count() <= max_chars {
         return text.to_string();
@@ -50,9 +40,6 @@ fn shorten(text: &str, max_chars: usize) -> String {
     }
 }
 
-/// Names and technical words from the latest answers that the glossary does not hold: a capital
-/// letter inside a sentence, or inside the word (`TypeScript`, `CS2`). Cheap and wrong now and
-/// then, which is harmless: a wrong hint only primes a spelling.
 fn session_terms(answers: &[String], glossary: &[String]) -> Vec<String> {
     let mut terms: Vec<String> = Vec::new();
     let start = answers.len().saturating_sub(RECENT_ANSWERS_USED);

@@ -1,6 +1,6 @@
 use super::SessionStore;
-use crate::audio::{AnswerContext, SpeechSettings};
 use crate::providers::{ProviderError, ProviderErrorCode};
+use crate::speech_recognition::{AnswerContext, SpeechSettings};
 
 impl SessionStore {
     pub fn speech_settings(&self) -> Result<SpeechSettings, ProviderError> {

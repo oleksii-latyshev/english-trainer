@@ -1,5 +1,5 @@
 use super::SessionDatabase;
-use crate::audio::SpeechSettings;
+use crate::speech_recognition::SpeechSettings;
 use rusqlite::OptionalExtension;
 
 impl SessionDatabase {
@@ -60,7 +60,7 @@ impl SessionDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio::SEED_GLOSSARY;
+    use crate::speech_recognition::SEED_GLOSSARY;
 
     #[test]
     fn settings_default_to_no_model_choice_with_raw_audio_discarded_and_live_text_on() {

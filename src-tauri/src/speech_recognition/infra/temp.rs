@@ -1,3 +1,4 @@
+use super::best_effort::ignore_already_removed;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -49,6 +50,6 @@ impl TemporaryDirectory {
 
 impl Drop for TemporaryDirectory {
     fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
+        ignore_already_removed(fs::remove_dir_all(&self.0));
     }
 }
