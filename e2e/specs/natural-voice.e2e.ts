@@ -9,6 +9,7 @@ import type { TalkPage } from '../pages/talk-page';
 type Scene = { app: App; start: StartPage; talk: TalkPage; tauri: FakeBackend };
 
 const DISCARD_WINDOW_MS = 450;
+const voiceSample = "Hi, I'm glad you picked my voice!";
 
 async function sendTypedAnswer({ app, start, talk, tauri }: Scene, autoListen = false) {
   tauri.session.withOpenSession(initialSession);
@@ -82,7 +83,7 @@ for (const [name, configure] of fallbacks) {
   });
 }
 
-test('voice and speed choices persist and the preview uses them', async ({
+test('choosing a voice saves it and plays the sample, speed persists and the sample replays', async ({
   app,
   settings,
   tauri,
@@ -90,18 +91,64 @@ test('voice and speed choices persist and the preview uses them', async ({
   tauri.naturalVoice.available();
   await app.open();
   await app.sidebar.openSettings();
-  await settings.chooseVoice('natural:5');
-  await settings.chooseSpeed('1.1×');
-  await settings.preview();
+  await settings.chooseVoice('Male 1');
   await expect.poll(async () => (await tauri.naturalVoice.state()).played).toBe(1);
-  expect((await tauri.naturalVoice.state()).requests[0]).toMatchObject({ voice_id: 5, speed: 1.1 });
+  expect((await tauri.naturalVoice.state()).requests[0]).toEqual({
+    text: voiceSample,
+    voice_id: 5,
+    speed: 1,
+  });
+  await tauri.naturalVoice.finishAudio();
+  await settings.chooseSpeed('1.1×');
+  await settings.playSample('Male 1');
+  await expect.poll(async () => (await tauri.naturalVoice.state()).requests.length).toBe(2);
+  expect((await tauri.naturalVoice.state()).requests[1]).toMatchObject({ voice_id: 5, speed: 1.1 });
   await app.reload();
   await app.sidebar.openSettings();
-  await expect(settings.voice).toHaveValue('natural:5');
+  await expect(settings.voice('Male 1')).toBeChecked();
   await expect(settings.speed('1.1×')).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('a transient generation failure rewarms in the background and later previews return to local speech', async ({
+test('every natural voice is listed with its gender and arrow keys choose one', async ({
+  app,
+  settings,
+  tauri,
+}) => {
+  tauri.naturalVoice.available();
+  await app.open();
+  await app.sidebar.openSettings();
+  await expect(settings.voices.getByRole('radio')).toHaveCount(10);
+  await expect(settings.voice('Female 5')).toContainText('Female voice');
+  await expect(settings.voice('Male 5')).toContainText('Male voice');
+  await settings.voice('Female 1').focus();
+  await app.pressKey('ArrowDown');
+  await expect(settings.voice('Female 2')).toBeChecked();
+  await expect
+    .poll(async () => (await tauri.naturalVoice.state()).requests[0])
+    .toMatchObject({
+      voice_id: 1,
+    });
+});
+
+test('choosing another voice stops the sample that is playing', async ({
+  app,
+  settings,
+  tauri,
+}) => {
+  tauri.naturalVoice.available();
+  await app.open();
+  await app.sidebar.openSettings();
+  await settings.chooseVoice('Male 1');
+  await expect.poll(async () => (await tauri.naturalVoice.state()).played).toBe(1);
+  await settings.chooseVoice('Female 3');
+  await expect.poll(async () => (await tauri.naturalVoice.state()).played).toBe(2);
+  expect((await tauri.naturalVoice.state()).stopped).toBe(1);
+  expect((await tauri.naturalVoice.state()).requests.map((request) => request.voice_id)).toEqual([
+    5, 2,
+  ]);
+});
+
+test('a transient generation failure rewarms in the background and later samples return to local speech', async ({
   app,
   settings,
   tauri,
@@ -109,13 +156,25 @@ test('a transient generation failure rewarms in the background and later preview
   tauri.naturalVoice.failingOnce();
   await app.open();
   await app.sidebar.openSettings();
-  await settings.preview();
+  await settings.playSample('Female 1');
   await expect
     .poll(async () => (await tauri.naturalVoice.state()).prewarms)
     .toBeGreaterThanOrEqual(2);
-  await expect(settings.voice).toHaveValue('natural:0');
-  await expect(settings.previewButton).toBeEnabled();
+  await expect(settings.voice('Female 1')).toBeChecked();
+  await expect(settings.sampleButton('Female 1')).toBeEnabled();
   expect((await tauri.naturalVoice.state()).played).toBe(0);
-  await settings.preview();
+  await settings.playSample('Female 1');
   await expect.poll(async () => (await tauri.naturalVoice.state()).played).toBe(1);
+});
+
+test('settings offer the system voices when the local voice is unavailable', async ({
+  app,
+  settings,
+  tauri,
+}) => {
+  tauri.naturalVoice.notReady();
+  await app.open();
+  await app.sidebar.openSettings();
+  await expect(settings.unavailableNotice).toBeVisible();
+  await expect(settings.voices).toHaveCount(0);
 });

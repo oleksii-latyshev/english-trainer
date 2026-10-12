@@ -1,16 +1,16 @@
 import type { Locator, Page } from '@playwright/test';
 
 export class SettingsPage {
-  readonly voice: Locator;
-  readonly previewButton: Locator;
+  readonly voices: Locator;
+  readonly unavailableNotice: Locator;
   readonly nativeLanguage: Locator;
   readonly statusFailure: Locator;
   readonly runTestButton: Locator;
   readonly usageHeading: Locator;
 
   constructor(private readonly page: Page) {
-    this.voice = page.getByLabel("Eva's voice", { exact: true });
-    this.previewButton = page.getByRole('button', { name: 'Preview', exact: true });
+    this.unavailableNotice = page.getByText('Local voice is unavailable. Using system speech.');
+    this.voices = page.getByRole('radiogroup', { name: "Eva's voice" });
     this.nativeLanguage = page.getByRole('combobox', { name: 'Native language' });
     this.runTestButton = page.getByRole('button', { name: 'Run test' });
     this.usageHeading = page.getByRole('heading', { name: 'Usage', exact: true });
@@ -21,16 +21,24 @@ export class SettingsPage {
     return this.page.getByRole('button', { name: label, exact: true });
   }
 
-  async chooseVoice(value: string): Promise<void> {
-    await this.voice.selectOption(value);
+  voice(name: string): Locator {
+    return this.voices.getByRole('radio', { name: new RegExp(`^${name}`) });
+  }
+
+  sampleButton(name: string): Locator {
+    return this.page.getByRole('button', { name: `Play ${name} sample`, exact: true });
+  }
+
+  async chooseVoice(name: string): Promise<void> {
+    await this.voice(name).click();
   }
 
   async chooseSpeed(label: string): Promise<void> {
     await this.speed(label).click();
   }
 
-  async preview(): Promise<void> {
-    await this.previewButton.click();
+  async playSample(name: string): Promise<void> {
+    await this.sampleButton(name).click();
   }
 
   async chooseNativeLanguage(name: string): Promise<void> {
