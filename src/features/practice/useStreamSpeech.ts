@@ -1,12 +1,12 @@
 import { type MutableRefObject, useEffect, useRef, useState } from 'react';
+import type { SpeechControls } from '@/core/speech';
 import type { SpeechTiming } from '@/features/speech/TimingPanel';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { practiceStageUsesAudio } from './lib/practiceStage';
 import type { SessionDetails } from './lib/practiceState';
 import type { PracticeViewModel } from './practiceViewModel';
 
 type Options = {
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   generation: MutableRefObject<number>;
   listenAfterReply: (requestId: number) => void;
 };

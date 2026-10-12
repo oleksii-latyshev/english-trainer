@@ -648,13 +648,15 @@ pub fn run() {
                 .resource_dir()
                 .ok()
                 .map(|p| p.join("binaries/natural-voice"));
-            app.manage(voice::VoiceEngine::new(voice_directory));
+            app.manage(voice::VoiceService::new(voice::SupertonicEngine::new(
+                voice_directory,
+            )));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            voice::prewarm_natural_voice,
-            voice::synthesize_natural_voice,
+            voice::commands::prewarm_natural_voice,
+            voice::commands::synthesize_natural_voice,
             audio::commands::transcribe_audio,
             audio::commands::transcribe_partial,
             audio::rescue_commands::transcribe_rescue,

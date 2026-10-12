@@ -1,6 +1,6 @@
 import { TurnNotice } from '@/components/TurnNotice';
 import { useTrainer } from '@/context/TrainerContext';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import type { SpeechControls } from '@/core/speech';
 import { Button } from '@/shared/ui/button';
 import { Kbd } from '@/shared/ui/kbd';
 import { Composer } from './Composer';
@@ -14,7 +14,7 @@ import type { useTalkTurn } from './useTalkTurn';
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   session: SessionDetails;
   turn: ReturnType<typeof useTalkTurn>;
   isAudioStage: boolean;

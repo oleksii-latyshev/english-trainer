@@ -3,6 +3,13 @@ import { AsyncResult, Atom } from 'effect/reactivity';
 import { Pause, Play } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
+  naturalAvailability,
+  naturalAvailabilityAtom,
+  previewingNaturalVoiceAtom,
+  previewNaturalVoiceAtom,
+} from '@/core/speech';
+import {
+  type NaturalVoiceId,
   naturalVoiceAtom,
   SPEECH_RATE_OPTIONS,
   speechVoiceAtom,
@@ -14,13 +21,7 @@ import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
 import { RadioList } from '@/shared/ui/radio-list';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
-import { naturalAvailability } from '../../helpers/natural-availability';
-import { VOICE_OPTIONS, voiceIdFromOption } from '../../helpers/voice-options';
-import {
-  naturalVoiceAvailabilityAtom,
-  previewingVoiceAtom,
-  previewVoiceAtom,
-} from '../../model/atoms';
+import { VOICE_OPTIONS, VOICE_SAMPLE, voiceIdFromOption } from '../../helpers/voice-options';
 
 type Props = { systemVoices: ReactNode };
 
@@ -37,12 +38,16 @@ const RATE_OPTIONS = SPEECH_RATE_OPTIONS.map((rate) => ({
 export function VoiceSettings({ systemVoices }: Props) {
   const [natural, setNatural] = useAtom(naturalVoiceAtom);
   const [speech, setSpeech] = useAtom(speechVoiceAtom);
-  const availability = naturalAvailability(useAtomValue(naturalVoiceAvailabilityAtom));
-  const retry = useAtomRefresh(naturalVoiceAvailabilityAtom);
-  const preview = useAtomSet(previewVoiceAtom);
-  const previewResult = useAtomValue(previewVoiceAtom);
-  const previewing = useAtomValue(previewingVoiceAtom);
+  const availability = naturalAvailability(useAtomValue(naturalAvailabilityAtom));
+  const retry = useAtomRefresh(naturalAvailabilityAtom);
+  const preview = useAtomSet(previewNaturalVoiceAtom);
+  const previewResult = useAtomValue(previewNaturalVoiceAtom);
+  const previewing = useAtomValue(previewingNaturalVoiceAtom);
   const isNaturalListShown = natural.engine === 'natural' && availability === 'ready';
+
+  function playSample(voiceId: NaturalVoiceId) {
+    preview({ text: VOICE_SAMPLE, voiceId, rate: speech.rate });
+  }
 
   function setEngine(engine: VoiceEngineChoice) {
     preview(Atom.Interrupt);
@@ -53,13 +58,14 @@ export function VoiceSettings({ systemVoices }: Props) {
     const voiceId = voiceIdFromOption(value);
     if (voiceId === undefined) return;
     setNatural({ engine: 'natural', voiceId });
-    preview(voiceId);
+    playSample(voiceId);
   }
 
   function togglePreview(value: string) {
     const voiceId = voiceIdFromOption(value);
     if (voiceId === undefined) return;
-    preview(previewing === voiceId ? Atom.Interrupt : voiceId);
+    if (previewing === voiceId) preview(Atom.Interrupt);
+    else playSample(voiceId);
   }
 
   return (

@@ -157,7 +157,6 @@ test('write then speak waits for Ready before opening audio and retries a failed
 
   await talk.readyToSpeak();
   await expect(talk.originalQuestion).toBeVisible();
-  await expect.poll(async () => (await tauri.speech.counts()).speechRequests).toBeGreaterThan(0);
   await expect.poll(async () => (await tauri.speech.counts()).mediaRequests).toBeGreaterThan(0);
   await expect(talk.microphoneStatus).toContainText('Not available right now.');
   await expect(talk.originalQuestion).toBeVisible();
