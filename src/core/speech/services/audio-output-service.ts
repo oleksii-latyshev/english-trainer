@@ -1,5 +1,6 @@
 import { Context, Data, Effect, Layer, Ref, type Scope } from 'effect';
 import { CLOCK_POLL_MS } from '../helpers/speech-timing';
+import { MODEL_SAMPLE_RATE_HZ } from '../helpers/wave-audio';
 
 export class AudioOutputError extends Data.TaggedError('AudioOutputError')<{
   readonly stage: 'open' | 'decode' | 'schedule';
@@ -125,7 +126,7 @@ function contextOf(created: Ref.Ref<AudioContext | null>) {
     const existing = yield* Ref.get(created);
     if (existing) return existing;
     const fresh = yield* Effect.try({
-      try: () => new AudioContext(),
+      try: () => new AudioContext({ sampleRate: MODEL_SAMPLE_RATE_HZ }),
       catch: () => new AudioOutputError({ stage: 'open' }),
     });
     yield* Ref.set(created, fresh);

@@ -7,8 +7,8 @@ import { type ReplyRun, summarize } from './voice-gaps/report';
 
 const DEFAULT_DIRECTORY = `${import.meta.dir}/../src-tauri/binaries/natural-voice`;
 const WARMUP_LINES = ['Hi!', 'That sounds like a useful approach.', 'What would you try first?'];
-const PREVIOUS_TRIM: TrimSettings = { threshold: 0.0002, beforeMs: 50, afterMs: 120 };
-const CURRENT_TRIM: TrimSettings = { threshold: 0.003, beforeMs: 40, afterMs: 50 };
+const PREVIOUS_TRIM: TrimSettings = { threshold: 0.0002, beforeMs: 50, afterMs: 120, fadeMs: 0 };
+const CURRENT_TRIM: TrimSettings = { threshold: 0.003, beforeMs: 40, afterMs: 50, fadeMs: 20 };
 
 function flag(name: string, fallback: string): string {
   const index = Bun.argv.indexOf(name);

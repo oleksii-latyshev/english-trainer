@@ -4,6 +4,22 @@ const WINDOW_DIVISOR: usize = 100;
 const SILENCE_RATIO: f64 = 0.003;
 const MARGIN_BEFORE_MS: usize = 40;
 const MARGIN_AFTER_MS: usize = 50;
+const FADE_MS: usize = 20;
+
+fn apply_fades(samples: &mut [i16], fade_in: usize, fade_out: usize) {
+    let length = samples.len();
+    for (index, sample) in samples.iter_mut().take(fade_in).enumerate() {
+        *sample = scaled(*sample, index, fade_in);
+    }
+    for index in 0..fade_out.min(length) {
+        samples[length - 1 - index] = scaled(samples[length - 1 - index], index, fade_out);
+    }
+}
+
+fn scaled(sample: i16, position: usize, length: usize) -> i16 {
+    let gain = (std::f64::consts::FRAC_PI_2 * position as f64 / length as f64).sin();
+    (f64::from(sample) * gain).round() as i16
+}
 
 pub fn trim_padding(mut wav: Vec<u8>) -> Result<Vec<u8>, VoiceError> {
     let invalid = || VoiceError::ProcessFailed;
@@ -44,7 +60,11 @@ pub fn trim_padding(mut wav: Vec<u8>) -> Result<Vec<u8>, VoiceError> {
     };
     let start = (first * window).saturating_sub(rate * MARGIN_BEFORE_MS / 1000);
     let end = ((last + 1) * window + rate * MARGIN_AFTER_MS / 1000).min(samples.len());
-    let pcm = wav[44 + start * 2..44 + end * 2].to_vec();
+    let fade_in = (first * window - start).min(rate * FADE_MS / 1000);
+    let fade_out = (end - (last + 1) * window).min(rate * FADE_MS / 1000);
+    let mut kept = samples[start..end].to_vec();
+    apply_fades(&mut kept, fade_in, fade_out);
+    let pcm: Vec<u8> = kept.iter().flat_map(|s| s.to_le_bytes()).collect();
     wav.truncate(44);
     wav.extend(pcm);
     let size = u32::try_from(wav.len()).map_err(|_| invalid())?;
@@ -113,5 +133,40 @@ mod tests {
         wrong[40] = 0;
         assert!(trim_padding(wrong).is_err());
         assert!(trim_padding(vec![]).is_err());
+    }
+
+    fn pcm_of(wave: &[u8]) -> Vec<i16> {
+        wave[44..]
+            .chunks_exact(2)
+            .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+            .collect()
+    }
+
+    #[test]
+    fn both_edges_fade_to_silence_without_touching_the_speech() {
+        let mut samples = vec![0; 16000];
+        samples[6400..8000].fill(1000);
+
+        let pcm = pcm_of(&trim_padding(wave(&samples)).unwrap());
+
+        assert_eq!(pcm[0], 0);
+        assert_eq!(pcm[pcm.len() - 1], 0);
+        assert_eq!(pcm[640], 1000);
+        assert_eq!(pcm[640 + 1599], 1000);
+    }
+
+    #[test]
+    fn a_fade_is_equal_power_and_rises_monotonically() {
+        let mut samples = vec![0; 16000];
+        samples[6400..8000].fill(1000);
+        samples[6240..6400].fill(100);
+
+        let pcm = pcm_of(&trim_padding(wave(&samples)).unwrap());
+
+        let fade = &pcm[..320];
+        assert!(fade
+            .windows(2)
+            .all(|pair| pair[0].abs() <= pair[1].abs() + 1));
+        assert!(fade[319].abs() < 100);
     }
 }

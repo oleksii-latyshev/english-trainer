@@ -10,6 +10,7 @@ export type TrimSettings = {
   readonly threshold: number;
   readonly beforeMs: number;
   readonly afterMs: number;
+  readonly fadeMs: number;
 };
 
 export type Clip = {
@@ -82,7 +83,17 @@ function trimPadding(samples: Int16Array, rate: number, trim: TrimSettings): Int
     samples.length,
     (last + 1) * window + Math.floor((rate * trim.afterMs) / 1000),
   );
-  return samples.subarray(start, end);
+  const kept = samples.slice(start, end);
+  const fadeIn = Math.min(first * window - start, Math.floor((rate * trim.fadeMs) / 1000));
+  const fadeOut = Math.min(end - (last + 1) * window, Math.floor((rate * trim.fadeMs) / 1000));
+  for (let index = 0; index < fadeIn; index += 1) {
+    kept[index] = Math.round((kept[index] ?? 0) * Math.sin((Math.PI / 2) * (index / fadeIn)));
+  }
+  for (let index = 0; index < fadeOut; index += 1) {
+    const at = kept.length - 1 - index;
+    kept[at] = Math.round((kept[at] ?? 0) * Math.sin((Math.PI / 2) * (index / fadeOut)));
+  }
+  return kept;
 }
 
 function describe(wav: Buffer, synthMs: number, trim: TrimSettings): Clip {

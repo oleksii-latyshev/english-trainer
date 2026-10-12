@@ -1,5 +1,6 @@
 import { Schema, SchemaGetter } from 'effect';
 
+export const MODEL_SAMPLE_RATE_HZ = 44_100;
 const MIN_WAVE_BYTES = 44;
 const MAX_WAVE_BYTES = 5_292_044;
 const HEADER_BYTES = 12;
