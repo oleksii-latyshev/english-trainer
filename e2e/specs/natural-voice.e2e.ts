@@ -124,7 +124,7 @@ test('every natural voice is listed with its gender and arrow keys choose one', 
   await app.pressKey('ArrowDown');
   await expect(settings.voice('Female 2')).toBeChecked();
   await expect
-    .poll(async () => (await tauri.naturalVoice.state()).requests[1])
+    .poll(async () => (await tauri.naturalVoice.state()).requests[0])
     .toMatchObject({
       voice_id: 1,
     });
