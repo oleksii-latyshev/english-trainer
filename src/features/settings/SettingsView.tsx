@@ -8,6 +8,7 @@ import { AppearanceSettings } from '@/features/appearance';
 import { ConversationFlowSettings } from '@/features/conversation-flow-settings';
 import { GeminiKeyField } from '@/features/gemini-key';
 import { PrivacySettings } from '@/features/privacy';
+import { VoiceSettings } from '@/features/voice-settings';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import { GroupCard } from '@/shared/ui/group-card';
@@ -17,7 +18,7 @@ import { PersonalProfileSettings } from './PersonalProfileSettings';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
 import { SpeechSettings } from './SpeechSettings';
 import { TranslationSettings } from './TranslationSettings';
-import { VoiceSettings } from './VoiceSettings';
+import { VoiceSelection } from './VoiceSelection';
 import './settings.css';
 import './settingsControls.css';
 
@@ -74,7 +75,7 @@ export function SettingsView() {
       <GroupCard id="usage" title="Usage">
         <ApiUsageSettings />
       </GroupCard>
-      <VoiceSettings />
+      <VoiceSettings systemVoices={<VoiceSelection />} />
       <AppearanceSettings />
       <EvaSettingsLink />
       <ConversationFlowSettings />

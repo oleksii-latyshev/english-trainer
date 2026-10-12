@@ -1,4 +1,6 @@
+import { useAtom } from '@effect/atom-react';
 import { useEffect, useRef, useState } from 'react';
+import { readSpeechVoice, speechVoiceAtom } from '@/core/voice-preference';
 import {
   appendSpeechDelta,
   createSpeechStreamState,
@@ -7,7 +9,6 @@ import {
   type StreamOptions,
 } from './lib/speechStream';
 import type { StreamSession } from './speechStreamEdge';
-import { voicePreference } from './voicePreferences';
 import { clampSpeechRate, getPreferredVoice, getVoiceOptions } from './voices';
 
 export type SpeechState =
@@ -22,9 +23,10 @@ export function usePlatformSpeech() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   // The saved choice survives restarts; an unavailable voice falls back below without erasing it.
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(
-    () => voicePreference.get().voiceURI,
+    () => readSpeechVoice().voiceURI,
   );
-  const [rate, setRateState] = useState(() => voicePreference.get().rate);
+  const [speechVoice, setSpeechVoice] = useAtom(speechVoiceAtom);
+  const { rate } = speechVoice;
   const [state, setState] = useState<SpeechState>({ tag: 'idle' });
   const generation = useRef(0);
   const isMounted = useRef(false);
@@ -274,14 +276,11 @@ export function usePlatformSpeech() {
 
   const selectVoice = (voiceURI: string) => {
     setSelectedVoiceURI(voiceURI);
-    voicePreference.set({ voiceURI });
+    setSpeechVoice({ ...speechVoice, voiceURI });
   };
 
-  const setRate = (nextRate: number) => {
-    const clamped = clampSpeechRate(nextRate);
-    setRateState(clamped);
-    voicePreference.set({ rate: clamped });
-  };
+  const setRate = (nextRate: number) =>
+    setSpeechVoice({ ...speechVoice, rate: clampSpeechRate(nextRate) });
   const voiceOptions = getVoiceOptions(voices);
 
   return {

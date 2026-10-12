@@ -14,9 +14,11 @@ use std::{
     },
     time::Duration,
 };
+use ts_rs::TS;
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum VoiceErrorCode {
     Unavailable,
     Busy,
@@ -24,7 +26,8 @@ pub enum VoiceErrorCode {
     Timeout,
     ProcessFailed,
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, TS)]
+#[ts(export)]
 pub struct VoiceError {
     pub code: VoiceErrorCode,
     pub message: String,

@@ -1,8 +1,9 @@
+import { useAtom } from '@effect/atom-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { NATURAL_VOICES, prewarmNaturalVoice } from '@/lib/naturalVoice';
+import { NATURAL_VOICES, naturalVoiceAtom, type VoiceEngineChoice } from '@/core/voice-preference';
+import { prewarmNaturalVoice } from '@/lib/naturalVoice';
 import type { StreamOptions } from './lib/speechStream';
 import { createNaturalStream } from './naturalStream';
-import { naturalVoicePreference, type VoiceEngineChoice } from './naturalVoicePreference';
 import { type SpeechState, usePlatformSpeech } from './usePlatformSpeech';
 import { getPreferredVoice } from './voices';
 
@@ -13,7 +14,7 @@ type NaturalAvailability = 'loading' | 'ready' | 'unavailable';
 /** Keeps the public speech controls identical for conversation, recall and previews. */
 export function useSystemSpeech() {
   const system = usePlatformSpeech();
-  const [preference, setPreference] = naturalVoicePreference.use();
+  const [preference, setPreference] = useAtom(naturalVoiceAtom);
   const [naturalAvailability, setNaturalAvailability] = useState<NaturalAvailability>('loading');
   const [naturalState, setNaturalState] = useState<SpeechState | null>(null);
   const streamRef = useRef<ReturnType<typeof createNaturalStream> | null>(null);
@@ -109,13 +110,13 @@ export function useSystemSpeech() {
     const natural = NATURAL_VOICES.find((voice) => `natural:${voice.id}` === voiceURI);
     if (natural) setPreference({ engine: 'natural', voiceId: natural.id });
     else {
-      setPreference({ engine: 'system' });
+      setPreference({ ...preference, engine: 'system' });
       system.selectVoice(voiceURI);
     }
   };
   const setEngine = (engine: VoiceEngineChoice) => {
     stop();
-    setPreference({ engine });
+    setPreference({ ...preference, engine });
   };
   return {
     ...system,

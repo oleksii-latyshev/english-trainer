@@ -2,9 +2,9 @@ import { useAtomValue } from '@effect/atom-react';
 import { AsyncResult } from 'effect/reactivity';
 import { useEffect, useState } from 'react';
 import { getPreferredDeviceId } from '@/audio/devicePreference';
+import { readSpeechVoice } from '@/core/voice-preference';
 import { geminiKeyStatusAtom } from '@/features/gemini-key';
 import { getLearningMemory } from '@/features/memory/memoryApi';
-import { voicePreference } from '@/features/speech/voicePreferences';
 import { decideFirstRun, firstRunMarker, type UseEvidence } from '@/lib/firstRun';
 
 /** `checking` until launch has looked for earlier use; `show` sends Talk start to first run. */
@@ -19,7 +19,7 @@ async function gatherEvidence(hasSession: boolean, hasGeminiKey: boolean): Promi
     hasMemory:
       memory.status === 'fulfilled' &&
       (memory.value.mistakes.length > 0 || memory.value.phrase_cards.length > 0),
-    hasVoiceChoice: voicePreference.get().voiceURI !== null,
+    hasVoiceChoice: readSpeechVoice().voiceURI !== null,
     hasMicrophoneChoice: getPreferredDeviceId() !== '',
   };
 }
