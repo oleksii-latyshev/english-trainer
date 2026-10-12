@@ -1,15 +1,15 @@
 import { type ReactNode, useEffect, useState } from 'react';
+import type { SpeechControls } from '@/core/speech';
 import { ReviewSession } from '@/features/memory/components/ReviewSession';
 import { getLearningMemory } from '@/features/memory/memoryApi';
 import { startMemoryReview } from '@/features/memory/memoryRecallApi';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { LearningStatus } from '@/lib/learningTypes';
 import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
 import { Button } from '@/shared/ui/button';
 import './review.css';
 
 type Props = {
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   onBackToMemory: () => void;
   onStartTalk: () => void;
   onOpenSettings: () => void;

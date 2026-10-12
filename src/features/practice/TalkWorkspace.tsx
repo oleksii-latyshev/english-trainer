@@ -1,5 +1,5 @@
+import type { SpeechControls } from '@/core/speech';
 import { MemoryUsageReview } from '@/features/memory/components/MemoryUsageReview';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { NoteTools } from './AnswerNote';
 import { DailyRecallPanel } from './DailyRecallPanel';
@@ -18,7 +18,7 @@ import type { useDailyRecall } from './useDailyRecall';
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   session?: SessionDetails;
   recall: ReturnType<typeof useDailyRecall>;
   isRetrying: boolean;

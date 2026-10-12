@@ -230,6 +230,12 @@ const replyDeltas = (sessionId: number) =>
 A `Stream` can back an atom directly (`runtime.atom(stream)`); React re-renders on each element.
 This replaces the `let isCurrent = true` / `useRef` cancellation flags in the legacy hooks.
 
+A session that legacy code drives imperatively (`append`, `finish`, `cancel`) is a `runtime.fn`
+whose Effect owns the whole session: callers write their input into a plain atom (a log with a
+stream id), the Effect reads it with `get.stream(atom)`, and `Atom.Interrupt` or starting the next
+session closes the Effect's scope, which stops audio and drops late results
+(`core/speech/model/atoms.ts`).
+
 ## 7. Testing
 
 Behaviour tests drive the real atoms in a fresh registry and replace the feature runtime's layer.
@@ -266,6 +272,10 @@ when the test is about the failure. Test files import `bun:test` with the reposi
 `@ts-expect-error` line until Bun's types are installed.
 
 Pure helpers keep plain `bun test` unit tests with no Effect at all.
+
+Time-dependent services run under `TestClock`: provide `TestClock.layer()` next to the fakes
+(`Layer.provideMerge`), fork the program, and advance the clock with `TestClock.adjust` inside the
+same program. `core/speech/tests/speech-pipeline.test.ts` shows it with a fake audio clock.
 
 ## 8. Not allowed
 

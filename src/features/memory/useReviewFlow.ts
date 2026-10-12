@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { SpeechControls } from '@/core/speech';
 import {
   getCurrentPendingItem,
   isRunFinished,
@@ -19,7 +20,6 @@ import {
 import { useReviewKeyboard } from '@/features/memory/useReviewKeyboard';
 import { useReviewMaterials } from '@/features/memory/useReviewMaterials';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { MemoryRecallResult, MemoryReviewRun } from '@/lib/memoryRecallTypes';
 
 const MAX_TRANSCRIPT_CHARS = 4000;
@@ -34,7 +34,7 @@ type Pending = 'none' | 'saving' | 'skipping' | 'finishing';
 
 type Options = {
   initialRun: MemoryReviewRun;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   onBackToMemory: () => void;
   onOpenSettings: () => void;
 };

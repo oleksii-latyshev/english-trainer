@@ -98,6 +98,51 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 - **Natural voice (default):** local Supertonic 3 INT8 in one persistent bundled helper, prewarmed
   outside conversation turns. `prewarm_natural_voice() -> bool`; `synthesize_natural_voice(text,
   voice_id, speed) -> binary PCM WAV` accepts nonempty text ≤ 4096 bytes, voice IDs 0–9 and a finite
+  rate 0.85–1.2. Failures are `IpcError` with `unavailable | busy | invalid_request | timeout |
+  process_failed`. WAV frames ≤ 60 s. The inference deadline is 750 ms plus 25 ms per character
+  (cap 6 s), after which the helper is killed and recovered. A busy engine never queues. Generated
+  audio is never retained or sent anywhere.
+- Each stream freezes voice and rate and plays phrases back to back. Sentences are the unit; a
+  sentence is cut only when it is longer than the budget, at a clause boundary (`, ; :` or before
+  `and but because so which when`), never leaving a trailing fragment under 16 characters. The first
+  phrase of a reply is at most 40 characters so that first audio does not wait for a long
+  synthesis. Every later phrase is rendered as soon as it is available, without waiting for the
+  current phrase to start, and is sized from the audio already queued (the lead) and the measured
+  synthesis speed so that it is ready before the lead runs out (at most 120 characters, up to 24
+  more to reach a clause boundary). Rendering pauses while more than 6 s of audio is queued. Rust
+  trims model padding in 10 ms RMS windows at 0.003 (−50 dBFS), keeping 40 ms before and 50 ms
+  after speech, so a join inside a sentence leaves about 90 ms of silence; between sentences the
+  frontend adds a 150 ms pause. Phrases are scheduled on one audio clock (Web Audio), so a phrase
+  starts exactly where the previous one ends.
+- **Fallback:** `whisper-cli` (`ENG_TRAINER_WHISPER_BIN`, `PATH`, Homebrew paths) in a private temp
+  dir, 120 s timeout. Typed `TranscriptionError` codes: `model_missing`, `engine_missing`,
+  `engine_failed`, `timeout`, `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`, `busy`.
+  A silent recording is `no_speech` on either path and is not retried on the other.
+- **Initial prompt (`audio/prompt.rs`):** `<question> Vocabulary: <names from the last three
+  answers>, <glossary>.`, at most 500 characters (question cut at a word after 160; session names
+  first). Names are words with a capital inside a sentence or inside the word (`CS2`, `TypeScript`)
+  not in the glossary. Outside a session it is the glossary alone.
+- **Live transcript:** while a Talk or spoken Memory review answer is recorded, the UI calls
+  `transcribe_partial` every 1.5 s with a WAV of the audio so far (at most 30 s; capture is not
+  interrupted). Rust runs it only if the setting is on, the model is tiny, base or small, and the
+  server is ready; it never starts a server, handles one update at a time, gives up after 5 s and
+  returns nothing otherwise. Partial audio is not kept. Live text never submits an answer or changes a
+  schedule; stop, cancel, skip, end, device loss and unmount dispose updates and late replies cannot
+  enter a newer capture. Failures never block the final transcription, which is authoritative.
+- **Speech check** (`audio/speech_check.rs`): 12 fixed sentences read in Settings, stored as `NN.wav`
+  (16 kHz mono) and `NN.txt` in `<app data>/speech-check/` (owner-only; "Delete recordings" removes
+  the folder and measurements). Measuring runs the app's `whisper-cli` call per chosen model (and
+  optionally with `--prompt "Vocabulary: <glossary>."`, at most 500 characters), off the UI thread,
+  one at a time. It stores term accuracy (glossary terms as whole words, ignoring case, tolerant of
+  spacing and small number words), pooled word error rate on normalised words, median and slowest
+  time (whole process) and every transcript, in `speech-check/results.json`. Scoring: `audio/scoring.rs`.
+- Recognition uncertainty is never presented as a pronunciation or knowledge error.
+
+## 4. Speech output
+
+- **Natural voice (default):** local Supertonic 3 INT8 in one persistent bundled helper, prewarmed
+  outside conversation turns. `prewarm_natural_voice() -> bool`; `synthesize_natural_voice(text,
+  voice_id, speed) -> binary PCM WAV` accepts nonempty text ≤ 4096 bytes, voice IDs 0–9 and a finite
   rate 0.85–1.2. `VoiceError.code`: `unavailable | busy | invalid_input | timeout | process_failed`.
   WAV frames ≤ 60 s; inference deadline 750 ms, after which the helper is killed and recovered. A
   busy engine never queues. Generated audio is never retained or sent anywhere.
@@ -105,8 +150,10 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   (a single oversized token stays whole), renders one phrase ahead and plays serially. Rust trims
   model padding in 10 ms RMS windows at 0.0002, keeping 50 ms before and 120 ms after speech;
   mid-phrase pauses stay.
-- **Fallback:** an unavailable, loading or busy engine uses system speech; slow or failed rendering
-  switches the rest of the stream to system speech within the 800 ms UI guard. One background
+- **Fallback:** an unavailable or loading engine uses system speech. A busy engine is retried every
+  40 ms inside the guard. A phrase that is not rendered within its guard (800 ms for the first
+  phrase; the audio already queued plus 400 ms for later ones), or fails, switches the rest of the
+  stream to system speech, which starts after the queued natural audio has ended. One background
   warm-up retries for later turns; if it fails, Settings offers Retry. Late audio after cancel or
   unmount never plays. First audio = media `playing`; completion = final `ended`.
 - **System voices** (`speechSynthesis`) stay selectable: non-novelty English voices first, Premium →

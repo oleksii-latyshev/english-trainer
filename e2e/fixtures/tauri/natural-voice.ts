@@ -57,45 +57,86 @@ export async function installNaturalVoice(
       wav.set([82, 73, 70, 70, 38, 0, 0, 0, 87, 65, 86, 69]);
       return wav.buffer;
     };
-    type Media = {
-      onplaying: (() => void) | null;
-      onended: (() => void) | null;
-      onerror: (() => void) | null;
-      play: () => Promise<void>;
-      pause: () => void;
-      removeAttribute: () => void;
-      load: () => void;
+    type Playback = { startsAt: number; endsAt: number; started: boolean; stopped: boolean };
+    const playbacks: Playback[] = [];
+    const flagged = new WeakSet<object>();
+    const clock = { seconds: 0, suspended: false };
+    const isPlaying = (playback: Playback) =>
+      !playback.stopped && playback.startsAt <= clock.seconds && clock.seconds < playback.endsAt;
+    const settle = () => {
+      if (!playbacks.some(isPlaying)) {
+        const upcoming = playbacks
+          .filter((playback) => !playback.stopped && playback.startsAt > clock.seconds)
+          .sort((a, b) => a.startsAt - b.startsAt)[0];
+        if (upcoming) clock.seconds = upcoming.startsAt;
+      }
+      for (const playback of playbacks) {
+        if (playback.startsAt <= clock.seconds) playback.started = true;
+      }
     };
-    Object.defineProperty(window, 'Audio', {
-      value: function (this: Media) {
-        this.onplaying = null;
-        this.onended = null;
-        this.onerror = null;
-        let started = false,
-          stopped = false;
-        this.play = async () => {
-          if (seed.mediaFails) throw new Error('Fixture media playback unavailable');
-          if (!started) {
-            edge.played++;
-            started = true;
-          } else edge.resumed++;
-          edge.finishAudio = () => {
-            this.onended?.();
-          };
-          queueMicrotask(() => {
-            if (!stopped) this.onplaying?.();
-          });
-        };
-        this.pause = () => {
-          if (!stopped) edge.paused++;
-        };
-        this.removeAttribute = () => {
-          if (!stopped) edge.stopped++;
-          stopped = true;
-        };
-        this.load = () => {};
+    Object.defineProperties(edge, {
+      played: {
+        get: () => {
+          settle();
+          return playbacks.filter((playback) => playback.started).length;
+        },
       },
     });
+    edge.finishAudio = () => {
+      const current = playbacks.find(isPlaying);
+      if (current) clock.seconds = current.endsAt;
+      settle();
+    };
+    const CLIP_SECONDS = 2;
+    const RealAudioContext = window.AudioContext;
+    class PlaybackAwareContext extends RealAudioContext {
+      override get currentTime(): number {
+        if (!flagged.has(this)) return super.currentTime;
+        settle();
+        return clock.seconds;
+      }
+      override decodeAudioData(): Promise<AudioBuffer> {
+        flagged.add(this);
+        if (seed.mediaFails) return Promise.reject(new Error('Fixture media playback unavailable'));
+        const buffer: object = { duration: CLIP_SECONDS };
+        return Promise.resolve(buffer as AudioBuffer);
+      }
+      override createBufferSource(): AudioBufferSourceNode {
+        flagged.add(this);
+        const playback: Playback = { startsAt: 0, endsAt: 0, started: false, stopped: false };
+        const source = {
+          buffer: null as { duration: number } | null,
+          onended: null,
+          connect: () => undefined,
+          disconnect: () => undefined,
+          start: (when: number) => {
+            playback.startsAt = when;
+            playback.endsAt = when + (source.buffer?.duration ?? CLIP_SECONDS);
+            playbacks.push(playback);
+          },
+          stop: () => {
+            if (playback.stopped) return;
+            if (playback.startsAt <= clock.seconds) playback.started = true;
+            if (clock.seconds < playback.endsAt) edge.stopped++;
+            playback.stopped = true;
+          },
+        };
+        return source as unknown as AudioBufferSourceNode;
+      }
+      override suspend(): Promise<void> {
+        if (!flagged.has(this)) return super.suspend();
+        clock.suspended = true;
+        edge.paused++;
+        return Promise.resolve();
+      }
+      override resume(): Promise<void> {
+        if (!flagged.has(this)) return super.resume();
+        if (clock.suspended) edge.resumed++;
+        clock.suspended = false;
+        return Promise.resolve();
+      }
+    }
+    Object.defineProperty(window, 'AudioContext', { value: PlaybackAwareContext });
   }, options);
 }
 

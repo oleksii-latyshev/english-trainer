@@ -17,7 +17,7 @@ sequenceDiagram
     participant Settings as Voice settings
     participant Atom as naturalVoiceAtom / speechVoiceAtom (Atom.kvs)
     participant Store as KeyValueStore.layerStorage
-    participant Speech as useSystemSpeech, usePlatformSpeech
+    participant Speech as core/speech useSpeech
 
     Learner->>Settings: picks a voice, an engine or a speed
     Settings->>Atom: set(new value)

@@ -1,13 +1,13 @@
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
+import { useSpeech } from '@/core/speech';
 import { useFirstRunGate } from '@/features/first-run/useFirstRunGate';
 import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { practiceKeepsMicrophoneWarm } from '@/features/practice/lib/practiceStage';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
 import { useSpeechCapture } from '@/features/speech/useSpeechCapture';
-import { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeOptions } from '@/lib/practiceOptions';
 import { ToastProvider } from '@/shared/ui/toast';
 import { TrainerProvider } from './context/TrainerContext';
@@ -15,7 +15,7 @@ import { router } from './router';
 import './app/styles.css';
 
 function App() {
-  const speech = useSystemSpeech();
+  const speech = useSpeech();
   const mic = useMicrophoneSession();
   const due = useDuePhraseCount();
   const capture = useSpeechCapture(speech, mic);

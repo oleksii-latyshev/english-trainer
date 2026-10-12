@@ -1,6 +1,6 @@
 import { useAtomValue } from '@effect/atom-react';
 import { conversationFlowAtom } from '@/core/conversation-flow';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import type { SpeechControls } from '@/core/speech';
 import { composerTranscript, type InputSource } from './lib/inputSource';
 import { canSendPracticeStage } from './lib/practiceStage';
 import { sessionDetails } from './lib/practiceState';
@@ -13,7 +13,7 @@ import { useConversationProvider } from './useConversationProvider';
 type Options = {
   model: PracticeViewModel;
   actions: PracticeActions;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   sendError?: SendFailure;
   /** The composer is locked by the screen: no session, recall or a retry. */
   isLocked: boolean;
