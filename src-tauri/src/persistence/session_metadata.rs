@@ -161,13 +161,15 @@ impl SessionDatabase {
         Ok(changed)
     }
 
-    pub fn get_personal_profile(&self) -> rusqlite::Result<crate::conversation::PersonalProfile> {
+    pub fn get_personal_profile(
+        &self,
+    ) -> rusqlite::Result<crate::personal_profile::PersonalProfile> {
         self.connection
             .query_row(
                 "SELECT role, stack, interests, goals FROM personal_profile WHERE id = 1",
                 [],
                 |row| {
-                    Ok(crate::conversation::PersonalProfile {
+                    Ok(crate::personal_profile::PersonalProfile {
                         role: row.get(0)?,
                         stack: row.get(1)?,
                         interests: row.get(2)?,
@@ -181,7 +183,7 @@ impl SessionDatabase {
 
     pub fn save_personal_profile(
         &mut self,
-        profile: &crate::conversation::PersonalProfile,
+        profile: &crate::personal_profile::PersonalProfile,
     ) -> rusqlite::Result<()> {
         self.connection.execute(
             "INSERT INTO personal_profile (id, role, stack, interests, goals)

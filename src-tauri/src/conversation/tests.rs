@@ -1,5 +1,6 @@
 use super::rules::{MAX_CONTEXT_CHARS, MAX_TURNS, OPENING_QUESTION};
 use super::*;
+use crate::personal_profile::PersonalProfile;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
@@ -886,38 +887,30 @@ fn standalone_text_chat_keeps_written_answers_and_can_finish_from_review() {
 }
 
 #[test]
-fn profiles_persist_clear_and_merge_with_the_manual_glossary() {
+fn the_profile_merges_with_the_manual_glossary_and_clearing_it_removes_its_terms() {
     let store = SessionStore::default();
     store
         .save_glossary_terms(vec!["ManualTerm".into(), "Rust".into()])
         .unwrap();
-    let saved = store
-        .save_personal_profile(PersonalProfile {
-            role: "  Engineer  ".into(),
+    store
+        .store_personal_profile(&PersonalProfile {
+            role: "Engineer".into(),
             stack: "Rust, Tauri".into(),
             interests: "Tauri, hiking".into(),
             goals: "Speak more naturally".into(),
         })
         .unwrap();
-    assert_eq!(saved.role, "Engineer");
-    assert_eq!(store.personal_profile().unwrap(), saved);
     assert_eq!(
         store.effective_glossary_terms().unwrap(),
         ["ManualTerm", "Rust", "Engineer", "Tauri", "hiking"]
     );
     store
-        .save_personal_profile(PersonalProfile::default())
+        .store_personal_profile(&PersonalProfile::default())
         .unwrap();
     assert_eq!(
         store.effective_glossary_terms().unwrap(),
         ["ManualTerm", "Rust"]
     );
-    assert!(store
-        .save_personal_profile(PersonalProfile {
-            role: "x".repeat(151),
-            ..Default::default()
-        })
-        .is_err());
 }
 
 #[test]

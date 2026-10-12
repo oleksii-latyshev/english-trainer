@@ -1,4 +1,4 @@
-/* Speech recognition, the speech check and the glossary of Settings. */
+/* Speech recognition and the speech check of Settings. */
 .speech-sentence {
   display: flex;
   flex-direction: column;
@@ -86,58 +86,6 @@
   min-width: 42px;
   color: var(--et-muted);
   font-size: 12px;
-}
-
-.glossary-terms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.glossary-terms li {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 4px 3px 10px;
-  border: 1px solid var(--et-line);
-  border-radius: 999px;
-  background-color: var(--et-surface2);
-  color: var(--et-fg);
-  font-size: 13px;
-}
-
-.glossary-terms button {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--et-muted);
-  cursor: pointer;
-}
-
-.glossary-terms button:hover {
-  background-color: var(--et-surface3);
-  color: var(--et-fg);
-}
-
-.glossary-terms button:focus-visible {
-  outline: 2px solid var(--et-accent);
-}
-
-.glossary-add {
-  display: flex;
-  gap: 8px;
-}
-
-.glossary-input {
-  font-family: inherit;
 }
 
 [data-slot="notice"][data-tone="plain"] .speech-results-note,

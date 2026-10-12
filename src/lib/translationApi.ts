@@ -3,13 +3,10 @@ import {
   isEnglishWord,
   isSafeTranslationContext,
   isTranslationError,
-  isTranslationSettings,
-  isTranslationStatus,
   isWordTranslation,
   matchesTranslationWord,
   type TranslationError,
   type TranslationRequest,
-  type TranslationSettings,
   type WordTranslation,
 } from './translationTypes';
 
@@ -37,19 +34,6 @@ async function readCommand<T>(
     throw ipcFailure(error);
   }
 }
-
-export const getTranslationSettings = () =>
-  readCommand('get_translation_settings', undefined, isTranslationSettings);
-
-export function saveTranslationSettings(settings: TranslationSettings) {
-  return readCommand('save_translation_settings', { settings }, isTranslationSettings);
-}
-
-export const getTranslationStatus = () =>
-  readCommand('get_translation_status', undefined, isTranslationStatus);
-
-export const prepareTranslationLanguages = () =>
-  readCommand('prepare_translation_languages', undefined, isTranslationStatus);
 
 export function translateWord(request: TranslationRequest): Promise<WordTranslation> {
   if (!isEnglishWord(request.word) || !isSafeTranslationContext(request.context)) {

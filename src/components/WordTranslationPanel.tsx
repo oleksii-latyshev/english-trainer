@@ -1,10 +1,7 @@
 import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useRef } from 'react';
-import {
-  TRANSLATION_LANGUAGES,
-  type TranslationError,
-  type TranslationStatus,
-  type WordTranslation,
-} from '@/lib/translationTypes';
+import type { TranslationStatus } from '@/core/ipc';
+import { TRANSLATION_LANGUAGES } from '@/core/translation-settings';
+import type { TranslationError, WordTranslation } from '@/lib/translationTypes';
 
 export type LookupState =
   | { tag: 'idle' }
@@ -25,7 +22,7 @@ type Props = {
 };
 
 function languageName(code: string): string {
-  return TRANSLATION_LANGUAGES.find((language) => language.code === code)?.name ?? code;
+  return TRANSLATION_LANGUAGES.find((language) => language.value === code)?.label ?? code;
 }
 
 export function WordTranslationPanel({

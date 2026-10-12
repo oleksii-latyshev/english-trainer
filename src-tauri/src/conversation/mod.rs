@@ -34,7 +34,6 @@ mod wrapup_generation;
 mod wrapup_queue;
 pub use coaching::TurnCoaching;
 pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
-pub use profile::PersonalProfile;
 pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
 use rehearsal::{
     invalid_phase_transition_error, parse_practice_mode, parse_practice_phase, replay_questions,

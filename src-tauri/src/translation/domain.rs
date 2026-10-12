@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
+use ts_rs::TS;
 
 pub const NATIVE_LANGUAGES: &[&str] = &[
     "ru", "uk", "de", "fr", "es", "it", "pt", "ja", "ko", "zh-Hans", "ar",
 ];
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct NativeLanguageSettings {
     pub native_language: String,
 }
@@ -28,8 +30,9 @@ pub struct TranslationResult {
     pub explanation_error: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum TranslationStatusKind {
     Installed,
     DownloadRequired,
@@ -37,8 +40,9 @@ pub enum TranslationStatusKind {
     Unavailable,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct TranslationStatus {
     pub native_language: String,
     pub status: TranslationStatusKind,

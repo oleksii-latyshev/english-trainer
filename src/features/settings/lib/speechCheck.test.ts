@@ -3,7 +3,6 @@ import type { ModelRun, SentenceStatus } from '@/lib/speechTypes';
 import {
   formatPercent,
   formatSize,
-  glossarySummary,
   modelName,
   modelOptionLabel,
   nextSentenceIndex,
@@ -42,15 +41,12 @@ describe('formatting', () => {
     expect(modelOptionLabel(model, run)).toBe('small.en · 466 MB · terms 80% · errors 12% · 1.2 s');
   });
 
-  it('reports progress and summarises the glossary', () => {
+  it('reports progress', () => {
     const progress = { model_file: 'ggml-base.en.bin', uses_prompt: true, done: 3, total: 24 };
     expect(progressText(progress)).toBe(
       'base.en with the glossary prompt: 3 of 24 recordings done',
     );
     expect(progressText({ ...progress, model_file: '' })).toBe('Saving the measurements…');
-    expect(glossarySummary(['a', 'b'])).toBe('a, b');
-    expect(glossarySummary(['a', 'b', 'c'], 2)).toBe('a, b…');
-    expect(glossarySummary([])).toBe('No words yet.');
   });
 });
 

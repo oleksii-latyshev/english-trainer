@@ -239,7 +239,7 @@ mod tests {
     fn profile_and_topic_are_included_in_instructions_as_data_never_instructions() {
         let mut ctx = context();
         ctx.topic = Some("Work & technology".into());
-        ctx.profile = Some(crate::conversation::PersonalProfile {
+        ctx.profile = Some(crate::personal_profile::PersonalProfile {
             role: "Frontend Engineer".into(),
             stack: "React, TypeScript".into(),
             interests: "Hiking, chess".into(),

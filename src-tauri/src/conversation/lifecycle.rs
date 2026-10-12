@@ -1,8 +1,8 @@
 use super::topics;
 use super::{
     active_session_mut, database_error, database_error_message, invalid_session_error,
-    ActiveSession, PersonalProfile, PracticeMode, PracticePhase, PracticeSession, ProviderError,
-    SessionStore, StartPracticeOptions, State, MAX_SAFE_SESSION_ID, SESSION_MODE,
+    ActiveSession, PracticeMode, PracticePhase, PracticeSession, ProviderError, SessionStore,
+    StartPracticeOptions, State, MAX_SAFE_SESSION_ID, SESSION_MODE,
 };
 use crate::learning::mistake_practice::{
     GeneratedMistakeQuestion, MistakePracticeCandidate, MistakePracticeQuestion,
@@ -345,30 +345,6 @@ impl SessionStore {
             }
         }
         Ok(())
-    }
-
-    pub fn personal_profile(&self) -> Result<PersonalProfile, ProviderError> {
-        self.lock()
-            .database
-            .get_personal_profile()
-            .map_err(database_error)
-    }
-
-    pub fn save_personal_profile(
-        &self,
-        mut profile: PersonalProfile,
-    ) -> Result<PersonalProfile, ProviderError> {
-        profile.role = profile.role.trim().to_string();
-        profile.stack = profile.stack.trim().to_string();
-        profile.interests = profile.interests.trim().to_string();
-        profile.goals = profile.goals.trim().to_string();
-        profile.validate()?;
-        let mut state = self.lock();
-        state
-            .database
-            .save_personal_profile(&profile)
-            .map_err(database_error)?;
-        Ok(profile)
     }
 
     pub fn effective_glossary_terms(&self) -> Result<Vec<String>, ProviderError> {

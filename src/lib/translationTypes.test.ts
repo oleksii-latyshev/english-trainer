@@ -3,8 +3,6 @@ import {
   boundedTranslationContext,
   isSafeTranslationContext,
   isTranslationError,
-  isTranslationLanguage,
-  isTranslationStatus,
   isWordTranslation,
   matchesTranslationWord,
   normalizeEnglishWord,
@@ -24,9 +22,7 @@ describe('translation boundary guards', () => {
     expect(normalizeEnglishWord('a'.repeat(65))).toBeUndefined();
   });
 
-  it('accepts known native languages and bounded safe context', () => {
-    expect(isTranslationLanguage('ru')).toBe(true);
-    expect(isTranslationLanguage('en')).toBe(false);
+  it('accepts bounded safe context', () => {
     expect(isSafeTranslationContext(`line one\nline two\t${'x'.repeat(480)}`)).toBe(true);
     expect(isSafeTranslationContext('word\u0000')).toBe(false);
     expect(isSafeTranslationContext('x'.repeat(501))).toBe(false);
@@ -35,16 +31,7 @@ describe('translation boundary guards', () => {
     expect(matchesTranslationWord('different', 'quiet')).toBe(false);
   });
 
-  it('rejects malformed statuses, errors and translation results', () => {
-    expect(
-      isTranslationStatus({ native_language: 'ru', status: 'download_required', message: 'Ready' }),
-    ).toBe(true);
-    expect(
-      isTranslationStatus({ native_language: 'ru', status: 'unknown', message: 'Ready' }),
-    ).toBe(false);
-    expect(
-      isTranslationStatus({ native_language: 'en', status: 'installed', message: 'Ready' }),
-    ).toBe(false);
+  it('rejects malformed errors and translation results', () => {
     expect(isTranslationError({ code: 'timeout', message: 'Try again.' })).toBe(true);
     expect(isTranslationError({ code: 'other', message: 'Try again.' })).toBe(false);
     expect(

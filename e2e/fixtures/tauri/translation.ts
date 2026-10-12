@@ -1,10 +1,7 @@
 import type { Page } from '@playwright/test';
-import type {
-  TranslationLanguage,
-  TranslationSettings,
-  TranslationStatus,
-  WordTranslation,
-} from '@/lib/translationTypes';
+import type { NativeLanguageSettings, TranslationStatus } from '@/core/ipc';
+import type { TranslationLanguage } from '@/core/translation-settings';
+import type { WordTranslation } from '@/lib/translationTypes';
 
 declare global {
   interface Window {
@@ -61,7 +58,7 @@ export async function installTranslation(
         ? 'Prepare languages on this Mac, then retry.'
         : 'Translation languages are ready on this Mac.',
     });
-    function save(args: Record<string, unknown>): TranslationSettings {
+    function save(args: Record<string, unknown>): NativeLanguageSettings {
       const saved = stringField(args.settings, 'native_language');
       const language = languages.find((code) => code === saved);
       if (!language) throw new Error('Invalid native language fixture request.');

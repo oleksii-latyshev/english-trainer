@@ -173,10 +173,6 @@ export function isSpeechCheckProgress(value: unknown): value is SpeechCheckProgr
   );
 }
 
-function isStringList(value: unknown): value is string[] {
-  return isArrayOf(value, (item): item is string => typeof item === 'string');
-}
-
 /** What to tell the learner about a failed command: Rust's message, or a plain fallback. */
 export function speechErrorMessage(cause: unknown, fallback: string): string {
   if (isTranscriptionError(cause) || isProviderError(cause)) return cause.message;
@@ -204,8 +200,6 @@ export const saveLiveTranscript = (liveTranscript: boolean) =>
 export const getSpeechEngineStatus = () => call('get_speech_engine_status', isSpeechEngineStatus);
 /** Loads the model ahead of the first answer; the status says how it went. */
 export const warmSpeechEngine = () => call('warm_speech_engine', isNothing);
-export const getGlossary = () => call('get_glossary', isStringList);
-export const saveGlossary = (terms: string[]) => call('save_glossary', isStringList, { terms });
 export const getKeptRecordings = () => call('get_kept_recordings', isKeptRecordings);
 export const deleteKeptRecordings = () => call('delete_kept_recordings', isKeptRecordings);
 export const getSpeechCheck = () => call('get_speech_check', isSpeechCheckStatus);

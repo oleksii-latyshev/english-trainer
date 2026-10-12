@@ -191,7 +191,7 @@ fn validates_transcript_size_and_serializes_snake_case_errors() {
 fn conversation_prompt_serializes_prior_turns_as_bounded_data() {
     let mut context = context("I went to the beach.");
     context.topic = Some("Plans & stories".into());
-    context.profile = Some(crate::conversation::PersonalProfile {
+    context.profile = Some(crate::personal_profile::PersonalProfile {
         role: "Developer".into(),
         stack: "Rust, Tauri".into(),
         interests: "Travel".into(),

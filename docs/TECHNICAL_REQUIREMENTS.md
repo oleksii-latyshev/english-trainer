@@ -383,7 +383,8 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   `de`, `fr`, `es`, `it`, `pt`, `ja`, `ko`, `zh-Hans`, `ar`. Pair support and installed-model status
   come from macOS, not from this list.
 - Commands: `get_translation_settings`, `save_translation_settings(settings)`,
-  `get_translation_status`, `prepare_translation_languages`, `translate_word(request)`.
+  `get_translation_status`, `prepare_translation_languages`, `translate_word(request)`. The first four
+  fail with `IpcError`; `translate_word` keeps its own typed error until the word-translation step.
 - `translate_word` takes one English word (up to 64 characters, internal apostrophes/hyphens) and
   optional surrounding English text (up to 500). Sentences, empty words, non-English letters and unsafe
   controls are rejected. The selected word and returned language must match the request snapshot.

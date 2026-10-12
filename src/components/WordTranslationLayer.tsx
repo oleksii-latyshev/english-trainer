@@ -1,12 +1,15 @@
+import { useAtomSet } from '@effect/atom-react';
 import { useRouterState } from '@tanstack/react-router';
+import { Cause, Exit } from 'effect';
 import { useEffect, useRef, useState } from 'react';
-import { prepareTranslationLanguages, translateWord } from '@/lib/translationApi';
+import type { TranslationStatus } from '@/core/ipc';
+import { prepareTranslationLanguagesAtom } from '@/core/translation-settings';
+import { translateWord } from '@/lib/translationApi';
 import { isCurrentTranslationResult } from '@/lib/translationRequest';
 import {
   isTranslationError,
   normalizeEnglishWord,
   type TranslationError,
-  type TranslationStatus,
 } from '@/lib/translationTypes';
 import { type LookupState, WordTranslationPanel } from './WordTranslationPanel';
 import { readWordSelection, type WordSelection } from './wordTranslationSelection';
@@ -35,6 +38,7 @@ export function WordTranslationLayer() {
   const panelIsOpen = useRef(false);
   const prepareInFlight = useRef(false);
   const prepareToken = useRef(0);
+  const prepare = useAtomSet(prepareTranslationLanguagesAtom, { mode: 'promiseExit' });
 
   useEffect(() => {
     function refreshSelection() {
@@ -139,14 +143,14 @@ export function WordTranslationLayer() {
     const requestPath = pathname;
     setStatusNotice(undefined);
     try {
-      const status = await prepareTranslationLanguages();
+      const exit = await prepare(undefined);
       if (isCurrentPanelRequest(requestId, requestPath)) {
-        setStatusNotice(status);
-        setLookup({ tag: 'idle' });
-      }
-    } catch (cause) {
-      if (isCurrentPanelRequest(requestId, requestPath)) {
-        setLookup({ tag: 'error', error: friendlyError(cause) });
+        if (Exit.isSuccess(exit)) {
+          setStatusNotice(exit.value);
+          setLookup({ tag: 'idle' });
+        } else {
+          setLookup({ tag: 'error', error: friendlyError(Cause.squash(exit.cause)) });
+        }
       }
     } finally {
       if (prepareId === prepareToken.current) {

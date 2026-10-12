@@ -7,9 +7,11 @@ mod dock_icon;
 mod gemini_key;
 mod learning;
 mod persistence;
+mod personal_profile;
 mod providers;
 mod setup;
 mod translation;
+mod translation_settings;
 mod voice;
 
 pub use conversation::{
@@ -174,21 +176,6 @@ fn transition_practice_phase(
         coaching.flush(session_id);
     }
     Ok(session)
-}
-
-#[tauri::command]
-fn get_personal_profile(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Result<conversation::PersonalProfile, providers::ProviderError> {
-    sessions.personal_profile()
-}
-
-#[tauri::command]
-fn save_personal_profile(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    profile: conversation::PersonalProfile,
-) -> Result<conversation::PersonalProfile, providers::ProviderError> {
-    sessions.save_personal_profile(profile)
 }
 
 // Tauri injects each managed state as its own argument, so the count is the command's contract.
@@ -642,6 +629,15 @@ pub fn run() {
             ));
             api_usage::start_recording(usage_service.clone());
             app.manage(usage_service);
+            app.manage(personal_profile::PersonalProfileService::new(
+                personal_profile::SessionProfileStore::new(sessions.clone()),
+            ));
+            let translation = translation::TranslationService::new(apple_translation_binary(app));
+            app.manage(translation_settings::TranslationSettingsService::new(
+                translation_settings::SessionLanguageStore::new(sessions.clone()),
+                translation_settings::AppleLanguageAvailability::new(translation.clone()),
+            ));
+            app.manage(translation);
             app.manage(sessions);
             app.manage(std::sync::Arc::new(audio::SpeechEngine::new(Some(
                 app_data.join("whisper-server.pid"),
@@ -653,9 +649,6 @@ pub fn run() {
                 .ok()
                 .map(|p| p.join("binaries/natural-voice"));
             app.manage(voice::VoiceEngine::new(voice_directory));
-            app.manage(translation::TranslationService::new(
-                apple_translation_binary(app),
-            ));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
@@ -680,10 +673,10 @@ pub fn run() {
             audio::commands::save_speech_check_recording,
             audio::commands::delete_speech_check_recordings,
             audio::commands::run_speech_check,
-            translation::commands::get_translation_settings,
-            translation::commands::save_translation_settings,
-            translation::commands::get_translation_status,
-            translation::commands::prepare_translation_languages,
+            translation_settings::commands::get_translation_settings,
+            translation_settings::commands::save_translation_settings,
+            translation_settings::commands::get_translation_status,
+            translation_settings::commands::prepare_translation_languages,
             translation::commands::translate_word,
             get_setup_diagnostics,
             ai_settings::commands::get_ai_settings,
@@ -700,8 +693,8 @@ pub fn run() {
             start_mistake_practice,
             set_practice_clock,
             transition_practice_phase,
-            get_personal_profile,
-            save_personal_profile,
+            personal_profile::commands::get_personal_profile,
+            personal_profile::commands::save_personal_profile,
             send_practice_turn,
             cancel_practice_reply,
             get_practice_dialogue,

@@ -41,8 +41,8 @@ export class SettingsPage {
     await this.sampleButton(name).click();
   }
 
-  async chooseNativeLanguage(code: string): Promise<void> {
-    await this.nativeLanguage.selectOption(code);
+  async chooseNativeLanguage(name: string): Promise<void> {
+    await this.chooseFromSelect('Native language', name);
   }
 
   provider(name: string): Locator {

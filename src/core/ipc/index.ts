@@ -13,8 +13,13 @@ export type { IpcErrorCode } from './bindings/IpcErrorCode';
 export type { KeySource } from './bindings/KeySource';
 export type { LimitNote } from './bindings/LimitNote';
 export type { ModelRequests } from './bindings/ModelRequests';
+export type { NativeLanguageSettings } from './bindings/NativeLanguageSettings';
+export type { PersonalProfile } from './bindings/PersonalProfile';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
+export type { TranslationStatus } from './bindings/TranslationStatus';
+export type { TranslationStatusKind } from './bindings/TranslationStatusKind';
 export { IpcDecodeError, IpcError } from './errors';
+export { ipcFailureMessage } from './failure-message';
 export { invokeCommand, invokeUnitCommand } from './invoke-command';
 export type { IpcArgs, IpcShape } from './ipc';
 export { Ipc } from './ipc';
@@ -42,3 +47,9 @@ export {
 } from './schemas/conversation-turn';
 export { GeminiKeyStatusSchema, KeySourceSchema } from './schemas/gemini-key-status';
 export { IpcErrorCodeSchema } from './schemas/ipc-error';
+export { PersonalProfileSchema } from './schemas/personal-profile';
+export {
+  NativeLanguageSettingsSchema,
+  TranslationStatusKindSchema,
+  TranslationStatusSchema,
+} from './schemas/translation-settings';
