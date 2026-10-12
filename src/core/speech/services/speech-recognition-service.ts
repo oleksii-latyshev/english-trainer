@@ -12,6 +12,7 @@ import {
   SpeechEngineStatusSchema,
   TranscriptSchema,
 } from '@/core/ipc';
+import { bytesOf } from '../helpers/blob-bytes';
 
 export type SpeechRecognitionFailure = IpcError | IpcDecodeError;
 
@@ -34,10 +35,6 @@ export type SpeechRecognitionShape = {
 };
 
 const RESCUE_TEXT_TAIL_CHARS = 1500;
-
-function bytesOf(wav: Blob): Effect.Effect<Uint8Array> {
-  return Effect.promise(async () => new Uint8Array(await wav.arrayBuffer()));
-}
 
 export class SpeechRecognition extends Context.Service<SpeechRecognition, SpeechRecognitionShape>()(
   'core/speech/SpeechRecognition',

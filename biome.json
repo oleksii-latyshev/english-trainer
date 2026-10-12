@@ -119,7 +119,8 @@
         "!src/features/memory/**",
         "!src/features/practice/**",
         "!src/features/settings/**",
-        "!src/features/talk-start/**"
+        "!src/features/talk-start/**",
+        "!src/app/speech-capture/use-speech-capture.ts"
       ],
       "plugins": ["./biome/plugins/function-declarations.grit"],
       "linter": {

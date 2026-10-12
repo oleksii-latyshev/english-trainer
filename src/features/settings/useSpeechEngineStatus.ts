@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getSpeechEngineStatus, type SpeechEngineStatus } from '@/lib/speechTypes';
+import { getSpeechEngineStatus, type SpeechEngineStatus } from '@/app/speech-capture';
 
 const REFRESH_MS = 1500;
 

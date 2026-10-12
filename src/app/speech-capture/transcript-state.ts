@@ -1,8 +1,5 @@
 import type { ActualAudioInput } from '@/core/audio';
-import {
-  transcriptionFailureOutcome,
-  transcriptOutcome,
-} from '@/core/speech';
+import { transcriptionFailureOutcome, transcriptOutcome } from '@/core/speech';
 import type { CaptureState, Recording } from './capture-view';
 
 export function transcriptState(

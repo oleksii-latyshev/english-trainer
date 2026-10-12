@@ -4,7 +4,6 @@ import { Button } from '@/shared/ui/button';
 import { Popover } from '@/shared/ui/popover';
 
 export type SpeechTiming = {
-  /** Time from the record request to audio being captured. */
   captureStartMs?: number;
   captureFinalizationMs?: number;
   sttMs?: number;
@@ -28,7 +27,6 @@ const STAGES: { label: string; key: keyof SpeechTiming }[] = [
   { label: 'Speech end to first AI audio', key: 'firstAiAudioMs' },
 ];
 
-/** The latency readout, kept one tap away from the conversation. */
 export function TimingPopover({ timing }: Props) {
   if (STAGES.every((stage) => timing[stage.key] === undefined)) return null;
 

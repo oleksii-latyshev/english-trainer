@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { saveLiveTranscript, saveSpeechModel, speechErrorMessage } from '@/app/speech-capture';
 import { useTrainer } from '@/context/TrainerContext';
 import { usePreferredMicrophone } from '@/core/audio';
-import { saveLiveTranscript, saveSpeechModel, speechErrorMessage } from '@/lib/speechTypes';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';
 import { Switch } from '@/shared/ui/switch';

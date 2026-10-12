@@ -9,7 +9,6 @@ import { startWarmRecording } from './warm-recorder';
 
 const ELAPSED_TICK_MS = 100;
 const AUTO_LISTEN_IDLE_MS = 20_000;
-// Ignore the first moments of auto-listening: the room may still ring with the assistant's voice.
 const AUTO_SETTLE_MS = 300;
 
 export function isAssistantSpeaking(speech: SpeechControls): boolean {
@@ -17,10 +16,6 @@ export function isAssistantSpeaking(speech: SpeechControls): boolean {
   return tag === 'speaking' || tag === 'starting' || tag === 'paused';
 }
 
-/**
- * The warm session if there is one to use. Auto-listening needs its preference on and never
- * reopens a paused microphone.
- */
 export function sessionFor(
   controller: MicrophoneController | undefined,
   mode: RecordingMode,
@@ -50,7 +45,6 @@ export type TurnWatch = {
   dispose: () => void;
 };
 
-/** Attaches practice turn controls and partial text to an already-open warm recording. */
 export function watchActiveTurn(
   session: WarmSession,
   recorder: PcmRecorder,
@@ -82,10 +76,6 @@ export function watchActiveTurn(
   );
 }
 
-/**
- * Watches the warm session for the end of a practice turn and shows the words heard so far.
- * Auto-listening also gives up quietly if nobody speaks for a while.
- */
 export function watchTurn(
   session: WarmSession,
   recorder: PcmRecorder,
@@ -99,16 +89,12 @@ export function watchTurn(
   isCurrent: () => boolean,
 ): TurnWatch {
   let hasHeardSpeech = false;
-  const stopLiveText = watchLiveText(
-    recorder.capture,
-    () => hasHeardSpeech,
-    handlers.onLiveText,
-  );
+  const stopLiveText = watchLiveText(recorder.capture, () => hasHeardSpeech, handlers.onLiveText);
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
-  const clearIdle = () => {
+  function clearIdle() {
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = null;
-  };
+  }
   const listening = session.listenForTurn(
     {
       endPauseMs: readConversationFlow().endPauseMs,
@@ -146,7 +132,6 @@ export function watchTurn(
   };
 }
 
-/** Updates the live elapsed time and input level of the active recording. */
 export function startElapsedTimer(
   recorder: PcmRecorder,
   startedAtMs: number,

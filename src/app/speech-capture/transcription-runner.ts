@@ -22,11 +22,37 @@ export const BROWSER_ONLY_FAILURE = {
 } as const;
 
 function transcribe(wav: Blob) {
-  return settleSpeech(Effect.flatMap(SpeechRecognition, (recognition) => recognition.transcribe(wav)));
+  return settleSpeech(
+    Effect.flatMap(SpeechRecognition, (recognition) => recognition.transcribe(wav)),
+  );
 }
 
 export function createTranscriptionRunner(deps: Deps) {
   const { requestIdRef, transcribingRef, setState, setTiming, discardRecording } = deps;
+
+  function succeeded(
+    requestId: number,
+    answer: { text: string; sttMs: number },
+    recording: Recording,
+    actualInput?: ActualAudioInput,
+  ) {
+    if (requestId !== requestIdRef.current) return;
+    setTiming((current) => ({ ...current, sttMs: answer.sttMs }));
+    discardRecording();
+    setState(transcriptState(answer.text, recording, actualInput));
+  }
+
+  function failed(
+    requestId: number,
+    cause: unknown,
+    recording: Recording,
+    actualInput?: ActualAudioInput,
+  ) {
+    if (requestId !== requestIdRef.current) return;
+    const outcome = transcriptionFailureState(recording, cause, actualInput);
+    if (!outcome.keepsRecording) discardRecording();
+    setState(outcome.state);
+  }
 
   return async function runTranscription(
     requestId: number,
@@ -47,16 +73,9 @@ export function createTranscriptionRunner(deps: Deps) {
       actualInput,
     });
     try {
-      const { text, sttMs } = await transcribe(wav);
-      if (requestId !== requestIdRef.current) return;
-      setTiming((current) => ({ ...current, sttMs }));
-      discardRecording();
-      setState(transcriptState(text, recording, actualInput));
+      succeeded(requestId, await transcribe(wav), recording, actualInput);
     } catch (cause) {
-      if (requestId !== requestIdRef.current) return;
-      const outcome = transcriptionFailureState(recording, cause, actualInput);
-      if (!outcome.keepsRecording) discardRecording();
-      setState(outcome.state);
+      failed(requestId, cause, recording, actualInput);
     } finally {
       transcribingRef.current = false;
     }

@@ -25,11 +25,6 @@ import { createTranscriptionRunner } from './transcription-runner';
 
 export type { CaptureView, RecordingStatus } from './capture-view';
 
-/**
- * Records and transcribes answers. With a microphone controller the recording uses its warm
- * session (instant start, pre-roll, end-of-turn detection); without one every recording opens
- * its own microphone, as the memory recall drill does.
- */
 export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneController) {
   const [state, setState] = useState<CaptureState>({ tag: 'idle' });
   const [timing, setTiming] = useState<SpeechTiming>({});
@@ -57,7 +52,6 @@ export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneControl
       turnWatchRef.current?.dispose();
       oneShotLiveRef.current?.dispose();
       oneShotLiveRef.current = null;
-      // Cleanup errors cannot be shown after unmount; no data is persisted.
       void recorderRef.current?.cancel().catch(() => {});
       recorderRef.current = null;
       recordedWavRef.current = null;
@@ -97,7 +91,6 @@ export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneControl
     clearElapsedTimer();
   }
 
-  /** Releases a recorder; a failure to release it is shown unless a newer request took over. */
   function releaseRecorder(recorder: PcmRecorder, requestId: number) {
     void recorder.cancel().catch((cause) => {
       if (requestId === requestIdRef.current) {
@@ -232,7 +225,6 @@ export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneControl
     }
   }
 
-  /** Abandons listening or recording without transcribing or sending anything. */
   function cancelRecording() {
     const recorder = recorderRef.current;
     const current = stateRef.current;

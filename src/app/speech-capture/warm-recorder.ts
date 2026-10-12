@@ -1,6 +1,5 @@
 import type { PcmRecorder, WarmSession } from '@/app/microphone';
 
-/** Starts capturing on an already open microphone session; the session stays open afterwards. */
 export async function startWarmRecording(
   session: WarmSession,
   options: { preRollMs: number; onDeviceLost: () => void },

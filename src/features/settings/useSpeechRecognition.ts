@@ -7,7 +7,7 @@ import {
   type SpeechModels,
   type SpeechSettings,
   speechErrorMessage,
-} from '@/lib/speechTypes';
+} from '@/app/speech-capture';
 
 export type SpeechRecognitionData = {
   settings: SpeechSettings;

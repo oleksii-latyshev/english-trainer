@@ -41,7 +41,6 @@ export type BeginCaptureOptions = CaptureOptions & {
 
 export type WarmSession = {
   readonly opened: Promise<ActualAudioInput>;
-  readonly noiseFloor: () => number;
   readonly echoCancellationEnabled: () => boolean;
   readonly listenForTurn: (options: TurnListeningOptions, handlers: TurnHandlers) => TurnListening;
   readonly subscribeLevels: (listener: (level: number) => void) => () => void;
@@ -146,10 +145,6 @@ export function warmSessionOf(slot: WarmSlot): WarmSession {
   opened.catch(() => undefined);
   const handle: WarmSession = {
     opened,
-    noiseFloor: () => {
-      const ready = readySession(slot);
-      return ready ? settleSync(ready.noiseFloor) : 0;
-    },
     echoCancellationEnabled: () => {
       const ready = readySession(slot);
       return ready ? settleSync(ready.echoCancellationEnabled) : false;

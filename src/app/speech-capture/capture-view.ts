@@ -4,20 +4,16 @@ import type { SpeechTiming } from './timing-panel';
 
 export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
 
-/** `auto` listening started by itself after the assistant finished speaking; `manual` was requested. */
 export type RecordingMode = 'manual' | 'auto';
 
 export type Recording = { playbackUrl: string; durationMs: number; speechStoppedAtMs: number };
 
 export type ListeningState = {
   elapsedMs: number;
-  /** Live input level, 0 to 1. */
   level: number;
   mode: RecordingMode;
-  /** "Keep listening" is on: the turn does not end by silence. */
   held: boolean;
   heardSpeech: boolean;
-  /** What speech recognition has heard so far, while the recording goes on; empty if nothing yet. */
   liveText: string;
 };
 
@@ -58,19 +54,16 @@ export type CaptureView = {
   held: boolean;
   heardSpeech: boolean;
   liveText: string;
-  /** `unmanaged` when no warm microphone session is attached (each recording opens its own). */
   micStatus: MicrophoneStatus | 'unmanaged';
   micError: string;
 };
 
-/** Pre-roll keeps the first syllable but must not pick up the assistant's own voice. */
 export const PRE_ROLL_MS = 300;
 
 export function preRollMsFor(mode: RecordingMode, assistantWasSpeaking: boolean): number {
   return mode === 'auto' || assistantWasSpeaking ? 0 : PRE_ROLL_MS;
 }
 
-/** A recording, its hand-off to transcription, or the wait for the microphone is in progress. */
 export function isCapturing(state: CaptureState): boolean {
   return (
     state.tag === 'requesting' ||
@@ -128,10 +121,6 @@ export function viewFor(
   };
 }
 
-/**
- * Stopping before any speech was heard means "stop listening", not "send an empty answer".
- * Only the warm session can tell; without turn watching the recording is transcribed as before.
- */
 export function stopMeansCancel(heardSpeech: boolean, isWatchingTurn: boolean): boolean {
   return isWatchingTurn && !heardSpeech;
 }

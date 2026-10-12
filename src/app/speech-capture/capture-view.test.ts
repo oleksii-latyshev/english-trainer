@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { isCapturing, PRE_ROLL_MS, preRollMsFor, stopMeansCancel, viewFor } from './captureView';
+import { isCapturing, PRE_ROLL_MS, preRollMsFor, stopMeansCancel, viewFor } from './capture-view';
 
 describe('capture view', () => {
   it('exposes the live transcript only while recording or stopping', () => {

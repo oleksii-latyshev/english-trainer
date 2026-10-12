@@ -1,5 +1,5 @@
-import type { MicrophoneStatus } from '@/core/audio';
 import type { RecordingMode } from '@/app/speech-capture';
+import type { MicrophoneStatus } from '@/core/audio';
 import type { PracticeActions, PracticeViewModel } from '../practiceViewModel';
 
 /** What the composer shows and can do about listening, derived from the capture view. */

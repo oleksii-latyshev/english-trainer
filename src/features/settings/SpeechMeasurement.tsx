@@ -6,7 +6,7 @@ import {
   type SpeechCheckStatus,
   type SpeechModel,
   speechErrorMessage,
-} from '@/lib/speechTypes';
+} from '@/app/speech-capture';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';

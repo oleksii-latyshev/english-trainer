@@ -119,3 +119,77 @@ sequenceDiagram
         Preview-->>Settings: failure, an alert is shown
     end
 ```
+
+# Speech recognition flow
+
+The Whisper client lives in `SpeechRecognition` (and `SpeechRecognitionSettings` for Settings). Both
+call the `speech_recognition` Rust context through `Ipc` and `IpcBinary` (raw WAV body plus headers)
+and decode every answer with the schemas in `core/ipc`. The Promise-based hooks Talk and Memory still
+use live in `app/speech-capture` and only call these services; #26 and #27 delete them.
+
+## Transcribe an answer
+
+```mermaid
+sequenceDiagram
+    actor Learner
+    participant Hook as useSpeechCapture (app/speech-capture)
+    participant Rec as SpeechRecognition.transcribe
+    participant Rust as transcribe_audio
+    participant Whisper as whisper-server
+
+    Learner->>Hook: stops speaking (turn ended)
+    Hook->>Rec: WAV from the capture
+    Rec->>Rust: bytes (timed)
+    Rust->>Whisper: audio, prompt (question, names, glossary)
+    Whisper-->>Rust: text
+    Rust-->>Rec: Transcript (raw audio dropped unless kept)
+    Rec-->>Hook: text and sttMs
+    Hook-->>Learner: transcript, or a recovery (record again, set up, retry)
+    Note over Rust,Hook: failures arrive as IpcError codes: no_speech and invalid_audio ask to record again, model_missing and engine_missing send to setup, anything else can be retried
+```
+
+## Live transcript while recording
+
+```mermaid
+sequenceDiagram
+    participant Live as liveTranscript (Stream)
+    participant Status as engineStatus
+    participant Cap as Capture.snapshot
+    participant Rec as SpeechRecognition.transcribePartial
+    participant UI as Talk bubble
+
+    Live->>Status: model ready and live transcript available?
+    alt not available
+        Status-->>Live: no, the stream ends empty
+    else available
+        loop every 1.5 s, one at a time
+            Live->>Live: speech heard yet? (otherwise skip)
+            Live->>Cap: audio so far
+            Live->>Rec: WAV
+            Rec-->>Live: words so far, or nothing
+            Live-->>UI: text
+        end
+    end
+    Note over Live: a tick that finds the previous update running is skipped, a failed update is dropped, interrupting the stream stops it
+```
+
+## Stuck (rescue) snapshot
+
+```mermaid
+sequenceDiagram
+    participant Hook as rescue-capture (app/speech-capture)
+    participant Rescue as rescueTranscript
+    participant Cap as Capture.snapshot
+    participant Rust as transcribe_rescue
+
+    Hook->>Rescue: session id and answer sequence
+    Rescue->>Cap: last 15 s
+    alt nothing recorded yet
+        Cap-->>Rescue: null
+        Rescue-->>Hook: no_speech "No audio is ready yet"
+    else audio
+        Rescue->>Rust: bytes, x-session-id, x-answer-sequence
+        Rust-->>Rescue: text (empty becomes no_speech)
+        Rescue-->>Hook: the last 1500 characters
+    end
+```
