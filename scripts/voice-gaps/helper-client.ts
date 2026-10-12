@@ -10,7 +10,8 @@ export type TrimSettings = {
   readonly threshold: number;
   readonly beforeMs: number;
   readonly afterMs: number;
-  readonly fadeMs: number;
+  readonly fadeInMs: number;
+  readonly fadeOutMs: number;
 };
 
 export type Clip = {
@@ -84,8 +85,11 @@ function trimPadding(samples: Int16Array, rate: number, trim: TrimSettings): Int
     (last + 1) * window + Math.floor((rate * trim.afterMs) / 1000),
   );
   const kept = samples.slice(start, end);
-  const fadeIn = Math.min(first * window - start, Math.floor((rate * trim.fadeMs) / 1000));
-  const fadeOut = Math.min(end - (last + 1) * window, Math.floor((rate * trim.fadeMs) / 1000));
+  const fadeIn = Math.min(first * window - start, Math.floor((rate * trim.fadeInMs) / 1000));
+  const hasTrailingMargin = end > (last + 1) * window;
+  const fadeOut = hasTrailingMargin
+    ? Math.min(Math.floor((rate * trim.fadeOutMs) / 1000), end - start - fadeIn)
+    : 0;
   for (let index = 0; index < fadeIn; index += 1) {
     kept[index] = Math.round((kept[index] ?? 0) * Math.sin((Math.PI / 2) * (index / fadeIn)));
   }

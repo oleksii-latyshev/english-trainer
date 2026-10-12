@@ -110,9 +110,10 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   current phrase to start, and is sized from the audio already queued (the lead) and the measured
   synthesis speed so that it is ready before the lead runs out (at most 120 characters, up to 24
   more to reach a clause boundary). Rendering pauses while more than 6 s of audio is queued. Rust
-  trims model padding in 10 ms RMS windows at 0.003 (−50 dBFS), keeping 40 ms before and 50 ms
-  after speech with a 20 ms equal-power fade at each trimmed edge, so a join inside a sentence leaves about 90 ms of silence and no clip ends on a hard edge; between sentences the
-  frontend adds a 150 ms pause. Phrases are scheduled on one audio clock (Web Audio) created at the
+  trims model padding in 10 ms RMS windows at 0.003 (−50 dBFS), keeping 40 ms before and 15 ms
+  after speech (the model's tail after the last word is a low-level creak, so it is not kept), with
+  equal-power fades of 20 ms in and 30 ms out, so a join inside a sentence leaves about 60 ms of silence and no clip ends on a hard
+  edge; between sentences the frontend adds a 150 ms pause. Phrases are scheduled on one audio clock (Web Audio) created at the
   model's 44.1 kHz so WebKit never resamples; a phrase starts exactly where the previous one ends.
 - **Fallback:** `whisper-cli` (`ENG_TRAINER_WHISPER_BIN`, `PATH`, Homebrew paths) in a private temp
   dir, 120 s timeout. Typed `TranscriptionError` codes: `model_missing`, `engine_missing`,

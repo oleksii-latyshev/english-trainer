@@ -3,8 +3,9 @@ use crate::voice::error::VoiceError;
 const WINDOW_DIVISOR: usize = 100;
 const SILENCE_RATIO: f64 = 0.003;
 const MARGIN_BEFORE_MS: usize = 40;
-const MARGIN_AFTER_MS: usize = 50;
-const FADE_MS: usize = 20;
+const MARGIN_AFTER_MS: usize = 15;
+const FADE_IN_MS: usize = 20;
+const FADE_OUT_MS: usize = 30;
 
 fn apply_fades(samples: &mut [i16], fade_in: usize, fade_out: usize) {
     let length = samples.len();
@@ -60,8 +61,13 @@ pub fn trim_padding(mut wav: Vec<u8>) -> Result<Vec<u8>, VoiceError> {
     };
     let start = (first * window).saturating_sub(rate * MARGIN_BEFORE_MS / 1000);
     let end = ((last + 1) * window + rate * MARGIN_AFTER_MS / 1000).min(samples.len());
-    let fade_in = (first * window - start).min(rate * FADE_MS / 1000);
-    let fade_out = (end - (last + 1) * window).min(rate * FADE_MS / 1000);
+    let fade_in = (first * window - start).min(rate * FADE_IN_MS / 1000);
+    let has_trailing_margin = end > (last + 1) * window;
+    let fade_out = if has_trailing_margin {
+        (rate * FADE_OUT_MS / 1000).min(end - start - fade_in)
+    } else {
+        0
+    };
     let mut kept = samples[start..end].to_vec();
     apply_fades(&mut kept, fade_in, fade_out);
     let pcm: Vec<u8> = kept.iter().flat_map(|s| s.to_le_bytes()).collect();
@@ -95,7 +101,7 @@ mod tests {
 
         let output = trim_padding(wave(&samples)).unwrap();
 
-        assert_eq!((output.len() - 44) / 2, 4640);
+        assert_eq!((output.len() - 44) / 2, 4080);
         assert_eq!(
             &output[44 + 640 * 2..44 + 640 * 2 + 2],
             &300i16.to_le_bytes()
@@ -113,7 +119,7 @@ mod tests {
 
         let output = trim_padding(wave(&samples)).unwrap();
 
-        assert_eq!((output.len() - 44) / 2, 640 + 1600 + 800);
+        assert_eq!((output.len() - 44) / 2, 640 + 1600 + 240);
     }
 
     #[test]
@@ -152,7 +158,7 @@ mod tests {
         assert_eq!(pcm[0], 0);
         assert_eq!(pcm[pcm.len() - 1], 0);
         assert_eq!(pcm[640], 1000);
-        assert_eq!(pcm[640 + 1599], 1000);
+        assert_eq!(pcm[pcm.len() - 481], 1000);
     }
 
     #[test]
@@ -168,5 +174,18 @@ mod tests {
             .windows(2)
             .all(|pair| pair[0].abs() <= pair[1].abs() + 1));
         assert!(fade[319].abs() < 100);
+    }
+
+    #[test]
+    fn a_low_level_creak_after_the_last_word_is_dropped_but_the_word_ends_with_a_fade() {
+        let mut samples = vec![0; 16000];
+        samples[2000..4000].fill(3000);
+        samples[4000..9000].fill(40);
+
+        let pcm = pcm_of(&trim_padding(wave(&samples)).unwrap());
+
+        assert_eq!(pcm.len(), 2960);
+        assert!(pcm[2719].abs() < 3000);
+        assert!(pcm[pcm.len() - 1].abs() <= 1);
     }
 }
