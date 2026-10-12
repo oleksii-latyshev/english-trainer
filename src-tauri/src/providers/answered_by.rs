@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 pub(super) const GEMINI_CONVERSATION_MODEL: &str = "gemini-3.5-flash-lite";
 pub(super) const APPLE_MODEL: &str = "apple-foundation-models";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum AnswerProvider {
     Gemini,
     Apple,
@@ -33,7 +34,8 @@ impl AnswerProvider {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export)]
 pub struct AnsweredBy {
     pub provider: AnswerProvider,
     pub model: String,

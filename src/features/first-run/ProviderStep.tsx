@@ -3,6 +3,7 @@ import { Exit, Option } from 'effect';
 import { AsyncResult } from 'effect/reactivity';
 import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { aiSettingsAtom, aiSettingsErrorMessage, updateAiSettingsAtom } from '@/core/ai-settings';
 import {
   geminiKeyDraftAtom,
   geminiKeyFailureAtom,
@@ -12,17 +13,11 @@ import {
   keySourceLabel,
   saveGeminiKeyAtom,
 } from '@/features/gemini-key';
-import { type AiSettings, getAiSettings, saveAiSettings } from '@/lib/aiSettings';
 import { openExternal } from '@/lib/openExternal';
 import { isProviderError } from '@/lib/types';
 import { measureFirstWords } from './lib/providerSample';
 
 const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
-
-type Load =
-  | { tag: 'loading' }
-  | { tag: 'ready'; settings: AiSettings }
-  | { tag: 'error'; message: string };
 
 type FirstWords =
   | { tag: 'none' }
@@ -161,44 +156,20 @@ function GeminiKeySetup() {
 
 /** Step 2: the conversation provider, saved the moment it is chosen, and the Gemini key. */
 export function ProviderStep() {
-  const [load, setLoad] = useState<Load>({ tag: 'loading' });
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const settingsResult = useAtomValue(aiSettingsAtom);
+  const updateResult = useAtomValue(updateAiSettingsAtom);
+  const update = useAtomSet(updateAiSettingsAtom);
+  const settings = Option.getOrNull(AsyncResult.value(settingsResult));
+  const isSaving = AsyncResult.isWaiting(updateResult);
+  const loadFailure = settings === null ? AsyncResult.error(settingsResult) : Option.none();
+  const saveFailure = isSaving ? Option.none() : AsyncResult.error(updateResult);
 
-  useEffect(() => {
-    let isCurrent = true;
-    getAiSettings()
-      .then((settings) => {
-        if (isCurrent) setLoad({ tag: 'ready', settings });
-      })
-      .catch((error: unknown) => {
-        if (isCurrent) {
-          setLoad({
-            tag: 'error',
-            message: messageOf(error, 'Conversation AI settings could not be loaded.'),
-          });
-        }
-      });
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  async function choose(provider: 'gemini' | 'apple') {
-    if (load.tag !== 'ready' || isSaving) return;
-    setIsSaving(true);
-    setSaveError(null);
-    try {
-      const settings = await saveAiSettings({ ...load.settings, provider });
-      setLoad({ tag: 'ready', settings });
-    } catch (error) {
-      setSaveError(messageOf(error, 'The choice could not be saved. Please try again.'));
-    } finally {
-      setIsSaving(false);
-    }
+  function choose(provider: 'gemini' | 'apple') {
+    if (settings === null || isSaving) return;
+    update({ provider });
   }
 
-  const provider = load.tag === 'ready' ? load.settings.provider : undefined;
+  const provider = settings?.provider;
   const cards = [
     {
       id: 'gemini',
@@ -221,9 +192,12 @@ export function ProviderStep() {
         <p>Eva needs an AI model to reply. You can change this later in Settings.</p>
       </div>
 
-      {load.tag === 'error' && (
+      {Option.isSome(loadFailure) && (
         <p className="first-run-alert" role="alert">
-          {load.message}
+          {aiSettingsErrorMessage(
+            loadFailure.value,
+            'Conversation AI settings could not be loaded.',
+          )}
         </p>
       )}
 
@@ -234,9 +208,9 @@ export function ProviderStep() {
             aria-checked={provider === card.id}
             className="first-run-choice"
             data-on={provider === card.id}
-            disabled={load.tag !== 'ready' || isSaving}
+            disabled={settings === null || isSaving}
             key={card.id}
-            onClick={() => void choose(card.id)}
+            onClick={() => choose(card.id)}
             role="radio"
             type="button"
           >
@@ -252,9 +226,12 @@ export function ProviderStep() {
         ))}
       </div>
 
-      {saveError && (
+      {Option.isSome(saveFailure) && (
         <p className="first-run-alert" role="alert">
-          {saveError}
+          {aiSettingsErrorMessage(
+            saveFailure.value,
+            'The choice could not be saved. Please try again.',
+          )}
         </p>
       )}
 

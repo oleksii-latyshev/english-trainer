@@ -11,6 +11,7 @@ mod rescue;
 mod session_wrapup;
 mod settings;
 pub(crate) mod spoken_review;
+pub use crate::ai_settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
 pub use agy::guided::{generate_guided_answer, GuidedAnswer};
 pub use agy::session_wrapup::generate_session_wrapup;
 pub use agy::spoken_review::generate_review_material;
@@ -22,7 +23,6 @@ pub use rescue::{generate_rescue, RescueKind, RescueRequest, RescueResponse};
 pub use session_wrapup::{
     parse_wrapup_result, GeneratedWrapupPhrase, WrapupAnswer, WrapupRequest, WrapupResult,
 };
-pub use settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
 #[cfg(test)]
 pub use spoken_review::GeneratedReviewMaterial;
 pub use spoken_review::{
@@ -57,8 +57,9 @@ pub(crate) fn resolve_agy_binary() -> Option<std::path::PathBuf> {
 }
 
 /// Reply text delivered to the UI while a turn is still being generated.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
 #[serde(tag = "kind", rename_all = "snake_case")]
+#[ts(export)]
 pub enum ReplyStreamEvent {
     Delta { text: String },
 }
@@ -363,18 +364,22 @@ pub struct ContextTurn {
     pub assistant_question: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export)]
 pub struct ConversationTurn {
     pub spoken_reply: String,
     pub question: Option<String>,
     pub session_phase: String,
     pub is_complete: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub provider_latency_ms: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub first_token_ms: Option<u64>,
     /// The model that wrote this reply; absent only for replies stored before it was recorded.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub answered_by: Option<AnsweredBy>,
 }
 
