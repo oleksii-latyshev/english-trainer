@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MicrophoneSession } from '@/audio/microphoneSession';
-import type { PcmRecorder } from '@/audio/recordPcm';
-import type { MicrophoneController } from '@/audio/useMicrophoneSession';
+import type { MicrophoneController, PcmRecorder, WarmSession } from '@/app/microphone';
+import { microphoneError } from '@/core/audio';
 import type { SpeechControls } from '@/core/speech';
 import {
   type CaptureState,
@@ -19,7 +18,6 @@ import {
   type TurnWatch,
   watchActiveTurn,
 } from './listening';
-import { microphoneError } from './microphoneError';
 import { startOneShotLiveTranscript } from './oneShotLiveTranscript';
 import { createRescueCapture } from './rescueCapture';
 import type { SpeechTiming } from './TimingPanel';
@@ -126,7 +124,7 @@ export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneControl
 
   function enterRecording(
     recorder: PcmRecorder,
-    session: MicrophoneSession | null,
+    session: WarmSession | null,
     mode: RecordingMode,
     requestId: number,
     requestedAtMs: number,

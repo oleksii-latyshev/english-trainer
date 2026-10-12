@@ -1,6 +1,6 @@
 import { isTauri } from '@tauri-apps/api/core';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import type { ActualAudioInput } from '@/audio/types';
+import type { ActualAudioInput } from '@/core/audio';
 import type { CaptureState, Recording } from './captureView';
 import type { SpeechTiming } from './TimingPanel';
 import { transcribeWav } from './transcribeWav';

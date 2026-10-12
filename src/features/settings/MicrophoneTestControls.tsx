@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
-import { MICROPHONE_TEST_DURATION_MS, type useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';
 import { MicrophoneSignalDetails } from './MicrophoneSignalDetails';
+import { MICROPHONE_TEST_DURATION_MS, type useMicrophoneTest } from './useMicrophoneTest';
 
 type Test = ReturnType<typeof useMicrophoneTest>;
 

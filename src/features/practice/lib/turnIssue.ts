@@ -1,4 +1,4 @@
-import type { MicrophoneStatus } from '@/audio/microphoneManager';
+import type { MicrophoneStatus } from '@/core/audio';
 import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
 
 /** What fixes a problem in one press; the screen maps each to an existing action. */

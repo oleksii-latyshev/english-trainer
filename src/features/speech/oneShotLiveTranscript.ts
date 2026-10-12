@@ -1,4 +1,4 @@
-import type { PcmRecorder } from '@/audio/recordPcm';
+import type { PcmRecorder } from '@/app/microphone';
 import { startLiveTranscript } from './liveTranscript';
 
 // Match the turn detector's minimum to keep silence below the partial-request gate.

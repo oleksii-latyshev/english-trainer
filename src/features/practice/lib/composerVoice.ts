@@ -1,4 +1,4 @@
-import type { MicrophoneStatus } from '@/audio/microphoneManager';
+import type { MicrophoneStatus } from '@/core/audio';
 import type { RecordingMode } from '@/features/speech/captureView';
 import type { PracticeActions, PracticeViewModel } from '../practiceViewModel';
 

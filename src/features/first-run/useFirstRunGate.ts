@@ -1,7 +1,7 @@
 import { useAtomValue } from '@effect/atom-react';
 import { AsyncResult } from 'effect/reactivity';
 import { useEffect, useState } from 'react';
-import { getPreferredDeviceId } from '@/audio/devicePreference';
+import { readPreferredMicrophone } from '@/core/audio';
 import { readSpeechVoice } from '@/core/voice-preference';
 import { geminiKeyStatusAtom } from '@/features/gemini-key';
 import { getLearningMemory } from '@/features/memory/memoryApi';
@@ -20,7 +20,7 @@ async function gatherEvidence(hasSession: boolean, hasGeminiKey: boolean): Promi
       memory.status === 'fulfilled' &&
       (memory.value.mistakes.length > 0 || memory.value.phrase_cards.length > 0),
     hasVoiceChoice: readSpeechVoice().voiceURI !== null,
-    hasMicrophoneChoice: getPreferredDeviceId() !== '',
+    hasMicrophoneChoice: readPreferredMicrophone() !== '',
   };
 }
 

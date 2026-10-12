@@ -1,7 +1,7 @@
 import { useAtomSet } from '@effect/atom-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useRef, useState } from 'react';
-import { usePreferredMicrophone } from '@/audio/devicePreference';
+import { usePreferredMicrophone } from '@/core/audio';
 import { conversationFlowAtom } from '@/core/conversation-flow';
 import type { SpeechControls } from '@/core/speech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';

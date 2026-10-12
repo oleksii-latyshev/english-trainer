@@ -1,6 +1,6 @@
 import { useAtomValue } from '@effect/atom-react';
 import { useEffect, useRef, useState } from 'react';
-import { useMicrophoneActivity } from '@/audio/useMicrophoneActivity';
+import { useMicrophoneActivity } from '@/app/microphone';
 import { useTrainer } from '@/context/TrainerContext';
 import { conversationFlowAtom } from '@/core/conversation-flow';
 import type { SpeechControls } from '@/core/speech';

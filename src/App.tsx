@@ -1,6 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useMicrophoneSession } from '@/audio/useMicrophoneSession';
+import { useMicrophoneSession } from '@/app/microphone';
 import { useSpeech } from '@/core/speech';
 import { useFirstRunGate } from '@/features/first-run/useFirstRunGate';
 import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';

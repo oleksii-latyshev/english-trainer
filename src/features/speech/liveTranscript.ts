@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { PcmRecorder } from '@/audio/recordPcm';
+import type { PcmRecorder } from '@/app/microphone';
 import { getSpeechEngineStatus } from '@/lib/speechTypes';
 import { createLiveTicker } from './liveTicker';
 

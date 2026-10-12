@@ -1,8 +1,8 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { Bookmark, MessageCircle, Settings } from 'lucide-react';
 import type React from 'react';
-import type { MicrophoneStatus } from '@/audio/microphoneManager';
 import { useTrainer } from '@/context/TrainerContext';
+import type { MicrophoneStatus } from '@/core/audio';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import {
   activeSettingsSection,

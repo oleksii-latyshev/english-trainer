@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { MutableRefObject } from 'react';
-import type { PcmRecorder } from '@/audio/recordPcm';
+import type { PcmRecorder } from '@/app/microphone';
 import type { CaptureState } from './captureView';
 import type { TurnWatch } from './listening';
 

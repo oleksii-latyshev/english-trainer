@@ -1,4 +1,4 @@
-import type { MicrophoneStatus } from '@/audio/microphoneManager';
+import type { MicrophoneStatus } from '@/core/audio';
 
 export type PauseSignals = {
   micStatus: MicrophoneStatus | 'unmanaged';

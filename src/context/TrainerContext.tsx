@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { MicrophoneController } from '@/audio/useMicrophoneSession';
+import type { MicrophoneController } from '@/app/microphone';
 import type { SpeechControls } from '@/core/speech';
 import type { FirstRunGate } from '@/features/first-run/useFirstRunGate';
 import type { DueCount } from '@/features/memory/useDuePhraseCount';
