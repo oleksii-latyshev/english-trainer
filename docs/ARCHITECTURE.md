@@ -67,11 +67,12 @@ record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
   Memory review recorders and never opens a second microphone.
 - Raw audio exists only in memory and a temporary directory and is deleted after transcription,
   unless the learner opts in to keeping it (TR §8).
-- Speech output: `voice::VoiceEngine` owns one persistent bundled Supertonic 3 helper, prewarmed
-  outside the conversation queue, returning PCM WAV over typed binary IPC; its process lifecycle
-  stays in Rust. The UI speech facade (play, stream, pause, resume, stop) renders one phrase ahead
-  and falls back to macOS system voices for the rest of a stream when the engine is busy, slow or
-  unavailable. Limits and timings: TR §4.
+- Speech output: the `voice` context owns one persistent bundled Supertonic 3 helper behind the
+  `SpeechEngine` port, prewarmed outside the conversation queue, returning trimmed PCM WAV over
+  typed binary IPC; its process lifecycle stays in Rust. `core/speech` (Effect services, `Stream`,
+  `Scope`) turns the reply text stream into audio: it renders phrases ahead of playback, schedules
+  them on one Web Audio clock and falls back to macOS system voices for the rest of a stream when
+  the engine is busy, slow or unavailable. Interrupting closes the scope. Limits and timings: TR §4.
 
 ## 5. Conversation vs evaluation
 

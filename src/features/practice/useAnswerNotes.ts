@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import type { SpeechControls } from '@/core/speech';
 import { latestPausedSequence } from '@/features/coach/lib/note';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { NoteTools } from './AnswerNote';
 import type { SessionDetails } from './lib/practiceState';
@@ -14,7 +14,7 @@ type Options = {
   secondTry: ReturnType<typeof useSecondTry>;
   model: PracticeViewModel;
   actions: PracticeActions;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   retryHistory: () => void;
 };
 

@@ -54,11 +54,16 @@ ship with their licences. Measure real latency before changing phrase length or 
 
 ```bash
 python3 scripts/check-voice.py
-cargo test --manifest-path src-tauri/Cargo.toml voice::tests::real_bundled_voice_latency_and_padding -- --ignored --nocapture
+cargo test --manifest-path src-tauri/Cargo.toml voice::infra::supertonic::tests::real_bundled_voice_latency -- --ignored --nocapture
+bun scripts/measure-voice-gaps.ts --replies replies.json --rounds 3
 ```
 
-The first fails when warm p95 generation exceeds 750 ms; the second exercises the persistent engine
-and padding trimming.
+The first fails when warm p95 generation exceeds 750 ms; the second exercises the persistent engine.
+The third replays real replies (`replies.json`: an array of strings, two to four sentences each)
+through the previous pipeline and the current one with the real helper and prints time to first
+audio, per-phrase synthesis time, fallbacks and the silence between phrases of one sentence. Run it
+on an idle Mac; every number in a pull request that changes phrase length, deadlines or padding
+trimming comes from it.
 
 ## AI providers
 

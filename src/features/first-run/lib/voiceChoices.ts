@@ -1,7 +1,6 @@
-import { isNoveltyVoice, voiceQuality } from '@/features/speech/lib/voiceMetadata';
-import { getVoiceOptions, type SpeechVoiceInfo } from '@/features/speech/voices';
+import { getVoiceOptions, isNoveltyVoice, type SpeechVoiceInfo, voiceQuality } from '@/core/speech';
 
-export { isNoveltyVoice, voiceQuality } from '@/features/speech/lib/voiceMetadata';
+export { isNoveltyVoice, voiceQuality } from '@/core/speech';
 
 export type VoiceChoice = {
   voiceURI: string;

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMicrophoneActivity } from '@/app/microphone';
 import { useTrainer } from '@/context/TrainerContext';
 import { conversationFlowAtom } from '@/core/conversation-flow';
+import type { SpeechControls } from '@/core/speech';
 import {
   type FollowUpState,
   followUpError,
@@ -17,7 +18,6 @@ import {
 import { type SessionDetails, sessionDetails } from '@/features/practice/lib/practiceState';
 import { preparePracticeTurn } from '@/features/practice/lib/preparePracticeTurn';
 import type { SentAnswer } from '@/features/practice/lib/sentAnswer';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import { type ConversationTurn, isConversationTurn } from '@/lib/types';
 import type { InputSource } from './lib/inputSource';
 import {
@@ -44,7 +44,7 @@ import { useStreamSpeech } from './useStreamSpeech';
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   onNavigate?: (screen: TalkScreenName) => void;
 };
 

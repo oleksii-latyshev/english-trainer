@@ -2,9 +2,9 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { MicrophoneController, WarmSession } from '@/app/microphone';
 import { type PcmRecorder, startPcmRecording } from '@/app/microphone';
 import { readConversationFlow } from '@/core/conversation-flow';
+import type { SpeechControls } from '@/core/speech';
 import { type CaptureState, preRollMsFor, type RecordingMode } from './captureView';
 import { startLiveTranscript } from './liveTranscript';
-import type { useSystemSpeech } from './useSystemSpeech';
 import { startWarmRecording } from './warmRecorder';
 
 const ELAPSED_TICK_MS = 100;
@@ -12,7 +12,7 @@ const AUTO_LISTEN_IDLE_MS = 20_000;
 // Ignore the first moments of auto-listening: the room may still ring with the assistant's voice.
 const AUTO_SETTLE_MS = 300;
 
-export function isAssistantSpeaking(speech: ReturnType<typeof useSystemSpeech>): boolean {
+export function isAssistantSpeaking(speech: SpeechControls): boolean {
   const tag = speech.state.tag;
   return tag === 'speaking' || tag === 'starting' || tag === 'paused';
 }

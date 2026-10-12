@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MicrophoneController, PcmRecorder, WarmSession } from '@/app/microphone';
 import { microphoneError } from '@/core/audio';
+import type { SpeechControls } from '@/core/speech';
 import {
   type CaptureState,
   isCapturing,
@@ -21,7 +22,6 @@ import { startOneShotLiveTranscript } from './oneShotLiveTranscript';
 import { createRescueCapture } from './rescueCapture';
 import type { SpeechTiming } from './TimingPanel';
 import { createTranscriptionRunner } from './transcriptionRunner';
-import type { useSystemSpeech } from './useSystemSpeech';
 
 export type { CaptureView, RecordingStatus } from './captureView';
 
@@ -30,10 +30,7 @@ export type { CaptureView, RecordingStatus } from './captureView';
  * session (instant start, pre-roll, end-of-turn detection); without one every recording opens
  * its own microphone, as the memory recall drill does.
  */
-export function useSpeechCapture(
-  speech: ReturnType<typeof useSystemSpeech>,
-  mic?: MicrophoneController,
-) {
+export function useSpeechCapture(speech: SpeechControls, mic?: MicrophoneController) {
   const [state, setState] = useState<CaptureState>({ tag: 'idle' });
   const [timing, setTiming] = useState<SpeechTiming>({});
   const recorderRef = useRef<PcmRecorder | null>(null);

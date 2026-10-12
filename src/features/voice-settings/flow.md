@@ -2,7 +2,7 @@
 
 Settings › Voice: engine, the ten natural voices, speed. The choice is stored by
 `core/voice-preference`; the sample is synthesized by the bundled model through
-`synthesize_natural_voice` and played by `VoicePreviewService`. When the local voice is unavailable
+`synthesize_natural_voice` and played by `core/speech` (`previewNaturalVoiceAtom`). When the local voice is unavailable
 the host passes the system voice picker in `systemVoices`.
 
 ## Check the local voice
@@ -11,8 +11,8 @@ the host passes the system voice picker in `systemVoices`.
 sequenceDiagram
     actor Learner
     participant Settings as VoiceSettings
-    participant Atom as naturalVoiceAvailabilityAtom
-    participant Service as VoicePreviewService
+    participant Atom as naturalAvailabilityAtom
+    participant Service as core/speech Speech
     participant Ipc
     participant Command as prewarm_natural_voice
 
@@ -35,18 +35,18 @@ sequenceDiagram
     actor Learner
     participant Settings as VoiceSettings
     participant Pref as naturalVoiceAtom
-    participant Preview as previewVoiceAtom
-    participant Service as VoicePreviewService
+    participant Preview as previewNaturalVoiceAtom
+    participant Service as core/speech Speech
     participant Command as synthesize_natural_voice
 
     Learner->>Settings: selects a voice (click or arrow keys)
     Settings->>Pref: set({ engine: natural, voiceId }) saved at once
     Settings->>Preview: start(voiceId)
     Note over Preview: a running preview is interrupted first, its audio stops
-    Preview->>Service: synthesize(sample, voiceId, saved speed)
+    Preview->>Service: preview(sample, voiceId, saved speed)
     Service->>Command: IPC, WAV bytes decoded with WaveAudioSchema
     Service-->>Preview: audio
-    Preview->>Service: play(audio) until it ends or is interrupted
+    Preview->>Service: plays until it ends or is interrupted
 ```
 
 ## Replay, stop and leave
@@ -55,7 +55,7 @@ sequenceDiagram
 sequenceDiagram
     actor Learner
     participant Settings as VoiceSettings
-    participant Preview as previewVoiceAtom
+    participant Preview as previewNaturalVoiceAtom
 
     Learner->>Settings: presses a voice's play button
     Settings->>Preview: start(voiceId), the selection is unchanged
@@ -69,11 +69,11 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Preview as previewVoiceAtom
-    participant Availability as naturalVoiceAvailabilityAtom
+    participant Preview as previewNaturalVoiceAtom
+    participant Availability as naturalAvailabilityAtom
     participant Settings as VoiceSettings
 
-    Preview->>Preview: synthesize or playback fails (IpcError, IpcDecodeError, VoicePlaybackError)
+    Preview->>Preview: synthesize or playback fails (IpcError, IpcDecodeError, AudioOutputError)
     Preview->>Availability: refresh, the local voice is checked again in the background
     Preview-->>Settings: failure, an alert says the sample could not play
     alt the check says unavailable

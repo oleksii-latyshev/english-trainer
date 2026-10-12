@@ -3,7 +3,7 @@ import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useRef, useState } from 'react';
 import { usePreferredMicrophone } from '@/core/audio';
 import { conversationFlowAtom } from '@/core/conversation-flow';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
+import type { SpeechControls } from '@/core/speech';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { AnswerNote, type NoteTools } from './AnswerNote';
 import { Dialogue } from './Dialogue';
@@ -48,7 +48,7 @@ export type TalkScreenName =
 type Props = {
   model: PracticeViewModel;
   actions: PracticeActions;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   session: SessionDetails;
   dialogue: PracticeDialogue | null;
   historyError: string;

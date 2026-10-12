@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
+import type { SpeechControls } from '@/core/speech';
 import { isRunFinished, summarizeReview } from '@/features/memory/lib/memoryRecallState';
 import { useReviewFlow } from '@/features/memory/useReviewFlow';
-import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
 import type { LearningStatus } from '@/lib/learningTypes';
 import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
 import { warmSpeechEngine } from '@/lib/speechTypes';
@@ -13,7 +13,7 @@ type Props = {
   initialRun: MemoryReviewRun;
   /** Each item's status before this review, by `type:id`; empty when it could not be read. */
   statusBefore: ReadonlyMap<string, LearningStatus>;
-  speech: ReturnType<typeof useSystemSpeech>;
+  speech: SpeechControls;
   onBackToMemory: () => void;
   onStartTalk: () => void;
   onOpenSettings: () => void;
