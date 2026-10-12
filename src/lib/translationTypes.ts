@@ -1,31 +1,5 @@
-export const TRANSLATION_LANGUAGES = [
-  { code: 'ru', name: 'Russian' },
-  { code: 'uk', name: 'Ukrainian' },
-  { code: 'de', name: 'German' },
-  { code: 'fr', name: 'French' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'it', name: 'Italian' },
-  { code: 'pt', name: 'Portuguese' },
-  { code: 'ja', name: 'Japanese' },
-  { code: 'ko', name: 'Korean' },
-  { code: 'zh-Hans', name: 'Chinese (Simplified)' },
-  { code: 'ar', name: 'Arabic' },
-] as const;
+import { isTranslationLanguage, type TranslationLanguage } from '@/core/translation-settings';
 
-export type TranslationLanguage = (typeof TRANSLATION_LANGUAGES)[number]['code'];
-export type TranslationStatusKind =
-  | 'installed'
-  | 'download_required'
-  | 'unsupported'
-  | 'unavailable';
-
-export type TranslationStatus = {
-  native_language: TranslationLanguage;
-  status: TranslationStatusKind;
-  message: string;
-};
-
-export type TranslationSettings = { native_language: TranslationLanguage };
 export type TranslationRequest = { word: string; context: string };
 export type WordTranslation = {
   word: string;
@@ -47,10 +21,6 @@ export type TranslationErrorCode =
   | 'database_error'
   | 'cancelled';
 export type TranslationError = { code: TranslationErrorCode; message: string };
-
-export function isTranslationLanguage(value: unknown): value is TranslationLanguage {
-  return TRANSLATION_LANGUAGES.some((language) => language.code === value);
-}
 
 export function isTranslationErrorCode(value: unknown): value is TranslationErrorCode {
   return (
@@ -78,38 +48,13 @@ export function isTranslationError(value: unknown): value is TranslationError {
   );
 }
 
-export function isTranslationSettings(value: unknown): value is TranslationSettings {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'native_language' in value &&
-    isTranslationLanguage(value.native_language)
-  );
-}
-
-export function isTranslationStatus(value: unknown): value is TranslationStatus {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'native_language' in value &&
-    isTranslationLanguage(value.native_language) &&
-    'status' in value &&
-    (value.status === 'installed' ||
-      value.status === 'download_required' ||
-      value.status === 'unsupported' ||
-      value.status === 'unavailable') &&
-    'message' in value &&
-    boundedText(value.message, 500)
-  );
-}
-
 export function isWordTranslation(value: unknown): value is WordTranslation {
   if (typeof value !== 'object' || value === null) return false;
   if (
     !('word' in value) ||
     !isEnglishWord(value.word) ||
     !('native_language' in value) ||
-    !isTranslationLanguage(value.native_language) ||
+    !(typeof value.native_language === 'string' && isTranslationLanguage(value.native_language)) ||
     !('translation' in value) ||
     !boundedText(value.translation, 300) ||
     !('english_explanation' in value) ||

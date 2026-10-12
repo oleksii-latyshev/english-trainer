@@ -36,12 +36,6 @@ export function progressText(progress: SpeechCheckProgress): string {
   return `${modelName(progress.model_file)}${prompt}: ${progress.done} of ${progress.total} recordings done`;
 }
 
-export function glossarySummary(terms: readonly string[], shown = 5): string {
-  if (terms.length === 0) return 'No words yet.';
-  const list = terms.slice(0, shown).join(', ');
-  return terms.length > shown ? `${list}…` : list;
-}
-
 /** The sentence to read after `current`: the next one still to record, else simply the next. */
 export function nextSentenceIndex(
   sentences: readonly SentenceStatus[],

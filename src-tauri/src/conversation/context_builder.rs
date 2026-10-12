@@ -13,7 +13,7 @@ pub(super) struct ContextInput<'a> {
     pub prior_turns: &'a [StoredTurn],
     pub latest_transcript: &'a str,
     pub learning_targets: Vec<LearningPromptTarget>,
-    pub profile: Option<crate::conversation::PersonalProfile>,
+    pub profile: Option<crate::personal_profile::PersonalProfile>,
     pub topic: Option<String>,
 }
 
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn bounded_context_retains_topic_and_profile_on_compaction() {
-        let profile = crate::conversation::PersonalProfile {
+        let profile = crate::personal_profile::PersonalProfile {
             role: "Software engineer".into(),
             stack: "Rust, TypeScript, React, Tauri".into(),
             interests: "Distributed systems, cycling".into(),

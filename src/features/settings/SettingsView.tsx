@@ -7,16 +7,17 @@ import { ApiUsageSettings } from '@/features/api-usage';
 import { AppearanceSettings } from '@/features/appearance';
 import { ConversationFlowSettings } from '@/features/conversation-flow-settings';
 import { GeminiKeyField } from '@/features/gemini-key';
+import { Glossary } from '@/features/glossary';
+import { AboutYou } from '@/features/personal-profile';
 import { PrivacySettings } from '@/features/privacy';
+import { TranslationSettings } from '@/features/translation-settings';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import { GroupCard } from '@/shared/ui/group-card';
 import { EvaSettingsLink } from './EvaSettingsLink';
 import { MicrophoneSettings } from './MicrophoneSettings';
-import { PersonalProfileSettings } from './PersonalProfileSettings';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
 import { SpeechSettings } from './SpeechSettings';
-import { TranslationSettings } from './TranslationSettings';
 import { VoiceSettings } from './VoiceSettings';
 import './settings.css';
 import './settingsControls.css';
@@ -78,7 +79,10 @@ export function SettingsView() {
       <AppearanceSettings />
       <EvaSettingsLink />
       <ConversationFlowSettings />
-      <PersonalProfileSettings />
+      <GroupCard id="personalisation" title="Personalisation">
+        <AboutYou />
+        <Glossary />
+      </GroupCard>
       <PrivacySettings />
       <SetupDetails
         onRecheck={() => void loadDiagnostics()}

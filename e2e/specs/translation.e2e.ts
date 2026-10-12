@@ -134,13 +134,13 @@ test('native language changes persist and are used by later lookups', async ({
   tauri.memory.withRepeatedMistake();
   await app.open();
   await app.sidebar.openSettings();
-  await expect(settings.nativeLanguage).toHaveValue('ru');
-  await settings.chooseNativeLanguage('de');
-  await expect(settings.nativeLanguage).toHaveValue('de');
+  await expect(settings.nativeLanguage).toHaveText('Russian');
+  await settings.chooseNativeLanguage('German');
+  await expect(settings.nativeLanguage).toHaveText('German');
   await expect.poll(async () => (await tauri.calls('save_translation_settings')).length).toBe(1);
   await app.reload();
   await app.sidebar.openSettings();
-  await expect(settings.nativeLanguage).toHaveValue('de');
+  await expect(settings.nativeLanguage).toHaveText('German');
   await app.sidebar.openMemory();
   const { translation } = app;
   await translation.open();
@@ -157,10 +157,10 @@ test('native language remains editable when translation status fails', async ({
   tauri.translation.failingStatusCheck();
   await app.open();
   await app.sidebar.openSettings();
-  await expect(settings.nativeLanguage).toHaveValue('ru');
+  await expect(settings.nativeLanguage).toHaveText('Russian');
   await expect(settings.statusFailure).toBeVisible();
-  await settings.chooseNativeLanguage('de');
-  await expect(settings.nativeLanguage).toHaveValue('de');
+  await settings.chooseNativeLanguage('German');
+  await expect(settings.nativeLanguage).toHaveText('German');
   expect(await tauri.calls('prepare_translation_languages')).toEqual([]);
 });
 

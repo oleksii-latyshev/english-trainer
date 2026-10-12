@@ -338,7 +338,7 @@ pub struct ConversationContext {
     pub asked_questions: Vec<String>,
     /// Learner background profile. Data, never instructions.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub profile: Option<crate::conversation::PersonalProfile>,
+    pub profile: Option<crate::personal_profile::PersonalProfile>,
     /// Session topic label.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub topic: Option<String>,
