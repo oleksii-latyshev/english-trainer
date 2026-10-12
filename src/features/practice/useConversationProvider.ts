@@ -1,37 +1,21 @@
-import { useEffect, useState } from 'react';
-import { getAiSettings, saveAiSettings } from '@/lib/aiSettings';
-import type { ConversationProviderId } from '@/lib/types';
+import { useAtomSet, useAtomValue } from '@effect/atom-react';
+import { Exit, Option } from 'effect';
+import { AsyncResult } from 'effect/reactivity';
+import { aiSettingsAtom, updateAiSettingsAtom } from '@/core/ai-settings';
 import { toast } from '@/shared/ui/toast';
 
 /** The saved conversation model, and the one-press switch to the on-device one after a stalled reply. */
 export function useConversationProvider() {
-  const [provider, setProvider] = useState<ConversationProviderId | null>(null);
-
-  useEffect(() => {
-    let isCurrent = true;
-    getAiSettings()
-      .then((settings) => {
-        if (isCurrent) setProvider(settings.provider);
-      })
-      .catch(() => {
-        // Harmless by design: the provider only decides whether the shortcut is offered.
-      });
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
+  const settings = useAtomValue(aiSettingsAtom);
+  const update = useAtomSet(updateAiSettingsAtom, { mode: 'promiseExit' });
+  const provider = Option.getOrNull(AsyncResult.value(settings))?.provider ?? null;
 
   /** Saves Apple on-device as the conversation model; false when it could not be saved. */
   async function switchToApple(): Promise<boolean> {
-    try {
-      const current = await getAiSettings();
-      const saved = await saveAiSettings({ ...current, provider: 'apple' });
-      setProvider(saved.provider);
-      return true;
-    } catch {
-      toast.danger('Could not switch to Apple on-device. You can change the model in Settings.');
-      return false;
-    }
+    const exit = await update({ provider: 'apple' });
+    if (Exit.isSuccess(exit)) return true;
+    toast.danger('Could not switch to Apple on-device. You can change the model in Settings.');
+    return false;
   }
 
   return { canSwitchToApple: provider !== null && provider !== 'apple', switchToApple };

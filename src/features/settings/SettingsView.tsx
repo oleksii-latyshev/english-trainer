@@ -2,19 +2,21 @@ import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
+import { AiProviderSettings } from '@/features/ai-provider';
+import { ApiUsageSettings } from '@/features/api-usage';
+import { GeminiKeyField } from '@/features/gemini-key';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import { AppearanceSettings } from './AppearanceSettings';
 import { ConversationFlowSettings } from './ConversationFlowSettings';
-import { ConversationProviderSettings } from './ConversationProviderSettings';
 import { EvaSettingsLink } from './EvaSettingsLink';
 import { MicrophoneSettings } from './MicrophoneSettings';
 import { PersonalProfileSettings } from './PersonalProfileSettings';
 import { PrivacySettings } from './PrivacySettings';
+import { SettingsGroup } from './SettingsGroup';
 import { type DiagnosticsState, SetupDetails } from './SetupDetails';
 import { SpeechSettings } from './SpeechSettings';
 import { TranslationSettings } from './TranslationSettings';
-import { UsageSettings } from './UsageSettings';
 import { VoiceSettings } from './VoiceSettings';
 import './settings.css';
 
@@ -64,9 +66,13 @@ export function SettingsView() {
       <h1>Settings</h1>
       <MicrophoneSettings />
       <SpeechSettings />
-      <ConversationProviderSettings />
+      <SettingsGroup id="ai" title="Conversation AI">
+        <AiProviderSettings geminiKeyField={<GeminiKeyField />} />
+      </SettingsGroup>
       <TranslationSettings />
-      <UsageSettings />
+      <SettingsGroup id="usage" title="Usage">
+        <ApiUsageSettings />
+      </SettingsGroup>
       <VoiceSettings />
       <AppearanceSettings />
       <EvaSettingsLink />

@@ -45,7 +45,6 @@
 .settings-field:focus-visible,
 .settings-switch:focus-visible,
 .settings-segment button:focus-visible,
-.settings-radio input:focus-visible + .settings-radio-dot,
 .settings-swatch:focus-visible,
 .settings-mood:focus-visible {
   outline: 2px solid var(--et-accent);

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { type AiSettingsOptions, installAiSettings } from './ai-settings';
 import { installBase } from './base';
 import type { IpcCall } from './harness';
 import { LiveReviewBackend } from './live-review';
@@ -25,6 +26,7 @@ export class FakeBackend {
   readonly streaming: StreamingBackend;
   readonly rescue: RescueBackend;
   readonly naturalVoice: NaturalVoiceBackend;
+  aiSettingsSeed: AiSettingsOptions = {};
   private installed = false;
   private tolerateUnhandledCommands = false;
 
@@ -67,7 +69,7 @@ export class FakeBackend {
     await this.wrapup.install();
     await this.streaming.install();
     await this.rescue.install();
-    await this.naturalVoice.install();
+    await installAiSettings(this.page, this.aiSettingsSeed);
   }
 
   async calls(command?: string): Promise<IpcCall[]> {
