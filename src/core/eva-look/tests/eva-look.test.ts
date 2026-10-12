@@ -1,21 +1,11 @@
 import { expect, it } from 'bun:test';
 import { AtomRegistry } from 'effect/reactivity';
+import { installFakeLocalStorage } from '@/shared/testing/fake-local-storage';
 import { DEFAULT_EVA_LOOK } from '../palette';
 
-const stored = new Map<string, string>([
-  ['english_trainer_eva_look', JSON.stringify({ sphere: 'pearl', eye: 'plum', motion: 'gentle' })],
-]);
-
-const fakeStorage = {
-  getItem: (key: string) => stored.get(key) ?? null,
-  setItem: (key: string, value: string) => void stored.set(key, value),
-  removeItem: (key: string) => void stored.delete(key),
-  clear: () => stored.clear(),
-  key: () => null,
-  length: 0,
-} satisfies Storage;
-
-Object.defineProperty(globalThis, 'window', { value: { localStorage: fakeStorage } });
+const stored = installFakeLocalStorage({
+  english_trainer_eva_look: JSON.stringify({ sphere: 'pearl', eye: 'plum', motion: 'gentle' }),
+});
 
 it('reads a legacy stored look and maps it onto the current palette', async () => {
   const { evaLookAtom } = await import('../model/atoms');

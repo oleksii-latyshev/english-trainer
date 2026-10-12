@@ -16,8 +16,8 @@ import {
 } from '@/lib/translationTypes';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
+import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
-import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; error: TranslationError };
 type StatusState =
@@ -138,7 +138,7 @@ export function TranslationSettings() {
   const currentStatus = status.tag === 'ready' ? status.status : undefined;
 
   return (
-    <SettingsGroup id="translation" title="Translation">
+    <GroupCard id="translation" title="Translation">
       {load.tag === 'loading' && (
         <Notice role="status" tone="quiet">
           Loading translation settings…
@@ -203,6 +203,6 @@ export function TranslationSettings() {
           )}
         </>
       )}
-    </SettingsGroup>
+    </GroupCard>
   );
 }

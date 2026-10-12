@@ -3,7 +3,7 @@ import type { MicrophoneSession } from '@/audio/microphoneSession';
 import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
 import { listenForTurn } from '@/audio/turnListening';
 import type { MicrophoneController } from '@/audio/useMicrophoneSession';
-import { getConversationFlow } from '@/lib/conversationFlowPreferences';
+import { readConversationFlow } from '@/core/conversation-flow';
 import { type CaptureState, preRollMsFor, type RecordingMode } from './captureView';
 import { startLiveTranscript } from './liveTranscript';
 import type { useSystemSpeech } from './useSystemSpeech';
@@ -30,7 +30,7 @@ export function sessionFor(
   if (!controller) return null;
   if (mode === 'auto') {
     const status = controller.status;
-    if (!getConversationFlow().autoListen) return null;
+    if (!readConversationFlow().autoListen) return null;
     if (status !== 'opening' && status !== 'warming' && status !== 'ready') return null;
   }
   return controller.ensure();
@@ -110,7 +110,7 @@ export function watchTurn(
   const listening = listenForTurn(
     session,
     {
-      endPauseMs: getConversationFlow().endPauseMs,
+      endPauseMs: readConversationFlow().endPauseMs,
       settleMs: mode === 'auto' ? AUTO_SETTLE_MS : 0,
     },
     {
@@ -120,7 +120,7 @@ export function watchTurn(
         handlers.onSpeechStarted();
       },
       onTurnEnded: () => {
-        if (isCurrent() && getConversationFlow().handsFree) handlers.onTurnEnded();
+        if (isCurrent() && readConversationFlow().handsFree) handlers.onTurnEnded();
       },
     },
   );

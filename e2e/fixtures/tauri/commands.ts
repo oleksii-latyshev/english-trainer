@@ -266,7 +266,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
       finish_practice_session: finish,
       get_session_wrapup: () => harness.finished,
       prewarm_conversation_provider: () => undefined,
-      set_dock_icon: () => undefined,
+      set_dock_icon: () => null,
       warm_speech_engine: () => undefined,
       'plugin:event|listen': () => 1,
       'plugin:event|unlisten': () => undefined,

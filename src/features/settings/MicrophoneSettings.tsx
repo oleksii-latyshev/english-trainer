@@ -6,11 +6,11 @@ import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
+import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
 import { LevelMeter } from './LevelMeter';
 import { MicrophoneDeviceSelect } from './MicrophoneDeviceSelect';
 import { MicrophoneTestControls } from './MicrophoneTestControls';
-import { SettingsGroup } from './SettingsGroup';
 
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();
@@ -47,7 +47,7 @@ export function MicrophoneSettings() {
     .join(' ');
 
   return (
-    <SettingsGroup id="microphone" title="Microphone">
+    <GroupCard id="microphone" title="Microphone">
       {practiceCapturing && (
         <Notice role="status" tone="warn">
           Finish the active practice recording before testing or changing the microphone.
@@ -103,6 +103,6 @@ export function MicrophoneSettings() {
         }}
         test={test}
       />
-    </SettingsGroup>
+    </GroupCard>
   );
 }
