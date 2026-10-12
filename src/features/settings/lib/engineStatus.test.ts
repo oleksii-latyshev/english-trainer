@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { SpeechEngineStatus, SpeechSettings } from '@/lib/speechTypes';
+import type { SpeechEngineStatus, SpeechSettings } from '@/app/speech-capture';
 import { engineLabel, engineProblem, liveTranscriptDescription } from './engineStatus';
 
 const ready: SpeechEngineStatus = {

@@ -1,4 +1,4 @@
-import type { CaptureView } from '@/features/speech/useSpeechCapture';
+import type { CaptureView } from '@/app/speech-capture';
 import type { PracticePhase } from '@/lib/practiceOptions';
 import type { AttemptComparison, ConversationTurn } from '@/lib/types';
 import type { PracticeState } from './lib/practiceState';

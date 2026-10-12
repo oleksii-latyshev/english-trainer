@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { LevelMeter, MicButton } from '@/components/MicControl';
 import {
   deleteSpeechCheckRecordings,
   type SentenceStatus,
   type SpeechCheckStatus,
   saveSpeechCheckRecording,
   speechErrorMessage,
-} from '@/lib/speechTypes';
+} from '@/app/speech-capture';
+import { LevelMeter, MicButton } from '@/components/MicControl';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';

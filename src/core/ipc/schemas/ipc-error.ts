@@ -16,6 +16,10 @@ export const IpcErrorCodeSchema = bindingSchema<IpcErrorCode>()(
     'busy',
     'invalid_session',
     'database_error',
+    'invalid_audio',
+    'no_speech',
+    'model_missing',
+    'engine_missing',
   ]),
 );
 

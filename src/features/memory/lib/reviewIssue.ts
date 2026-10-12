@@ -1,4 +1,4 @@
-import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
+import type { TranscriptionRecovery } from '@/core/speech';
 
 /** A step of the review that failed after the learner had done their part. */
 export type ReviewActionError = 'save' | 'too-long' | 'skip' | 'finish';

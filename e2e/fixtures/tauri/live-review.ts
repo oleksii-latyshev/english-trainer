@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { SpeechEngineStatus } from '@/lib/speechTypes';
+import type { SpeechEngineStatus } from '@/core/ipc';
 
 export type LiveReviewOptions = {
   unavailable?: boolean;

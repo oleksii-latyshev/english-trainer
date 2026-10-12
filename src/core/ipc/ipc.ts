@@ -26,9 +26,11 @@ export class Ipc extends Context.Service<Ipc, IpcShape>()('core/ipc/Ipc') {
   });
 }
 
-class IpcRejection extends Data.TaggedError('IpcRejection')<{ readonly rejection: unknown }> {}
+export class IpcRejection extends Data.TaggedError('IpcRejection')<{
+  readonly rejection: unknown;
+}> {}
 
-function failWithDecodedRejection(command: string, rejection: unknown) {
+export function failWithDecodedRejection(command: string, rejection: unknown) {
   return Schema.decodeUnknownEffect(IpcErrorSchema)(rejection).pipe(
     Effect.mapError((cause) => new IpcDecodeError({ command, cause })),
     Effect.flatMap((fields) => Effect.fail(new IpcError(fields))),

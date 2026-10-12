@@ -57,7 +57,7 @@ record (AudioWorklet, mono PCM, 16 kHz, browser voice processing off)
 - One warm microphone session stays open while a practice session is active. Warm-up happens once
   at open, not per answer; a short pre-roll keeps the first syllable. Energy-based turn detection
   ends a turn after a pause.
-- The `whisper-server` child (Rust `audio` module) holds the model: one per app run, bound to
+- The `whisper-server` child (Rust `speech_recognition` context) holds the model: one per app run, bound to
   127.0.0.1, started when a session or unfinished Memory review opens or on the first answer,
   restarted once if it dies, stopped on exit (a pid note cleans up after a crash). It is the only
   long-lived process on the speech path; the UI never talks to it. Restart and fallback rules: TR §3.

@@ -2,6 +2,7 @@ import { Effect, Exit, Scope } from 'effect';
 import {
   type ActualAudioInput,
   audioRuntime,
+  type Capture,
   Microphone,
   type RecordedAudio,
   readPreferredMicrophone,
@@ -14,6 +15,7 @@ export type PcmRecorder = {
   readonly cancel: () => Promise<void>;
   readonly actualInput: ActualAudioInput;
   readonly level: () => number;
+  readonly capture: Capture;
 };
 
 export type StartPcmRecordingOptions = {
@@ -46,6 +48,7 @@ export async function startPcmRecording(
     const { input, capture } = await settle(open);
     return {
       actualInput: input,
+      capture,
       level: () => settleSync(capture.level),
       snapshot: (snapshotOptions) => settle(capture.snapshot(snapshotOptions)),
       stop: async () => {

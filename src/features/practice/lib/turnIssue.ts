@@ -1,5 +1,5 @@
 import type { MicrophoneStatus } from '@/core/audio';
-import type { TranscriptionRecovery } from '@/features/speech/transcriptionRecovery';
+import type { TranscriptionRecovery } from '@/core/speech';
 
 /** What fixes a problem in one press; the screen maps each to an existing action. */
 export type TurnFix =

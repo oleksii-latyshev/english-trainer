@@ -17,6 +17,10 @@ pub enum IpcErrorCode {
     Busy,
     InvalidSession,
     DatabaseError,
+    InvalidAudio,
+    NoSpeech,
+    ModelMissing,
+    EngineMissing,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -71,6 +75,9 @@ impl From<IpcErrorCode> for ProviderErrorCode {
             IpcErrorCode::Busy => Self::Busy,
             IpcErrorCode::InvalidSession => Self::InvalidSession,
             IpcErrorCode::DatabaseError => Self::DatabaseError,
+            IpcErrorCode::InvalidAudio => Self::InvalidRequest,
+            IpcErrorCode::NoSpeech => Self::InvalidOutput,
+            IpcErrorCode::ModelMissing | IpcErrorCode::EngineMissing => Self::Unavailable,
         }
     }
 }

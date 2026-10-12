@@ -1,9 +1,9 @@
 import { useAtomSet } from '@effect/atom-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { useEffect } from 'react';
+import { warmSpeechEngine } from '@/app/speech-capture';
 import { prewarmConversationProviderAtom } from '@/core/ai-settings';
 import type { PracticeMode, PracticePhase } from '@/lib/practiceOptions';
-import { warmSpeechEngine } from '@/lib/speechTypes';
 
 export function usePrewarmProvider(
   sessionId: number | undefined,

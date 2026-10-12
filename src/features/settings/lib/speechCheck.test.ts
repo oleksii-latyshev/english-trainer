@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { ModelRun, SentenceStatus } from '@/lib/speechTypes';
+import type { ModelRun, SentenceStatus } from '@/app/speech-capture';
 import {
   formatPercent,
   formatSize,

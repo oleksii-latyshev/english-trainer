@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
+import { warmSpeechEngine } from '@/app/speech-capture';
 import type { SpeechControls } from '@/core/speech';
 import { isRunFinished, summarizeReview } from '@/features/memory/lib/memoryRecallState';
 import { useReviewFlow } from '@/features/memory/useReviewFlow';
 import type { LearningStatus } from '@/lib/learningTypes';
 import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
-import { warmSpeechEngine } from '@/lib/speechTypes';
 import { ReviewActive } from './ReviewActive';
 import { ReviewHeader } from './ReviewHeader';
 import { ReviewSummary } from './ReviewSummary';

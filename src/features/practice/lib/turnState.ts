@@ -1,6 +1,6 @@
+import type { RecordingMode, RecordingStatus } from '@/app/speech-capture';
 import type { MicVariant } from '@/components/MicControl';
 import type { MicrophoneStatus } from '@/core/audio';
-import type { RecordingMode, RecordingStatus } from '@/features/speech/captureView';
 import type { EvaMood } from '@/shared/ui/eva';
 import type { TurnFix, TurnIssue } from './turnIssue';
 

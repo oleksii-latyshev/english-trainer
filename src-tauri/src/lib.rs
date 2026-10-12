@@ -1,6 +1,5 @@
 mod ai_settings;
 mod api_usage;
-mod audio;
 mod conversation;
 mod core;
 mod dock_icon;
@@ -10,6 +9,7 @@ mod persistence;
 mod personal_profile;
 mod providers;
 mod setup;
+mod speech_recognition;
 mod translation;
 mod translation_settings;
 mod voice;
@@ -73,8 +73,7 @@ fn set_dock_icon(
 #[tauri::command]
 async fn get_setup_diagnostics(
     app: tauri::AppHandle,
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    engine: tauri::State<'_, std::sync::Arc<audio::SpeechEngine>>,
+    speech: tauri::State<'_, speech_recognition::SpeechRecognitionService>,
 ) -> Result<setup::SetupDiagnostics, providers::ProviderError> {
     let app_data = app.path().app_data_dir().map_err(|_| {
         providers::ProviderError::new(
@@ -82,9 +81,13 @@ async fn get_setup_diagnostics(
             "Cannot locate application data directory.",
         )
     })?;
-    let model_file = sessions.speech_settings()?.resolved(&app_data).model_file;
-    let server = engine.server_status();
-    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data, &model_file, &server))
+    let model_file = speech
+        .settings()
+        .map_err(|error| providers::ProviderError::from(core::IpcError::from(error)))?
+        .model_file;
+    let model = speech.model_path(&model_file);
+    let server = speech.server_status();
+    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data, &model, &server))
         .await
         .map_err(|_| {
             providers::ProviderError::new(
@@ -638,10 +641,30 @@ pub fn run() {
                 translation_settings::AppleLanguageAvailability::new(translation.clone()),
             ));
             app.manage(translation);
+            let speech_store = std::sync::Arc::new(speech_recognition::SessionSpeechStore::new(
+                sessions.clone(),
+            ));
+            app.manage(speech_recognition::SpeechRecognitionService::new(
+                speech_recognition::SpeechRecognitionPorts {
+                    engine: std::sync::Arc::new(speech_recognition::WhisperEngine::new(Some(
+                        app_data.join("whisper-server.pid"),
+                    ))),
+                    one_off: std::sync::Arc::new(speech_recognition::CliTranscriber),
+                    settings: speech_store.clone(),
+                    glossary: speech_store.clone(),
+                    conversation: speech_store,
+                    models: std::sync::Arc::new(speech_recognition::ModelFiles::new(
+                        app_data.clone(),
+                    )),
+                    recordings: std::sync::Arc::new(speech_recognition::KeptRecordingFiles::new(
+                        app_data.clone(),
+                    )),
+                    speech_check: std::sync::Arc::new(speech_recognition::SpeechCheckFiles::new(
+                        &app_data,
+                    )),
+                },
+            ));
             app.manage(sessions);
-            app.manage(std::sync::Arc::new(audio::SpeechEngine::new(Some(
-                app_data.join("whisper-server.pid"),
-            ))));
             app.manage(apple_helper);
             let voice_directory = app
                 .path()
@@ -657,24 +680,24 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             voice::commands::prewarm_natural_voice,
             voice::commands::synthesize_natural_voice,
-            audio::commands::transcribe_audio,
-            audio::commands::transcribe_partial,
-            audio::rescue_commands::transcribe_rescue,
-            audio::commands::get_speech_settings,
-            audio::commands::save_speech_model,
-            audio::commands::save_live_transcript,
-            audio::commands::warm_speech_engine,
-            audio::commands::get_speech_engine_status,
-            audio::commands::save_keep_raw_audio,
-            audio::commands::list_speech_models,
-            audio::commands::get_glossary,
-            audio::commands::save_glossary,
-            audio::commands::get_kept_recordings,
-            audio::commands::delete_kept_recordings,
-            audio::commands::get_speech_check,
-            audio::commands::save_speech_check_recording,
-            audio::commands::delete_speech_check_recordings,
-            audio::commands::run_speech_check,
+            speech_recognition::commands::transcribe_audio,
+            speech_recognition::commands::transcribe_partial,
+            speech_recognition::commands::transcribe_rescue,
+            speech_recognition::commands::get_speech_settings,
+            speech_recognition::commands::save_speech_model,
+            speech_recognition::commands::save_live_transcript,
+            speech_recognition::commands::warm_speech_engine,
+            speech_recognition::commands::get_speech_engine_status,
+            speech_recognition::commands::save_keep_raw_audio,
+            speech_recognition::commands::list_speech_models,
+            speech_recognition::commands::get_glossary,
+            speech_recognition::commands::save_glossary,
+            speech_recognition::commands::get_kept_recordings,
+            speech_recognition::commands::delete_kept_recordings,
+            speech_recognition::commands::get_speech_check,
+            speech_recognition::commands::save_speech_check_recording,
+            speech_recognition::commands::delete_speech_check_recordings,
+            speech_recognition::commands::run_speech_check,
             translation_settings::commands::get_translation_settings,
             translation_settings::commands::save_translation_settings,
             translation_settings::commands::get_translation_status,
@@ -743,8 +766,10 @@ pub fn run() {
                         );
                     }
                 }
-                if let Some(engine) = app.try_state::<std::sync::Arc<audio::SpeechEngine>>() {
-                    engine.shutdown();
+                if let Some(speech) =
+                    app.try_state::<speech_recognition::SpeechRecognitionService>()
+                {
+                    speech.shutdown();
                 }
             }
         });

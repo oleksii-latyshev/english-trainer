@@ -1,4 +1,4 @@
-import type { SpeechEngineStatus, SpeechSettings } from '@/lib/speechTypes';
+import type { SpeechEngineStatus, SpeechSettings } from '@/app/speech-capture';
 
 export function engineLabel(status: SpeechEngineStatus): string {
   if (status.server === 'ready') return 'Kept loaded · ready';

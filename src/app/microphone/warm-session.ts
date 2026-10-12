@@ -3,6 +3,7 @@ import {
   type ActualAudioInput,
   type AudioServices,
   audioRuntime,
+  type Capture,
   type CaptureOptions,
   MIC_DISCONNECTED_MESSAGE,
   type MicrophoneSession,
@@ -12,6 +13,7 @@ import {
 import { settle, settleSync } from './settle';
 
 export type MicrophoneCapture = {
+  readonly capture: Capture;
   readonly snapshot: (options?: { tailMs: number }) => Promise<Blob | null>;
   readonly stop: () => Promise<RecordedAudio>;
   readonly cancel: () => void;
@@ -39,7 +41,6 @@ export type BeginCaptureOptions = CaptureOptions & {
 
 export type WarmSession = {
   readonly opened: Promise<ActualAudioInput>;
-  readonly noiseFloor: () => number;
   readonly echoCancellationEnabled: () => boolean;
   readonly listenForTurn: (options: TurnListeningOptions, handlers: TurnHandlers) => TurnListening;
   readonly subscribeLevels: (listener: (level: number) => void) => () => void;
@@ -87,6 +88,7 @@ export function captureOnSession(
   }).pipe(Scope.provide(scope));
   const capture = beginOrRelease(begin, closeScope);
   return {
+    capture,
     level: () => settleSync(capture.level),
     snapshot: (snapshotOptions) => settle(capture.snapshot(snapshotOptions)),
     stop: async () => {
@@ -143,10 +145,6 @@ export function warmSessionOf(slot: WarmSlot): WarmSession {
   opened.catch(() => undefined);
   const handle: WarmSession = {
     opened,
-    noiseFloor: () => {
-      const ready = readySession(slot);
-      return ready ? settleSync(ready.noiseFloor) : 0;
-    },
     echoCancellationEnabled: () => {
       const ready = readySession(slot);
       return ready ? settleSync(ready.echoCancellationEnabled) : false;

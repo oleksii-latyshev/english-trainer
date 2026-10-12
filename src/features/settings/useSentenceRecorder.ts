@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { type PcmRecorder, startPcmRecording } from '@/app/microphone';
+import { speechErrorMessage } from '@/app/speech-capture';
 import { microphoneError } from '@/core/audio';
-import { speechErrorMessage } from '@/lib/speechTypes';
 
 /** A sentence is a few seconds; this only stops a recording the learner forgot. */
 const MAX_RECORDING_MS = 30_000;

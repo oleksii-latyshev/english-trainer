@@ -332,7 +332,7 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 term TEXT NOT NULL
             );",
         )?;
-        for (position, term) in crate::audio::SEED_GLOSSARY
+        for (position, term) in crate::speech_recognition::SEED_GLOSSARY
             .iter()
             .enumerate()
             .filter(|_| is_new)

@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
+import type { SpeechEngineStatus } from '@/core/ipc';
 import type { LearningMemoryView } from '@/lib/learningTypes';
 import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
 import type { ReviewMaterials } from '@/lib/reviewMaterialTypes';
-import type { SpeechEngineStatus } from '@/lib/speechTypes';
 import { unavailableSpeechStatus } from '../../data/sessions';
 
 export type ReviewOptions = {

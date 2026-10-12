@@ -1,7 +1,7 @@
 import { Pause, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { SpeechTiming } from '@/features/speech/TimingPanel';
-import { TimingPopover } from '@/features/speech/TimingPanel';
+import type { SpeechTiming } from '@/app/speech-capture';
+import { TimingPopover } from '@/app/speech-capture';
 import {
   elapsedSessionMs,
   formatElapsedClock,

@@ -1,4 +1,9 @@
-import type { ModelRun, SentenceStatus, SpeechCheckProgress, SpeechModel } from '@/lib/speechTypes';
+import type {
+  ModelRun,
+  SentenceStatus,
+  SpeechCheckProgress,
+  SpeechModel,
+} from '@/app/speech-capture';
 
 export function formatPercent(ratio: number | null): string {
   return ratio === null ? 'no terms' : `${Math.round(ratio * 100)}%`;
