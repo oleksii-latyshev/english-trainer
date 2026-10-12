@@ -1,4 +1,5 @@
-import { Effect, Schema, SchemaGetter } from 'effect';
+import { Schema, SchemaGetter } from 'effect';
+import { withFallback } from '@/shared/schema/with-fallback';
 import {
   BODY_COLOURS,
   DEFAULT_EVA_LOOK,
@@ -18,10 +19,7 @@ function selectableIds<T extends Option>(options: readonly T[]): T['id'][] {
 }
 
 function field<Id extends string>(options: readonly Option[], fallback: Id) {
-  return Schema.Literals(selectableIds(options) as Id[]).pipe(
-    Schema.catchDecoding(() => Effect.succeedSome(fallback)),
-    Schema.withDecodingDefault(Effect.succeed(fallback)),
-  );
+  return withFallback(Schema.Literals(selectableIds(options) as Id[]), fallback);
 }
 
 const EvaLookFields = Schema.Struct({
