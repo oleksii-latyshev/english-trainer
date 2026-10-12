@@ -19,8 +19,7 @@
 }
 
 .settings-select:focus-visible,
-.settings-field:focus-visible,
-.settings-radio input:focus-visible + .settings-radio-dot {
+.settings-field:focus-visible {
   outline: 2px solid var(--et-accent);
   outline-offset: 2px;
 }

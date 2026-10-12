@@ -1,9 +1,9 @@
 use super::SessionDatabase;
-use crate::providers::AiSettings;
+use crate::ai_settings::AiSettings;
 use rusqlite::OptionalExtension;
 
 impl SessionDatabase {
-    pub fn ai_settings(&self) -> rusqlite::Result<AiSettings> {
+    pub fn stored_ai_settings(&self) -> rusqlite::Result<Option<AiSettings>> {
         let stored: Option<String> = self
             .connection
             .query_row(
@@ -12,16 +12,17 @@ impl SessionDatabase {
                 |row| row.get(0),
             )
             .optional()?;
-        match stored {
-            None => Ok(AiSettings::default()),
-            Some(json) => serde_json::from_str(&json).map_err(|error| {
-                rusqlite::Error::FromSqlConversionFailure(
-                    0,
-                    rusqlite::types::Type::Text,
-                    Box::new(error),
-                )
-            }),
-        }
+        stored
+            .map(|json| {
+                serde_json::from_str(&json).map_err(|error| {
+                    rusqlite::Error::FromSqlConversionFailure(
+                        0,
+                        rusqlite::types::Type::Text,
+                        Box::new(error),
+                    )
+                })
+            })
+            .transpose()
     }
 
     pub fn save_ai_settings(&self, settings: &AiSettings) -> rusqlite::Result<()> {
@@ -35,28 +36,21 @@ impl SessionDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::providers::{AgyModel, ConversationProvider, EvaStyle};
+    use crate::ai_settings::{AgyModel, ConversationProvider, EvaStyle};
 
     #[test]
     fn settings_default_and_round_trip_without_changing_sessions() {
         let db = SessionDatabase::open_in_memory().unwrap();
-        assert_eq!(db.ai_settings().unwrap(), AiSettings::default());
+        assert_eq!(db.stored_ai_settings().unwrap(), None);
         let settings = AiSettings {
             provider: ConversationProvider::Apple,
             agy_model: AgyModel::FlashLow,
             eva_style: EvaStyle::ShortAndSimple,
         };
         db.save_ai_settings(&settings).unwrap();
-        assert_eq!(db.ai_settings().unwrap(), settings);
-        assert!(serde_json::from_str::<AiSettings>(
-            r#"{"provider":"unknown","agy_model":"default"}"#
-        )
-        .is_err());
-        assert!(serde_json::from_str::<AiSettings>(
-            r#"{"provider":"agy","agy_model":"arbitrary"}"#
-        )
-        .is_err());
+        assert_eq!(db.stored_ai_settings().unwrap(), Some(settings));
     }
+
     #[test]
     fn settings_saved_before_the_style_existed_read_as_natural() {
         let db = SessionDatabase::open_in_memory().unwrap();
@@ -66,13 +60,9 @@ mod tests {
                 [r#"{"provider":"apple","agy_model":"default"}"#],
             )
             .unwrap();
-        let settings = db.ai_settings().unwrap();
+        let settings = db.stored_ai_settings().unwrap().unwrap();
         assert_eq!(settings.provider, ConversationProvider::Apple);
         assert_eq!(settings.eva_style, EvaStyle::Natural);
-        assert!(serde_json::from_str::<AiSettings>(
-            r#"{"provider":"apple","agy_model":"default","eva_style":"chatty"}"#
-        )
-        .is_err());
     }
 
     #[test]
@@ -85,7 +75,7 @@ mod tests {
             .unwrap();
         drop(db);
         let db = SessionDatabase::open(&path).unwrap();
-        assert_eq!(db.ai_settings().unwrap(), AiSettings::default());
+        assert_eq!(db.stored_ai_settings().unwrap(), None);
         let settings = AiSettings {
             provider: ConversationProvider::Apple,
             agy_model: AgyModel::FlashHigh,
@@ -94,8 +84,11 @@ mod tests {
         db.save_ai_settings(&settings).unwrap();
         drop(db);
         assert_eq!(
-            SessionDatabase::open(&path).unwrap().ai_settings().unwrap(),
-            settings
+            SessionDatabase::open(&path)
+                .unwrap()
+                .stored_ai_settings()
+                .unwrap(),
+            Some(settings)
         );
     }
 }

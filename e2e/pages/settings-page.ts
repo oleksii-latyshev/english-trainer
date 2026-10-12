@@ -5,11 +5,15 @@ export class SettingsPage {
   readonly unavailableNotice: Locator;
   readonly nativeLanguage: Locator;
   readonly statusFailure: Locator;
+  readonly runTestButton: Locator;
+  readonly usageHeading: Locator;
 
   constructor(private readonly page: Page) {
     this.unavailableNotice = page.getByText('Local voice is unavailable. Using system speech.');
     this.voices = page.getByRole('radiogroup', { name: "Eva's voice" });
     this.nativeLanguage = page.getByRole('combobox', { name: 'Native language' });
+    this.runTestButton = page.getByRole('button', { name: 'Run test' });
+    this.usageHeading = page.getByRole('heading', { name: 'Usage', exact: true });
     this.statusFailure = page.getByText('Translation availability could not be checked. Retry.');
   }
 
@@ -39,5 +43,22 @@ export class SettingsPage {
 
   async chooseNativeLanguage(code: string): Promise<void> {
     await this.nativeLanguage.selectOption(code);
+  }
+
+  provider(name: string): Locator {
+    return this.page.getByRole('radio', { name });
+  }
+
+  async chooseProvider(name: string): Promise<void> {
+    await this.provider(name).click({ force: true });
+  }
+
+  async chooseFromSelect(label: string, option: string): Promise<void> {
+    await this.page.getByRole('combobox', { name: label }).click();
+    await this.page.getByRole('option', { name: option }).click();
+  }
+
+  async runTest(): Promise<void> {
+    await this.runTestButton.click();
   }
 }

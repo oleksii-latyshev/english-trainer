@@ -1,3 +1,4 @@
+mod ai_settings;
 mod api_usage;
 mod audio;
 mod conversation;
@@ -33,19 +34,6 @@ fn apple_translation_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
         .map(|path| path.join("binaries/apple-translation"))
 }
 
-/// Counts requests and limit errors on a thread of their own, so noting one never delays a reply.
-fn start_usage_log(sessions: &conversation::SessionStore) {
-    let (sender, receiver) = std::sync::mpsc::channel();
-    api_usage::install(sender);
-    let sessions = sessions.clone();
-    std::thread::spawn(move || {
-        for event in receiver {
-            // Best effort: a count that cannot be saved is lost, and nothing else depends on it.
-            let _ = sessions.record_api_usage(&event);
-        }
-    });
-}
-
 /// Delivers streamed reply text to the UI; a closed channel must not fail the turn.
 fn forward_deltas(channel: tauri::ipc::Channel<providers::ReplyStreamEvent>) -> impl FnMut(&str) {
     move |text| {
@@ -59,23 +47,12 @@ fn conversation_task_failed(
     move |_| providers::ProviderError::new(providers::ProviderErrorCode::ProcessFailed, message)
 }
 
-#[tauri::command]
-async fn prewarm_conversation_provider(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    apple: tauri::State<'_, providers::AppleHelper>,
-) -> Result<(), providers::ProviderError> {
-    let settings = sessions.ai_settings()?;
-    let apple = apple.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || providers::prewarm_provider(&settings, &apple))
-        .await
-        .map_err(conversation_task_failed("Provider warm-up failed."))?
-}
-
-#[tauri::command]
-fn get_api_usage(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Result<api_usage::ApiUsageOverview, providers::ProviderError> {
-    sessions.api_usage_overview()
+fn saved_ai_settings(
+    service: &ai_settings::AiSettingsService,
+) -> Result<ai_settings::AiSettings, providers::ProviderError> {
+    service
+        .get()
+        .map_err(|error| providers::ProviderError::from(core::IpcError::from(error)))
 }
 
 #[tauri::command]
@@ -89,21 +66,6 @@ fn set_dock_icon(
             "Could not change the Dock icon. Please retry.",
         )
     })
-}
-
-#[tauri::command]
-fn get_ai_settings(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Result<providers::AiSettings, providers::ProviderError> {
-    sessions.ai_settings()
-}
-
-#[tauri::command]
-fn save_ai_settings(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    settings: providers::AiSettings,
-) -> Result<providers::AiSettings, providers::ProviderError> {
-    sessions.save_ai_settings(settings)
 }
 
 #[tauri::command]
@@ -132,12 +94,12 @@ async fn get_setup_diagnostics(
 
 #[tauri::command]
 async fn generate_follow_up(
-    sessions: tauri::State<'_, conversation::SessionStore>,
+    ai_settings: tauri::State<'_, ai_settings::AiSettingsService>,
     apple: tauri::State<'_, providers::AppleHelper>,
     transcript: String,
     on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
-    let settings = sessions.ai_settings()?;
+    let settings = saved_ai_settings(&ai_settings)?;
     let apple = apple.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         providers::generate_configured_turn(
@@ -235,6 +197,7 @@ fn save_personal_profile(
 async fn send_practice_turn(
     sessions: tauri::State<'_, conversation::SessionStore>,
     coaching: tauri::State<'_, conversation::CoachingQueue>,
+    ai_settings: tauri::State<'_, ai_settings::AiSettingsService>,
     apple: tauri::State<'_, providers::AppleHelper>,
     session_id: u64,
     transcript: String,
@@ -242,7 +205,7 @@ async fn send_practice_turn(
     answer_duration_ms: Option<u64>,
     on_reply: tauri::ipc::Channel<providers::ReplyStreamEvent>,
 ) -> Result<providers::ConversationTurn, providers::ProviderError> {
-    let settings = sessions.ai_settings()?;
+    let settings = saved_ai_settings(&ai_settings)?;
     let apple = apple.inner().clone();
     let sessions = sessions.inner().clone();
     let turn = tauri::async_runtime::spawn_blocking(move || {
@@ -636,6 +599,7 @@ pub fn run() {
                 gemini_key::KeyService::new(gemini_key::EncryptedFileStore::in_folder(&app_data));
             gemini_key::install(key_service.clone());
             app.manage(key_service);
+            let apple_helper = providers::AppleHelper::new(apple_binary(app));
             let database_path = app_data.join("english-trainer.sqlite3");
             let sessions = conversation::SessionStore::open(&database_path).map_err(|error| {
                 std::io::Error::other(format!(
@@ -669,12 +633,20 @@ pub fn run() {
                     )
                 })?,
             );
-            start_usage_log(&sessions);
+            app.manage(ai_settings::AiSettingsService::new(
+                ai_settings::SessionSettingsStore::new(sessions.clone()),
+                ai_settings::AppleProviderWarmup::new(apple_helper.clone()),
+            ));
+            let usage_service = api_usage::ApiUsageService::new(api_usage::SessionUsageStore::new(
+                sessions.clone(),
+            ));
+            api_usage::start_recording(usage_service.clone());
+            app.manage(usage_service);
             app.manage(sessions);
             app.manage(std::sync::Arc::new(audio::SpeechEngine::new(Some(
                 app_data.join("whisper-server.pid"),
             ))));
-            app.manage(providers::AppleHelper::new(apple_binary(app)));
+            app.manage(apple_helper);
             let voice_directory = app
                 .path()
                 .resource_dir()
@@ -714,11 +686,11 @@ pub fn run() {
             translation::commands::prepare_translation_languages,
             translation::commands::translate_word,
             get_setup_diagnostics,
-            get_ai_settings,
+            ai_settings::commands::get_ai_settings,
             set_dock_icon,
-            get_api_usage,
-            save_ai_settings,
-            prewarm_conversation_provider,
+            api_usage::commands::get_api_usage,
+            ai_settings::commands::save_ai_settings,
+            ai_settings::commands::prewarm_conversation_provider,
             gemini_key::commands::get_gemini_key_status,
             gemini_key::commands::save_gemini_api_key,
             gemini_key::commands::delete_gemini_api_key,

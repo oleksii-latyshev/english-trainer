@@ -1,12 +1,7 @@
-//! Reading rate-limit and quota messages. Neither provider has a usage API, so the only
-//! information about a limit is the text of the error it sent.
-
 const MAX_EXCERPT_CHARS: usize = 200;
 
 const QUOTA_MARKERS: [&str; 3] = ["resource_exhausted", "429", "quota"];
 
-/// How long until the quota comes back, from text such as `Resets in 4h44m53s`; `None` when the
-/// text names no time.
 pub fn resets_in_secs(text: &str) -> Option<u64> {
     let lowered = text.to_ascii_lowercase();
     let at = lowered.find("resets in")? + "resets in".len();
@@ -41,8 +36,6 @@ pub fn resets_in_secs(text: &str) -> Option<u64> {
     found.then_some(total)
 }
 
-/// The first line that mentions a quota, bounded, so the app keeps the reason and not a whole
-/// error dump.
 pub fn quota_excerpt(text: &str) -> Option<String> {
     let line = text.lines().map(str::trim).find(|line| {
         let lowered = line.to_ascii_lowercase();
@@ -51,8 +44,6 @@ pub fn quota_excerpt(text: &str) -> Option<String> {
     Some(bounded(line))
 }
 
-/// The `error.message` of a Gemini error body, bounded; a generic line when the body has none.
-/// Only that one field is kept: the rest of a body can echo request details.
 pub fn gemini_error_message(body: &str) -> String {
     let message = serde_json::from_str::<serde_json::Value>(body)
         .ok()
