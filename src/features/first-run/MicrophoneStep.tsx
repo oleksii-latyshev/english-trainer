@@ -1,12 +1,11 @@
 import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { usePreferredMicrophone } from '@/audio/devicePreference';
-import type { AudioInputOption } from '@/audio/types';
-import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
-import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
+import type { AudioInputOption } from '@/core/audio';
+import { useAudioInputOptions, usePreferredMicrophone } from '@/core/audio';
 import { LevelMeter } from '@/features/settings/LevelMeter';
 import { MicrophoneDeviceSelect } from '@/features/settings/MicrophoneDeviceSelect';
+import { useMicrophoneTest } from '@/features/settings/useMicrophoneTest';
 import { Eva } from '@/shared/ui/eva';
 import { checkStatus, isHearingSpeech } from './lib/heardSpeech';
 

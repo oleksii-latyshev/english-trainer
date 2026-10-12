@@ -1,5 +1,5 @@
-import { type AudioSignalSummary, signalMeterValue } from '@/audio/audioSignal';
-import type { ActualAudioInput } from '@/audio/types';
+import type { ActualAudioInput } from '@/core/audio';
+import { type AudioSignalSummary, signalMeterValue } from '@/core/audio';
 
 function processingLabel(value?: boolean): string {
   if (value === undefined) return 'Not reported';

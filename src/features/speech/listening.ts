@@ -1,8 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { MicrophoneSession } from '@/audio/microphoneSession';
-import { type PcmRecorder, startPcmRecording } from '@/audio/recordPcm';
-import { listenForTurn } from '@/audio/turnListening';
-import type { MicrophoneController } from '@/audio/useMicrophoneSession';
+import type { MicrophoneController, WarmSession } from '@/app/microphone';
+import { type PcmRecorder, startPcmRecording } from '@/app/microphone';
 import { readConversationFlow } from '@/core/conversation-flow';
 import { type CaptureState, preRollMsFor, type RecordingMode } from './captureView';
 import { startLiveTranscript } from './liveTranscript';
@@ -26,7 +24,7 @@ export function isAssistantSpeaking(speech: ReturnType<typeof useSystemSpeech>):
 export function sessionFor(
   controller: MicrophoneController | undefined,
   mode: RecordingMode,
-): MicrophoneSession | null {
+): WarmSession | null {
   if (!controller) return null;
   if (mode === 'auto') {
     const status = controller.status;
@@ -37,7 +35,7 @@ export function sessionFor(
 }
 
 export function openRecorder(
-  session: MicrophoneSession | null,
+  session: WarmSession | null,
   options: { mode: RecordingMode; assistantWasSpeaking: boolean; onDeviceLost: () => void },
 ): Promise<PcmRecorder> {
   if (!session) return startPcmRecording(options.onDeviceLost);
@@ -54,7 +52,7 @@ export type TurnWatch = {
 
 /** Attaches practice turn controls and partial text to an already-open warm recording. */
 export function watchActiveTurn(
-  session: MicrophoneSession,
+  session: WarmSession,
   recorder: PcmRecorder,
   mode: RecordingMode,
   options: {
@@ -89,7 +87,7 @@ export function watchActiveTurn(
  * Auto-listening also gives up quietly if nobody speaks for a while.
  */
 export function watchTurn(
-  session: MicrophoneSession,
+  session: WarmSession,
   recorder: PcmRecorder,
   mode: RecordingMode,
   handlers: {
@@ -107,8 +105,7 @@ export function watchTurn(
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = null;
   };
-  const listening = listenForTurn(
-    session,
+  const listening = session.listenForTurn(
     {
       endPauseMs: readConversationFlow().endPauseMs,
       settleMs: mode === 'auto' ? AUTO_SETTLE_MS : 0,

@@ -1,9 +1,7 @@
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
-import { usePreferredMicrophone } from '@/audio/devicePreference';
-import { useAudioInputOptions } from '@/audio/useAudioInputOptions';
-import { useMicrophoneTest } from '@/audio/useMicrophoneTest';
 import { useTrainer } from '@/context/TrainerContext';
+import { useAudioInputOptions, usePreferredMicrophone } from '@/core/audio';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { GroupCard } from '@/shared/ui/group-card';
@@ -11,6 +9,7 @@ import { Notice } from '@/shared/ui/notice';
 import { LevelMeter } from './LevelMeter';
 import { MicrophoneDeviceSelect } from './MicrophoneDeviceSelect';
 import { MicrophoneTestControls } from './MicrophoneTestControls';
+import { useMicrophoneTest } from './useMicrophoneTest';
 
 export function MicrophoneSettings() {
   const { capture, speech } = useTrainer();

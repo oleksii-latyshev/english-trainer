@@ -1,4 +1,4 @@
-import type { ActualAudioInput } from '@/audio/types';
+import type { ActualAudioInput } from '@/core/audio';
 import type { CaptureState, Recording } from './captureView';
 import { transcriptionRecovery } from './transcriptionRecovery';
 

@@ -1,5 +1,4 @@
-import type { MicrophoneStatus } from '@/audio/microphoneManager';
-import type { ActualAudioInput } from '@/audio/types';
+import type { ActualAudioInput, MicrophoneStatus } from '@/core/audio';
 import type { SpeechTiming } from './TimingPanel';
 import type { TranscriptionRecovery } from './transcriptionRecovery';
 

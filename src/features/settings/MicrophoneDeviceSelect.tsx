@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import type { AudioInputOption } from '@/audio/types';
+import type { AudioInputOption } from '@/core/audio';
 
 /** The input-device dropdown shared by Settings and first run. */
 export function MicrophoneDeviceSelect({

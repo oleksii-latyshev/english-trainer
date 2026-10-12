@@ -1,9 +1,8 @@
-import type { MicrophoneSession } from '@/audio/microphoneSession';
-import type { PcmRecorder } from '@/audio/recordPcm';
+import type { PcmRecorder, WarmSession } from '@/app/microphone';
 
 /** Starts capturing on an already open microphone session; the session stays open afterwards. */
 export async function startWarmRecording(
-  session: MicrophoneSession,
+  session: WarmSession,
   options: { preRollMs: number; onDeviceLost: () => void },
 ): Promise<PcmRecorder> {
   const actualInput = await session.opened;
