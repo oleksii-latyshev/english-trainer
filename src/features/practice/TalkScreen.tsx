@@ -104,7 +104,6 @@ export function TalkScreen(props: Props) {
   });
   const { state, presentation, composer, flow } = turn;
   const setConversationFlow = useAtomSet(conversationFlowAtom);
-  const isCapturing = model.status === 'recording';
 
   // Help opens per question; a new question starts closed without an effect resetting it.
   const helpKey = `${session.sessionId}:${session.practicePhase}:${session.turnCount + 1}:${question}`;
@@ -119,7 +118,7 @@ export function TalkScreen(props: Props) {
   const [helpNotice, setHelpNotice] = useState<{ key: string; text: string } | null>(null);
   const helpLevel = help.key === helpKey ? help.level : null;
   const { captureEpoch, isCapturingRef } = useExampleCaptureGuard({
-    isCapturing,
+    captureStatus: model.status,
     helpLevel,
     helpKey,
     helpRequest,

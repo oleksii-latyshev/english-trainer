@@ -102,7 +102,7 @@ test('Speak anyway is enabled while Eva is thinking and interrupts before openin
   talk,
   tauri,
 }) => {
-  tauri.streaming.withoutDeltas();
+  tauri.streaming.withoutDeltas().holdingProvider();
   await sendTypedAnswer({ app, start, talk, tauri });
   await talk.speakAnyway();
   await expect.poll(async () => (await tauri.calls('cancel_practice_reply')).length).toBe(1);
