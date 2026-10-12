@@ -1,8 +1,9 @@
+import { useAtomSet } from '@effect/atom-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { type ReactNode, useRef, useState } from 'react';
 import { usePreferredMicrophone } from '@/audio/devicePreference';
+import { conversationFlowAtom } from '@/core/conversation-flow';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import { setConversationFlow } from '@/lib/conversationFlowPreferences';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { AnswerNote, type NoteTools } from './AnswerNote';
 import { Dialogue } from './Dialogue';
@@ -102,6 +103,7 @@ export function TalkScreen(props: Props) {
     onChooseMicrophone: () => props.onNavigate?.('settings-microphone'),
   });
   const { state, presentation, composer, flow } = turn;
+  const setConversationFlow = useAtomSet(conversationFlowAtom);
   const isCapturing = model.status === 'recording';
 
   // Help opens per question; a new question starts closed without an effect resetting it.
@@ -251,7 +253,7 @@ export function TalkScreen(props: Props) {
             inputLabel={actualInput?.label}
             isSendLocked={lock.isLocked}
             mood={mood}
-            onFlowChange={setConversationFlow}
+            onFlowChange={(patch) => setConversationFlow({ ...flow, ...patch })}
             presentation={presentation}
           />
         )}

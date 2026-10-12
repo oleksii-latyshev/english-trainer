@@ -7,12 +7,20 @@ type Props = {
   onCheckedChange: (checked: boolean) => void;
   label: ReactNode;
   disabled?: boolean;
+  isLabelHidden?: boolean;
   className?: string;
 };
 
-export function Switch({ checked, onCheckedChange, label, disabled = false, className }: Props) {
+export function Switch({
+  checked,
+  onCheckedChange,
+  label,
+  disabled = false,
+  isLabelHidden = false,
+  className,
+}: Props) {
   const id = useId();
-  const { root, text, control, thumb } = switchControl({ disabled });
+  const { root, text, control, thumb } = switchControl({ disabled, isLabelHidden });
   return (
     <div className={root({ className })} data-slot="switch">
       <label className={text()} htmlFor={id}>

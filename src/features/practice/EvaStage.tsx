@@ -1,7 +1,4 @@
-import {
-  type ConversationFlowPreferences,
-  END_PAUSE_RANGE_MS,
-} from '@/lib/conversationFlowPreferences';
+import { type ConversationFlow, END_PAUSE_RANGE_MS } from '@/core/conversation-flow';
 import { Eva, type EvaMood } from '@/shared/ui/eva';
 import { Switch } from '@/shared/ui/switch';
 import type { TurnPresentation } from './lib/turnState';
@@ -11,8 +8,8 @@ const PAUSE_PRESETS_MS = [1000, 1500, 2000, 3000];
 type Props = {
   mood: EvaMood;
   presentation: TurnPresentation;
-  flow: ConversationFlowPreferences;
-  onFlowChange: (patch: Partial<ConversationFlowPreferences>) => void;
+  flow: ConversationFlow;
+  onFlowChange: (patch: Partial<ConversationFlow>) => void;
   /** Sending voice answers automatically is locked while the composer is. */
   isSendLocked: boolean;
   inputLabel?: string;
@@ -52,7 +49,7 @@ function PauseChoice({
   flow,
   onChange,
 }: {
-  flow: ConversationFlowPreferences;
+  flow: ConversationFlow;
   onChange: (endPauseMs: number) => void;
 }) {
   return (

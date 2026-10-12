@@ -1,5 +1,6 @@
+import { useAtomValue } from '@effect/atom-react';
+import { conversationFlowAtom } from '@/core/conversation-flow';
 import type { useSystemSpeech } from '@/features/speech/useSystemSpeech';
-import { useConversationFlow } from '@/lib/conversationFlowPreferences';
 import { composerTranscript, type InputSource } from './lib/inputSource';
 import { canSendPracticeStage } from './lib/practiceStage';
 import { sessionDetails } from './lib/practiceState';
@@ -28,7 +29,7 @@ type Options = {
 /** Everything the Talk screen needs to know about the turn in progress, derived once. */
 export function useTalkTurn(options: Options) {
   const { model, actions, speech, sendError, isLocked, isRetrying, isRecalling } = options;
-  const { preferences: flow } = useConversationFlow();
+  const flow = useAtomValue(conversationFlowAtom);
   const isEvaSpeaking = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
   const isBusy = model.busy || model.practice.tag !== 'active';
   const answerTranscript = composerTranscript(model.transcript, isRetrying);

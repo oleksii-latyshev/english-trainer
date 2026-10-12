@@ -18,7 +18,7 @@ Targets: [`FRONTEND.md`](FRONTEND.md), [`EFFECT.md`](EFFECT.md), [`BACKEND.md`](
 - New code goes into the new structure only. Do not add files to legacy folders except to fix a bug.
 - Legacy code may import the new structure (`@/features/x`, `@/core/...`) through public APIs. New
   code never imports legacy folders (`@/lib`, `@/components`, `@/context`, `@/audio`,
-  `@/theme`, legacy `@/features/*`); Biome enforces this.
+  legacy `@/features/*`); Biome enforces this.
 - A slice is migrated when its old files are **deleted**, not when a new copy exists.
 - Behaviour is preserved: a step changes the look to its canvas boards, never product behaviour.
   Copy changes only where a board changes it. Fixing a bug found on the way is a separate issue

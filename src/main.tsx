@@ -1,24 +1,19 @@
-import { RegistryProvider } from '@effect/atom-react';
+import { RegistryContext } from '@effect/atom-react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { EvaLookApplier } from '@/core/eva-look';
+import { appRegistry } from '@/core/runtime';
+import { ThemeApplier } from '@/features/appearance';
+import { DockIconApplier } from '@/features/eva-settings';
 import App from './App';
-import { startDockIcon } from './lib/dockIcon';
-import { startTheme } from './theme/applyTheme';
-import { appearancePreference } from './theme/themePreference';
-
-let stopTheme = startTheme(appearancePreference.get().theme);
-appearancePreference.subscribe(() => {
-  stopTheme();
-  stopTheme = startTheme(appearancePreference.get().theme);
-});
-startDockIcon();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <RegistryProvider>
+    <RegistryContext.Provider value={appRegistry}>
+      <ThemeApplier />
       <EvaLookApplier />
+      <DockIconApplier />
       <App />
-    </RegistryProvider>
+    </RegistryContext.Provider>
   </React.StrictMode>,
 );

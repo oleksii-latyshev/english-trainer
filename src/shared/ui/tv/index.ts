@@ -7,7 +7,7 @@ export const tv = createTV({
       classGroups: {
         'font-size': [{ text: ['caption', 'control', 'body', 'pip'] }],
         leading: [{ leading: ['copy'] }],
-        rounded: [{ rounded: ['card', 'nav', 'control'] }],
+        rounded: [{ rounded: ['card', 'nav', 'control', 'swatch-body', 'swatch-leaf'] }],
         shadow: [
           { shadow: ['overlay', 'control', 'primary', 'sky', 'glow', 'knob', 'key', 'nav-active'] },
         ],

@@ -1,5 +1,6 @@
+import { useAtomValue } from '@effect/atom-react';
 import { useEffect, useRef, useState } from 'react';
-import { effectiveAutoSendDelayMs, useConversationFlow } from '@/lib/conversationFlowPreferences';
+import { conversationFlowAtom, effectiveAutoSendDelayMs } from '@/core/conversation-flow';
 import { clearSessionDraft, getSessionDraft, setSessionDraft } from './lib/draftStore';
 import {
   canSendPracticeInput,
@@ -46,7 +47,7 @@ export function useAnswerComposer({
   const [draft, setDraft] = useState('');
   const [lastRecognizedVoice, setLastRecognizedVoice] = useState<string | undefined>(undefined);
   const [isNewVoice, setIsNewVoice] = useState(false);
-  const { preferences: flow } = useConversationFlow();
+  const flow = useAtomValue(conversationFlowAtom);
   const [isSending, setIsSending] = useState(false);
   const previousDraftScope = useRef(draftScope);
 

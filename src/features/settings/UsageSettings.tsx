@@ -3,9 +3,9 @@ import { type ApiUsageOverview, getApiUsage, type LimitNote } from '@/lib/apiUsa
 import { openExternal } from '@/lib/openExternal';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
+import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
 import { formatRemaining, quotaResetText, requestsLabel } from './lib/usageText';
-import { SettingsGroup } from './SettingsGroup';
 
 const AI_STUDIO_USAGE_URL = 'https://aistudio.google.com/usage';
 
@@ -51,7 +51,7 @@ export function UsageSettings() {
   }, [load]);
 
   return (
-    <SettingsGroup id="usage" title="Usage">
+    <GroupCard id="usage" title="Usage">
       {state.tag === 'loading' && (
         <Notice role="status" tone="quiet">
           Loading usage…
@@ -66,7 +66,7 @@ export function UsageSettings() {
         </FormRow>
       )}
       {state.tag === 'ready' && <UsageDetails onRefresh={() => void load()} state={state} />}
-    </SettingsGroup>
+    </GroupCard>
   );
 }
 

@@ -10,8 +10,8 @@ import {
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';
+import { Switch } from '@/shared/ui/switch';
 import { formatPercent, formatSeconds, modelName, progressText } from './lib/speechCheck';
-import { Switch } from './SettingsControls';
 
 const ALL_MODELS = 'all';
 
@@ -158,9 +158,10 @@ export function SpeechMeasurement({
       >
         <Switch
           checked={includePrompt}
-          isDisabled={isRunning}
+          disabled={isRunning}
+          isLabelHidden
           label="Also try the glossary prompt"
-          onChange={setIncludePrompt}
+          onCheckedChange={setIncludePrompt}
         />
       </FormRow>
       {run.tag === 'running' && (

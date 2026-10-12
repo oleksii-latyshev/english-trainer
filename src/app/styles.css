@@ -74,6 +74,8 @@
   --radius-card: 24px;
   --radius-nav: 12px;
   --radius-control: 12px;
+  --radius-swatch-body: 50% 50% 46% 46% / 58% 58% 42% 42%;
+  --radius-swatch-leaf: 0 100% 0 100%;
   --text-caption: 13px;
   --text-control: 14px;
   --text-body: 15px;

@@ -4,15 +4,15 @@ import { useTrainer } from '@/context/TrainerContext';
 import { saveLiveTranscript, saveSpeechModel, speechErrorMessage } from '@/lib/speechTypes';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';
+import { Switch } from '@/shared/ui/switch';
 import { engineLabel, engineProblem, liveTranscriptDescription } from './lib/engineStatus';
 import { modelOptionLabel, plainRun } from './lib/speechCheck';
-import { Switch } from './SettingsControls';
-import { SettingsGroup } from './SettingsGroup';
 import { SpeechCheckRecorder } from './SpeechCheckRecorder';
 import { SpeechMeasurement } from './SpeechMeasurement';
 import { useSpeechEngineStatus } from './useSpeechEngineStatus';
 import { useSpeechRecognition } from './useSpeechRecognition';
 import './settingsSpeech.css';
+import { GroupCard } from '@/shared/ui/group-card';
 
 /** Which Whisper model transcribes the answers, and the speech check that measures them on your voice. */
 export function SpeechSettings() {
@@ -41,7 +41,7 @@ export function SpeechSettings() {
   }
 
   return (
-    <SettingsGroup id="speech" title="Speech recognition">
+    <GroupCard id="speech" title="Speech recognition">
       {state.tag === 'loading' && (
         <Notice role="status" tone="quiet">
           Loading…
@@ -63,7 +63,7 @@ export function SpeechSettings() {
           update={update}
         />
       )}
-    </SettingsGroup>
+    </GroupCard>
   );
 }
 
@@ -138,8 +138,9 @@ function ReadyBody({
       <FormRow description={liveTranscriptDescription(settings, engine)} title="Live transcript">
         <Switch
           checked={settings.live_transcript}
+          isLabelHidden
           label="Live transcript"
-          onChange={onLiveTranscript}
+          onCheckedChange={onLiveTranscript}
         />
       </FormRow>
       {saveError && (

@@ -10,9 +10,9 @@ import {
 } from '@/lib/types';
 import { Button } from '@/shared/ui/button';
 import { FormRow, FormRowDescription, FormRowTitle } from '@/shared/ui/form-row';
+import { GroupCard } from '@/shared/ui/group-card';
 import { Notice } from '@/shared/ui/notice';
 import { ProviderResponseTest } from './ProviderResponseTest';
-import { SettingsGroup } from './SettingsGroup';
 
 type LoadState = { tag: 'loading' } | { tag: 'ready' } | { tag: 'error'; message: string };
 
@@ -119,7 +119,7 @@ export function ConversationProviderSettings() {
   const isSaving = saveState.tag === 'saving';
 
   return (
-    <SettingsGroup id="ai" title="Conversation AI">
+    <GroupCard id="ai" title="Conversation AI">
       {loadState.tag === 'loading' && (
         <Notice role="status" tone="quiet">
           Loading conversation AI settings…
@@ -214,6 +214,6 @@ export function ConversationProviderSettings() {
           </Notice>
         </>
       )}
-    </SettingsGroup>
+    </GroupCard>
   );
 }
