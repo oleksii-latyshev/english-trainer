@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
-import { SPEECH_RATE_OPTIONS } from '@/features/speech/voicePreferences';
+import { SPEECH_RATE_OPTIONS } from '@/core/voice-preference';
 import { Eva } from '@/shared/ui/eva';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { voiceChoices } from './lib/voiceChoices';

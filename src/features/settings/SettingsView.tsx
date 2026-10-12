@@ -5,6 +5,7 @@ import { useTrainer } from '@/context/TrainerContext';
 import { AppearanceSettings } from '@/features/appearance';
 import { ConversationFlowSettings } from '@/features/conversation-flow-settings';
 import { PrivacySettings } from '@/features/privacy';
+import { VoiceSettings } from '@/features/voice-settings';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { isSetupDiagnostics } from '@/lib/setupTypes';
 import { ConversationProviderSettings } from './ConversationProviderSettings';
@@ -15,7 +16,7 @@ import { type DiagnosticsState, SetupDetails } from './SetupDetails';
 import { SpeechSettings } from './SpeechSettings';
 import { TranslationSettings } from './TranslationSettings';
 import { UsageSettings } from './UsageSettings';
-import { VoiceSettings } from './VoiceSettings';
+import { VoiceSelection } from './VoiceSelection';
 import './settings.css';
 import './settingsControls.css';
 
@@ -68,7 +69,7 @@ export function SettingsView() {
       <ConversationProviderSettings />
       <TranslationSettings />
       <UsageSettings />
-      <VoiceSettings />
+      <VoiceSettings systemVoices={<VoiceSelection />} />
       <AppearanceSettings />
       <EvaSettingsLink />
       <ConversationFlowSettings />

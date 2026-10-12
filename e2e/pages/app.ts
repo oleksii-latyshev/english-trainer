@@ -39,7 +39,11 @@ export class App {
   }
 
   async pressEscape(): Promise<void> {
-    await this.page.keyboard.press('Escape');
+    await this.pressKey('Escape');
+  }
+
+  async pressKey(key: string): Promise<void> {
+    await this.page.keyboard.press(key);
   }
 
   async waitForQuietPeriod(ms: number): Promise<void> {

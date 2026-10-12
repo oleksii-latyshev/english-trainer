@@ -16,14 +16,6 @@ export function isNaturalVoiceError(value: unknown): value is NaturalVoiceError 
   );
 }
 
-/** Mirrors `voice::VoiceEngine`'s fixed Supertonic voice table (F1–F5, M1–M5). */
-export const NATURAL_VOICES = [
-  { id: 0, name: 'Eva', description: 'Female voice · English · local' },
-  { id: 1, name: 'Voice 2', description: 'Female voice · English · local' },
-  { id: 5, name: 'Voice 3', description: 'Male voice · English · local' },
-  { id: 6, name: 'Voice 4', description: 'Male voice · English · local' },
-];
-
 export async function prewarmNaturalVoice(): Promise<boolean> {
   if (!isTauri()) return false;
   const result: unknown = await invoke('prewarm_natural_voice');
