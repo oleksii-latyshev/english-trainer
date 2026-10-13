@@ -25,6 +25,7 @@ export {
   previewNaturalVoiceAtom,
 } from './model/atoms';
 export {
+  SpeechRecognitionLive,
   type SpeechRecognitionServices,
   speechRecognitionRuntime,
 } from './model/recognition-runtime';

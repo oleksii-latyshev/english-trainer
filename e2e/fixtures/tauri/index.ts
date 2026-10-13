@@ -11,6 +11,7 @@ import { ReviewBackend } from './review-backend';
 import { SessionBackend } from './session';
 import { SpeakingActivityBackend } from './speaking-activity';
 import { SpeechBackend } from './speech';
+import { installSpeechSettings, type SpeechSettingsOptions } from './speech-settings';
 import { StreamingBackend } from './streaming';
 import { TranslationBackend } from './translation';
 import { WrapupBackend } from './wrapup';
@@ -29,6 +30,7 @@ export class FakeBackend {
   readonly rescue: RescueBackend;
   readonly naturalVoice: NaturalVoiceBackend;
   aiSettingsSeed: AiSettingsOptions = {};
+  speechSettingsSeed: SpeechSettingsOptions | null = null;
   private installed = false;
   private tolerateUnhandledCommands = false;
 
@@ -75,6 +77,7 @@ export class FakeBackend {
     await this.rescue.install();
     await this.naturalVoice.install();
     await installAiSettings(this.page, this.aiSettingsSeed);
+    if (this.speechSettingsSeed) await installSpeechSettings(this.page, this.speechSettingsSeed);
   }
 
   async calls(command?: string): Promise<IpcCall[]> {

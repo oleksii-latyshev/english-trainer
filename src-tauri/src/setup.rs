@@ -1,7 +1,9 @@
 use serde::Serialize;
 use std::{fs, path::Path, path::PathBuf};
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
 pub(crate) struct SetupDiagnostics {
     pub whisper_cli: ComponentCheck,
     pub whisper_model: ComponentCheck,
@@ -9,18 +11,21 @@ pub(crate) struct SetupDiagnostics {
     pub agy_cli: ComponentCheck,
     pub database_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub agy_default_model: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
 pub(crate) struct ComponentCheck {
     pub status: ComponentStatus,
     pub path: Option<String>,
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub(crate) enum ComponentStatus {
     Available,
     Missing,

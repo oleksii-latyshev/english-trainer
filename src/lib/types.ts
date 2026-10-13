@@ -137,7 +137,6 @@ export {
   type SpokenRecallResult,
 } from './dailyRecallTypes';
 export { type FinishedPracticeSession, isFinishedPracticeSession } from './finishedPracticeSession';
-export type { ComponentCheck, ComponentStatus, SetupDiagnostics } from './setupTypes';
 
 export type ProviderErrorCode =
   | 'unavailable'
