@@ -10,10 +10,14 @@ export class StartPage {
   readonly retryFinishButton: Locator;
   readonly emptyWarmupHeading: Locator;
   readonly topicField: Locator;
+  readonly activity: Locator;
+  readonly thisWeek: Locator;
+  readonly warmupCard: Locator;
+  readonly usualMistakes: Locator;
   private readonly continueButton: Locator;
 
   constructor(private readonly page: Page) {
-    this.heading = page.getByRole('heading', { name: 'What shall we talk about?' });
+    this.heading = page.getByRole('heading', { name: /^Good (morning|afternoon|evening)$/ });
     this.startButton = page.getByRole('button', { name: 'Start talking' });
     this.tryAgainButton = page.getByRole('button', { name: 'Try again' });
     this.openConversation = page.getByRole('region', { name: 'Open conversation' });
@@ -21,6 +25,10 @@ export class StartPage {
     this.skipWarmupButton = page.getByRole('button', { name: 'Skip and start conversation' });
     this.retryFinishButton = page.getByRole('button', { name: 'Retry finish' });
     this.emptyWarmupHeading = page.getByRole('heading', { name: 'Nothing to review right now' });
+    this.activity = page.getByRole('region', { name: 'Speaking activity' });
+    this.thisWeek = page.getByRole('region', { name: 'This week' });
+    this.warmupCard = page.getByRole('region', { name: 'Phrases to review' });
+    this.usualMistakes = page.getByRole('region', { name: 'Your usual mistakes' });
     this.topicField = page.getByLabel('What would you like to talk about?');
     this.continueButton = page.getByRole('button', { name: 'Continue', exact: true });
   }
@@ -47,6 +55,10 @@ export class StartPage {
 
   async chooseWarmupFirst(): Promise<void> {
     await this.warmupToggle.click();
+  }
+
+  async practiseUsualMistakes(): Promise<void> {
+    await this.usualMistakes.getByRole('button', { name: 'Practice 5 questions' }).click();
   }
 
   async start(): Promise<void> {

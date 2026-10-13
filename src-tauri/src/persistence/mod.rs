@@ -22,6 +22,7 @@ pub(crate) mod review_material;
 mod schema;
 pub(crate) mod session_metadata;
 pub(crate) mod session_wrapup;
+mod speaking_activity;
 mod speech_settings;
 mod translation_settings;
 pub(crate) mod wrapup_generation;

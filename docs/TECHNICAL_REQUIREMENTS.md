@@ -562,7 +562,8 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
     `delete_speech_check_recordings`, `run_speech_check` (model files, `include_prompt`, progress
     channel). Failures are `TranscriptionError` or `ProviderError` values.
   - Settings and setup: `get_setup_diagnostics`, `get_ai_settings`, `save_ai_settings`,
-    `set_dock_icon`, `get_api_usage`, `prewarm_conversation_provider`, Gemini key commands (§5.1),
+    `set_dock_icon`, `get_api_usage`, `get_speaking_activity` (minutes spoken per local day over the last
+    190 days, from `sessions.active_duration_ms`, text chat excluded), `prewarm_conversation_provider`, Gemini key commands (§5.1),
     translation commands (§7.3), profile commands (§7).
   - Practice: `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
     `send_practice_turn`, `cancel_practice_reply`, `get_practice_dialogue`, `finish_practice_session`,

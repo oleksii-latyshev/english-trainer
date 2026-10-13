@@ -24,6 +24,8 @@ export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
 export type { SentenceStatus } from './bindings/SentenceStatus';
 export type { ServerState } from './bindings/ServerState';
 export type { SetupDiagnostics } from './bindings/SetupDiagnostics';
+export type { SpeakingActivity } from './bindings/SpeakingActivity';
+export type { SpeakingDay } from './bindings/SpeakingDay';
 export type { SpeechCheckProgress } from './bindings/SpeechCheckProgress';
 export type { SpeechCheckResults } from './bindings/SpeechCheckResults';
 export type { SpeechCheckStatus } from './bindings/SpeechCheckStatus';
@@ -71,6 +73,7 @@ export {
   ComponentStatusSchema,
   SetupDiagnosticsSchema,
 } from './schemas/setup-diagnostics';
+export { SpeakingActivitySchema, SpeakingDaySchema } from './schemas/speaking-activity';
 export {
   KeptRecordingsSchema,
   ModelRunSchema,
