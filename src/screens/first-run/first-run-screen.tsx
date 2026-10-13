@@ -15,6 +15,7 @@ import type { FirstRunScreenProps } from './types';
 
 export function FirstRunScreen({
   isPracticeCapturing,
+  systemVoices,
   onBeforeMicrophoneCheck,
   onFinish,
   onSkip,
@@ -45,7 +46,7 @@ export function FirstRunScreen({
           />
         )}
         {step === 'ai' && <AiStep />}
-        {step === 'voice' && <VoiceStep />}
+        {step === 'voice' && <VoiceStep systemVoices={systemVoices} />}
         <div className="mt-6 flex w-full max-w-115 items-center">
           {back && (
             <Button onClick={() => setStep(back)} tone="ghost">

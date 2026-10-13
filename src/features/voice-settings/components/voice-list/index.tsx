@@ -1,4 +1,5 @@
 import { Pause, Play } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { SPEECH_RATE_OPTIONS } from '@/core/voice-preference';
 import { Button } from '@/shared/ui/button';
 import { ChoiceList } from '@/shared/ui/choice-list';
@@ -19,7 +20,9 @@ const CHOICES = VOICE_OPTIONS.map((option) => ({
   subtitle: option.description,
 }));
 
-export function VoiceList() {
+type Props = { systemVoices: ReactNode };
+
+export function VoiceList({ systemVoices }: Props) {
   const picker = useNaturalVoicePicker();
   const { natural, availability, previewing } = picker;
   const selected = natural.engine === 'natural' ? String(natural.voiceId) : null;
@@ -48,16 +51,19 @@ export function VoiceList() {
           value={selected}
         />
       ) : (
-        <Notice role="status">
-          {availability === 'loading'
-            ? 'Preparing the local voice…'
-            : 'The local voice is unavailable. Eva will use system speech.'}
-          {availability === 'unavailable' && (
-            <Button onClick={picker.retry} tone="ghost">
-              Retry local voice
-            </Button>
-          )}
-        </Notice>
+        <>
+          <Notice role="status">
+            {availability === 'loading'
+              ? 'Preparing the local voice…'
+              : 'The local voice is unavailable. Choose a system voice instead.'}
+            {availability === 'unavailable' && (
+              <Button onClick={picker.retry} tone="ghost">
+                Retry local voice
+              </Button>
+            )}
+          </Notice>
+          <ListGroup>{systemVoices}</ListGroup>
+        </>
       )}
       <ListGroup>
         <ListRow

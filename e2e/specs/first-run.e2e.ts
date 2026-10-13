@@ -89,3 +89,23 @@ test('Skip setup leaves for Talk start', async ({ app, firstRun, start }) => {
 
   await expect(start.heading).toBeVisible();
 });
+
+test('the voice step offers system voices when the local voice is unavailable', async ({
+  app,
+  firstRun,
+  page,
+  tauri,
+}) => {
+  tauri.speech.grantMicrophone();
+  tauri.naturalVoice.notReady();
+  await app.open();
+  await app.sidebar.openSettings();
+  await firstRun.openFromSettings();
+  await firstRun.allowMicrophone.click();
+  await firstRun.continueButton.click();
+  await firstRun.continueButton.click();
+
+  await expect(app.text('The local voice is unavailable')).toBeVisible();
+  await expect(firstRun.voices).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: "Eva's voice" })).toBeVisible();
+});
