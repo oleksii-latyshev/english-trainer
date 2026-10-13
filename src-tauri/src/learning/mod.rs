@@ -1,3 +1,15 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
+)]
+
+pub mod commands;
+mod error;
+pub(crate) mod infra;
+mod ports;
+mod service;
+mod validation;
+
 pub mod memory_recall;
 pub(crate) mod mistake_practice;
 pub mod models;
@@ -6,6 +18,8 @@ pub mod scheduling;
 pub mod session_stats;
 pub mod usage;
 
+pub use error::LearningError;
+pub use infra::SessionLearningStore;
 pub use memory_recall::{
     is_safe_mistake_cue, is_safe_phrase_cue, MemoryRecallResult, MemoryReviewItem, MemoryReviewRun,
     MAX_TRANSCRIPT_CHARS,
@@ -16,10 +30,12 @@ pub use models::{
 };
 pub use normalization::{mistake_normalized_key, normalize_phrase};
 pub use scheduling::{calculate_next_review, MS_PER_DAY};
+pub use service::LearningService;
 pub use usage::{
-    contains_normalized_words, is_eligible_target_length, is_rejected_by_sources,
-    project_mastery_state, MemoryUsageEvidence, TurnUsageAssessment, UsageAssessmentFinding,
-    UsageCandidate, UsageEventRecord, UsageOutcome, MAX_EXCERPT_CHARS, MIN_CONFIDENCE,
+    contains_normalized_words, is_eligible_target_length, is_independent_success,
+    is_rejected_by_sources, project_mastery_state, MemoryUsageEvidence, TurnUsageAssessment,
+    UsageAssessmentFinding, UsageCandidate, UsageEventRecord, UsageOutcome, MAX_EXCERPT_CHARS,
+    MIN_CONFIDENCE,
 };
 
 #[cfg(test)]

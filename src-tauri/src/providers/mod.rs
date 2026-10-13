@@ -31,6 +31,7 @@ pub use spoken_review::{
 
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
+use ts_rs::TS;
 
 // Gemini's measured first word is ~0.8 s median, ~1 s p90 when healthy. With no word by this
 // point the free tier is usually overloaded, so the on-device model starts answering in parallel.
@@ -315,8 +316,9 @@ pub struct FocusFeedback {
     pub explanation: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum FocusCategory {
     Grammar,
     Vocabulary,

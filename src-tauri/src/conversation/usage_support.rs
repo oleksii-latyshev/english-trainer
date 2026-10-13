@@ -66,16 +66,6 @@ pub(super) fn mark_assessment_exposure(
     Ok(())
 }
 
-pub(super) fn mark_active_memory_exposure(state: &mut State) -> Result<(), ProviderError> {
-    if let Some(active) = &state.active {
-        state
-            .database
-            .record_session_cue_exposure(active.id, None, None, now_ms())
-            .map_err(database_error)?;
-    }
-    Ok(())
-}
-
 pub(super) fn now_ms() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

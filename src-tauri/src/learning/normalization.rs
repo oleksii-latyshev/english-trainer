@@ -1,7 +1,5 @@
 use crate::providers::FocusCategory;
 
-/// Normalizes text by lowercasing and standardizing whitespace and punctuation.
-/// Preserves internal word apostrophes for contractions (e.g., "don't").
 pub fn normalize_phrase(text: &str) -> String {
     let mut words = Vec::new();
     for token in text.split(|c: char| !c.is_alphanumeric() && c != '\'') {
@@ -13,8 +11,6 @@ pub fn normalize_phrase(text: &str) -> String {
     words.join(" ")
 }
 
-/// Computes a deterministic deduplication key for a mistake record
-/// combining its focus category and normalized corrected wording.
 pub fn mistake_normalized_key(category: &FocusCategory, corrected: &str) -> String {
     let category_name = match category {
         FocusCategory::Grammar => "grammar",

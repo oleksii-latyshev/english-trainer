@@ -14,6 +14,7 @@ pub(crate) mod coaching_queue;
 mod context_builder;
 mod guided;
 mod interruption;
+mod learning_library;
 mod lifecycle;
 pub(crate) mod memory_recall;
 mod planner;
@@ -799,115 +800,6 @@ impl SessionStore {
         Ok(comparison)
     }
 
-    pub fn save_phrase(
-        &self,
-        phrase: String,
-        meaning_or_note: String,
-        session_id: Option<u64>,
-        sequence: Option<usize>,
-    ) -> Result<crate::learning::PhraseCardRecord, ProviderError> {
-        let trimmed_phrase = phrase.trim();
-        if trimmed_phrase.is_empty() || trimmed_phrase.chars().count() > 300 {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Phrase must be between 1 and 300 characters.",
-            ));
-        }
-        if meaning_or_note.chars().count() > 500 {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Note must be 500 characters or fewer.",
-            ));
-        }
-        if let Some(sid) = session_id {
-            if sid > MAX_SAFE_SESSION_ID {
-                return Err(ProviderError::new(
-                    ProviderErrorCode::InvalidRequest,
-                    "Invalid session ID.",
-                ));
-            }
-        }
-        if let Some(seq) = sequence {
-            if seq == 0 || seq > 10_000 {
-                return Err(ProviderError::new(
-                    ProviderErrorCode::InvalidRequest,
-                    "Invalid turn sequence.",
-                ));
-            }
-        }
-        if session_id.is_some() != sequence.is_some() {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Phrase provenance requires both a session ID and a turn sequence.",
-            ));
-        }
-
-        let state = self.lock();
-        if let (Some(sid), Some(seq)) = (session_id, sequence) {
-            if state
-                .database
-                .turn(sid, seq)
-                .map_err(database_error)?
-                .is_none()
-            {
-                return Err(ProviderError::new(
-                    ProviderErrorCode::InvalidRequest,
-                    "The phrase source turn could not be found.",
-                ));
-            }
-        }
-        state
-            .database
-            .save_phrase_card(trimmed_phrase, &meaning_or_note, session_id, sequence)
-            .map_err(database_error)
-    }
-
-    /// Removes a saved phrase card (for example to undo a save). False when no card has this id.
-    pub fn delete_phrase(&self, phrase_id: u64) -> Result<bool, ProviderError> {
-        if phrase_id == 0 || phrase_id > MAX_SAFE_SESSION_ID {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Invalid phrase card ID.",
-            ));
-        }
-        let mut state = self.lock();
-        state
-            .database
-            .delete_phrase_card(phrase_id)
-            .map_err(database_error)
-    }
-
-    /// Removes a mistake from Memory (and the evidence about it). False when no mistake has this id.
-    pub fn delete_mistake(&self, mistake_id: u64) -> Result<bool, ProviderError> {
-        validate_learning_item_id(mistake_id)?;
-        let mut state = self.lock();
-        state
-            .database
-            .delete_mistake(mistake_id)
-            .map_err(database_error)
-    }
-
-    /// Hides a phrase or mistake from Memory and review. False when nothing changed.
-    pub fn archive_learning_item(
-        &self,
-        item_type: crate::learning::LearningItemType,
-        item_id: u64,
-    ) -> Result<bool, ProviderError> {
-        validate_learning_item_id(item_id)?;
-        let mut state = self.lock();
-        state
-            .database
-            .archive_learning_item(item_type, item_id)
-            .map_err(database_error)
-    }
-
-    pub fn get_learning_memory(
-        &self,
-    ) -> Result<crate::learning::LearningMemoryView, ProviderError> {
-        let state = self.lock();
-        state.database.get_learning_memory().map_err(database_error)
-    }
-
     fn lock(&self) -> std::sync::MutexGuard<'_, State> {
         self.state
             .lock()
@@ -966,16 +858,6 @@ impl Default for SessionStore {
 
 pub(crate) fn database_error(_: rusqlite::Error) -> ProviderError {
     database_error_message()
-}
-
-fn validate_learning_item_id(item_id: u64) -> Result<(), ProviderError> {
-    if item_id == 0 || item_id > MAX_SAFE_SESSION_ID {
-        return Err(ProviderError::new(
-            ProviderErrorCode::InvalidRequest,
-            "Invalid learning item ID.",
-        ));
-    }
-    Ok(())
 }
 
 fn database_error_message() -> ProviderError {

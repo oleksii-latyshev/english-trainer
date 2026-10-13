@@ -1,11 +1,11 @@
 use super::usage_support::{
-    mark_active_memory_exposure, mark_assessment_exposure, now_ms, stale_usage_review_error,
-    validate_review_response, InFlightGuard,
+    mark_assessment_exposure, now_ms, stale_usage_review_error, validate_review_response,
+    InFlightGuard,
 };
 use super::{database_error, invalid_session_error, SessionStore, MAX_SAFE_SESSION_ID};
 use crate::learning::{
-    LearningItemType, LearningMemoryView, LearningStatus, MemoryUsageEvidence, TurnUsageAssessment,
-    UsageAssessmentFinding, UsageEventRecord, UsageOutcome, MIN_CONFIDENCE,
+    LearningItemType, LearningStatus, TurnUsageAssessment, UsageAssessmentFinding,
+    UsageEventRecord, UsageOutcome, MIN_CONFIDENCE,
 };
 use crate::persistence::learning_usage::UsageAssessmentCommit;
 use crate::providers::{ProviderError, ProviderErrorCode, UsageReviewRequest, UsageReviewResponse};
@@ -293,35 +293,6 @@ impl SessionStore {
             mark_assessment_exposure(&mut state, assessment)?;
         }
         Ok(saved)
-    }
-
-    pub fn get_memory_usage_evidence(
-        &self,
-        item_type: LearningItemType,
-        item_id: u64,
-    ) -> Result<MemoryUsageEvidence, ProviderError> {
-        if item_id == 0 || item_id > MAX_SAFE_SESSION_ID {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "Invalid item ID.",
-            ));
-        }
-        let mut state = self.lock();
-        mark_active_memory_exposure(&mut state)?;
-        match state.database.get_memory_usage_evidence(item_type, item_id) {
-            Ok(evidence) => Ok(evidence),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "The requested learning item does not exist.",
-            )),
-            Err(error) => Err(database_error(error)),
-        }
-    }
-
-    pub fn view_learning_memory(&self) -> Result<LearningMemoryView, ProviderError> {
-        let mut state = self.lock();
-        mark_active_memory_exposure(&mut state)?;
-        state.database.get_learning_memory().map_err(database_error)
     }
 }
 
