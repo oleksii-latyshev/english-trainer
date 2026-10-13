@@ -77,6 +77,7 @@ export class FakeBackend {
     await this.streaming.install();
     await this.rescue.install();
     await this.naturalVoice.install();
+    await this.speech.install();
     await installAiSettings(this.page, this.aiSettingsSeed);
     if (this.speechSettingsSeed) await installSpeechSettings(this.page, this.speechSettingsSeed);
   }

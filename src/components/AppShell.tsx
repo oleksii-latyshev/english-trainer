@@ -3,14 +3,14 @@ import { Bookmark, MessageCircle, Settings } from 'lucide-react';
 import type React from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import type { MicrophoneStatus } from '@/core/audio';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import {
   activeSettingsSection,
   EVA_SETTINGS_PATH,
   isSettingsPath,
   SETTINGS_SECTIONS,
   type SettingsSectionId,
-} from '@/lib/settingsSections';
+} from '@/screens/settings';
 import { NavItem } from '@/shared/ui/nav-item';
 import { micStatusBox } from './lib/micStatusBox';
 import { WordTranslationLayer } from './WordTranslationLayer';

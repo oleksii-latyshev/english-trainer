@@ -72,33 +72,6 @@ fn set_dock_icon(
 }
 
 #[tauri::command]
-async fn get_setup_diagnostics(
-    app: tauri::AppHandle,
-    speech: tauri::State<'_, speech_recognition::SpeechRecognitionService>,
-) -> Result<setup::SetupDiagnostics, providers::ProviderError> {
-    let app_data = app.path().app_data_dir().map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "Cannot locate application data directory.",
-        )
-    })?;
-    let model_file = speech
-        .settings()
-        .map_err(|error| providers::ProviderError::from(core::IpcError::from(error)))?
-        .model_file;
-    let model = speech.model_path(&model_file);
-    let server = speech.server_status();
-    tauri::async_runtime::spawn_blocking(move || setup::collect(&app_data, &model, &server))
-        .await
-        .map_err(|_| {
-            providers::ProviderError::new(
-                providers::ProviderErrorCode::ProcessFailed,
-                "Setup diagnostics task failed.",
-            )
-        })
-}
-
-#[tauri::command]
 async fn generate_follow_up(
     ai_settings: tauri::State<'_, ai_settings::AiSettingsService>,
     apple: tauri::State<'_, providers::AppleHelper>,
@@ -646,7 +619,7 @@ pub fn run() {
             translation_settings::commands::get_translation_status,
             translation_settings::commands::prepare_translation_languages,
             translation::commands::translate_word,
-            get_setup_diagnostics,
+            setup::commands::get_setup_diagnostics,
             ai_settings::commands::get_ai_settings,
             set_dock_icon,
             api_usage::commands::get_api_usage,

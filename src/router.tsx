@@ -6,17 +6,16 @@ import {
 } from '@tanstack/react-router';
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
-import { FirstRunView } from '@/features/first-run/FirstRunView';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { useSessionClock } from '@/features/practice/useSessionClock';
-import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
-import { SettingsView } from '@/features/settings/SettingsView';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
+import { FirstRunRoute } from '@/routes/first-run';
 import { MemoryRoute } from '@/routes/memory';
+import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
 import { TalkStartRoute } from '@/routes/talk-start';
 
 function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
@@ -126,21 +125,19 @@ export const memoryReviewRoute = createRoute({
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
-  component: function SettingsComponent() {
-    return <SettingsView />;
-  },
+  component: SettingsRoute,
 });
 
 export const settingsEvaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings/eva',
-  component: EvaSettingsView,
+  component: SettingsEvaRoute,
 });
 
 export const firstRunRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: FIRST_RUN_PATH,
-  component: FirstRunView,
+  component: FirstRunRoute,
 });
 
 export const summaryRoute = createRoute({

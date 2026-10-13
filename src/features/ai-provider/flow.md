@@ -74,3 +74,9 @@ sequenceDiagram
         Atoms-->>Test: First words / Full reply timings, the reply, "Answered by"
     end
 ```
+
+## First run list
+
+`ProviderList` offers Gemini and Apple on-device as one grouped list for first run and saves the
+choice through `updateAiSettingsAtom` like Settings. A provider kept from an earlier setup (Antigravity)
+shows a notice instead of a selection.
