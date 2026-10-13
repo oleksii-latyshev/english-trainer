@@ -21,6 +21,8 @@ export type { RecordingResult } from './bindings/RecordingResult';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
 export type { SentenceStatus } from './bindings/SentenceStatus';
 export type { ServerState } from './bindings/ServerState';
+export type { SpeakingActivity } from './bindings/SpeakingActivity';
+export type { SpeakingDay } from './bindings/SpeakingDay';
 export type { SpeechCheckProgress } from './bindings/SpeechCheckProgress';
 export type { SpeechCheckResults } from './bindings/SpeechCheckResults';
 export type { SpeechCheckStatus } from './bindings/SpeechCheckStatus';
@@ -63,6 +65,7 @@ export {
 export { GeminiKeyStatusSchema, KeySourceSchema } from './schemas/gemini-key-status';
 export { IpcErrorCodeSchema } from './schemas/ipc-error';
 export { PersonalProfileSchema } from './schemas/personal-profile';
+export { SpeakingActivitySchema, SpeakingDaySchema } from './schemas/speaking-activity';
 export {
   KeptRecordingsSchema,
   ModelRunSchema,

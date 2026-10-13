@@ -61,8 +61,8 @@ Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in 
 - **Eva grows** — the sprout grows with speaking time (1 min = 1 drop; stages Seed → Sprout → Two
   leaves → Bud → Bloom → Full bloom at 10/30/60/100/150 drops); days off make Eva nap, nothing wilts,
   no streaks. Sidebar progress card; on/off switch in Settings › Eva.
-- **Speaking activity** — 26-week grid on the start screen (darker = more minutes) and a weekly
-  minutes chart; neutral copy, no streak counter.
+- **Start screen details** — greeting with the learner's name (needs a name in the personal
+  profile) and a "No limit" session length beside 5/10/15 min.
 - **App icon and Dock icon choice** in the glass style.
 - **Light theme** for the glass design.
 

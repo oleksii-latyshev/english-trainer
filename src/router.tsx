@@ -3,9 +3,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
-  Navigate,
 } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
 import { FirstRunView } from '@/features/first-run/FirstRunView';
@@ -18,9 +16,8 @@ import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { useSessionClock } from '@/features/practice/useSessionClock';
 import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
 import { SettingsView } from '@/features/settings/SettingsView';
-import { TalkStart } from '@/features/talk-start/TalkStart';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
-import type { PracticeOptions } from '@/lib/practiceOptions';
+import { TalkStartRoute } from '@/routes/talk-start';
 
 function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
   if (screen === 'home') return { to: '/' };
@@ -37,60 +34,7 @@ export const rootRoute = createRootRoute({
 export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: function IndexComponent() {
-    const { practice, isSessionOpen, startOrResumePractice, startPractice, due, firstRun, speech } =
-      useTrainer();
-    const navigate = indexRoute.useNavigate();
-    const [warmupOptions, setWarmupOptions] = useState<PracticeOptions | null>(null);
-    const warmupStarted = useRef(false);
-    const warmupAlive = useRef(true);
-    useEffect(() => {
-      warmupAlive.current = true;
-      return () => {
-        warmupAlive.current = false;
-      };
-    }, []);
-    const startAfterWarmup = () => {
-      if (!warmupAlive.current || !warmupOptions || warmupStarted.current) return;
-      warmupStarted.current = true;
-      const snapshot = { ...warmupOptions };
-      setWarmupOptions(null);
-      startPractice(snapshot);
-    };
-
-    // Launch looks for earlier use first; a brand-new learner lands on first run instead.
-    if (firstRun === 'checking') return null;
-    if (firstRun === 'show') return <Navigate replace to={FIRST_RUN_PATH} />;
-
-    if (warmupOptions) {
-      return (
-        <SpokenReview
-          onBackToMemory={startAfterWarmup}
-          onOpenSettings={() => void navigate({ to: '/settings' })}
-          onStartTalk={startAfterWarmup}
-          speech={speech}
-          warmup
-        />
-      );
-    }
-
-    return (
-      <TalkStart
-        due={due}
-        error={practice.error}
-        isBusy={practice.isBusy}
-        isRestoring={practice.state.tag === 'loading'}
-        onOpenMemory={() => void navigate({ to: '/memory' })}
-        onStartOrResume={startOrResumePractice}
-        onStart={startPractice}
-        onStartWarmup={(options) => {
-          warmupStarted.current = false;
-          setWarmupOptions({ ...options });
-        }}
-        openSession={isSessionOpen ? sessionDetails(practice.state) : undefined}
-      />
-    );
-  },
+  component: TalkStartRoute,
 });
 
 export const conversationRoute = createRoute({

@@ -119,7 +119,6 @@
         "!src/features/memory/**",
         "!src/features/practice/**",
         "!src/features/settings/**",
-        "!src/features/talk-start/**",
         "!src/app/speech-capture/use-speech-capture.ts"
       ],
       "plugins": ["./biome/plugins/function-declarations.grit"],
@@ -194,7 +193,6 @@
         "!src/features/memory/**",
         "!src/features/practice/**",
         "!src/features/settings/**",
-        "!src/features/talk-start/**",
         "!src/app/**",
         "!**/*.test.ts",
         "!**/*.test.tsx",
@@ -238,14 +236,12 @@
                       "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/settings/**",
-                      "@/features/talk-start/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/first-run",
                       "@/features/memory",
                       "@/features/practice",
-                      "@/features/settings",
-                      "@/features/talk-start"
+                      "@/features/settings"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -291,14 +287,12 @@
                       "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/settings/**",
-                      "@/features/talk-start/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/first-run",
                       "@/features/memory",
                       "@/features/practice",
-                      "@/features/settings",
-                      "@/features/talk-start"
+                      "@/features/settings"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -348,14 +342,12 @@
                       "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/settings/**",
-                      "@/features/talk-start/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/first-run",
                       "@/features/memory",
                       "@/features/practice",
-                      "@/features/settings",
-                      "@/features/talk-start"
+                      "@/features/settings"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -378,8 +370,7 @@
         "!src/features/first-run/**",
         "!src/features/memory/**",
         "!src/features/practice/**",
-        "!src/features/settings/**",
-        "!src/features/talk-start/**"
+        "!src/features/settings/**"
       ],
       "linter": {
         "rules": {
@@ -410,14 +401,12 @@
                       "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/settings/**",
-                      "@/features/talk-start/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/first-run",
                       "@/features/memory",
                       "@/features/practice",
-                      "@/features/settings",
-                      "@/features/talk-start"
+                      "@/features/settings"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -460,14 +449,12 @@
                       "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/settings/**",
-                      "@/features/talk-start/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/first-run",
                       "@/features/memory",
                       "@/features/practice",
-                      "@/features/settings",
-                      "@/features/talk-start"
+                      "@/features/settings"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
