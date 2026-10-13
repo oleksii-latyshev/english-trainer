@@ -374,54 +374,6 @@ fn get_question_scaffold(question: String) -> conversation::QuestionScaffold {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-fn save_phrase_card(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    phrase: String,
-    meaning_or_note: Option<String>,
-    session_id: Option<u64>,
-    sequence: Option<usize>,
-) -> Result<learning::PhraseCardRecord, providers::ProviderError> {
-    sessions.save_phrase(
-        phrase,
-        meaning_or_note.unwrap_or_default(),
-        session_id,
-        sequence,
-    )
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn delete_phrase_card(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    phrase_id: u64,
-) -> Result<bool, providers::ProviderError> {
-    sessions.delete_phrase(phrase_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn delete_mistake(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    mistake_id: u64,
-) -> Result<bool, providers::ProviderError> {
-    sessions.delete_mistake(mistake_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn archive_learning_item(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    item_type: learning::LearningItemType,
-    item_id: u64,
-) -> Result<bool, providers::ProviderError> {
-    sessions.archive_learning_item(item_type, item_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn get_learning_memory(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Result<learning::LearningMemoryView, providers::ProviderError> {
-    sessions.get_learning_memory()
-}
-
-#[tauri::command(rename_all = "snake_case")]
 fn start_memory_review(
     sessions: tauri::State<'_, conversation::SessionStore>,
     warmup: Option<bool>,
@@ -537,22 +489,6 @@ fn get_practice_memory_usage(
     sessions.get_practice_memory_usage(session_id, sequence)
 }
 
-#[tauri::command(rename_all = "snake_case")]
-fn get_memory_usage_evidence(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    item_type: learning::LearningItemType,
-    item_id: u64,
-) -> Result<learning::MemoryUsageEvidence, providers::ProviderError> {
-    sessions.get_memory_usage_evidence(item_type, item_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn view_learning_memory(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Result<learning::LearningMemoryView, providers::ProviderError> {
-    sessions.view_learning_memory()
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -606,6 +542,9 @@ pub fn run() {
             ));
             api_usage::start_recording(usage_service.clone());
             app.manage(usage_service);
+            app.manage(learning::LearningService::new(
+                learning::SessionLearningStore::new(sessions.clone()),
+            ));
             app.manage(speaking_activity::SpeakingActivityService::new(
                 speaking_activity::SessionActivityStore::new(sessions.clone()),
             ));
@@ -714,12 +653,12 @@ pub fn run() {
             rescue_answer,
             get_guided_answer,
             record_answer_help_used,
-            save_phrase_card,
-            delete_phrase_card,
-            delete_mistake,
-            archive_learning_item,
-            get_learning_memory,
-            view_learning_memory,
+            learning::commands::save_phrase_card,
+            learning::commands::delete_phrase_card,
+            learning::commands::delete_mistake,
+            learning::commands::archive_learning_item,
+            learning::commands::get_learning_memory,
+            learning::commands::view_learning_memory,
             start_memory_review,
             get_memory_review,
             prepare_review_material,
@@ -730,7 +669,7 @@ pub fn run() {
             finish_memory_review,
             review_practice_memory_usage,
             get_practice_memory_usage,
-            get_memory_usage_evidence,
+            learning::commands::get_memory_usage_evidence,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

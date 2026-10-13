@@ -58,6 +58,8 @@
   --color-ok-text: var(--color-ok);
   --color-warn-soft: color-mix(in oklab, var(--color-warn) 12%, transparent);
   --color-warn-text: var(--color-warn);
+  --color-status-new: #7f8a9c;
+  --color-status-improving: #c3a8ff;
   --color-backdrop: rgba(0, 0, 0, 0.6);
   --color-tile-red: #ff6b5e;
   --color-tile-green: #34c77b;
@@ -172,6 +174,8 @@
   --color-warn-soft: color-mix(in oklab, var(--color-warn) 15%, transparent);
   --color-warn-text: color-mix(in oklab, var(--color-warn) 80%, var(--color-foreground) 70%);
   --color-backdrop: rgba(0, 0, 0, 0.5);
+  --color-status-new: #8a8a94;
+  --color-status-improving: #7b5fd6;
   --shadow-overlay:
     0 2px 8px 0 rgba(0, 0, 0, 0.06), 0 -6px 12px 0 rgba(0, 0, 0, 0.03),
     0 14px 28px 0 rgba(0, 0, 0, 0.08);

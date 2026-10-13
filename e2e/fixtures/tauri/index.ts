@@ -36,7 +36,7 @@ export class FakeBackend {
 
   constructor(private readonly page: Page) {
     this.session = new SessionBackend(page);
-    this.memory = new MemoryBackend();
+    this.memory = new MemoryBackend(page);
     this.activity = new SpeakingActivityBackend(page);
     this.speech = new SpeechBackend(page);
     this.translation = new TranslationBackend(page);
@@ -69,6 +69,7 @@ export class FakeBackend {
       translation: this.translation.seed,
       planner: this.planner.seed,
     });
+    await this.memory.install();
     await this.activity.install();
     await this.review.install();
     await this.liveReview.install();

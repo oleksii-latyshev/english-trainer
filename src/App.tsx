@@ -1,9 +1,10 @@
+import { useAtomValue } from '@effect/atom-react';
 import { RouterProvider } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMicrophoneSession } from '@/app/microphone';
 import { useSpeechCapture } from '@/app/speech-capture';
+import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
 import { useSpeech } from '@/core/speech';
-import { useDuePhraseCount } from '@/features/memory/useDuePhraseCount';
 import { practiceKeepsMicrophoneWarm } from '@/features/practice/lib/practiceStage';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { usePracticeSession } from '@/features/practice/usePracticeSession';
@@ -17,7 +18,7 @@ import './app/styles.css';
 function App() {
   const speech = useSpeech();
   const mic = useMicrophoneSession();
-  const due = useDuePhraseCount();
+  const due = dueMemory(useAtomValue(learningMemoryAtom));
   const capture = useSpeechCapture(speech, mic);
   const practice = usePracticeSession({
     canChangeSession: capture.canChangeSession,

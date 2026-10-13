@@ -3,6 +3,7 @@ use super::normalization::normalize_phrase as norm;
 use super::scheduling::MS_PER_DAY;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use ts_rs::TS;
 
 pub const MAX_TARGET_CHARS: usize = 300;
 pub const MAX_EXCERPT_CHARS: usize = 500;
@@ -11,8 +12,9 @@ pub const STABLE_REQUIRED_DAYS: i64 = 21;
 pub const STABLE_REQUIRED_SESSIONS: usize = 3;
 pub const STABLE_REQUIRED_BUCKETS: usize = 3;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum UsageOutcome {
     Correct,
     Incorrect,
@@ -55,7 +57,8 @@ pub struct UsageCandidate {
     pub cue: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct UsageEventRecord {
     pub id: u64,
     pub item_type: LearningItemType,
@@ -90,7 +93,8 @@ pub struct TurnUsageAssessment {
     pub findings: Vec<UsageAssessmentFinding>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MemoryUsageEvidence {
     pub item_type: LearningItemType,
     pub item_id: u64,
@@ -143,6 +147,10 @@ pub fn is_rejected_by_sources(target: &str, rejected_sources: &[&str]) -> bool {
         .any(|source| contains_normalized_words(source, target))
 }
 
+pub fn is_independent_success(outcome: UsageOutcome, confidence: f64) -> bool {
+    outcome == UsageOutcome::Correct && confidence >= MIN_CONFIDENCE
+}
+
 pub fn project_mastery_state(
     current_status: LearningStatus,
     events: &[UsageEventRecord],
@@ -151,9 +159,7 @@ pub fn project_mastery_state(
 ) -> ProjectedMastery {
     let lifetime_distinct_sessions = events
         .iter()
-        .filter(|event| {
-            event.outcome == UsageOutcome::Correct && event.confidence >= MIN_CONFIDENCE
-        })
+        .filter(|event| is_independent_success(event.outcome, event.confidence))
         .map(|event| event.session_id)
         .collect::<HashSet<_>>()
         .len();
@@ -176,8 +182,6 @@ pub fn project_mastery_state(
             || e.origin == "feedback"
     });
 
-    // Collapse retries and duplicate evidence within one session before assigning days.
-    // Otherwise a later duplicate from one session could consume the day of a new session.
     let mut first_success_by_session = std::collections::BTreeMap::new();
     for event in &sorted_events {
         if event.outcome != UsageOutcome::Correct || event.confidence < MIN_CONFIDENCE {

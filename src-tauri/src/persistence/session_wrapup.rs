@@ -1,4 +1,4 @@
-//! Reads that feed the session wrap-up, and the removal of a saved phrase card.
+//! Reads that feed the session wrap-up.
 
 use super::{now_ms, to_sql_id, SessionDatabase};
 use crate::learning::session_stats::AnswerSample;
@@ -164,26 +164,5 @@ impl SessionDatabase {
             mistakes.push(mistake);
         }
         Ok(mistakes)
-    }
-
-    /// Removes a saved phrase card and the evidence kept about it. Returns false when no card
-    /// has this id (already removed, or never saved), so a repeated removal is harmless.
-    pub fn delete_phrase_card(&mut self, phrase_id: u64) -> rusqlite::Result<bool> {
-        let id = to_sql_id(phrase_id)?;
-        let transaction = self.connection.transaction()?;
-        // These tables point at a card by id without a foreign key. Review events and spoken
-        // recalls go with the card through their cascading keys; past review-run rows stay as
-        // history and already tolerate a removed item.
-        transaction.execute(
-            "DELETE FROM learning_usage_events WHERE item_type = 'phrase' AND item_id = ?1",
-            [id],
-        )?;
-        transaction.execute(
-            "DELETE FROM session_cue_exposures WHERE item_type = 'phrase' AND item_id = ?1",
-            [id],
-        )?;
-        let removed = transaction.execute("DELETE FROM phrase_cards WHERE id = ?1", [id])?;
-        transaction.commit()?;
-        Ok(removed == 1)
     }
 }

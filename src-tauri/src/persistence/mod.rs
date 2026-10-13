@@ -11,7 +11,7 @@ mod api_usage;
 mod coaching;
 pub(crate) use coaching::{CoachingProgress, UncoachedAnswer};
 mod daily_recall;
-mod learning_items;
+mod learning_library;
 mod learning_reviews;
 mod learning_targets;
 pub(crate) mod learning_usage;

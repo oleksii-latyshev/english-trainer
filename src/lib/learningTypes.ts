@@ -113,6 +113,7 @@ export type PhraseCardRecord = {
   ease_factor: number;
   status: LearningStatus;
   is_due: boolean;
+  times_used_on_own: number;
 };
 
 export function isPhraseCardRecord(value: unknown): value is PhraseCardRecord {

@@ -1,4 +1,4 @@
-import type { DueCount } from '@/features/memory/useDuePhraseCount';
+import type { DueMemory } from '@/core/learning-memory';
 import type { SessionDetails } from '@/features/practice/lib/practiceState';
 import type { MistakePracticeSummary, ReviewSummary } from '@/screens/talk-start';
 
@@ -8,7 +8,7 @@ type PracticeActivity = {
   readonly isStarting: boolean;
 };
 
-export function reviewSummary(due: DueCount): ReviewSummary | undefined {
+export function reviewSummary(due: DueMemory): ReviewSummary | undefined {
   if (due.tag !== 'ready') return undefined;
   const card = due.nextDuePhrase;
   return {
@@ -28,12 +28,12 @@ function blockedReason(activity: PracticeActivity): string | null {
 }
 
 export function mistakePracticeSummary(
-  due: DueCount,
+  due: DueMemory,
   activity: PracticeActivity,
 ): MistakePracticeSummary | undefined {
   if (due.tag !== 'ready') return undefined;
   return {
-    mistakes: (due.usualMistakes ?? []).map((mistake) => ({
+    mistakes: due.usualMistakes.map((mistake) => ({
       id: mistake.id,
       original: mistake.original_example,
       corrected: mistake.corrected_example,

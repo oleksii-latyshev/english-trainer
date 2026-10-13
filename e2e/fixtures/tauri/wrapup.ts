@@ -139,6 +139,7 @@ export async function installWrapup(page: Page, options: WrapupOptions): Promise
           ease_factor: 2.5,
           status: 'new',
           is_due: true,
+          times_used_on_own: 0,
         };
         fixture.cards.push(card);
         cards.push(card);

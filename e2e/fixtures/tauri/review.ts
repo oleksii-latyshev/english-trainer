@@ -48,6 +48,7 @@ export const reviewMemory: LearningMemoryView = {
       ease_factor: 2.5,
       status: 'learning',
       is_due: true,
+      times_used_on_own: 0,
     },
   ],
 };

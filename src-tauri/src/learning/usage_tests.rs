@@ -112,7 +112,6 @@ fn late_relapse_reprojects_prior_stable_history_and_keeps_relapse_due_date() {
 
 #[test]
 fn stable_requires_three_sessions_three_weekly_buckets_and_twenty_one_full_days() {
-    // Days 0, 7, 21 in distinct sessions => Stable
     let events_stable = vec![
         make_event(1, 10, 0, UsageOutcome::Correct, 0.95, "assessment"),
         make_event(2, 11, 7, UsageOutcome::Correct, 0.95, "assessment"),
@@ -123,7 +122,6 @@ fn stable_requires_three_sessions_three_weekly_buckets_and_twenty_one_full_days(
     assert_eq!(projected_stable.status, LearningStatus::Stable);
     assert_eq!(projected_stable.streak, 3);
 
-    // Days 0, 1, 21 => only 2 weekly buckets (bucket 0, 0, 3) => not Stable, stays Improving
     let events_two_buckets = vec![
         make_event(1, 10, 0, UsageOutcome::Correct, 0.95, "assessment"),
         make_event(2, 11, 1, UsageOutcome::Correct, 0.95, "assessment"),
@@ -133,7 +131,6 @@ fn stable_requires_three_sessions_three_weekly_buckets_and_twenty_one_full_days(
         project_mastery_state(LearningStatus::Improving, &events_two_buckets, 4, 1000);
     assert_eq!(projected_two_buckets.status, LearningStatus::Improving);
 
-    // Days 0, 7, 14 => only 14 days (< 21 full days) => not Stable
     let events_fourteen_days = vec![
         make_event(1, 10, 0, UsageOutcome::Correct, 0.95, "assessment"),
         make_event(2, 11, 7, UsageOutcome::Correct, 0.95, "assessment"),
@@ -193,9 +190,9 @@ fn feedback_relapse_also_demotes_stable() {
 fn low_confidence_or_uncertain_does_not_affect_state() {
     let events = vec![
         make_event(1, 10, 0, UsageOutcome::Correct, 0.95, "assessment"),
-        make_event(2, 11, 5, UsageOutcome::Correct, 0.85, "assessment"), // below 0.9
+        make_event(2, 11, 5, UsageOutcome::Correct, 0.85, "assessment"),
         make_event(3, 12, 10, UsageOutcome::Uncertain, 0.95, "assessment"),
-        make_event(4, 13, 15, UsageOutcome::Incorrect, 0.80, "assessment"), // below 0.9
+        make_event(4, 13, 15, UsageOutcome::Incorrect, 0.80, "assessment"),
     ];
     let projected = project_mastery_state(LearningStatus::Learning, &events, 1, 1000);
     assert_eq!(projected.status, LearningStatus::Learning);

@@ -20,7 +20,6 @@ pub struct MemoryReviewItem {
     pub next_review_at: Option<i64>,
     pub interval_days: Option<u32>,
     pub status: Option<LearningStatus>,
-    /// The learner passed on this item; it stays due and was not scored.
     pub is_skipped: bool,
 }
 

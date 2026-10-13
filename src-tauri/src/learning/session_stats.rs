@@ -1,23 +1,15 @@
-//! Local fluency numbers for the session wrap-up: speaking time, words per minute and average
-//! answer length, each with a personal trend against the last earlier session that has the data.
-//! They are trends for the learner to see, never a level or a score.
-
 use serde::Serialize;
 
-/// A change smaller than this share of the earlier value reads as "about the same".
 const SAME_BAND_PERCENT: f64 = 5.0;
 const MS_PER_MINUTE: f64 = 60_000.0;
 
-/// One stored answer as the statistics see it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AnswerSample {
     pub transcript: String,
-    /// How long the learner spoke; absent for typed answers and for answers stored before it was kept.
     pub duration_ms: Option<u64>,
     pub is_typed: bool,
 }
 
-/// Raw totals for one session; the three numbers derive from these.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct SessionStats {
     speaking_ms: u64,
@@ -26,7 +18,6 @@ pub struct SessionStats {
     answer_words: u64,
 }
 
-/// Words are whitespace-separated pieces that contain a letter or a digit.
 pub fn count_words(text: &str) -> u64 {
     text.split_whitespace()
         .filter(|piece| piece.chars().any(char::is_alphanumeric))
@@ -40,8 +31,6 @@ impl SessionStats {
             let words = count_words(&answer.transcript);
             stats.answer_count += 1;
             stats.answer_words += words;
-            // Only answers with a recorded duration count towards speed, so a typed or older
-            // answer never inflates words per minute.
             if let (false, Some(duration_ms)) = (answer.is_typed, answer.duration_ms) {
                 stats.speaking_ms += duration_ms;
                 stats.spoken_words += words;
@@ -64,21 +53,13 @@ impl SessionStats {
     }
 }
 
-/// How a number moved against the last earlier session that has it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Trend {
-    /// No earlier session has this measure (or this session has no value for it).
     First,
     Same,
-    /// Signed whole-percent change.
-    Percent {
-        change: i64,
-    },
-    /// Signed change in words.
-    Words {
-        change: i64,
-    },
+    Percent { change: i64 },
+    Words { change: i64 },
 }
 
 fn relative_change_percent(current: f64, previous: f64) -> f64 {
@@ -136,7 +117,6 @@ pub struct SessionNumbers {
     pub average_answer: AverageAnswer,
 }
 
-/// `earlier` holds the finished sessions before this one, newest first.
 pub fn session_numbers(current: &SessionStats, earlier: &[SessionStats]) -> SessionNumbers {
     let previous_speaking = earlier.iter().find_map(|stats| stats.speaking_ms());
     let previous_pace = earlier.iter().find_map(|stats| stats.words_per_minute());
@@ -209,7 +189,6 @@ mod tests {
         let numbers = session_numbers(&stats, &[]);
         assert_eq!(numbers.speaking_time.duration_ms, Some(30_000));
         assert_eq!(numbers.words_per_minute.value, Some(12));
-        // Every answer counts towards length: (6 + 4 + 5) / 3.
         assert_eq!(numbers.average_answer.words, Some(5));
     }
 
@@ -245,11 +224,8 @@ mod tests {
         let earlier_spoken = SessionStats::from_answers(&[spoken(&"word ".repeat(50), 25_000)]);
         let current = SessionStats::from_answers(&[spoken(&"word ".repeat(56), 28_000)]);
         let numbers = session_numbers(&current, &[earlier_typed, earlier_spoken]);
-        // Speaking time 25 s -> 28 s is +12%, skipping the typed-only session between.
         assert_eq!(numbers.speaking_time.trend, Trend::Percent { change: 12 });
-        // Pace is 120 words per minute in both.
         assert_eq!(numbers.words_per_minute.trend, Trend::Same);
-        // Length has data in the typed-only session too, so it is the one compared with: 4 -> 56.
         assert_eq!(numbers.average_answer.trend, Trend::Words { change: 52 });
     }
 
