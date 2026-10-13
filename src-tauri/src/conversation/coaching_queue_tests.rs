@@ -375,6 +375,7 @@ fn a_quota_pause_ends_on_its_own_with_one_probe_that_pauses_again_while_still_li
         all_ok(call, answers)
     });
     fixture.answer(session.session_id, "I work in there");
+    let before_the_pause = Instant::now();
     fixture.queue.flush(session.session_id);
     assert_eq!(fixture.next_batch(), [1]);
     fixture.next_event(); // The provider-call notification precedes the committed pause.
@@ -383,10 +384,9 @@ fn a_quota_pause_ends_on_its_own_with_one_probe_that_pauses_again_while_still_li
     fixture.assert_no_batch_within(Duration::from_millis(200));
 
     // The first probe is still limited: one batch only, then the pause starts over.
-    let paused_at = Instant::now();
     assert_eq!(fixture.next_batch(), [1]);
     fixture.next_event();
-    assert!(paused_at.elapsed() >= Duration::from_millis(100));
+    assert!(before_the_pause.elapsed() >= Duration::from_millis(400));
     fixture.assert_no_batch_within(Duration::from_millis(200));
     assert_eq!(fixture.batches.lock().unwrap().len(), 2);
 
