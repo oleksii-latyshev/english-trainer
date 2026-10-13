@@ -59,6 +59,11 @@
   --color-warn-soft: color-mix(in oklab, var(--color-warn) 12%, transparent);
   --color-warn-text: var(--color-warn);
   --color-backdrop: rgba(0, 0, 0, 0.6);
+  --color-tile-red: #ff6b5e;
+  --color-tile-green: #34c77b;
+  --color-tile-grey: #7f8a9c;
+  --color-tile-sky-from: #6cc4ff;
+  --color-tile-sky-to: #5a6cf0;
   --shadow-overlay: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 24px 60px -24px rgba(0, 0, 0, 0.65);
   --shadow-control: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   --shadow-primary:

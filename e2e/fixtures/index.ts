@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { App } from '../pages/app';
+import { FirstRunPage } from '../pages/first-run-page';
 import { MemoryPage } from '../pages/memory-page';
 import { ReviewPage } from '../pages/review-page';
 import { SettingsPage } from '../pages/settings-page';
@@ -17,6 +18,7 @@ type Fixtures = {
   memory: MemoryPage;
   review: ReviewPage;
   settings: SettingsPage;
+  firstRun: FirstRunPage;
 };
 
 export const test = base.extend<Fixtures>({
@@ -46,6 +48,9 @@ export const test = base.extend<Fixtures>({
   },
   settings: async ({ page }, use) => {
     await use(new SettingsPage(page));
+  },
+  firstRun: async ({ page }, use) => {
+    await use(new FirstRunPage(page));
   },
 });
 

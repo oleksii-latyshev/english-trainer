@@ -1,6 +1,6 @@
 # Gemini key flow
 
-Used by Settings › Conversation AI (`GeminiKeyField`) and first run (`ProviderStep`). The key goes
+Used by Settings › Conversation AI (`GeminiKeyField`) and first run (`GeminiKeyList`). The key goes
 from the learner to an encrypted file; only its status ever comes back to the UI.
 
 ## Show the status
@@ -126,3 +126,8 @@ sequenceDiagram
     end
     Gemini->>KeyService: forget_cached_key() when Gemini rejects the key
 ```
+
+## First run list
+
+`GeminiKeyList` is the same save flow as `GeminiKeyField` in the grouped-list layout: an API key row
+with a Saved mark, a save row, and the free-key link opened through `core/external-link`.

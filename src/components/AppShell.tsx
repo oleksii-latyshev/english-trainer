@@ -3,7 +3,7 @@ import { Bookmark, MessageCircle, Settings } from 'lucide-react';
 import type React from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import type { MicrophoneStatus } from '@/core/audio';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import {
   activeSettingsSection,
   EVA_SETTINGS_PATH,

@@ -56,3 +56,11 @@ sequenceDiagram
     Learner->>Group: Play back, Discard, or Record again
     Group->>Run: Reset or a new run revokes the previous object URL
 ```
+
+## First run check
+
+`MicrophoneCheck` is the compact variant used by the first-run screen. Nothing is requested until the
+learner presses Allow Microphone; that starts the same one-shot test as above. While it records, the
+list shows the device choice and the live level, and "We can hear you" latches once the level reaches
+`HEARD_SPEECH_LEVEL`. Check again starts a new test. Denial or a missing device shows the failure and
+keeps the button.

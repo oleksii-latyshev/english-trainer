@@ -1,6 +1,7 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import { AiProviderSettings } from '@/features/ai-provider';
 import { ApiUsageSettings } from '@/features/api-usage';
 import { AppearanceSettings } from '@/features/appearance';
@@ -14,7 +15,6 @@ import { SetupDetails } from '@/features/setup-details';
 import { SpeechRecognitionSettings } from '@/features/speech-recognition-settings';
 import { TranslationSettings } from '@/features/translation-settings';
 import { VoiceSettings } from '@/features/voice-settings';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { GroupCard } from '@/shared/ui/group-card';
 import { EvaSettingsLink } from './EvaSettingsLink';
 import { VoiceSelection } from './VoiceSelection';
