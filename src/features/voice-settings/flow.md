@@ -3,7 +3,7 @@
 Settings › Voice: engine, the ten natural voices, speed. The choice is stored by
 `core/voice-preference`; the sample is synthesized by the bundled model through
 `synthesize_natural_voice` and played by `core/speech` (`previewNaturalVoiceAtom`). When the local voice is unavailable
-the host passes the system voice picker in `systemVoices`.
+the host passes the system voice picker in `systemVoices` (the feature's own `SystemVoices`, fed by the app layer).
 
 ## Check the local voice
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -117,7 +117,6 @@
         "!src/features/conversation/**",
         "!src/features/memory/**",
         "!src/features/practice/**",
-        "!src/features/settings/**",
         "!src/app/speech-capture/use-speech-capture.ts"
       ],
       "plugins": ["./biome/plugins/function-declarations.grit"],
@@ -190,7 +189,6 @@
         "!src/features/conversation/**",
         "!src/features/memory/**",
         "!src/features/practice/**",
-        "!src/features/settings/**",
         "!src/app/**",
         "!**/*.test.ts",
         "!**/*.test.tsx",
@@ -233,12 +231,10 @@
                       "@/features/conversation/**",
                       "@/features/memory/**",
                       "@/features/practice/**",
-                      "@/features/settings/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/memory",
-                      "@/features/practice",
-                      "@/features/settings"
+                      "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -283,12 +279,10 @@
                       "@/features/conversation/**",
                       "@/features/memory/**",
                       "@/features/practice/**",
-                      "@/features/settings/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/memory",
-                      "@/features/practice",
-                      "@/features/settings"
+                      "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -337,12 +331,10 @@
                       "@/features/conversation/**",
                       "@/features/memory/**",
                       "@/features/practice/**",
-                      "@/features/settings/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/memory",
-                      "@/features/practice",
-                      "@/features/settings"
+                      "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -363,8 +355,7 @@
         "!src/features/coach/**",
         "!src/features/conversation/**",
         "!src/features/memory/**",
-        "!src/features/practice/**",
-        "!src/features/settings/**"
+        "!src/features/practice/**"
       ],
       "linter": {
         "rules": {
@@ -394,12 +385,10 @@
                       "@/features/conversation/**",
                       "@/features/memory/**",
                       "@/features/practice/**",
-                      "@/features/settings/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/memory",
-                      "@/features/practice",
-                      "@/features/settings"
+                      "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -441,12 +430,10 @@
                       "@/features/conversation/**",
                       "@/features/memory/**",
                       "@/features/practice/**",
-                      "@/features/settings/**",
                       "@/features/coach",
                       "@/features/conversation",
                       "@/features/memory",
-                      "@/features/practice",
-                      "@/features/settings"
+                      "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },

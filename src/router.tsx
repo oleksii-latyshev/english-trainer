@@ -14,9 +14,8 @@ import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { useSessionClock } from '@/features/practice/useSessionClock';
-import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
-import { SettingsView } from '@/features/settings/SettingsView';
 import { FirstRunRoute } from '@/routes/first-run';
+import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
 import { TalkStartRoute } from '@/routes/talk-start';
 
 function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
@@ -139,15 +138,13 @@ export const memoryReviewRoute = createRoute({
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
-  component: function SettingsComponent() {
-    return <SettingsView />;
-  },
+  component: SettingsRoute,
 });
 
 export const settingsEvaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings/eva',
-  component: EvaSettingsView,
+  component: SettingsEvaRoute,
 });
 
 export const firstRunRoute = createRoute({
