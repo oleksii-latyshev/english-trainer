@@ -6,8 +6,9 @@ in memory only; it is released when a capture's scope closes or after transcript
 the live transcript are not here (they move with `core/speech`, #49).
 
 Services (all in `services/`): `Microphone` opens one stream as a scoped resource, `WarmMicrophone`
-owns the warm session between turns, `AudioInputsService` lists devices. `src/app/microphone` is the
-Promise/callback bridge for legacy callers that have not been migrated yet.
+owns the warm session between turns, `AudioInputsService` lists devices. `ClipRecorder` records one-off clips for Settings and
+first run. `src/app/microphone` is the Promise/callback bridge for legacy callers that have not been
+migrated yet.
 
 ## Warm session for practice
 
@@ -63,21 +64,31 @@ sequenceDiagram
     Note over Warm: signals from a replaced session are ignored
 ```
 
-## One-off recording (Settings test, speech check, recall)
+## One-off recording (Settings check, speech check, first run)
 
 ```mermaid
 sequenceDiagram
-    participant Caller as useMicrophoneTest, useSentenceRecorder
-    participant Bridge as startPcmRecording
+    participant Caller as microphoneTestRunAtom, recordSentenceAtom
+    participant Clip as ClipRecorder.record
     participant Mic as Microphone.open
+    participant Phase as clipPhaseAtom
 
-    Caller->>Bridge: start (device from Settings, else the remembered one)
-    Bridge->>Mic: open in its own Scope, wait for warm-up, capture without pre-roll
-    alt device lost while recording
-        Mic-->>Caller: onDeviceLost
+    Caller->>Clip: record(device from Settings, maximum length)
+    Clip->>Phase: requesting
+    Clip->>Mic: open in its own Scope, wait for warm-up, capture without pre-roll
+    Clip->>Phase: recording (elapsed time and level every 100 ms)
+    alt Caller stops, or the maximum length passes
+        Caller->>Clip: stop
+        Clip->>Phase: stopping
+        Clip-->>Caller: WAV, signal summary, actual input
+    else device lost while recording
+        Mic-->>Caller: MicrophoneError (disconnected)
+    else the caller is interrupted (Reset, unmount)
+        Caller-->>Clip: interrupt
     end
-    Caller->>Bridge: stop or cancel
-    Bridge->>Mic: close the Scope: the device is released
+    Clip->>Mic: the Scope closes: the device is released
+    Clip->>Phase: idle
+    Note over Caller,Clip: one clip at a time; a second record fails with a busy MicrophoneError
 ```
 
 ## Remembered device
@@ -85,7 +96,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Select as MicrophoneDeviceSelect
+    participant Select as the device choice (Settings, first run)
     participant Atom as preferredMicrophoneAtom (Atom.kvs)
     participant Store as localStorage english_trainer_preferred_microphone_id
     participant Warm as WarmMicrophone

@@ -1,5 +1,6 @@
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { Check, ChevronsUpDown } from 'lucide-react';
+import type { Ref } from 'react';
 import { select } from './styles';
 
 type Option<T extends string> = { value: T; label: string };
@@ -12,6 +13,8 @@ type Props<T extends string> = {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  id?: string;
+  triggerRef?: Ref<HTMLButtonElement>;
 };
 
 const {
@@ -34,6 +37,8 @@ export function Select<T extends string>({
   placeholder,
   disabled = false,
   className,
+  id,
+  triggerRef,
 }: Props<T>) {
   return (
     <BaseSelect.Root
@@ -44,7 +49,12 @@ export function Select<T extends string>({
       }}
       value={value}
     >
-      <BaseSelect.Trigger aria-label={label} className={trigger({ className })}>
+      <BaseSelect.Trigger
+        aria-label={label}
+        className={trigger({ className })}
+        id={id}
+        ref={triggerRef}
+      >
         <BaseSelect.Value className={valueSlot()} placeholder={placeholder} />
         <BaseSelect.Icon className={icon()}>
           <ChevronsUpDown aria-hidden="true" className="size-4" />

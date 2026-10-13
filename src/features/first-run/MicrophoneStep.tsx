@@ -2,12 +2,16 @@ import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import type { AudioInputOption } from '@/core/audio';
-import { useAudioInputOptions, usePreferredMicrophone } from '@/core/audio';
-import { LevelMeter } from '@/features/settings/LevelMeter';
-import { MicrophoneDeviceSelect } from '@/features/settings/MicrophoneDeviceSelect';
-import { useMicrophoneTest } from '@/features/settings/useMicrophoneTest';
+import {
+  microphoneTestFailureMessage,
+  useAudioInputOptions,
+  useMicrophoneTest,
+  usePreferredMicrophone,
+} from '@/core/audio';
 import { Eva } from '@/shared/ui/eva';
+import { LevelMeter } from '@/shared/ui/level-meter';
 import { checkStatus, isHearingSpeech } from './lib/heardSpeech';
+import { MicrophoneDeviceSelect } from './MicrophoneDeviceSelect';
 
 type CardProps = {
   deviceOptions: AudioInputOption[];
@@ -54,7 +58,7 @@ function MicrophoneCheckCard({
         )}
       </div>
       <div className="first-run-meter-row">
-        <LevelMeter level={level} />
+        <LevelMeter label="Live microphone input level" level={level} />
         {status.ok ? (
           <span className="first-run-ok" role="status">
             <Check aria-hidden="true" size={14} strokeWidth={2.4} />
@@ -127,10 +131,8 @@ export function MicrophoneStep({
 }) {
   const { speech, capture } = useTrainer();
   const { selectedDeviceId, selectDevice } = usePreferredMicrophone();
-  const { deviceOptions, hasUnnamed, deviceError, loadDevices } = useAudioInputOptions();
-  const test = useMicrophoneTest(selectedDeviceId, () => {
-    void loadDevices();
-  });
+  const { deviceOptions, hasUnnamed, deviceError } = useAudioInputOptions();
+  const test = useMicrophoneTest();
   const state = test.state;
   const level = state.tag === 'recording' ? state.level : undefined;
   const heard = useHeardSpeech(level, state.tag === 'requesting');
@@ -145,7 +147,7 @@ export function MicrophoneStep({
 
   function startCheck() {
     speech.stop();
-    void test.startTest();
+    test.start(selectedDeviceId);
   }
 
   return (
@@ -177,7 +179,7 @@ export function MicrophoneStep({
 
       {state.tag === 'error' && (
         <p className="first-run-alert" role="alert">
-          {state.message}
+          {microphoneTestFailureMessage(state.failure)}
         </p>
       )}
       {deviceError && (

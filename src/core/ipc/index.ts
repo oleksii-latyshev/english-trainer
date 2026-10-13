@@ -4,6 +4,8 @@ export type { AnsweredBy } from './bindings/AnsweredBy';
 export type { AnswerProvider } from './bindings/AnswerProvider';
 export type { AntigravityUsage } from './bindings/AntigravityUsage';
 export type { ApiUsageOverview } from './bindings/ApiUsageOverview';
+export type { ComponentCheck } from './bindings/ComponentCheck';
+export type { ComponentStatus } from './bindings/ComponentStatus';
 export type { ConversationProvider } from './bindings/ConversationProvider';
 export type { ConversationTurn } from './bindings/ConversationTurn';
 export type { EvaStyle } from './bindings/EvaStyle';
@@ -21,6 +23,7 @@ export type { RecordingResult } from './bindings/RecordingResult';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
 export type { SentenceStatus } from './bindings/SentenceStatus';
 export type { ServerState } from './bindings/ServerState';
+export type { SetupDiagnostics } from './bindings/SetupDiagnostics';
 export type { SpeechCheckProgress } from './bindings/SpeechCheckProgress';
 export type { SpeechCheckResults } from './bindings/SpeechCheckResults';
 export type { SpeechCheckStatus } from './bindings/SpeechCheckStatus';
@@ -63,6 +66,11 @@ export {
 export { GeminiKeyStatusSchema, KeySourceSchema } from './schemas/gemini-key-status';
 export { IpcErrorCodeSchema } from './schemas/ipc-error';
 export { PersonalProfileSchema } from './schemas/personal-profile';
+export {
+  ComponentCheckSchema,
+  ComponentStatusSchema,
+  SetupDiagnosticsSchema,
+} from './schemas/setup-diagnostics';
 export {
   KeptRecordingsSchema,
   ModelRunSchema,

@@ -7,12 +7,16 @@ export class SettingsPage {
   readonly statusFailure: Locator;
   readonly runTestButton: Locator;
   readonly usageHeading: Locator;
+  readonly microphone: Locator;
+  readonly speech: Locator;
 
   constructor(private readonly page: Page) {
     this.unavailableNotice = page.getByText('Local voice is unavailable. Using system speech.');
     this.voices = page.getByRole('radiogroup', { name: "Eva's voice" });
     this.nativeLanguage = page.getByRole('combobox', { name: 'Native language' });
     this.runTestButton = page.getByRole('button', { name: 'Run test' });
+    this.microphone = page.getByRole('region', { name: 'Microphone', exact: true });
+    this.speech = page.getByRole('region', { name: 'Speech recognition', exact: true });
     this.usageHeading = page.getByRole('heading', { name: 'Usage', exact: true });
     this.statusFailure = page.getByText('Translation availability could not be checked. Retry.');
   }
@@ -54,8 +58,20 @@ export class SettingsPage {
   }
 
   async chooseFromSelect(label: string, option: string): Promise<void> {
-    await this.page.getByRole('combobox', { name: label }).click();
+    await this.page.getByRole('combobox', { name: label, exact: true }).click();
     await this.page.getByRole('option', { name: option }).click();
+  }
+
+  modelChoice(): Locator {
+    return this.speech.getByRole('combobox', { name: 'Model', exact: true });
+  }
+
+  async recordMicrophoneCheck(): Promise<void> {
+    await this.microphone.getByRole('button', { name: 'Record' }).click();
+  }
+
+  async toggleSwitch(label: string): Promise<void> {
+    await this.page.getByRole('switch', { name: label }).click();
   }
 
   async runTest(): Promise<void> {
