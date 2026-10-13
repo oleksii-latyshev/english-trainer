@@ -24,6 +24,7 @@ mod rescue;
 mod review_material;
 mod rules;
 mod scaffold;
+mod speaking_activity;
 mod speech_settings;
 mod topics;
 mod translation;

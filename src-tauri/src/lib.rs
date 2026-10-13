@@ -9,6 +9,7 @@ mod persistence;
 mod personal_profile;
 mod providers;
 mod setup;
+mod speaking_activity;
 mod speech_recognition;
 mod translation;
 mod translation_settings;
@@ -632,6 +633,9 @@ pub fn run() {
             ));
             api_usage::start_recording(usage_service.clone());
             app.manage(usage_service);
+            app.manage(speaking_activity::SpeakingActivityService::new(
+                speaking_activity::SessionActivityStore::new(sessions.clone()),
+            ));
             app.manage(personal_profile::PersonalProfileService::new(
                 personal_profile::SessionProfileStore::new(sessions.clone()),
             ));
@@ -707,6 +711,7 @@ pub fn run() {
             ai_settings::commands::get_ai_settings,
             set_dock_icon,
             api_usage::commands::get_api_usage,
+            speaking_activity::commands::get_speaking_activity,
             ai_settings::commands::save_ai_settings,
             ai_settings::commands::prewarm_conversation_provider,
             gemini_key::commands::get_gemini_key_status,

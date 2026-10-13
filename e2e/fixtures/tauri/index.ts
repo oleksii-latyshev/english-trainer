@@ -9,6 +9,7 @@ import { PlannerBackend } from './planner';
 import { RescueBackend } from './rescue';
 import { ReviewBackend } from './review-backend';
 import { SessionBackend } from './session';
+import { SpeakingActivityBackend } from './speaking-activity';
 import { SpeechBackend } from './speech';
 import { StreamingBackend } from './streaming';
 import { TranslationBackend } from './translation';
@@ -17,6 +18,7 @@ import { WrapupBackend } from './wrapup';
 export class FakeBackend {
   readonly session: SessionBackend;
   readonly memory: MemoryBackend;
+  readonly activity: SpeakingActivityBackend;
   readonly speech: SpeechBackend;
   readonly translation: TranslationBackend;
   readonly planner: PlannerBackend;
@@ -33,6 +35,7 @@ export class FakeBackend {
   constructor(private readonly page: Page) {
     this.session = new SessionBackend(page);
     this.memory = new MemoryBackend();
+    this.activity = new SpeakingActivityBackend(page);
     this.speech = new SpeechBackend(page);
     this.translation = new TranslationBackend(page);
     this.planner = new PlannerBackend(page);
@@ -64,6 +67,7 @@ export class FakeBackend {
       translation: this.translation.seed,
       planner: this.planner.seed,
     });
+    await this.activity.install();
     await this.review.install();
     await this.liveReview.install();
     await this.wrapup.install();

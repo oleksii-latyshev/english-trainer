@@ -75,6 +75,7 @@ bridge from `core`. Widgets and the menu-bar panel stay *After MVP*. Steps 2–5
 | `src/features/*/use*.ts` hooks | feature `model/atoms.ts` (+ `helpers/` for the pure parts) |
 | `src/features/*/lib/*` | feature `helpers/<name>/` |
 | `src/context/TrainerContext.tsx` | atoms in the owning features/core; screens read them directly |
+| `src/routes/<screen>` (glue that feeds a migrated screen from legacy state) | deleted when the legacy state it reads is migrated; new layers never import it |
 | `src/components/*` | `src/shared/ui/<name>` (generic) or the feature that owns it |
 | `src/router.tsx`, `src/App.tsx` | `src/app/router`, `src/app/providers`, `src/app/shell` |
 | `src-tauri/src/lib.rs` commands | `src-tauri/src/<context>/commands.rs` |
