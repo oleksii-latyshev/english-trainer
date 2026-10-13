@@ -93,3 +93,10 @@ sequenceDiagram
     Settings->>Pref: set({ ...pref, rate })
     Note over Pref: Talk speech reads the same atom, the next sample uses it too
 ```
+
+## First run list
+
+`VoiceList` is the compact variant for first run: the ten natural voices as one grouped list with a
+play button per row, and the speed. It shares `useNaturalVoicePicker` with `VoiceSettings`, so
+choosing a voice stores it, plays the sample and a second press on the play button stops it. While the
+local voice is loading or unavailable a notice replaces the list.

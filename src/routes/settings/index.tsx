@@ -1,6 +1,6 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useTrainer } from '@/context/TrainerContext';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import {
   EVA_SETTINGS_PATH,
   isSettingsSectionId,

@@ -57,7 +57,30 @@ export async function installSpeech(page: Page): Promise<void> {
 }
 
 export class SpeechBackend {
+  private isMicrophoneGranted = false;
+
   constructor(private readonly page: Page) {}
+
+  grantMicrophone(): void {
+    this.isMicrophoneGranted = true;
+  }
+
+  async install(): Promise<void> {
+    if (!this.isMicrophoneGranted) return;
+    await this.page.addInitScript(() => {
+      const retainedAudioContexts: AudioContext[] = [];
+      navigator.mediaDevices.getUserMedia = async () => {
+        window.__ET_AUDIO_COUNTS__.mediaRequests += 1;
+        const context = new AudioContext();
+        retainedAudioContexts.push(context);
+        const destination = context.createMediaStreamDestination();
+        const tone = context.createOscillator();
+        tone.connect(destination);
+        tone.start();
+        return destination.stream;
+      };
+    });
+  }
 
   counts(): Promise<AudioEdgeCounts> {
     return this.page.evaluate(() => window.__ET_AUDIO_COUNTS__);

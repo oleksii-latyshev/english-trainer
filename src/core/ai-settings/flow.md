@@ -1,7 +1,7 @@
 # AI settings flow
 
 The saved conversation provider, Antigravity model and Eva's style. Read by Settings
-(`AiProviderSettings`), first run (`ProviderStep`) and Talk (`useConversationProvider`,
+(`AiProviderSettings`), first run (`ProviderList`) and Talk (`useConversationProvider`,
 `usePrewarmProvider`). The Gemini API key never travels here: it has its own feature,
 `gemini-key`.
 
@@ -10,7 +10,7 @@ The saved conversation provider, Antigravity model and Eva's style. Read by Sett
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Component as AiProviderSettings / ProviderStep
+    participant Component as AiProviderSettings / ProviderList
     participant Atoms as aiSettingsAtom
     participant Service as AiSettingsService
     participant Ipc

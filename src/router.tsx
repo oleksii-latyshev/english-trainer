@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-router';
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
-import { FirstRunView } from '@/features/first-run/FirstRunView';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
 import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
@@ -14,7 +14,7 @@ import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
 import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { useSessionClock } from '@/features/practice/useSessionClock';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
+import { FirstRunRoute } from '@/routes/first-run';
 import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
 import { TalkStartRoute } from '@/routes/talk-start';
 
@@ -150,7 +150,7 @@ export const settingsEvaRoute = createRoute({
 export const firstRunRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: FIRST_RUN_PATH,
-  component: FirstRunView,
+  component: FirstRunRoute,
 });
 
 export const summaryRoute = createRoute({

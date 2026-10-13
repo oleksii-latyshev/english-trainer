@@ -1,10 +1,10 @@
 import { Navigate, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
+import { FIRST_RUN_PATH } from '@/core/first-run';
 import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
-import { FIRST_RUN_PATH } from '@/lib/firstRun';
 import { TalkStartScreen } from '@/screens/talk-start';
 import { mistakePracticeSummary, openSessionOf, reviewSummary } from './summaries';
 
