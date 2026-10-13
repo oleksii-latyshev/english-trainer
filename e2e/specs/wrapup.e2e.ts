@@ -120,6 +120,7 @@ test('save all is atomic, removed phrases stay out, duplicates are not undone', 
     ease_factor: 2.5,
     status: 'new' as const,
     is_due: true,
+    times_used_on_own: 0,
   };
   tauri.wrapup
     .finishingWith(wrapupSummary({ state: 'ready' }, phraseSet))

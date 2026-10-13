@@ -17,6 +17,7 @@ function card(id: number, createdAt: number): PhraseCardRecord {
     ease_factor: 2.5,
     status: 'learning',
     is_due: false,
+    times_used_on_own: 0,
   };
 }
 

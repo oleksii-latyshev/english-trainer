@@ -1,9 +1,9 @@
 import { createContext, useContext } from 'react';
 import type { MicrophoneController } from '@/app/microphone';
 import type { useSpeechCapture } from '@/app/speech-capture';
+import type { DueMemory } from '@/core/learning-memory';
 import type { SpeechControls } from '@/core/speech';
 import type { FirstRunGate } from '@/features/first-run/useFirstRunGate';
-import type { DueCount } from '@/features/memory/useDuePhraseCount';
 import type { usePracticeSession } from '@/features/practice/usePracticeSession';
 import type { PracticeOptions } from '@/lib/practiceOptions';
 
@@ -17,7 +17,7 @@ export type TrainerContextValue = {
   startOrResumePractice: () => void;
   isSessionOpen: boolean;
   /** Phrases due for review; shown in the sidebar and on the Talk start screen. */
-  due: DueCount;
+  due: DueMemory;
   /** Whether this launch opens first run instead of Talk start. */
   firstRun: FirstRunGate;
 };

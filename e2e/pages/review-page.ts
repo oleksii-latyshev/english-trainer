@@ -39,7 +39,7 @@ export class ReviewPage {
   }
 
   async reviewNow(): Promise<void> {
-    await this.spokenReviewRegion.getByRole('button', { name: 'Review now' }).click();
+    await this.spokenReviewRegion.getByRole('button', { name: 'Start spoken review' }).click();
   }
 
   async showPhrase(): Promise<void> {

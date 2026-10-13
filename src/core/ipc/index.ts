@@ -9,16 +9,23 @@ export type { ComponentStatus } from './bindings/ComponentStatus';
 export type { ConversationProvider } from './bindings/ConversationProvider';
 export type { ConversationTurn } from './bindings/ConversationTurn';
 export type { EvaStyle } from './bindings/EvaStyle';
+export type { FocusCategory } from './bindings/FocusCategory';
 export type { GeminiKeyStatus } from './bindings/GeminiKeyStatus';
 export type { GeminiUsage } from './bindings/GeminiUsage';
 export type { IpcErrorCode } from './bindings/IpcErrorCode';
 export type { KeptRecordings } from './bindings/KeptRecordings';
 export type { KeySource } from './bindings/KeySource';
+export type { LearningItemType } from './bindings/LearningItemType';
+export type { LearningMemoryView } from './bindings/LearningMemoryView';
+export type { LearningStatus } from './bindings/LearningStatus';
 export type { LimitNote } from './bindings/LimitNote';
+export type { MemoryUsageEvidence } from './bindings/MemoryUsageEvidence';
+export type { MistakeRecord } from './bindings/MistakeRecord';
 export type { ModelRequests } from './bindings/ModelRequests';
 export type { ModelRun } from './bindings/ModelRun';
 export type { NativeLanguageSettings } from './bindings/NativeLanguageSettings';
 export type { PersonalProfile } from './bindings/PersonalProfile';
+export type { PhraseCardRecord } from './bindings/PhraseCardRecord';
 export type { RecordingResult } from './bindings/RecordingResult';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
 export type { SentenceStatus } from './bindings/SentenceStatus';
@@ -36,6 +43,8 @@ export type { SpeechSettings } from './bindings/SpeechSettings';
 export type { Transcript } from './bindings/Transcript';
 export type { TranslationStatus } from './bindings/TranslationStatus';
 export type { TranslationStatusKind } from './bindings/TranslationStatusKind';
+export type { UsageEventRecord } from './bindings/UsageEventRecord';
+export type { UsageOutcome } from './bindings/UsageOutcome';
 export { IpcDecodeError, IpcError } from './errors';
 export { ipcFailureMessage } from './failure-message';
 export { invokeBinaryCommand, invokeCommand, invokeUnitCommand } from './invoke-command';
@@ -67,6 +76,17 @@ export {
 } from './schemas/conversation-turn';
 export { GeminiKeyStatusSchema, KeySourceSchema } from './schemas/gemini-key-status';
 export { IpcErrorCodeSchema } from './schemas/ipc-error';
+export {
+  FocusCategorySchema,
+  LearningItemTypeSchema,
+  LearningMemoryViewSchema,
+  LearningStatusSchema,
+  MemoryUsageEvidenceSchema,
+  MistakeRecordSchema,
+  PhraseCardRecordSchema,
+  UsageEventRecordSchema,
+  UsageOutcomeSchema,
+} from './schemas/learning';
 export { PersonalProfileSchema } from './schemas/personal-profile';
 export {
   ComponentCheckSchema,

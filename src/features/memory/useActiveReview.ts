@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import type { ActiveReview } from '@/features/memory-practice';
 import { getResolvedItemCount } from './lib/memoryRecallState';
-import type { ActiveReview } from './lib/reviewBanner';
 import { getMemoryReview } from './memoryRecallApi';
 
 /**

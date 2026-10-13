@@ -1,5 +1,5 @@
 import type { LearningStatus } from '@/lib/learningTypes';
-import '@/features/memory/memoryDetail.css';
+import './statusChip.css';
 
 /** The status as the design draws it: a coloured dot and the plain word. */
 export function StatusChip({ status }: { status: LearningStatus }) {

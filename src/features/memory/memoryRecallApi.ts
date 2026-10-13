@@ -7,6 +7,7 @@ import {
   type MemoryReviewRun,
 } from '@/lib/memoryRecallTypes';
 import { isReviewMaterials, type ReviewMaterials } from '@/lib/reviewMaterialTypes';
+import { notifyLearningMemoryChanged } from './memoryChanged';
 
 export async function startMemoryReview(options?: {
   warmup?: boolean;
@@ -74,7 +75,7 @@ export async function submitMemoryRecall(
   if (result.run_id !== runId || result.item_type !== itemType || result.item_id !== itemId) {
     throw new Error('Spoken recall response does not match the submitted queue item.');
   }
-  window.dispatchEvent(new Event('learning-memory-changed'));
+  notifyLearningMemoryChanged();
   return result;
 }
 
@@ -92,7 +93,7 @@ export async function skipMemoryReviewItem(
   if (!isMemoryReviewRun(result) || result.run_id !== runId) {
     throw new Error('Unexpected skip response from local database.');
   }
-  window.dispatchEvent(new Event('learning-memory-changed'));
+  notifyLearningMemoryChanged();
   return result;
 }
 
@@ -103,6 +104,6 @@ export async function finishMemoryReview(runId: number): Promise<boolean> {
   }
   if (!result)
     throw new Error('This review run could not be finished. Reload Learning Memory and retry.');
-  window.dispatchEvent(new Event('learning-memory-changed'));
+  notifyLearningMemoryChanged();
   return result;
 }

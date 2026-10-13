@@ -7,7 +7,6 @@ import {
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
 import { FirstRunView } from '@/features/first-run/FirstRunView';
-import { LearningMemoryPanel } from '@/features/memory/LearningMemoryPanel';
 import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
@@ -17,6 +16,7 @@ import { useSessionClock } from '@/features/practice/useSessionClock';
 import { EvaSettingsView } from '@/features/settings/EvaSettingsView';
 import { SettingsView } from '@/features/settings/SettingsView';
 import { FIRST_RUN_PATH } from '@/lib/firstRun';
+import { MemoryRoute } from '@/routes/memory';
 import { TalkStartRoute } from '@/routes/talk-start';
 
 function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
@@ -103,20 +103,7 @@ export const conversationRoute = createRoute({
 export const memoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory',
-  component: function MemoryComponent() {
-    const { capture, practice, startMistakePractice, isSessionOpen } = useTrainer();
-    const navigate = memoryRoute.useNavigate();
-    return (
-      <LearningMemoryPanel
-        isAudioBusy={practice.isBusy || !capture.canChangeSession}
-        isSessionOpen={isSessionOpen}
-        isStartingMistakePractice={practice.state.tag === 'starting'}
-        mistakePracticeError={practice.error}
-        onStartMistakePractice={startMistakePractice}
-        onStartReview={() => void navigate({ to: '/memory/review' })}
-      />
-    );
-  },
+  component: MemoryRoute,
 });
 
 export const memoryReviewRoute = createRoute({

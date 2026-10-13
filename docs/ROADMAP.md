@@ -63,6 +63,9 @@ Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in 
   no streaks. Sidebar progress card; on/off switch in Settings › Eva.
 - **Start screen details** — greeting with the learner's name (needs a name in the personal
   profile) and a "No limit" session length beside 5/10/15 min.
+- **Memory details** — "Say it now" on an opened phrase or mistake (spoken practice of one item), a
+  kind per phrase (phrase, phrasal verb, linking phrase, pattern) and a "With help" evidence tag
+  beside "On your own" (cued answers are not stored as evidence yet).
 - **App icon and Dock icon choice** in the glass style.
 - **Light theme** for the glass design.
 

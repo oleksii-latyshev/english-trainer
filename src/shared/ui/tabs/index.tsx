@@ -46,11 +46,11 @@ export function TabsTab({ value, children }: TabProps) {
   );
 }
 
-type PanelProps = { value: string; children: ReactNode };
+type PanelProps = { value: string; className?: string; children: ReactNode };
 
-export function TabsPanel({ value, children }: PanelProps) {
+export function TabsPanel({ value, className, children }: PanelProps) {
   return (
-    <BaseTabs.Panel className={panel()} value={value}>
+    <BaseTabs.Panel className={panel({ className })} value={value}>
       {children}
     </BaseTabs.Panel>
   );
