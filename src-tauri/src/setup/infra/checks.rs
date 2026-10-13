@@ -1,64 +1,8 @@
-use serde::Serialize;
+use crate::setup::domain::{ComponentCheck, ComponentStatus};
+use crate::speech_recognition::ServerStatus;
 use std::{fs, path::Path, path::PathBuf};
-use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, TS)]
-#[ts(export)]
-pub(crate) struct SetupDiagnostics {
-    pub whisper_cli: ComponentCheck,
-    pub whisper_model: ComponentCheck,
-    pub whisper_server: ComponentCheck,
-    pub agy_cli: ComponentCheck,
-    pub database_path: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[ts(optional)]
-    pub agy_default_model: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, TS)]
-#[ts(export)]
-pub(crate) struct ComponentCheck {
-    pub status: ComponentStatus,
-    pub path: Option<String>,
-    pub message: String,
-}
-
-#[derive(Debug, Clone, Serialize, TS)]
-#[serde(rename_all = "snake_case")]
-#[ts(export)]
-pub(crate) enum ComponentStatus {
-    Available,
-    Missing,
-    Unreadable,
-}
-
-pub(crate) fn collect(
-    app_data: &Path,
-    model: &Path,
-    server: &crate::speech_recognition::ServerStatus,
-) -> SetupDiagnostics {
-    let whisper_cli = check_cli(crate::speech_recognition::resolve_whisper_binary());
-    let whisper_server = check_server(crate::speech_recognition::resolve_server_binary(), server);
-    let whisper_model = check_model(model);
-    let agy_cli = check_cli(crate::providers::resolve_agy_binary());
-    SetupDiagnostics {
-        whisper_cli,
-        whisper_model,
-        whisper_server,
-        agy_cli,
-        agy_default_model: std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .and_then(|home| {
-                read_agy_default_model(&home.join(".gemini/antigravity-cli/settings.json"))
-            }),
-        database_path: app_data
-            .join("english-trainer.sqlite3")
-            .to_string_lossy()
-            .into_owned(),
-    }
-}
-
-fn read_agy_default_model(path: &Path) -> Option<String> {
+pub fn read_agy_default_model(path: &Path) -> Option<String> {
     use std::io::Read;
     let mut bytes = Vec::new();
     fs::File::open(path)
@@ -77,7 +21,7 @@ fn read_agy_default_model(path: &Path) -> Option<String> {
     Some(model.to_string())
 }
 
-fn check_cli(path: Option<PathBuf>) -> ComponentCheck {
+pub fn check_cli(path: Option<PathBuf>) -> ComponentCheck {
     let Some(path) = path else {
         return ComponentCheck {
             status: ComponentStatus::Missing,
@@ -133,12 +77,7 @@ fn check_cli(path: Option<PathBuf>) -> ComponentCheck {
     )
 }
 
-/// The model server is optional: without it answers are transcribed by one-off `whisper-cli`
-/// runs, which work but reload the model every time.
-fn check_server(
-    path: Option<PathBuf>,
-    server: &crate::speech_recognition::ServerStatus,
-) -> ComponentCheck {
+pub fn check_server(path: Option<PathBuf>, server: &ServerStatus) -> ComponentCheck {
     use crate::speech_recognition::ServerState;
     let mut check = check_cli(path);
     check.message = match (&check.status, &server.failure, server.state) {
@@ -152,7 +91,7 @@ fn check_server(
     check
 }
 
-fn check_model(path: &Path) -> ComponentCheck {
+pub fn check_model(path: &Path) -> ComponentCheck {
     let displayed_path = path.to_string_lossy().into_owned();
     let metadata = match fs::metadata(path) {
         Ok(metadata) if metadata.is_file() => metadata,
@@ -230,7 +169,3 @@ fn has_execute_permission(metadata: &fs::Metadata) -> bool {
         true
     }
 }
-
-#[cfg(test)]
-#[path = "setup/tests.rs"]
-mod tests;

@@ -1,13 +1,27 @@
-import { useTrainer } from '@/context/TrainerContext';
 import { Button } from '@/shared/ui/button';
 import { FormRow } from '@/shared/ui/form-row';
 import { Notice } from '@/shared/ui/notice';
 import { Select } from '@/shared/ui/select';
+import { type SystemVoice, systemVoiceOptions } from '../../helpers/system-voice-options';
 
-export function VoiceSelection() {
-  const { speech } = useTrainer();
-  const isPlaying = speech.state.tag === 'starting' || speech.state.tag === 'speaking';
-  if (!speech.voices.length)
+export type SystemVoicesProps = {
+  readonly voices: readonly SystemVoice[];
+  readonly selectedVoiceURI: string | null;
+  readonly isPlaying: boolean;
+  readonly hasPlaybackError: boolean;
+  readonly onSelect: (voiceURI: string) => void;
+  readonly onPreview: () => void;
+};
+
+export function SystemVoices({
+  voices,
+  selectedVoiceURI,
+  isPlaying,
+  hasPlaybackError,
+  onSelect,
+  onPreview,
+}: SystemVoicesProps) {
+  if (voices.length === 0)
     return (
       <Notice role="status" tone="warn">
         No system speech voices are available right now. Add an English voice in macOS System
@@ -22,22 +36,15 @@ export function VoiceSelection() {
       >
         <Select
           label="Eva's voice"
-          onChange={speech.selectVoice}
-          options={speech.voices.map(({ voice, isEnglish }) => ({
-            value: voice.voiceURI,
-            label: `${voice.name} (${voice.lang})${isEnglish ? '' : ' · not English'}`,
-          }))}
-          value={speech.selectedVoiceURI}
+          onChange={onSelect}
+          options={systemVoiceOptions(voices)}
+          value={selectedVoiceURI}
         />
-        <Button
-          disabled={isPlaying}
-          onClick={() => speech.play('Hi, I am Eva. This is how I will sound.')}
-          tone="ghost"
-        >
+        <Button disabled={isPlaying} onClick={onPreview} tone="ghost">
           Preview
         </Button>
       </FormRow>
-      {speech.state.tag === 'error' && (
+      {hasPlaybackError && (
         <Notice role="alert" tone="error">
           Voice playback is unavailable.
         </Notice>

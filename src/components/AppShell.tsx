@@ -10,7 +10,7 @@ import {
   isSettingsPath,
   SETTINGS_SECTIONS,
   type SettingsSectionId,
-} from '@/lib/settingsSections';
+} from '@/screens/settings';
 import { NavItem } from '@/shared/ui/nav-item';
 import { micStatusBox } from './lib/micStatusBox';
 import { WordTranslationLayer } from './WordTranslationLayer';
