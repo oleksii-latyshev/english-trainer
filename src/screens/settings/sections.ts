@@ -1,21 +1,17 @@
 export const EVA_SETTINGS_PATH = '/settings/eva';
 
-/**
- * The groups of the Settings screen in display order; `id` is the anchor and the router hash.
- * Personalisation holds the glossary (F3); "About you" joins it with F8, see docs/ROADMAP.md.
- */
 export const SETTINGS_SECTIONS = [
   { id: 'microphone', label: 'Microphone' },
-  { id: 'speech', label: 'Speech recognition' },
   { id: 'ai', label: 'Conversation AI' },
-  { id: 'translation', label: 'Translation' },
-  { id: 'usage', label: 'Usage' },
   { id: 'voice', label: 'Voice' },
-  { id: 'appearance', label: 'Appearance' },
+  { id: 'speech', label: 'Speech recognition' },
   { id: 'eva', label: 'Eva' },
   { id: 'flow', label: 'Conversation flow' },
+  { id: 'translation', label: 'Translation' },
   { id: 'personalisation', label: 'Personalisation' },
   { id: 'privacy', label: 'Privacy' },
+  { id: 'usage', label: 'Usage' },
+  { id: 'appearance', label: 'Appearance' },
 ] as const;
 
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id'];
@@ -24,7 +20,6 @@ export function isSettingsSectionId(value: unknown): value is SettingsSectionId 
   return SETTINGS_SECTIONS.some((section) => section.id === value);
 }
 
-/** The sub-navigation entry to highlight: Eva has a page of its own, the rest follow the hash. */
 export function activeSettingsSection(
   pathname: string,
   hash: string,

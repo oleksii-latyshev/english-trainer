@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { activeSettingsSection, isSettingsPath } from './settingsSections';
+import { activeSettingsSection, isSettingsPath } from './sections';
 
 describe('activeSettingsSection', () => {
   it('follows the hash on the Settings page, with or without the leading #', () => {
