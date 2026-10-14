@@ -266,7 +266,7 @@ fn retry_answer_coaching(
 fn get_daily_recall_plan(
     sessions: tauri::State<'_, conversation::SessionStore>,
     session_id: u64,
-) -> Result<conversation::DailyRecallPlan, providers::ProviderError> {
+) -> Result<learning::recall::DailyRecallPlan, providers::ProviderError> {
     sessions.daily_recall_plan(session_id)
 }
 
@@ -276,7 +276,7 @@ fn submit_daily_recall(
     session_id: u64,
     phrase_id: u64,
     transcript: String,
-) -> Result<conversation::SpokenRecallResult, providers::ProviderError> {
+) -> Result<learning::recall::SpokenRecallResult, providers::ProviderError> {
     sessions.submit_daily_recall(session_id, phrase_id, transcript)
 }
 
@@ -373,122 +373,6 @@ fn get_question_scaffold(question: String) -> conversation::QuestionScaffold {
     conversation::question_scaffold(&question)
 }
 
-#[tauri::command(rename_all = "snake_case")]
-fn start_memory_review(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    warmup: Option<bool>,
-) -> Result<Option<learning::MemoryReviewRun>, providers::ProviderError> {
-    if warmup.unwrap_or(false) {
-        sessions.start_memory_warmup()
-    } else {
-        sessions.start_memory_review()
-    }
-}
-
-#[tauri::command(rename_all = "snake_case")]
-async fn prepare_review_material(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    run_id: u64,
-    retry: Option<bool>,
-) -> Result<conversation::ReviewMaterials, providers::ProviderError> {
-    let store = sessions.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        store.prepare_review_material(
-            run_id,
-            retry.unwrap_or(false),
-            providers::generate_review_material,
-        )
-    })
-    .await
-    .map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "Could not prepare review situations. Please retry.",
-        )
-    })?
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn get_review_material(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    run_id: u64,
-) -> Result<conversation::ReviewMaterials, providers::ProviderError> {
-    sessions.get_review_material(run_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn reveal_review_phrase(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    run_id: u64,
-    position: usize,
-) -> Result<conversation::ReviewMaterials, providers::ProviderError> {
-    sessions.reveal_review_phrase(run_id, position)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn get_memory_review(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-) -> Result<Option<learning::MemoryReviewRun>, providers::ProviderError> {
-    sessions.get_memory_review()
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn submit_memory_recall(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    run_id: u64,
-    item_type: learning::LearningItemType,
-    item_id: u64,
-    transcript: String,
-) -> Result<learning::MemoryRecallResult, providers::ProviderError> {
-    sessions.submit_memory_recall(run_id, item_type, item_id, transcript)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn skip_memory_review_item(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    run_id: u64,
-    item_type: learning::LearningItemType,
-    item_id: u64,
-) -> Result<learning::MemoryReviewRun, providers::ProviderError> {
-    sessions.skip_memory_review_item(run_id, item_type, item_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn finish_memory_review(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    run_id: u64,
-) -> Result<bool, providers::ProviderError> {
-    sessions.finish_memory_review(run_id)
-}
-
-#[tauri::command(rename_all = "snake_case")]
-async fn review_practice_memory_usage(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    session_id: u64,
-    sequence: usize,
-) -> Result<learning::TurnUsageAssessment, providers::ProviderError> {
-    let sessions = sessions.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        sessions.review_memory_usage(session_id, sequence, providers::review_turn_usage)
-    })
-    .await
-    .map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
-            "The usage review task failed. Please retry.",
-        )
-    })?
-}
-
-#[tauri::command(rename_all = "snake_case")]
-fn get_practice_memory_usage(
-    sessions: tauri::State<'_, conversation::SessionStore>,
-    session_id: u64,
-    sequence: usize,
-) -> Result<Option<learning::TurnUsageAssessment>, providers::ProviderError> {
-    sessions.get_practice_memory_usage(session_id, sequence)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -543,6 +427,12 @@ pub fn run() {
             api_usage::start_recording(usage_service.clone());
             app.manage(usage_service);
             app.manage(learning::LearningService::new(
+                learning::SessionLearningStore::new(sessions.clone()),
+            ));
+            app.manage(learning::ReviewService::new(
+                learning::SessionLearningStore::new(sessions.clone()),
+            ));
+            app.manage(learning::UsageReviewService::new(
                 learning::SessionLearningStore::new(sessions.clone()),
             ));
             app.manage(speaking_activity::SpeakingActivityService::new(
@@ -659,16 +549,16 @@ pub fn run() {
             learning::commands::archive_learning_item,
             learning::commands::get_learning_memory,
             learning::commands::view_learning_memory,
-            start_memory_review,
-            get_memory_review,
-            prepare_review_material,
-            get_review_material,
-            reveal_review_phrase,
-            submit_memory_recall,
-            skip_memory_review_item,
-            finish_memory_review,
-            review_practice_memory_usage,
-            get_practice_memory_usage,
+            learning::review_commands::start_memory_review,
+            learning::review_commands::get_memory_review,
+            learning::review_commands::prepare_review_material,
+            learning::review_commands::get_review_material,
+            learning::review_commands::reveal_review_phrase,
+            learning::review_commands::submit_memory_recall,
+            learning::review_commands::skip_memory_review_item,
+            learning::review_commands::finish_memory_review,
+            learning::usage_commands::review_practice_memory_usage,
+            learning::usage_commands::get_practice_memory_usage,
             learning::commands::get_memory_usage_evidence,
         ])
         .build(tauri::generate_context!())

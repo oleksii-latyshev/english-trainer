@@ -1,4 +1,7 @@
+use super::review_rules::ReviewRejection;
+use super::usage_rules::UsageRejection;
 use crate::core::{IpcError, IpcErrorCode};
+use crate::providers::ProviderError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -19,6 +22,12 @@ pub enum LearningError {
     PhraseSourceNotFound,
     #[error("learning item not found")]
     ItemNotFound,
+    #[error("review rejected: {0:?}")]
+    Review(ReviewRejection),
+    #[error("usage review rejected: {0:?}")]
+    Usage(UsageRejection),
+    #[error("provider failed: {0:?}")]
+    Provider(ProviderError),
     #[error("could not {operation} learning memory")]
     Storage {
         operation: &'static str,
@@ -59,6 +68,9 @@ impl From<LearningError> for IpcError {
                 IpcErrorCode::InvalidRequest,
                 "The requested learning item does not exist.",
             ),
+            LearningError::Review(rejection) => Self::new(rejection.code(), rejection.message()),
+            LearningError::Usage(rejection) => Self::new(rejection.code(), rejection.message()),
+            LearningError::Provider(error) => Self::from(error),
             LearningError::Storage { .. } => Self::new(
                 IpcErrorCode::DatabaseError,
                 "Could not read or update your Memory saved on this Mac. Please retry.",
