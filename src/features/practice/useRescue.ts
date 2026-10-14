@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import type { useSpeechCapture } from '@/app/speech-capture';
-import { keyTarget } from '@/components/keyTarget';
 import { isRescueResponse, type RescueKind, type RescueResponse } from '@/lib/rescueTypes';
 import { isProviderError } from '@/lib/types';
+import { keyTarget } from '@/shared/helpers/key-target';
 
 type Capture = Pick<ReturnType<typeof useSpeechCapture>, 'rescueTranscript' | 'holdForRescue'>;
 

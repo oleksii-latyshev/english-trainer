@@ -2,8 +2,8 @@
 
 The two cards at the top of Memory that start spoken practice: the spoken review and "Practice my
 usual mistakes". The cards only offer and start; the review screen and the practice session are
-still legacy (`features/memory`, `features/practice`) until their slices move, so what they need
-from the app arrives through props.
+`features/spoken-review` and, for the five questions, still legacy (`features/practice`, #26), so what
+the practice session needs from the app arrives through props.
 
 ```mermaid
 sequenceDiagram
@@ -15,14 +15,14 @@ sequenceDiagram
     participant Atom as practiceTargetsAtom
     participant Core as openedLearningMemoryAtom
 
-    Route->>Screen: activeReview, isAudioBusy, isSessionOpen, isStarting, error
-    Screen->>Review: active review, onStart
+    Route->>Screen: isAudioBusy, isSessionOpen, isStarting, error
+    Screen->>Review: onStart
     Screen->>Practice: flags, onStart
-    Review->>Atom: due count
+    Review->>Atom: due count and activeReviewAtom (the saved run, from core/learning-memory)
     Practice->>Atom: practicable mistakes
     Atom->>Core: reads the opened library
     Learner->>Review: Start spoken review (or Resume review)
-    Review->>Route: onStart, which opens /memory/review
+    Review->>Route: onStart, which sets the review mode and opens /memory/review
     Learner->>Practice: Practice · 2 min
     Practice->>Route: onStart, which starts five questions
 ```

@@ -1,7 +1,4 @@
-import type { ActiveReview } from '@/features/memory-practice';
-
 export type MemoryScreenProps = {
-  readonly activeReview: ActiveReview;
   readonly isAudioBusy: boolean;
   readonly isSessionOpen: boolean;
   readonly isStartingMistakePractice: boolean;

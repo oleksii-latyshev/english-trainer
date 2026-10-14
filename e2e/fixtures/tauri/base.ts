@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
+import type { LearningMemoryView } from '@/core/ipc';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { LearningMemoryView } from '@/lib/learningTypes';
 import type { PracticeSession } from '@/lib/practiceSessionTypes';
 import { emptyDialogue, finishedSession, initialSession } from '../../data/sessions';
 import { installTauriCommands } from './commands';

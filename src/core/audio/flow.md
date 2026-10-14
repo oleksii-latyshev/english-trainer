@@ -73,10 +73,11 @@ sequenceDiagram
     participant Mic as Microphone.open
     participant Phase as clipPhaseAtom
 
-    Caller->>Clip: record(device from Settings, maximum length)
+    Caller->>Clip: record(device from Settings, maximum length, optional work while recording)
     Clip->>Phase: requesting
     Clip->>Mic: open in its own Scope, wait for warm-up, capture without pre-roll
     Clip->>Phase: recording (elapsed time and level every 100 ms)
+    Note over Clip,Caller: whileRecording(capture) runs beside the recording (the spoken review samples the level and the live transcript there) and stops with its scope
     alt Caller stops, or the maximum length passes
         Caller->>Clip: stop
         Clip->>Phase: stopping

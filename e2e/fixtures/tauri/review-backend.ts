@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { LearningMemoryView } from '@/lib/learningTypes';
-import type { ReviewMaterials } from '@/lib/reviewMaterialTypes';
+import type { LearningMemoryView, ReviewMaterials } from '@/core/ipc';
 import {
   installReview,
   type ReviewOptions,

@@ -19,6 +19,9 @@ export type { LearningItemType } from './bindings/LearningItemType';
 export type { LearningMemoryView } from './bindings/LearningMemoryView';
 export type { LearningStatus } from './bindings/LearningStatus';
 export type { LimitNote } from './bindings/LimitNote';
+export type { MemoryRecallResult } from './bindings/MemoryRecallResult';
+export type { MemoryReviewItem } from './bindings/MemoryReviewItem';
+export type { MemoryReviewRun } from './bindings/MemoryReviewRun';
 export type { MemoryUsageEvidence } from './bindings/MemoryUsageEvidence';
 export type { MistakeRecord } from './bindings/MistakeRecord';
 export type { ModelRequests } from './bindings/ModelRequests';
@@ -28,6 +31,10 @@ export type { PersonalProfile } from './bindings/PersonalProfile';
 export type { PhraseCardRecord } from './bindings/PhraseCardRecord';
 export type { RecordingResult } from './bindings/RecordingResult';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
+export type { ReviewMaterials } from './bindings/ReviewMaterials';
+export type { ReviewMaterialView } from './bindings/ReviewMaterialView';
+export type { ReviewPreparation } from './bindings/ReviewPreparation';
+export type { ReviewResponse } from './bindings/ReviewResponse';
 export type { SentenceStatus } from './bindings/SentenceStatus';
 export type { ServerState } from './bindings/ServerState';
 export type { SetupDiagnostics } from './bindings/SetupDiagnostics';
@@ -43,6 +50,8 @@ export type { SpeechSettings } from './bindings/SpeechSettings';
 export type { Transcript } from './bindings/Transcript';
 export type { TranslationStatus } from './bindings/TranslationStatus';
 export type { TranslationStatusKind } from './bindings/TranslationStatusKind';
+export type { TurnUsageAssessment } from './bindings/TurnUsageAssessment';
+export type { UsageAssessmentFinding } from './bindings/UsageAssessmentFinding';
 export type { UsageEventRecord } from './bindings/UsageEventRecord';
 export type { UsageOutcome } from './bindings/UsageOutcome';
 export { IpcDecodeError, IpcError } from './errors';
@@ -88,6 +97,15 @@ export {
   UsageOutcomeSchema,
 } from './schemas/learning';
 export { PersonalProfileSchema } from './schemas/personal-profile';
+export {
+  MemoryRecallResultSchema,
+  MemoryReviewItemSchema,
+  MemoryReviewRunSchema,
+  ReviewMaterialsSchema,
+  ReviewMaterialViewSchema,
+  ReviewPreparationSchema,
+  ReviewResponseSchema,
+} from './schemas/review';
 export {
   ComponentCheckSchema,
   ComponentStatusSchema,

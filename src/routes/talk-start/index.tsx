@@ -2,9 +2,10 @@ import { Navigate, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTrainer } from '@/context/TrainerContext';
 import { FIRST_RUN_PATH } from '@/core/first-run';
-import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
+import { useReviewCommands, useWarmupHandoff } from '@/features/spoken-review';
+import { SpokenReviewScreen } from '@/screens/spoken-review';
 import { TalkStartScreen } from '@/screens/talk-start';
 import { mistakePracticeSummary, openSessionOf, reviewSummary } from './summaries';
 
@@ -23,12 +24,13 @@ export function TalkStartRoute() {
     startMistakePractice,
     due,
     firstRun,
-    speech,
   } = useTrainer();
   const navigate = useNavigate();
   const [warmupOptions, setWarmupOptions] = useState<PracticeOptions | null>(null);
   const warmupStarted = useRef(false);
   const warmupAlive = useRef(true);
+  const review = useReviewCommands();
+  const isWarmupFinished = useWarmupHandoff();
   useEffect(() => {
     warmupAlive.current = true;
     return () => {
@@ -43,17 +45,19 @@ export function TalkStartRoute() {
     startPractice(snapshot);
   }
 
+  useEffect(() => {
+    if (warmupOptions && isWarmupFinished) startAfterWarmup();
+  });
+
   if (firstRun === 'checking') return null;
   if (firstRun === 'show') return <Navigate replace to={FIRST_RUN_PATH} />;
 
   if (warmupOptions) {
     return (
-      <SpokenReview
+      <SpokenReviewScreen
         onBackToMemory={startAfterWarmup}
         onOpenSettings={() => void navigate({ to: '/settings' })}
         onStartTalk={startAfterWarmup}
-        speech={speech}
-        warmup
       />
     );
   }
@@ -75,6 +79,7 @@ export function TalkStartRoute() {
       onPracticeMistakes={() => void startMistakePractice()}
       onStart={startPractice}
       onStartWarmup={(options) => {
+        review.begin('warmup');
         warmupStarted.current = false;
         setWarmupOptions({ ...options });
       }}

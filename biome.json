@@ -115,7 +115,6 @@
         "src/shared/**",
         "!src/features/coach/**",
         "!src/features/conversation/**",
-        "!src/features/memory/**",
         "!src/features/practice/**",
         "!src/app/speech-capture/use-speech-capture.ts"
       ],
@@ -187,7 +186,6 @@
         "src/shared/**",
         "!src/features/coach/**",
         "!src/features/conversation/**",
-        "!src/features/memory/**",
         "!src/features/practice/**",
         "!src/app/**",
         "!**/*.test.ts",
@@ -229,11 +227,9 @@
                       "@/context/**",
                       "@/features/coach/**",
                       "@/features/conversation/**",
-                      "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/coach",
                       "@/features/conversation",
-                      "@/features/memory",
                       "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
@@ -277,11 +273,9 @@
                       "@/context/**",
                       "@/features/coach/**",
                       "@/features/conversation/**",
-                      "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/coach",
                       "@/features/conversation",
-                      "@/features/memory",
                       "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
@@ -329,11 +323,9 @@
                       "@/context/**",
                       "@/features/coach/**",
                       "@/features/conversation/**",
-                      "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/coach",
                       "@/features/conversation",
-                      "@/features/memory",
                       "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
@@ -354,7 +346,6 @@
         "src/features/**",
         "!src/features/coach/**",
         "!src/features/conversation/**",
-        "!src/features/memory/**",
         "!src/features/practice/**"
       ],
       "linter": {
@@ -383,11 +374,9 @@
                       "@/context/**",
                       "@/features/coach/**",
                       "@/features/conversation/**",
-                      "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/coach",
                       "@/features/conversation",
-                      "@/features/memory",
                       "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
@@ -428,11 +417,9 @@
                       "@/context/**",
                       "@/features/coach/**",
                       "@/features/conversation/**",
-                      "@/features/memory/**",
                       "@/features/practice/**",
                       "@/features/coach",
                       "@/features/conversation",
-                      "@/features/memory",
                       "@/features/practice"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."

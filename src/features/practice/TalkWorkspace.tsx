@@ -1,5 +1,4 @@
 import type { SpeechControls } from '@/core/speech';
-import { MemoryUsageReview } from '@/features/memory/components/MemoryUsageReview';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { NoteTools } from './AnswerNote';
 import { DailyRecallPanel } from './DailyRecallPanel';
@@ -9,6 +8,7 @@ import type { SessionDetails } from './lib/practiceState';
 import type { SentAnswer } from './lib/sentAnswer';
 import type { SendFailure } from './lib/turnIssue';
 import { ManualRecorder } from './ManualRecorder';
+import { MemoryUsageReview } from './MemoryUsageReview';
 import { NoSession } from './NoSession';
 import { PracticeReview } from './PracticeReview';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';

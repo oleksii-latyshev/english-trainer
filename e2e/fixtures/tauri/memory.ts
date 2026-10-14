@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test';
 import type { LearningMemoryView, MemoryUsageEvidence } from '@/core/ipc';
-import type { LearningMemoryView as LegacyMemoryView } from '@/lib/learningTypes';
 import { mistakeMemory, repeatedMistake } from '../../data/mistakes';
 
 type LibraryState = {
@@ -10,14 +9,14 @@ type LibraryState = {
 };
 
 export class MemoryBackend {
-  view: LegacyMemoryView = { mistakes: [], phrase_cards: [], due_count: 0 };
+  view: LearningMemoryView = { mistakes: [], phrase_cards: [], due_count: 0 };
   failsNextMistakePractice = false;
   mistakePreparationDelayMs = 0;
   private library: LibraryState | null = null;
 
   constructor(private readonly page: Page) {}
 
-  with(view: LegacyMemoryView): this {
+  with(view: LearningMemoryView): this {
     this.view = view;
     return this;
   }

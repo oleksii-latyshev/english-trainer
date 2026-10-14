@@ -1,6 +1,7 @@
 import { Data, Effect } from 'effect';
 import { Atom } from 'effect/reactivity';
 import { LearningMemoryService } from '../services/learning-memory-service';
+import { ReviewRunService } from '../services/review-run-service';
 import type { LearningItemRef } from '../types';
 import { runtime } from './runtime';
 
@@ -40,3 +41,12 @@ export const memoryUsageEvidenceAtom = Atom.family((ref: LearningItemRef) =>
     )
     .pipe(Atom.runtime.withReactivity(LEARNING_MEMORY)),
 );
+
+export const activeReviewRunAtom = runtime
+  .atom(
+    Effect.gen(function* () {
+      const service = yield* ReviewRunService;
+      return yield* service.active;
+    }),
+  )
+  .pipe(Atom.runtime.withReactivity(LEARNING_MEMORY));

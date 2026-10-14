@@ -2,8 +2,8 @@
 
 What the learner saved (phrases) and what Eva noticed (mistakes), read from Rust. Rust owns the
 learning rules ([TECHNICAL_REQUIREMENTS §9](../../../docs/TECHNICAL_REQUIREMENTS.md)); this module
-only reads, decodes and exposes the data to features. Spoken review and mistake practice keep their
-own commands until their slice moves.
+only reads, decodes and exposes the data to features. `ReviewRunService` wraps the spoken review
+commands (run, recall, skip, finish and the review situations) for `features/spoken-review`.
 
 ## Read the library without side effects
 
@@ -79,6 +79,29 @@ sequenceDiagram
         Ipc-->>Row: decoded with MemoryUsageEvidenceSchema
     end
 ```
+
+## The saved review run
+
+The Memory screen and the review read the same run. `activeReviewRunAtom` asks Rust for the run that
+was started and not finished; "Resume review" on Memory and its counts come from it.
+
+```mermaid
+sequenceDiagram
+    participant Card as ReviewCard
+    participant Atom as activeReviewRunAtom
+    participant Service as ReviewRunService
+    participant Ipc
+    participant Rust as ReviewService (Rust)
+
+    Card->>Atom: useAtomValue
+    Atom->>Service: active
+    Service->>Ipc: invoke("get_memory_review")
+    Ipc->>Rust: active()
+    Rust-->>Card: run with answered and skipped items, or null (Start spoken review)
+```
+
+`start`, `submit`, `skip` and `finish` carry the `LEARNING_MEMORY` key when `features/spoken-review`
+runs them, so the card, the library and the badges reload after every answer.
 
 ## Refresh after a change
 

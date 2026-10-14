@@ -30,11 +30,11 @@ sequenceDiagram
 
     Learner->>Shell: Memory
     Shell->>Route: /memory
-    Route->>Route: useTrainer (microphone, open session, practice state), useActiveReview
-    Route->>Screen: props and callbacks
+    Route->>Route: useTrainer (microphone, open session, practice state)
+    Route->>Screen: props and callbacks (the saved run is read by the review card itself)
     Screen->>Features: composes the cards, the list and the dialog
     Features-->>Learner: Memory
     Learner->>Features: Start spoken review
     Features->>Route: onStartReview
-    Route->>Shell: navigate /memory/review
+    Route->>Shell: begin the review, navigate /memory/review
 ```
