@@ -119,7 +119,7 @@ fn validate_plan(
             return Err(invalid_output());
         };
         for wording in [&target.original, &target.corrected] {
-            if crate::conversation::recall::wording_observed(wording, text) {
+            if crate::learning::recall::wording_observed(wording, text) {
                 return Err(invalid_output());
             }
         }

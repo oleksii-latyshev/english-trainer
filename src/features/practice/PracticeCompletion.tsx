@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { showSavedToast } from '@/components/savedToast';
-import { deletePhraseCard } from '@/features/memory/memoryApi';
 import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
 import {
   DEFAULT_PRACTICE_MODE,
@@ -11,6 +10,7 @@ import {
 import { isProviderError } from '@/lib/types';
 import { Button } from '@/shared/ui/button';
 import { checkingLine, formatDuration } from './lib/wrapup';
+import { deletePhraseCard } from './practiceMemoryApi';
 import { getSessionWrapup, retrySessionWrapup, saveWrapupPhrases } from './sessionApi';
 import { useWrapupUpdates } from './useWrapupUpdates';
 import {

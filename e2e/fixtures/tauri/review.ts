@@ -1,8 +1,10 @@
 import type { Page } from '@playwright/test';
-import type { SpeechEngineStatus } from '@/core/ipc';
-import type { LearningMemoryView } from '@/lib/learningTypes';
-import type { MemoryReviewRun } from '@/lib/memoryRecallTypes';
-import type { ReviewMaterials } from '@/lib/reviewMaterialTypes';
+import type {
+  LearningMemoryView,
+  MemoryReviewRun,
+  ReviewMaterials,
+  SpeechEngineStatus,
+} from '@/core/ipc';
 import { unavailableSpeechStatus } from '../../data/sessions';
 
 export type ReviewOptions = {
@@ -242,12 +244,12 @@ export async function installReview(page: Page, options: ReviewOptions = {}) {
           state.calls.push('finish_memory_review');
           if (seed.options.holdInitialFinish && !heldInitialFinish) {
             heldInitialFinish = true;
-            return new Promise<boolean>((resolve, reject) => {
+            return new Promise<null>((resolve, reject) => {
               state.completeFinish = (success) =>
-                success ? resolve(true) : reject({ code: 'database_error', message: 'Try again.' });
+                success ? resolve(null) : reject({ code: 'database_error', message: 'Try again.' });
             });
           }
-          return true;
+          return null;
         },
         get_memory_review: () => null,
         transcribe_audio: () => ({

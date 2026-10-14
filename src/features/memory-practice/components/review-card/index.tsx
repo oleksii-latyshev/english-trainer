@@ -3,17 +3,16 @@ import { Button } from '@/shared/ui/button';
 import { Eva } from '@/shared/ui/eva';
 import { GlassPanel } from '@/shared/ui/glass-panel';
 import { reviewCopy } from '../../helpers/review-copy';
-import { practiceTargetsAtom } from '../../model/atoms';
-import type { ActiveReview } from '../../types';
+import { activeReviewAtom, practiceTargetsAtom } from '../../model/atoms';
 
 type Props = {
-  active: ActiveReview;
   isAudioBusy: boolean;
   onStart: () => void;
 };
 
-export function ReviewCard({ active, isAudioBusy, onStart }: Props) {
+export function ReviewCard({ isAudioBusy, onStart }: Props) {
   const targets = useAtomValue(practiceTargetsAtom);
+  const active = useAtomValue(activeReviewAtom);
   const dueCount = targets.tag === 'ready' ? targets.dueCount : 0;
   const copy = reviewCopy(dueCount, active);
 

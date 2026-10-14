@@ -98,6 +98,10 @@ sequenceDiagram
     Hook->>Hook: state idle
 ```
 
+`useSpeech` is a thin hook over `createPlayback(registry)`. Atoms that need Eva's voice without a
+component (the spoken review reads its situation from an atom and stops on its finalizer) call
+`createPlayback(get.registry)` and read `speechStateAtom`; both paths share one playback.
+
 ## Sample in Settings and first run
 
 ```mermaid

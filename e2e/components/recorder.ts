@@ -37,7 +37,9 @@ export class Recorder {
     await expect
       .poll(() =>
         this.microphoneLevel.evaluate((element) =>
-          element instanceof HTMLMeterElement ? element.value : 0,
+          element instanceof HTMLMeterElement
+            ? element.value
+            : Number(element.getAttribute('aria-valuenow') ?? 0),
         ),
       )
       .toBeGreaterThan(0);

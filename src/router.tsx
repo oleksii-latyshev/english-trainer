@@ -7,7 +7,6 @@ import {
 import { AppShell } from '@/components/AppShell';
 import { useTrainer } from '@/context/TrainerContext';
 import { FIRST_RUN_PATH } from '@/core/first-run';
-import { SpokenReview } from '@/features/memory/SpokenReview';
 import { sessionDetails } from '@/features/practice/lib/practiceState';
 import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
 import { PracticeView } from '@/features/practice/PracticeView';
@@ -15,6 +14,7 @@ import type { TalkScreenName } from '@/features/practice/TalkScreen';
 import { useSessionClock } from '@/features/practice/useSessionClock';
 import { FirstRunRoute } from '@/routes/first-run';
 import { MemoryRoute } from '@/routes/memory';
+import { MemoryReviewRoute } from '@/routes/memory/review';
 import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
 import { TalkStartRoute } from '@/routes/talk-start';
 
@@ -108,18 +108,7 @@ export const memoryRoute = createRoute({
 export const memoryReviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory/review',
-  component: function MemoryReviewComponent() {
-    const { speech } = useTrainer();
-    const navigate = memoryReviewRoute.useNavigate();
-    return (
-      <SpokenReview
-        onBackToMemory={() => void navigate({ to: '/memory' })}
-        onOpenSettings={() => void navigate({ to: '/settings' })}
-        onStartTalk={() => void navigate({ to: '/' })}
-        speech={speech}
-      />
-    );
-  },
+  component: MemoryReviewRoute,
 });
 
 export const settingsRoute = createRoute({

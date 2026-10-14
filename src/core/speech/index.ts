@@ -23,7 +23,9 @@ export {
   naturalAvailabilityAtom,
   previewingNaturalVoiceAtom,
   previewNaturalVoiceAtom,
+  speechStateAtom,
 } from './model/atoms';
+export { createPlayback, type Playback } from './model/playback';
 export {
   SpeechRecognitionLive,
   type SpeechRecognitionServices,

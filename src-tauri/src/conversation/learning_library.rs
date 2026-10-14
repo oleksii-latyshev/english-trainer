@@ -1,6 +1,6 @@
-use super::usage_support::now_ms;
 use super::SessionStore;
-use crate::learning::{LearningItemType, MemoryUsageEvidence};
+use crate::learning::{now_ms, record_cue_exposure};
+use crate::persistence::SessionDatabase;
 use rusqlite::Connection;
 
 impl SessionStore {
@@ -8,24 +8,27 @@ impl SessionStore {
         work(self.lock().database.connection_mut())
     }
 
+    pub(crate) fn with_database<T>(
+        &self,
+        work: impl FnOnce(&mut SessionDatabase, Option<u64>) -> T,
+    ) -> T {
+        let mut state = self.lock();
+        let active_session_id = state.active.as_ref().map(|active| active.id);
+        work(&mut state.database, active_session_id)
+    }
+
     pub(crate) fn mark_memory_shown(&self) -> rusqlite::Result<()> {
         let mut state = self.lock();
         let Some(active_id) = state.active.as_ref().map(|active| active.id) else {
             return Ok(());
         };
-        state
-            .database
-            .record_session_cue_exposure(active_id, None, None, now_ms())
-    }
-
-    pub(crate) fn memory_usage_evidence(
-        &self,
-        item_type: LearningItemType,
-        item_id: u64,
-    ) -> rusqlite::Result<MemoryUsageEvidence> {
-        self.lock()
-            .database
-            .get_memory_usage_evidence(item_type, item_id)
+        record_cue_exposure(
+            state.database.connection_mut(),
+            active_id,
+            None,
+            None,
+            now_ms(),
+        )
     }
 }
 
@@ -34,14 +37,31 @@ mod learning_facade {
     use super::SessionStore;
     use crate::core::IpcError;
     use crate::learning::{
-        LearningItemType, LearningMemoryView, LearningService, PhraseCardRecord,
-        SessionLearningStore,
+        LearningItemType, LearningMemoryView, LearningService, MemoryReviewRun, PhraseCardRecord,
+        ReviewService, SessionLearningStore, TurnUsageAssessment, UsageReviewService,
     };
-    use crate::providers::ProviderError;
+    use crate::providers::{ProviderError, UsageReviewRequest, UsageReviewResponse};
 
     impl SessionStore {
         fn learning(&self) -> LearningService {
             LearningService::new(SessionLearningStore::new(self.clone()))
+        }
+
+        pub fn start_memory_review(&self) -> Result<Option<MemoryReviewRun>, ProviderError> {
+            ReviewService::new(SessionLearningStore::new(self.clone()))
+                .start(false)
+                .map_err(failure)
+        }
+
+        pub fn review_memory_usage(
+            &self,
+            session_id: u64,
+            sequence: usize,
+            generate: impl FnOnce(&UsageReviewRequest) -> Result<UsageReviewResponse, ProviderError>,
+        ) -> Result<TurnUsageAssessment, ProviderError> {
+            UsageReviewService::new(SessionLearningStore::new(self.clone()))
+                .review(session_id, sequence, generate)
+                .map_err(failure)
         }
 
         pub fn get_learning_memory(&self) -> Result<LearningMemoryView, ProviderError> {

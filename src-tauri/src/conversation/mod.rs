@@ -1,3 +1,5 @@
+use crate::learning::recall::{DailyRecallPlan, SpokenRecallResult};
+use crate::learning::{daily_plan, record_daily_recall};
 use crate::persistence::SessionDatabase;
 use crate::providers::{
     compare_attempts, AttemptComparison, ConversationContext, ConversationTurn, ProviderError,
@@ -16,32 +18,25 @@ mod guided;
 mod interruption;
 mod learning_library;
 mod lifecycle;
-pub(crate) mod memory_recall;
 mod planner;
 mod profile;
-pub(crate) mod recall;
 mod rehearsal;
 mod rescue;
-mod review_material;
 mod rules;
 mod scaffold;
 mod speaking_activity;
 mod speech_settings;
 mod topics;
 mod translation;
-pub(crate) mod usage;
-mod usage_support;
 mod wrapup;
 mod wrapup_generation;
 mod wrapup_queue;
 pub use coaching::TurnCoaching;
 pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
-pub use recall::{DailyRecallItem, DailyRecallPlan, SpokenRecallResult};
 use rehearsal::{
     invalid_phase_transition_error, parse_practice_mode, parse_practice_phase, replay_questions,
     spoken_turn_count, validate_answer_source,
 };
-pub use review_material::ReviewMaterials;
 use rules::{validate_transcript, DAILY_TARGET_TURNS, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS};
 pub use scaffold::{question_scaffold, QuestionScaffold};
 pub use topics::{PracticeMode, PracticePhase, StartPracticeOptions};
@@ -139,10 +134,8 @@ pub struct FinishedPracticeSession {
 #[derive(Clone)]
 pub struct SessionStore {
     state: Arc<Mutex<State>>,
-    pub(crate) usage_in_flight: Arc<usage_support::UsageInFlightTracker>,
     answer_plan_cache: Arc<Mutex<Option<planner::CachedPlan>>>,
     rescue_in_flight: Arc<std::sync::atomic::AtomicBool>,
-    review_material_in_flight: Arc<std::sync::atomic::AtomicBool>,
     pub(crate) coaching: Arc<coaching::CoachingStatus>,
 }
 
@@ -274,10 +267,8 @@ impl SessionStore {
                 active,
                 mistake_practice_preparing: false,
             })),
-            usage_in_flight: Arc::new(usage_support::UsageInFlightTracker::new()),
             answer_plan_cache: Arc::new(Mutex::new(None)),
             rescue_in_flight: Arc::new(std::sync::atomic::AtomicBool::new(false)),
-            review_material_in_flight: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             coaching: Arc::new(coaching::CoachingStatus::default()),
         })
     }
@@ -675,10 +666,7 @@ impl SessionStore {
                 "Finish the suggested speaking goal before phrase recall.",
             ));
         }
-        state
-            .database
-            .daily_recall_plan(session_id)
-            .map_err(database_error)
+        daily_plan(state.database.connection(), session_id).map_err(database_error)
     }
 
     pub fn submit_daily_recall(
@@ -694,7 +682,7 @@ impl SessionStore {
                 "Invalid phrase ID.",
             ));
         }
-        let mut state = self.lock();
+        let state = self.lock();
         let session = state
             .active
             .as_ref()
@@ -709,16 +697,19 @@ impl SessionStore {
                 "Finish the suggested speaking goal before phrase recall.",
             ));
         }
-        state
-            .database
-            .record_daily_recall(session_id, phrase_id, &transcript)
-            .map_err(database_error)?
-            .ok_or_else(|| {
-                ProviderError::new(
-                    ProviderErrorCode::InvalidRequest,
-                    "This phrase is no longer due for this session. Refresh recall and try again.",
-                )
-            })
+        record_daily_recall(
+            state.database.connection(),
+            session_id,
+            phrase_id,
+            &transcript,
+        )
+        .map_err(database_error)?
+        .ok_or_else(|| {
+            ProviderError::new(
+                ProviderErrorCode::InvalidRequest,
+                "This phrase is no longer due for this session. Refresh recall and try again.",
+            )
+        })
     }
 
     /// Stores the coaching for one answer and lets the learning engine observe its mistake.

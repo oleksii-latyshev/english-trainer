@@ -1,3 +1,4 @@
+use super::ids::{now_ms, to_sql_id, to_sql_sequence};
 use crate::learning::{
     is_independent_success, normalize_phrase, LearningItemType, LearningMemoryView, LearningStatus,
     MistakeRecord, PhraseCardRecord, UsageOutcome, MS_PER_DAY,
@@ -10,21 +11,6 @@ const PHRASE_COLUMNS: &str =
     "p.id, p.phrase, p.normalized_phrase, p.meaning_or_note, p.session_id, p.sequence,
      p.created_at, p.last_reviewed_at, p.next_review_at, p.interval_days, p.ease_factor, p.status,
      s.topic_label";
-
-pub(crate) fn now_ms() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as i64
-}
-
-fn to_sql_id(value: u64) -> rusqlite::Result<i64> {
-    i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))
-}
-
-fn to_sql_sequence(value: usize) -> rusqlite::Result<i64> {
-    i64::try_from(value).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))
-}
 
 fn mistake_from_row(row: &Row<'_>, now: i64) -> rusqlite::Result<MistakeRecord> {
     let category = match row.get::<_, String>(2)?.as_str() {

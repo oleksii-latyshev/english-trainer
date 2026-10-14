@@ -1,4 +1,4 @@
-import type { KeyTarget } from '@/components/keyTarget';
+import type { KeyTarget } from '@/shared/helpers/key-target';
 import { type HelpLevel, helpLevelForKey } from './helpLevels';
 import type { TurnState } from './turnState';
 

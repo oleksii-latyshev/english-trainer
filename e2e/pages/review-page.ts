@@ -27,7 +27,7 @@ export class ReviewPage {
     this.modelAnswer = page.getByText('Could we find a compromise?');
     this.showPhraseButton = page.getByRole('button', { name: 'Show phrase' });
     this.revealedPhrase = page.getByText('find a compromise', { exact: true });
-    this.hintNotice = page.getByText('Practice with a hint — not independent use.');
+    this.hintNotice = page.getByText('Shown before answering · practice only');
     this.revealFailure = page.getByText('Could not show the phrase. Please try again.');
     this.skipButton = page.getByRole('button', { name: 'Skip' });
     this.retrySituationsButton = page.getByRole('button', { name: 'Retry situations' });

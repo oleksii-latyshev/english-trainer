@@ -1,4 +1,5 @@
-use super::{usage_support, SessionStore};
+use super::SessionStore;
+use crate::learning::{now_ms, record_cue_exposure};
 use crate::translation::{
     validate_request, NativeLanguageSettings, TranslationError, TranslationRequest,
 };
@@ -28,13 +29,17 @@ impl SessionStore {
         mut request: TranslationRequest,
     ) -> Result<PreparedTranslation, TranslationError> {
         validate_request(&mut request)?;
-        let mut state = self.lock();
+        let state = self.lock();
         let settings = state.database.translation_settings()?;
         if let Some(session_id) = state.active.as_ref().map(|session| session.id) {
-            state
-                .database
-                .record_session_cue_exposure(session_id, None, None, usage_support::now_ms())
-                .map_err(|_| TranslationError::database())?;
+            record_cue_exposure(
+                state.database.connection(),
+                session_id,
+                None,
+                None,
+                now_ms(),
+            )
+            .map_err(|_| TranslationError::database())?;
         }
         Ok(PreparedTranslation {
             request,

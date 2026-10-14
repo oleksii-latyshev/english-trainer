@@ -1,6 +1,12 @@
 import { Option } from 'effect';
 import { AsyncResult, Atom } from 'effect/reactivity';
-import { isPracticableMistake, openedLearningMemoryAtom } from '@/core/learning-memory';
+import {
+  activeReviewRunAtom,
+  isPracticableMistake,
+  openedLearningMemoryAtom,
+  resolvedItemCount,
+} from '@/core/learning-memory';
+import type { ActiveReview } from '../types';
 
 const SAMPLE_COUNT = 2;
 
@@ -27,4 +33,10 @@ export const practiceTargetsAtom = Atom.make((get): PracticeTargets => {
     practicableCount: practicable.length,
     samples: practicable.slice(0, SAMPLE_COUNT).map((mistake) => mistake.original_example),
   };
+});
+
+export const activeReviewAtom = Atom.make((get): ActiveReview => {
+  const run = Option.getOrNull(AsyncResult.value(get(activeReviewRunAtom)));
+  if (run === null) return { tag: 'none' };
+  return { tag: 'saved', resolved: resolvedItemCount(run.items), total: run.items.length };
 });

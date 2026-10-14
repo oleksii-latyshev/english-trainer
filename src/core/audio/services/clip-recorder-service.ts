@@ -1,6 +1,7 @@
 import { Clock, Context, Deferred, Duration, Effect, Layer, SubscriptionRef } from 'effect';
 import type { ActualAudioInput, RecordedAudio } from '../audio';
 import { type MicrophoneError, microphoneBusy } from '../errors';
+import type { Capture } from './capture-engine';
 import { Microphone } from './microphone-service';
 
 const TICK = Duration.millis(100);
@@ -22,6 +23,7 @@ export type RecordedClip = RecordedAudio & { readonly input: ActualAudioInput };
 export type ClipOptions = {
   readonly deviceId: string;
   readonly maxMs: number;
+  readonly whileRecording?: (capture: Capture) => Effect.Effect<void>;
 };
 
 type ClipRecorderShape = {
@@ -77,6 +79,7 @@ export class ClipRecorder extends Context.Service<ClipRecorder, ClipRecorderShap
             input: session.input,
           });
           yield* Effect.forkScoped(trackRecording(phase, startedAtMs, capture.level));
+          if (options.whileRecording) yield* Effect.forkScoped(options.whileRecording(capture));
           yield* Effect.raceFirst(
             Deferred.await(signal),
             Effect.sleep(Duration.millis(options.maxMs)),

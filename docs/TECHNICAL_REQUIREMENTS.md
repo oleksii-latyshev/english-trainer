@@ -581,6 +581,14 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
     belong to the `learning` context and fail with `IpcError`; `view_learning_memory` also records that
     the saved cues were shown. A phrase card reports `times_used_on_own`: the sessions with an
     independent correct use (confidence at least 0.9); cued answers never count.
+    The review and usage commands (`start_memory_review`, `get_memory_review`, `submit_memory_recall`,
+    `skip_memory_review_item`, `finish_memory_review`, `prepare_review_material`,
+    `get_review_material`, `reveal_review_phrase`, `review_practice_memory_usage`,
+    `get_practice_memory_usage`) belong to the `learning` context too and fail with `IpcError`
+    (`ReviewService`, `UsageReviewService`); `finish_memory_review` returns nothing. The daily recall
+    plan, the review cue ledger and mistake candidates are read through the same context, while the
+    commands `get_daily_recall_plan`, `submit_daily_recall` and `start_mistake_practice` stay with the
+    conversation, which gates them on the open session.
 - **API usage:** neither Gemini nor `agy` reports remaining quota, so requests are counted where sent
   (Gemini stream adapter, `agy` runner) and limit errors where they arrive (Gemini 429: bounded
   `error.message`; `agy`: the quota line and the reset moment such as "Resets in 4h44m53s"). Events go

@@ -1,13 +1,15 @@
 use super::models::{LearningItemType, LearningStatus, ReviewResponse};
-use crate::conversation::recall::wording_observed;
+use super::recall::wording_observed;
 use crate::learning::normalize_phrase;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 pub const MAX_CUE_CHARS: usize = 500;
 pub const MAX_TARGET_CHARS: usize = 300;
 pub const MAX_TRANSCRIPT_CHARS: usize = 4000;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MemoryReviewItem {
     pub position: usize,
     pub item_type: LearningItemType,
@@ -23,14 +25,16 @@ pub struct MemoryReviewItem {
     pub is_skipped: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MemoryReviewRun {
     pub run_id: u64,
     pub items: Vec<MemoryReviewItem>,
     pub completed: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MemoryRecallResult {
     pub run_id: u64,
     pub position: usize,

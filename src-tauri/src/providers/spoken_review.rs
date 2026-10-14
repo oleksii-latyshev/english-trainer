@@ -1,5 +1,5 @@
 use crate::{
-    conversation::recall::wording_observed,
+    learning::recall::wording_observed,
     learning::{is_safe_phrase_cue, normalize_phrase},
     providers::{ProviderError, ProviderErrorCode},
 };

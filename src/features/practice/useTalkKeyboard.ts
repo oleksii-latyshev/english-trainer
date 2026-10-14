@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { keyTarget } from '@/components/keyTarget';
+import { keyTarget } from '@/shared/helpers/key-target';
 import type { HelpLevel } from './lib/helpLevels';
 import { decideKeyDown, decideKeyUp, shouldKeepTurnOpen } from './lib/talkKeys';
 import type { TurnState } from './lib/turnState';

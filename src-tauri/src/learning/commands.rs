@@ -4,10 +4,10 @@ use super::{
 };
 use crate::core::IpcError;
 
-async fn run_blocking<T: Send + 'static>(
-    service: tauri::State<'_, LearningService>,
+pub(super) async fn run_blocking<S: Clone + Send + Sync + 'static, T: Send + 'static>(
+    service: tauri::State<'_, S>,
     failure: &'static str,
-    work: impl FnOnce(LearningService) -> Result<T, LearningError> + Send + 'static,
+    work: impl FnOnce(S) -> Result<T, LearningError> + Send + 'static,
 ) -> Result<T, IpcError> {
     let service = service.inner().clone();
     tauri::async_runtime::spawn_blocking(move || work(service))

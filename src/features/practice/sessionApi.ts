@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { notifyLearningMemoryChanged } from '@/features/memory/memoryChanged';
+import { refreshLearningMemory } from '@/core/learning-memory';
 import { isPracticeDialogue, type PracticeDialogue } from '@/lib/dialogueTypes';
 import type { PracticeOptions, PracticePhase } from '@/lib/practiceOptions';
 import {
@@ -114,7 +114,7 @@ export async function saveWrapupPhrases(
   if (!isSavedWrapupPhrases(result)) {
     throw new Error('Unexpected saved session phrases response.');
   }
-  notifyLearningMemoryChanged();
+  refreshLearningMemory();
   return result;
 }
 

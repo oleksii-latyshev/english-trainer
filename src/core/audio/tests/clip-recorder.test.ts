@@ -140,6 +140,39 @@ describe('clip recorder recording', () => {
   });
 });
 
+describe('clip recorder side work', () => {
+  it('runs the caller work on the open capture and stops it when the recording ends', async () => {
+    const fake = fakeMicrophone();
+    const seen: number[] = [];
+    let isRunning = false;
+    const result = await Effect.runPromise(
+      withRecorder(fake, (recorder) =>
+        Effect.gen(function* () {
+          const fiber = yield* Effect.forkChild(
+            recorder.record({
+              ...OPTIONS,
+              whileRecording: (capture) =>
+                Effect.gen(function* () {
+                  seen.push(yield* capture.level);
+                  isRunning = true;
+                  return yield* Effect.never;
+                }).pipe(Effect.ensuring(Effect.sync(() => (isRunning = false)))),
+            }),
+          );
+          yield* Effect.yieldNow;
+          yield* Effect.yieldNow;
+          const wasRunning = isRunning;
+          yield* recorder.stop;
+          yield* Fiber.join(fiber);
+          return { wasRunning, isRunningAfter: isRunning };
+        }),
+      ),
+    );
+    expect(seen).toEqual([0.5]);
+    expect(result).toEqual({ wasRunning: true, isRunningAfter: false });
+  });
+});
+
 describe('clip recorder failures', () => {
   it('fails with a typed error when the device is lost and releases it', async () => {
     const fake = fakeMicrophone();

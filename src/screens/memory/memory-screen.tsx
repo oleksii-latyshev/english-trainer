@@ -8,7 +8,6 @@ import { MistakePracticeCard, ReviewCard } from '@/features/memory-practice';
 import type { MemoryScreenProps } from './types';
 
 export function MemoryScreen({
-  activeReview,
   isAudioBusy,
   isSessionOpen,
   isStartingMistakePractice,
@@ -30,7 +29,7 @@ export function MemoryScreen({
         </div>
       </header>
       <div className="grid grid-cols-[1.6fr_1fr_1fr] gap-3 max-narrow:grid-cols-1">
-        <ReviewCard active={activeReview} isAudioBusy={isAudioBusy} onStart={onStartReview} />
+        <ReviewCard isAudioBusy={isAudioBusy} onStart={onStartReview} />
         <MistakePracticeCard
           error={mistakePracticeError}
           isAudioBusy={isAudioBusy}

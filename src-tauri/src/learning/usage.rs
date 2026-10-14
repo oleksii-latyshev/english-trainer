@@ -73,7 +73,8 @@ pub struct UsageEventRecord {
     pub created_at: i64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct UsageAssessmentFinding {
     pub item_type: LearningItemType,
     pub item_id: u64,
@@ -85,7 +86,8 @@ pub struct UsageAssessmentFinding {
     pub status_after: LearningStatus,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct TurnUsageAssessment {
     pub session_id: u64,
     pub sequence: usize,

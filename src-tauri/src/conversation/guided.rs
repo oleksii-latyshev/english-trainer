@@ -1,4 +1,5 @@
 use super::{busy_error, database_error, invalid_session_error, SessionStore};
+use crate::learning::{now_ms, record_cue_exposure};
 use crate::providers::{GuidedAnswer, ProviderError, ProviderErrorCode};
 
 impl SessionStore {
@@ -13,7 +14,7 @@ impl SessionStore {
         F: FnOnce(&str) -> Result<GuidedAnswer, ProviderError>,
     {
         {
-            let mut state = self.lock();
+            let state = self.lock();
             let active = state
                 .active
                 .as_ref()
@@ -27,10 +28,14 @@ impl SessionStore {
             }
             // Conservatively exclude later answers from spontaneous mastery after an example request.
             // Save before generation, so a concurrent submission cannot escape cue exposure.
-            state
-                .database
-                .record_session_cue_exposure(session_id, None, None, super::usage_support::now_ms())
-                .map_err(database_error)?;
+            record_cue_exposure(
+                state.database.connection(),
+                session_id,
+                None,
+                None,
+                now_ms(),
+            )
+            .map_err(database_error)?;
         }
         let answer = generate(question)?;
         let state = self.lock();

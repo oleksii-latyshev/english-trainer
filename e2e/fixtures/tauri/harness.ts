@@ -1,6 +1,6 @@
+import type { LearningMemoryView } from '@/core/ipc';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
-import type { LearningMemoryView } from '@/lib/learningTypes';
 import type { PracticeOptions } from '@/lib/practiceOptions';
 import type { PracticeSession } from '@/lib/practiceSessionTypes';
 import type { AudioEdgeCounts } from './speech';

@@ -1,4 +1,4 @@
-import type { LearningMemoryView, MistakeRecord } from '@/lib/learningTypes';
+import type { LearningMemoryView, MistakeRecord } from '@/core/ipc';
 
 export const repeatedMistake: MistakeRecord = {
   id: 17,
