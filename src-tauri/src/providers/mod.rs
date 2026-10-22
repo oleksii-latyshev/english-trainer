@@ -65,6 +65,7 @@ pub enum ReplyStreamEvent {
     Delta { text: String },
 }
 
+#[cfg(test)]
 pub fn generate_configured_turn(
     context: &ConversationContext,
     settings: &AiSettings,
