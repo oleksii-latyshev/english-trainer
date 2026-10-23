@@ -105,8 +105,8 @@ fn request_body(question: &str) -> Value {
         "properties": {
             "frame": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "string", "maxLength": 120 } },
             "phrases": { "type": "array", "minItems": 3, "maxItems": 5, "items": { "type": "string", "maxLength": 120 } },
-            "model_answer": { "type": "string", "maxLength": 500 },
-            "adaptation": { "type": "string", "maxLength": 500 }
+            "model_answer": { "type": "string", "maxLength": 500, "description": "A complete fictional English answer of at most 60 words, without square brackets." },
+            "adaptation": { "type": "string", "maxLength": 500, "description": "The model_answer again, with two to four personal details replaced by short placeholders in square brackets, for example [your tool] or [a reason]." }
         },
         "required": ["frame", "phrases", "model_answer", "adaptation"],
         "additionalProperties": false
@@ -284,6 +284,27 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("untrusted data"));
+    }
+
+    #[test]
+    fn the_schema_asks_for_the_example_before_its_template() {
+        let body = request_body("What project taught you the most?");
+        let order: Vec<&str> = body["generationConfig"]["responseJsonSchema"]["properties"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(order, ["frame", "phrases", "model_answer", "adaptation"]);
+        let wire = serde_json::to_string(&body).unwrap();
+        assert!(wire.find("\"model_answer\"").unwrap() < wire.find("\"adaptation\"").unwrap());
+        assert!(
+            body["generationConfig"]["responseJsonSchema"]["properties"]["adaptation"]
+                ["description"]
+                .as_str()
+                .unwrap()
+                .contains("square brackets")
+        );
     }
 
     #[test]
