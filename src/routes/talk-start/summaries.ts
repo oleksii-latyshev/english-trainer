@@ -1,5 +1,5 @@
 import type { DueMemory } from '@/core/learning-memory';
-import type { SessionDetails } from '@/features/practice/lib/practiceState';
+import type { SessionDetails } from '@/core/practice-session';
 import type { MistakePracticeSummary, ReviewSummary } from '@/screens/talk-start';
 
 type PracticeActivity = {

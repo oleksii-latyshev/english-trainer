@@ -1,9 +1,15 @@
+import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import { AsyncResult } from 'effect/reactivity';
 import { Bookmark, MessageCircle, Settings } from 'lucide-react';
 import type React from 'react';
-import { useTrainer } from '@/context/TrainerContext';
-import type { MicrophoneStatus } from '@/core/audio';
+import { useContext } from 'react';
+import { canChangeSessionAtom } from '@/core/answer-capture';
+import { type MicrophoneStatus, microphoneSnapshotAtom } from '@/core/audio';
 import { FIRST_RUN_PATH } from '@/core/first-run';
+import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
+import { isSessionBusyAtom, isSessionOpenAtom, practiceStateAtom } from '@/core/practice-session';
+import { startOrResumePractice } from '@/routes/talk/start-or-resume';
 import {
   activeSettingsSection,
   EVA_SETTINGS_PATH,
@@ -64,10 +70,17 @@ function MicStatus({ status }: { status: MicrophoneStatus }) {
 }
 
 export function AppShell() {
-  const { capture, practice, isSessionOpen, startOrResumePractice, mic, due } = useTrainer();
+  const registry = useContext(RegistryContext);
+  const due = dueMemory(useAtomValue(learningMemoryAtom));
   const dueCount = due.tag === 'ready' ? due.dueCount : 0;
-  const navigationLocked =
-    !capture.canChangeSession || practice.state.tag === 'waiting' || practice.isBusy;
+  const isSessionOpen = useAtomValue(isSessionOpenAtom);
+  const practiceTag = useAtomValue(practiceStateAtom).tag;
+  const microphone = AsyncResult.getOrElse(useAtomValue(microphoneSnapshotAtom), () => ({
+    status: 'off' as const,
+  }));
+  const canChangeSession = useAtomValue(canChangeSessionAtom);
+  const isBusy = useAtomValue(isSessionBusyAtom);
+  const navigationLocked = !canChangeSession || practiceTag === 'waiting' || isBusy;
   const navigate = useNavigate();
   const currentPath = useRouterState({ select: (state) => state.location.pathname });
   const currentHash = useRouterState({ select: (state) => state.location.hash });
@@ -76,7 +89,7 @@ export function AppShell() {
     if (navigationLocked) return;
     // Talk returns to an open session instead of the start screen.
     if (item.path === '/' && isSessionOpen) {
-      startOrResumePractice();
+      startOrResumePractice(registry, () => void navigate({ to: '/conversation' }));
       return;
     }
     void navigate({ to: item.path });
@@ -142,7 +155,7 @@ export function AppShell() {
               ))}
             </div>
           )}
-          <MicStatus status={mic.status} />
+          <MicStatus status={microphone.status} />
         </nav>
       )}
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-8 pb-16 max-rail:px-4 max-rail:pt-6 max-rail:pb-12 fills-screen:flex fills-screen:flex-col fills-screen:overflow-hidden fills-screen:p-0 sm:px-8 xl:px-12">

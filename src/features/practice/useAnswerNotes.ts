@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import type { SessionDetails } from '@/core/practice-session';
 import type { SpeechControls } from '@/core/speech';
 import { latestPausedSequence } from '@/features/coach/lib/note';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { NoteTools } from './AnswerNote';
-import type { SessionDetails } from './lib/practiceState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import { retryAnswerCoaching } from './sessionApi';
 import type { useSecondTry } from './useSecondTry';

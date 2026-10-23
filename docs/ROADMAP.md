@@ -66,6 +66,11 @@ Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in 
 - **Memory details** — "Say it now" on an opened phrase or mistake (spoken practice of one item), a
   kind per phrase (phrase, phrasal verb, linking phrase, pattern) and a "With help" evidence tag
   beside "On your own" (cued answers are not stored as evidence yet).
+- **Talk details** (screen and turn loop, #74) — the canvas boards Main, TalkThinking, TalkError and
+  TalkLight were not reachable while the screen was built, so it follows [DESIGN](DESIGN.md) and the
+  tokens. Still to compare with the boards on the Mac: hands-free as a pill in the header (it is a
+  switch in the flow strip under Eva), the chat fading over Eva's lower half, and the exact spacing
+  of the stage. The light theme comes from the shared tokens; TalkLight needs a visual check.
 - **App icon and Dock icon choice** in the glass style.
 - **Light theme** for the glass design.
 

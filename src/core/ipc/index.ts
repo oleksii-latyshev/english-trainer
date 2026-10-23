@@ -60,6 +60,7 @@ export { invokeBinaryCommand, invokeCommand, invokeUnitCommand } from './invoke-
 export type { IpcArgs, IpcShape } from './ipc';
 export { Ipc } from './ipc';
 export { IpcBinary, type IpcBinaryShape, type IpcHeaders } from './ipc-binary';
+export { IpcEvents, type IpcEventsShape } from './ipc-events';
 export { isTauriRuntime } from './is-tauri-runtime';
 export { openChannel } from './open-channel';
 export { openReplyChannel } from './reply-channel';
@@ -97,6 +98,15 @@ export {
   UsageOutcomeSchema,
 } from './schemas/learning';
 export { PersonalProfileSchema } from './schemas/personal-profile';
+export {
+  AttemptComparisonSchema,
+  CoachingUpdatedSchema,
+  FinishedSessionSchema,
+  PracticeDialogueSchema,
+  PracticeModeSchema,
+  PracticePhaseSchema,
+  PracticeSessionSchema,
+} from './schemas/practice-session';
 export {
   MemoryRecallResultSchema,
   MemoryReviewItemSchema,

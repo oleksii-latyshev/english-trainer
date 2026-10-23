@@ -52,3 +52,14 @@ export type SpeakRequest = {
   readonly replies: Stream.Stream<ReplyEvent>;
   readonly callbacks: SpeechCallbacks;
 };
+
+export type SpeechTiming = {
+  readonly captureStartMs?: number;
+  readonly captureFinalizationMs?: number;
+  readonly sttMs?: number;
+  readonly ttsStartMs?: number;
+  readonly firstTokenMs?: number;
+  readonly providerCompleteMs?: number;
+  readonly sendToAudioMs?: number;
+  readonly firstAiAudioMs?: number;
+};

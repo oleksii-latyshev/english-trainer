@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import type { useSpeechCapture } from '@/app/speech-capture';
 import { Button } from '@/shared/ui/button';
 import { Kbd } from '@/shared/ui/kbd';
-import { type RescueState, useRescue } from './useRescue';
+import { type RescueCapture, type RescueState, useRescue } from './useRescue';
 
 type Props = {
-  capture: Pick<ReturnType<typeof useSpeechCapture>, 'rescueTranscript' | 'holdForRescue'>;
+  capture: RescueCapture;
   recordingId: number;
   sessionId: number;
   phase: string;

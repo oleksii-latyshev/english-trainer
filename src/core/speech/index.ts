@@ -44,4 +44,10 @@ export {
   type TranscribedAnswer,
 } from './services/speech-recognition-service';
 export { SpeechRecognitionSettings } from './services/speech-recognition-settings-service';
-export type { NaturalAvailability, SpeechState, StreamHandle, StreamOptions } from './types';
+export type {
+  NaturalAvailability,
+  SpeechState,
+  SpeechTiming,
+  StreamHandle,
+  StreamOptions,
+} from './types';
