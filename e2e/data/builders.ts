@@ -42,6 +42,34 @@ export function savedMistakePractice(answered: number): {
   return { session, dialogue };
 }
 
+export function longConversation(turns: number): {
+  session: PracticeSession;
+  dialogue: PracticeDialogue;
+} {
+  const session: PracticeSession = {
+    ...initialSession,
+    turn_count: turns,
+    target_turns: turns + 4,
+    opening_question: `Question ${turns + 1}: what happened next?`,
+  };
+  const dialogue: PracticeDialogue = {
+    session_id: session.session_id,
+    opening_question: initialSession.opening_question,
+    turns: Array.from({ length: turns }, (_, index) => ({
+      learner: `Earlier answer number ${index + 1} about my work.`,
+      assistant_reply: `Earlier reply number ${index + 1}.`,
+      assistant_question:
+        index === turns - 1 ? session.opening_question : `Earlier question ${index + 2}?`,
+    })),
+    input_sources: Array.from({ length: turns }, () => 'text'),
+    reply_times_ms: Array.from({ length: turns }, () => 250),
+    answer_durations_ms: Array.from({ length: turns }, () => null),
+    help_used: Array.from({ length: turns }, () => false),
+    coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
+  };
+  return { session, dialogue };
+}
+
 export function restoredSpeakingReview(): { session: PracticeSession; dialogue: PracticeDialogue } {
   const session: PracticeSession = {
     ...initialSession,

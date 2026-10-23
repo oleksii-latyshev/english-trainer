@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { Chat } from '../components/chat';
 import { Composer } from '../components/composer';
 import { PlannerPanel } from '../components/planner-panel';
 import { Recorder } from '../components/recorder';
@@ -6,6 +7,7 @@ import { RescuePanel } from '../components/rescue-panel';
 import { openingQuestion } from '../data/sessions';
 
 export class TalkPage {
+  readonly chat: Chat;
   readonly composer: Composer;
   readonly recorder: Recorder;
   readonly planner: PlannerPanel;
@@ -40,6 +42,7 @@ export class TalkPage {
   readonly preparingQuestions: Locator;
 
   constructor(private readonly page: Page) {
+    this.chat = new Chat(page);
     this.composer = new Composer(page);
     this.recorder = new Recorder(page);
     this.planner = new PlannerPanel(page);

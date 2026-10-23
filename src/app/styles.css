@@ -5,6 +5,10 @@
 @custom-variant eva-full (:root[data-eva-motion="full"] &);
 @custom-variant eva-live (:root:not([data-eva-motion="still"]) &);
 
+@utility mask-fade-top {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 3rem);
+}
+
 @theme static {
   --color-background: #05070c;
   --color-surface: rgba(255, 255, 255, 0.055);

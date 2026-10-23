@@ -14,7 +14,6 @@ import {
   useSessionClock,
   useSessionState,
 } from '@/features/talk-session';
-import { GlassPanel } from '@/shared/ui/glass-panel';
 import { TalkNotices } from './components/talk-notices';
 import type { TalkScreenProps } from './types';
 
@@ -33,27 +32,25 @@ function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
   return (
     <section
       aria-label="Talk workspace"
-      className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-3"
+      className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-3 overflow-y-auto"
     >
       <SessionHeader
         isFinishBlocked={props.isFinishBlocked}
         isFinishing={isFinishing}
         session={session}
       />
-      <div className="flex min-h-0 flex-1 flex-col items-center">
-        <TurnStage isWriting={practiceStageIsWriting(session)} mood={props.moodExtras} />
-        <GlassPanel className="-mt-6 flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-          {isReplay && props.replayPrompt}
-          <Dialogue
-            canReplay={practiceStageUsesAudio(session)}
-            currentQuestion={isReplayComplete ? undefined : session.question}
-            renderNote={props.renderNote}
-          >
-            <TalkNotices />
-            <LiveTranscript />
-            {props.dialogueExtras}
-          </Dialogue>
-        </GlassPanel>
+      <TurnStage isWriting={practiceStageIsWriting(session)} mood={props.moodExtras} />
+      <div className="flex min-h-56 w-full flex-1 flex-col">
+        {isReplay && props.replayPrompt}
+        <Dialogue
+          canReplay={practiceStageUsesAudio(session)}
+          currentQuestion={isReplayComplete ? undefined : session.question}
+          renderNote={props.renderNote}
+        >
+          <TalkNotices />
+          <LiveTranscript />
+          {props.dialogueExtras}
+        </Dialogue>
       </div>
       <Composer
         helpSlot={props.helpBar}

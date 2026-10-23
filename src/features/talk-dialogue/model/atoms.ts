@@ -2,6 +2,7 @@ import { Effect, Stream } from 'effect';
 import { AsyncResult, Atom } from 'effect/reactivity';
 import { sessionDetailsAtom } from '@/core/practice-session';
 import { pendingReplyAtom } from '@/core/practice-turn';
+import { FOLLOWING, type FollowState } from '../helpers/follow-scroll';
 import { DialogueService } from '../services/dialogue-service';
 import type { DialogueView } from '../types';
 import { runtime } from './runtime';
@@ -55,3 +56,5 @@ export const visiblePendingReplyAtom = Atom.make((get): string | undefined => {
     reply !== null && reply.sessionId === sessionId && savedTurns < reply.savedTurnCount;
   return isUnsaved ? reply.text : undefined;
 });
+
+export const followStateAtom = Atom.make<FollowState>(FOLLOWING);
