@@ -60,6 +60,7 @@ pub struct SessionDatabase {
 }
 
 impl SessionDatabase {
+    #[cfg(test)]
     pub fn open_in_memory() -> rusqlite::Result<Self> {
         let connection = Connection::open_in_memory()?;
         connection.pragma_update(None, "foreign_keys", "ON")?;
