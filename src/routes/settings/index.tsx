@@ -1,6 +1,9 @@
+import { useAtomValue } from '@effect/atom-react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { useTrainer } from '@/context/TrainerContext';
+import { canChangeSessionAtom } from '@/core/answer-capture';
 import { FIRST_RUN_PATH } from '@/core/first-run';
+import { isSessionOpenAtom } from '@/core/practice-session';
+import { useSpeech } from '@/core/speech';
 import {
   EVA_SETTINGS_PATH,
   isSettingsSectionId,
@@ -15,10 +18,12 @@ function setupDisabledReason(isBlocked: boolean): string | undefined {
 }
 
 export function SettingsRoute() {
-  const { isSessionOpen, capture, speech } = useTrainer();
+  const isSessionOpen = useAtomValue(isSessionOpenAtom);
+  const canChangeSession = useAtomValue(canChangeSessionAtom);
+  const speech = useSpeech();
   const navigate = useNavigate();
   const hash = useRouterState({ select: (state) => state.location.hash }).replace(/^#/, '');
-  const isPracticeCapturing = !capture.canChangeSession;
+  const isPracticeCapturing = !canChangeSession;
 
   return (
     <SettingsScreen

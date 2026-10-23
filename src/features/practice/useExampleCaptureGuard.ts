@@ -5,8 +5,8 @@ import {
   useEffect,
   useRef,
 } from 'react';
-import type { RecordingStatus } from '@/app/speech-capture';
 import type { HelpLevel } from './lib/helpLevels';
+import type { RecordingStatus } from './practiceViewModel';
 
 type HelpSnapshot = { key: string; level: HelpLevel | null };
 

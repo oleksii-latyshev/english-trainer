@@ -1,0 +1,228 @@
+import { RegistryContext, useAtomValue } from '@effect/atom-react';
+import { useNavigate } from '@tanstack/react-router';
+import { type ReactNode, useContext } from 'react';
+import {
+  acceptRetryComparison,
+  canSendPracticeStage,
+  practiceKeepsMicrophoneWarm,
+  practiceStageIsWriting,
+  type SessionDetails,
+  sessionDetails,
+  startPracticeAtom,
+} from '@/core/practice-session';
+import { acceptedAnswerAtom, setPlanning } from '@/core/practice-turn';
+import { useSpeech } from '@/core/speech';
+import { AnswerNote, type NoteTools } from '@/features/practice/AnswerNote';
+import { HelpBar } from '@/features/practice/HelpBar';
+import { OriginalQuestionPrompt } from '@/features/practice/OriginalQuestionPrompt';
+import { PracticeReview } from '@/features/practice/PracticeReview';
+import { RescuePanel } from '@/features/practice/RescuePanel';
+import { useAnswerNotes } from '@/features/practice/useAnswerNotes';
+import { useDailyRecall } from '@/features/practice/useDailyRecall';
+import { useSecondTry } from '@/features/practice/useSecondTry';
+import { useTurn } from '@/features/talk-composer';
+import {
+  type DialogueMessage,
+  HISTORY_FAILED_MESSAGE,
+  useDialogue,
+} from '@/features/talk-dialogue';
+import { isTurnCoaching } from '@/lib/coachingTypes';
+import { isPracticeDialogue } from '@/lib/dialogueTypes';
+import { TalkScreen } from '@/screens/talk';
+import { rescueCaptureOf } from './rescue-capture';
+import { TalkExtras } from './talk-extras';
+import { useHelp } from './use-help';
+import { usePracticeActions, usePracticeModel, useRawCaptureActions } from './use-practice-model';
+import { useCancelOnStageChange, useTurnLock } from './use-turn-lock';
+import '@/features/practice/talkCards.css';
+import '@/features/practice/talkComposer.css';
+import '@/features/practice/talkDialogue.css';
+import '@/features/practice/talkHelp.css';
+import '@/features/practice/talkStage.css';
+
+function lockReason(
+  isRecalling: boolean,
+  isRetrying: boolean,
+  isStageLocked: boolean,
+  isMistakePractice: boolean,
+): string | undefined {
+  if (isRecalling) return 'Spoken phrase recall is in progress above.';
+  if (isRetrying) return 'Re-speaking in progress. Say it again in the note above, or cancel it.';
+  if (!isStageLocked) return undefined;
+  return isMistakePractice
+    ? 'Practice complete. Finish when you are ready.'
+    : 'All original questions have been answered. Review this stage to continue.';
+}
+
+function recallSessionOf(session: SessionDetails | undefined): number | undefined {
+  if (!session || session.isMistakePractice) return undefined;
+  return session.turnCount >= session.targetTurns ? session.sessionId : undefined;
+}
+
+function canHelp(session: SessionDetails | undefined, isOccupied: boolean): boolean {
+  if (session === undefined || !practiceKeepsMicrophoneWarm(session)) return false;
+  if (session.isMistakePractice || practiceStageIsWriting(session)) return false;
+  return session.question !== '' && !isOccupied;
+}
+
+function renderAnswerNote(noteTools: NoteTools | null, message: DialogueMessage): ReactNode {
+  if (!noteTools || message.sequence === undefined || !isTurnCoaching(message.coaching)) {
+    return null;
+  }
+  return (
+    <AnswerNote
+      coaching={message.coaching}
+      sequence={message.sequence}
+      tools={noteTools}
+      transcript={message.text}
+    />
+  );
+}
+
+function hasRescue(session: SessionDetails): boolean {
+  if (session.isMistakePractice || session.practiceMode === 'text_chat') return false;
+  return session.practiceMode !== 'write_then_speak' || session.practicePhase === 'speaking';
+}
+
+export function TalkRoute() {
+  const registry = useContext(RegistryContext);
+  const navigate = useNavigate();
+  const speech = useSpeech();
+  const model = usePracticeModel();
+  const session = sessionDetails(model.practice);
+  const turn = useTurn();
+  const history = useDialogue();
+  const dialogue = isPracticeDialogue(history.dialogue) ? history.dialogue : null;
+  const raw = useRawCaptureActions();
+  const recall = useDailyRecall(recallSessionOf(session));
+  const secondTry = useSecondTry({
+    sessionId: session?.sessionId,
+    transcript: model.transcript,
+    currentRequestId: model.currentRequestId,
+    onCompared: (sessionId, comparison) => acceptRetryComparison(registry, sessionId, comparison),
+    resetCapture: raw.resetCapture,
+    startRecording: raw.startRecording,
+  });
+  const isRetrying = secondTry.sequence !== null;
+  const actions = usePracticeActions({
+    isRetrying,
+    startRetry: () => {
+      if (secondTry.sequence !== null) secondTry.start(secondTry.sequence);
+    },
+  });
+
+  useTurnLock(registry, recall.active || isRetrying);
+  useCancelOnStageChange(session, secondTry.cancel);
+
+  const isHelpAvailable = canHelp(session, isRetrying || recall.active);
+  const help = useHelp({ session, captureStatus: model.status, isHelpAvailable });
+  const { noteTools, isPhraseSaved } = useAnswerNotes({
+    session,
+    dialogue,
+    secondTry,
+    model,
+    actions,
+    speech,
+    retryHistory: history.retry,
+  });
+  const accepted = useAtomValue(acceptedAnswerAtom);
+  const sentAnswer =
+    accepted?.requestId === model.currentRequestId &&
+    accepted.originalTranscript === model.transcript
+      ? accepted
+      : null;
+
+  const isStageLocked = session !== undefined && !canSendPracticeStage(session);
+  const isListening = turn.state.tag === 'listening' || turn.state.tag === 'auto-listen';
+  const isHelpDisabled =
+    model.busy ||
+    model.practice.tag !== 'active' ||
+    turn.isSending ||
+    model.transcribing ||
+    recall.active ||
+    isRetrying ||
+    isStageLocked;
+
+  const helpBar: ReactNode =
+    isHelpAvailable && session ? (
+      <HelpBar
+        disabled={isHelpDisabled}
+        isRecording={isListening}
+        key={help.helpKey}
+        level={help.helpLevel}
+        notice={help.helpNotice}
+        onLevelChange={help.changeHelpLevel}
+        onPlanningChange={(isPlanning) => setPlanning(registry, isPlanning)}
+        question={session.question}
+        sequence={session.turnCount + 1}
+        sessionId={session.sessionId}
+      />
+    ) : undefined;
+
+  const rescueControl: ReactNode =
+    isHelpAvailable && session && hasRescue(session) && model.status === 'recording' ? (
+      <RescuePanel
+        capture={rescueCaptureOf(registry)}
+        key={`${session.sessionId}:${session.practicePhase}:${session.turnCount + 1}:${session.question}:${model.currentRequestId}`}
+        phase={session.practicePhase}
+        question={session.question}
+        recordingId={model.currentRequestId}
+        sequence={session.turnCount + 1}
+        sessionId={session.sessionId}
+      />
+    ) : undefined;
+
+  const extras: ReactNode = session ? (
+    <TalkExtras
+      actions={actions}
+      dialogue={dialogue}
+      isRetrying={isRetrying}
+      model={model}
+      recall={recall}
+      sentAnswer={sentAnswer}
+      session={session}
+    />
+  ) : undefined;
+
+  const reviewStage: ReactNode = session ? (
+    <PracticeReview
+      actions={actions}
+      dialogue={dialogue}
+      historyError={history.hasFailed ? HISTORY_FAILED_MESSAGE : ''}
+      model={model}
+      noteTools={noteTools}
+      onRetryHistory={history.retry}
+      session={session}
+    />
+  ) : undefined;
+
+  const replayPrompt: ReactNode = session ? (
+    <OriginalQuestionPrompt
+      isComplete={session.spokenTurnCount >= session.writtenTurnCount}
+      question={session.question}
+      spokenTurnCount={session.spokenTurnCount}
+      writtenTurnCount={session.writtenTurnCount}
+    />
+  ) : undefined;
+
+  return (
+    <TalkScreen
+      dialogueExtras={extras}
+      helpBar={helpBar}
+      isFinishBlocked={recall.active}
+      lockedReason={
+        session
+          ? lockReason(recall.active, isRetrying, isStageLocked, session.isMistakePractice)
+          : undefined
+      }
+      moodExtras={{ isPhraseSaved, isHelpOpen: help.helpLevel !== null }}
+      onChooseMicrophone={() => void navigate({ to: '/settings', hash: 'microphone' })}
+      onOpenSettings={() => void navigate({ to: '/settings' })}
+      onStartPractice={() => registry.set(startPracticeAtom, undefined)}
+      renderNote={(message) => renderAnswerNote(noteTools, message)}
+      replayPrompt={replayPrompt}
+      rescueControl={rescueControl}
+      reviewStage={reviewStage}
+    />
+  );
+}

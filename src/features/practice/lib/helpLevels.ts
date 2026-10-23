@@ -1,3 +1,5 @@
+import type { KeyTarget } from '@/shared/helpers/key-target';
+
 export type HelpLevel = 'frame' | 'phrases' | 'example';
 
 export const HELP_LEVELS: { id: HelpLevel; label: string; keyNumber: number }[] = [
@@ -15,4 +17,21 @@ export function helpLevelForKey(
   const level = HELP_LEVELS.find((item) => String(item.keyNumber) === key);
   if (!level) return null;
   return { level: current === level.id ? null : level.id };
+}
+
+export type HelpKeyPress = {
+  key: string;
+  isRepeat: boolean;
+  hasModifier: boolean;
+  target: KeyTarget;
+};
+
+/** Which help level a key press asks for; null when the key is not for help right now. */
+export function helpLevelForPress(
+  press: HelpKeyPress,
+  context: { helpLevel: HelpLevel | null; isHelpAvailable: boolean },
+): { level: HelpLevel | null } | null {
+  if (press.hasModifier || press.target === 'text') return null;
+  if (press.isRepeat || !context.isHelpAvailable) return null;
+  return helpLevelForKey(press.key, context.helpLevel);
 }

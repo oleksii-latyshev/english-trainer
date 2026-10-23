@@ -1,10 +1,10 @@
+import type { SessionDetails } from '@/core/practice-session';
 import type { TurnCoaching } from '@/lib/coachingTypes';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { PracticePhase } from '@/lib/practiceOptions';
 import { Button } from '@/shared/ui/button';
 import type { NoteTools } from './AnswerNote';
 import { AnswerNote } from './AnswerNote';
-import type { SessionDetails } from './lib/practiceState';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import './practiceReview.css';
 

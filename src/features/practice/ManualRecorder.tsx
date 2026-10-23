@@ -1,9 +1,8 @@
-import type { RecordingStatus } from '@/app/speech-capture';
 import { MicButton } from '@/components/MicControl';
 import { TurnNotice } from '@/components/TurnNotice';
 import type { TranscriptionRecovery } from '@/core/speech';
 import { Button } from '@/shared/ui/button';
-import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
+import type { PracticeActions, PracticeViewModel, RecordingStatus } from './practiceViewModel';
 
 type Props = {
   model: PracticeViewModel;
