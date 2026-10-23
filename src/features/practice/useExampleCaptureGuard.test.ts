@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { RecordingStatus } from '@/app/speech-capture';
+import type { RecordingStatus } from './practiceViewModel';
 import { isAnswerCaptureStarted } from './useExampleCaptureGuard';
 
 describe('isAnswerCaptureStarted', () => {

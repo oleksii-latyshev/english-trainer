@@ -1,5 +1,5 @@
 import { Play } from 'lucide-react';
-import { useTrainer } from '@/context/TrainerContext';
+import { useSpeech } from '@/core/speech';
 import type { AnswerPlan } from '@/lib/answerPlanTypes';
 import { Button } from '@/shared/ui/button';
 
@@ -26,7 +26,7 @@ export function GuidedAnswerPanel({
   onRetry: () => void;
   onHide: () => void;
 }) {
-  const { speech } = useTrainer();
+  const speech = useSpeech();
   if (!plan) {
     return (
       <div className="talk-help-group">

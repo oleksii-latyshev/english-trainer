@@ -29,7 +29,7 @@ sequenceDiagram
     participant Setup as practice-setup
     participant Warmup as review-warmup
     participant Route as TalkStartRoute
-    participant Talk as Talk / TrainerContext (legacy)
+    participant Talk as core/practice-session
 
     Learner->>Setup: chooses mode, topic, length
     Setup->>Screen: onChange(patch)

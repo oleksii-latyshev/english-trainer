@@ -7,22 +7,19 @@ the live transcript are not here (they move with `core/speech`, #49).
 
 Services (all in `services/`): `Microphone` opens one stream as a scoped resource, `WarmMicrophone`
 owns the warm session between turns, `AudioInputsService` lists devices. `ClipRecorder` records one-off clips for Settings and
-first run. `src/app/microphone` is the Promise/callback bridge for legacy callers that have not been
-migrated yet.
+first run. `core/answer-capture` is the practice-side user of the warm session.
 
 ## Warm session for practice
 
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Talk as Talk (legacy useSpeechCapture)
-    participant Bridge as app/microphone
+    participant Talk as practice-turn effects and answer-capture
     participant Warm as WarmMicrophone
     participant Mic as Microphone.open
     participant Device as getUserMedia, AudioContext, worklet
 
-    Talk->>Bridge: setActive(true) when practice starts
-    Bridge->>Warm: setActive(true)
+    Talk->>Warm: setActive(true) when a spoken stage can take an answer
     Warm->>Mic: open in a new Scope (preferred device, echo cancellation)
     Mic->>Device: acquireRelease stream, context, worklet
     Device-->>Mic: frames (PubSub)
@@ -30,12 +27,11 @@ sequenceDiagram
     Note over Mic,Device: about 3 s of input must pass once
     Mic-->>Warm: warmed, status ready
     Learner->>Talk: speaks
-    Talk->>Bridge: ensure(), beginCapture(pre-roll)
-    Bridge->>Mic: capture (scoped, copies the pre-roll)
-    Talk->>Bridge: listenForTurn
-    Bridge->>Mic: turns stream (settle span, hold, end pause)
+    Talk->>Warm: ensure()
+    Talk->>Mic: capture (scoped, copies the pre-roll)
+    Talk->>Mic: turns stream (settle span, hold, end pause)
     Mic-->>Talk: SpeechStarted, TurnEnded
-    Talk->>Bridge: capture.stop
+    Talk->>Mic: capture.stop
     Mic-->>Talk: 16 kHz WAV and signal summary
     Note over Warm: the session stays open for the next turn
 ```
