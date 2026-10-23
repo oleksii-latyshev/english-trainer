@@ -1,11 +1,13 @@
-import { useAtomSet } from '@effect/atom-react';
+import { useAtomSet, useAtomValue } from '@effect/atom-react';
 import { useNavigate } from '@tanstack/react-router';
-import { useTrainer } from '@/context/TrainerContext';
+import { canChangeSessionAtom } from '@/core/answer-capture';
 import { firstRunMarkerAtom } from '@/core/first-run';
+import { useSpeech } from '@/core/speech';
 import { FirstRunScreen } from '@/screens/first-run';
 
 export function FirstRunRoute() {
-  const { capture, speech } = useTrainer();
+  const canChangeSession = useAtomValue(canChangeSessionAtom);
+  const speech = useSpeech();
   const navigate = useNavigate();
   const setMarker = useAtomSet(firstRunMarkerAtom);
 
@@ -16,7 +18,7 @@ export function FirstRunRoute() {
 
   return (
     <FirstRunScreen
-      isPracticeCapturing={!capture.canChangeSession}
+      isPracticeCapturing={!canChangeSession}
       systemVoices={{
         voices: speech.voices.map(({ voice, isEnglish }) => ({
           voiceURI: voice.voiceURI,

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant svg (& svg);
-@custom-variant fills-screen (&:has(.practice-screen, .review-screen, .first-run));
+@custom-variant fills-screen (&:has(.talk-screen, .review-screen, .first-run));
 @custom-variant eva-full (:root[data-eva-motion="full"] &);
 @custom-variant eva-live (:root:not([data-eva-motion="still"]) &);
 

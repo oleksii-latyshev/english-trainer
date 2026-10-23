@@ -53,8 +53,9 @@ impl SessionStats {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ts_rs::TS)]
 #[serde(tag = "kind", rename_all = "snake_case")]
+#[ts(export)]
 pub enum Trend {
     First,
     Same,
@@ -92,25 +93,29 @@ fn words_trend(current: f64, previous: Option<f64>) -> Trend {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct SpeakingTime {
     pub duration_ms: Option<u64>,
     pub trend: Trend,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct WordsPerMinute {
     pub value: Option<u32>,
     pub trend: Trend,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct AverageAnswer {
     pub words: Option<u32>,
     pub trend: Trend,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct SessionNumbers {
     pub speaking_time: SpeakingTime,
     pub words_per_minute: WordsPerMinute,

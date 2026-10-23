@@ -1,12 +1,25 @@
+import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { Navigate, useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
-import { useTrainer } from '@/context/TrainerContext';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { canChangeSessionAtom } from '@/core/answer-capture';
 import { FIRST_RUN_PATH } from '@/core/first-run';
-import { sessionDetails } from '@/features/practice/lib/practiceState';
+import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
+import {
+  isRestoringAtom,
+  isSessionBusyAtom,
+  isSessionOpenAtom,
+  practiceErrorAtom,
+  practiceStateAtom,
+  sessionDetails,
+  startMistakePracticeAtom,
+  startPracticeAtom,
+} from '@/core/practice-session';
 import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
 import { useReviewCommands, useWarmupHandoff } from '@/features/spoken-review';
+import { useFirstRunDecision } from '@/routes/first-run/use-first-run-gate';
 import { SpokenReviewScreen } from '@/screens/spoken-review';
 import { TalkStartScreen } from '@/screens/talk-start';
+import { startOrResumePractice } from '../talk/start-or-resume';
 import { mistakePracticeSummary, openSessionOf, reviewSummary } from './summaries';
 
 function startStatus(isRestoring: boolean, isBusy: boolean): StartStatus {
@@ -15,17 +28,20 @@ function startStatus(isRestoring: boolean, isBusy: boolean): StartStatus {
 }
 
 export function TalkStartRoute() {
-  const {
-    practice,
-    capture,
-    isSessionOpen,
-    startOrResumePractice,
-    startPractice,
-    startMistakePractice,
-    due,
-    firstRun,
-  } = useTrainer();
+  const registry = useContext(RegistryContext);
+  const practiceState = useAtomValue(practiceStateAtom);
+  const practiceError = useAtomValue(practiceErrorAtom);
+  const isBusy = useAtomValue(isSessionBusyAtom);
+  const isSessionOpen = useAtomValue(isSessionOpenAtom);
+  const isRestoring = useAtomValue(isRestoringAtom);
+  const canChangeSession = useAtomValue(canChangeSessionAtom);
+  const due = dueMemory(useAtomValue(learningMemoryAtom));
+  const firstRun = useFirstRunDecision();
   const navigate = useNavigate();
+
+  function startPractice(options?: PracticeOptions) {
+    registry.set(startPracticeAtom, options);
+  }
   const [warmupOptions, setWarmupOptions] = useState<PracticeOptions | null>(null);
   const warmupStarted = useRef(false);
   const warmupAlive = useRef(true);
@@ -62,21 +78,22 @@ export function TalkStartRoute() {
     );
   }
 
-  const isRestoring = practice.state.tag === 'loading';
-  const status = startStatus(isRestoring, practice.isBusy);
-  const session = isSessionOpen ? sessionDetails(practice.state) : undefined;
+  const status = startStatus(isRestoring, isBusy);
+  const session = isSessionOpen ? sessionDetails(practiceState) : undefined;
 
   return (
     <TalkStartScreen
-      error={practice.error}
+      error={practiceError}
       mistakePractice={mistakePracticeSummary(due, {
         isSessionOpen,
-        isAudioBusy: practice.isBusy || !capture.canChangeSession,
-        isStarting: practice.state.tag === 'starting',
+        isAudioBusy: isBusy || !canChangeSession,
+        isStarting: practiceState.tag === 'starting',
       })}
-      onContinue={startOrResumePractice}
+      onContinue={() =>
+        startOrResumePractice(registry, () => void navigate({ to: '/conversation' }))
+      }
       onOpenMemory={() => void navigate({ to: '/memory' })}
-      onPracticeMistakes={() => void startMistakePractice()}
+      onPracticeMistakes={() => registry.set(startMistakePracticeAtom, undefined)}
       onStart={startPractice}
       onStartWarmup={(options) => {
         review.begin('warmup');

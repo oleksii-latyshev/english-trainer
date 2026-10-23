@@ -5,31 +5,19 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import { AppShell } from '@/components/AppShell';
-import { useTrainer } from '@/context/TrainerContext';
 import { FIRST_RUN_PATH } from '@/core/first-run';
-import { sessionDetails } from '@/features/practice/lib/practiceState';
-import { PracticeCompletion } from '@/features/practice/PracticeCompletion';
-import { PracticeView } from '@/features/practice/PracticeView';
-import type { TalkScreenName } from '@/features/practice/TalkScreen';
-import { useSessionClock } from '@/features/practice/useSessionClock';
 import { FirstRunRoute } from '@/routes/first-run';
 import { MemoryRoute } from '@/routes/memory';
 import { MemoryReviewRoute } from '@/routes/memory/review';
 import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
+import { TalkRoute } from '@/routes/talk';
+import { SummaryRoute } from '@/routes/talk/summary';
 import { TalkStartRoute } from '@/routes/talk-start';
 
-function talkScreenLocation(screen: TalkScreenName): { to: string; hash?: string } {
-  if (screen === 'home') return { to: '/' };
-  if (screen === 'settings-microphone') return { to: '/settings', hash: 'microphone' };
-  return { to: `/${screen}` };
-}
-
-// 1. Root route
 export const rootRoute = createRootRoute({
   component: AppShell,
 });
 
-// 2. Route definitions
 export const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -39,64 +27,7 @@ export const indexRoute = createRoute({
 export const conversationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/conversation',
-  component: function ConversationComponent() {
-    const { practice, capture, speech, mic, startPractice } = useTrainer();
-    const navigate = conversationRoute.useNavigate();
-    const session = sessionDetails(practice.state);
-    const isSessionActive =
-      session !== undefined &&
-      (practice.state.tag === 'active' || practice.state.tag === 'waiting') &&
-      (session.practiceMode === 'voice' ||
-        (session.practiceMode === 'text_chat' && session.practicePhase === 'writing') ||
-        (session.practiceMode === 'write_then_speak' &&
-          (session.practicePhase === 'writing' || session.practicePhase === 'speaking')));
-    useSessionClock({
-      sessionId: session?.sessionId,
-      isSessionActive,
-      isMicPaused:
-        session !== undefined &&
-        (session.practiceMode === 'voice' || session.practicePhase === 'speaking') &&
-        mic.status === 'paused',
-      onSnapshot: practice.updateClock,
-      onError: practice.reportClockError,
-    });
-
-    return (
-      <PracticeView
-        actions={{
-          startRecording: capture.startRecording,
-          stopRecording: capture.stopRecording,
-          startAutoListen: capture.startAutoListen,
-          cancelRecording: capture.cancelRecording,
-          holdListening: capture.holdListening,
-          pauseMic: mic.pause,
-          resumeMic: mic.resume,
-          transcribeRecording: capture.transcribeRecording,
-          resetCapture: capture.reset,
-          startPractice,
-          finishPractice: practice.finish,
-          transitionPracticePhase: (phase) => void practice.transitionPhase(phase),
-          handlePracticeTurn: practice.acceptTurn,
-          handleRetryComparison: practice.acceptRetryComparison,
-          isCurrent: () => capture.isCurrentRequest(capture.view.currentRequestId),
-          onTurnPendingChange: practice.onTurnPendingChange,
-        }}
-        key={session?.sessionId ?? 'no-session'}
-        model={{
-          ...capture.view,
-          practice: practice.state,
-          practiceError: practice.error,
-          busy:
-            practice.isBusy ||
-            capture.view.status === 'requesting' ||
-            capture.view.status === 'stopping',
-          canChangeSession: capture.canChangeSession,
-        }}
-        onNavigate={(screen) => void navigate(talkScreenLocation(screen))}
-        speech={speech}
-      />
-    );
-  },
+  component: TalkRoute,
 });
 
 export const memoryRoute = createRoute({
@@ -132,32 +63,9 @@ export const firstRunRoute = createRoute({
 export const summaryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/summary',
-  component: function SummaryComponent() {
-    const { practice } = useTrainer();
-    const navigate = summaryRoute.useNavigate();
-
-    if (practice.state.tag !== 'completed') {
-      return null;
-    }
-
-    return (
-      <PracticeCompletion
-        onDone={() => {
-          practice.dismissSummary();
-          void navigate({ to: '/' });
-        }}
-        onSummaryUpdated={practice.updateSummary}
-        onTalkMore={() => {
-          practice.dismissSummary();
-          void navigate({ to: '/' });
-        }}
-        summary={practice.state.summary}
-      />
-    );
-  },
+  component: SummaryRoute,
 });
 
-// 3. Assemble Route Tree
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   conversationRoute,
@@ -169,7 +77,6 @@ export const routeTree = rootRoute.addChildren([
   summaryRoute,
 ]);
 
-// 4. Create Memory History & Router Singleton
 export const memoryHistory = createMemoryHistory({
   initialEntries: ['/'],
 });
@@ -179,7 +86,6 @@ export const router = createRouter({
   history: memoryHistory,
 });
 
-// Automatically trigger initial route load
 void router.load();
 
 export type AppRouter = typeof router;

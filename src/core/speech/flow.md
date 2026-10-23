@@ -128,15 +128,15 @@ sequenceDiagram
 
 The Whisper client lives in `SpeechRecognition` (and `SpeechRecognitionSettings` for Settings). Both
 call the `speech_recognition` Rust context through `Ipc` and `IpcBinary` (raw WAV body plus headers)
-and decode every answer with the schemas in `core/ipc`. The Promise-based hooks Talk and Memory still
-use live in `app/speech-capture` and only call these services; #26 and #27 delete them.
+and decode every answer with the schemas in `core/ipc`. Talk records and transcribes through `core/answer-capture`, the spoken review through its own
+capture service; both call these services.
 
 ## Transcribe an answer
 
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Hook as useSpeechCapture (app/speech-capture)
+    participant Hook as core/answer-capture
     participant Rec as SpeechRecognition.transcribe
     participant Rust as transcribe_audio
     participant Whisper as whisper-server
@@ -181,7 +181,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Hook as rescue-capture (app/speech-capture)
+    participant Hook as rescueTranscriptAtom (core/answer-capture)
     participant Rescue as rescueTranscript
     participant Cap as Capture.snapshot
     participant Rust as transcribe_rescue

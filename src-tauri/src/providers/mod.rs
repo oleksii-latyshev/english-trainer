@@ -65,6 +65,7 @@ pub enum ReplyStreamEvent {
     Delta { text: String },
 }
 
+#[cfg(test)]
 pub fn generate_configured_turn(
     context: &ConversationContext,
     settings: &AiSettings,
@@ -228,14 +229,16 @@ pub struct CoachedAnswer {
     pub feedback: TurnFeedback,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct TurnFeedback {
     pub focus_feedback: Vec<FocusFeedback>,
     pub b2_rewrite: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export)]
 pub struct AttemptComparison {
     pub turn_sequence: usize,
     pub original_transcript: String,
@@ -246,8 +249,9 @@ pub struct AttemptComparison {
     pub hesitation: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum TargetEvidence {
     AlreadyPresentInBoth,
     NewlyObservedInRetry,
@@ -307,8 +311,9 @@ fn contains_word_sequence(words: &[String], target: &[String]) -> bool {
     !target.is_empty() && words.windows(target.len()).any(|window| window == target)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct FocusFeedback {
     pub category: FocusCategory,
     pub original: String,
@@ -392,8 +397,9 @@ impl ConversationTurn {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum ProviderErrorCode {
     Unavailable,
     Unauthorized,
@@ -408,19 +414,22 @@ pub enum ProviderErrorCode {
     DatabaseError,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum ReplyStage {
     Envelope,
     Schema,
     Content,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export)]
 pub struct ProviderError {
     pub code: ProviderErrorCode,
     pub message: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub reply_stage: Option<ReplyStage>,
 }
 

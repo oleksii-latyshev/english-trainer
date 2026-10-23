@@ -15,7 +15,7 @@ export type NoteTools = {
   sessionId: number;
   /** Answers given so far; the newest answer's note is the one that starts open. */
   turnCount: number;
-  retryEvidence: AttemptComparison[];
+  retryEvidence: readonly AttemptComparison[];
   /** The answer being re-spoken now. */
   secondTrySequence: number | null;
   secondTryStatus: SecondTryStatus;

@@ -255,7 +255,7 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
 
 ### 6.1 Coaching
 
-- **Queue** (`conversation/coaching_queue.rs`): derived from SQLite: answers without a
+- **Queue** (`conversation/service/coaching_queue.rs`): derived from SQLite: answers without a
   `turn_feedback` row and with fewer than 2 failed attempts (`coaching_failures`), so a restart
   resumes it. One worker, one batch at a time. A batch of the oldest waiting answers (at most 5)
   starts when 5 wait, on session finish (`flush`), after 60 s of quiet with anything waiting
