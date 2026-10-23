@@ -115,8 +115,7 @@
         "src/shared/**",
         "!src/features/coach/**",
         "!src/features/conversation/**",
-        "!src/features/practice/**",
-        "!src/app/speech-capture/use-speech-capture.ts"
+        "!src/features/practice/**"
       ],
       "plugins": ["./biome/plugins/function-declarations.grit"],
       "linter": {

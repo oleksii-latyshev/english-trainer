@@ -1,8 +1,34 @@
 use english_trainer_lib::{
     ConversationContext, ConversationTurn, InputSource, PracticeMode, PracticePhase, ProviderError,
-    SessionStore, StartPracticeOptions,
+    ReplyEngine, SessionStore, StartPracticeOptions,
 };
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
+
+struct ScriptedEngine(Vec<ConversationTurn>);
+
+impl ReplyEngine for ScriptedEngine {
+    fn generate(
+        &mut self,
+        context: &ConversationContext,
+        _cancelled: Arc<AtomicBool>,
+    ) -> Result<ConversationTurn, ProviderError> {
+        assert!(!context.opening_question.is_empty());
+        Ok(self.0.remove(0))
+    }
+}
+
+struct UnusedEngine;
+
+impl ReplyEngine for UnusedEngine {
+    fn generate(
+        &mut self,
+        _context: &ConversationContext,
+        _cancelled: Arc<AtomicBool>,
+    ) -> Result<ConversationTurn, ProviderError> {
+        panic!("the replay stage does not call the conversation provider")
+    }
+}
 
 fn temporary_database_path() -> std::path::PathBuf {
     static NEXT_PATH: AtomicUsize = AtomicUsize::new(0);
@@ -37,26 +63,27 @@ fn write_then_speak_runs_through_a_real_database_and_reopens_at_the_saved_phase(
         .unwrap();
     assert_eq!(started.practice_phase, PracticePhase::Writing);
 
+    let mut engine = ScriptedEngine(vec![
+        generated("Original follow-up?"),
+        generated("Later question?"),
+    ]);
     let first = store
-        .send_turn_with_source(
+        .send_turn_with_engine(
             started.session_id,
             "Written response one".into(),
             InputSource::Text,
             None,
-            |context: &ConversationContext| -> Result<ConversationTurn, ProviderError> {
-                assert!(!context.opening_question.is_empty());
-                Ok(generated("Original follow-up?"))
-            },
+            &mut engine,
         )
         .unwrap();
     assert_eq!(first.question.as_deref(), Some("Original follow-up?"));
     store
-        .send_turn_with_source(
+        .send_turn_with_engine(
             started.session_id,
             "Written response two".into(),
             InputSource::Text,
             None,
-            |_| Ok(generated("Later question?")),
+            &mut engine,
         )
         .unwrap();
     store
@@ -66,12 +93,12 @@ fn write_then_speak_runs_through_a_real_database_and_reopens_at_the_saved_phase(
         .transition_practice_phase(started.session_id, PracticePhase::Speaking)
         .unwrap();
     store
-        .send_turn_with_source(
+        .send_turn_with_engine(
             started.session_id,
             "Spoken response one".into(),
             InputSource::Voice,
             Some(1_000),
-            |_| panic!("the replay stage does not call the conversation provider"),
+            &mut UnusedEngine,
         )
         .unwrap();
     drop(store);

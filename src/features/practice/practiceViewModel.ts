@@ -1,26 +1,46 @@
-import type { CaptureView } from '@/app/speech-capture';
+import type { ActualAudioInput, MicrophoneStatus } from '@/core/audio';
+import type { PracticeState } from '@/core/practice-session';
+import type { SpeechTiming, TranscriptionRecovery } from '@/core/speech';
 import type { PracticePhase } from '@/lib/practiceOptions';
-import type { AttemptComparison, ConversationTurn } from '@/lib/types';
-import type { PracticeState } from './lib/practiceState';
+
+export type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'error';
+
+export type RecordingMode = 'manual' | 'auto';
+
+export type CaptureView = {
+  status: RecordingStatus;
+  error: string;
+  elapsedMs: number;
+  durationMs: number;
+  playbackUrl?: string;
+  transcript?: string;
+  transcriptionFailure?: TranscriptionRecovery;
+  transcribing: boolean;
+  timing: SpeechTiming;
+  currentRequestId: number;
+  speechStoppedAtMs?: number;
+  actualInput?: ActualAudioInput;
+  level: number;
+  recordingMode?: RecordingMode;
+  held: boolean;
+  heardSpeech: boolean;
+  liveText: string;
+  micStatus: MicrophoneStatus | 'unmanaged';
+  micError: string;
+};
 
 export type PracticeViewModel = CaptureView & {
   practice: PracticeState;
   practiceError: string;
   busy: boolean;
-  audioLevel?: number;
-  voiceError?: string;
-  canVoiceInterrupt?: boolean;
   canChangeSession: boolean;
 };
 
 export type PracticeActions = {
   startRecording: (discardPreRoll?: boolean) => void;
   stopRecording: () => void;
-  /** Listening that starts by itself after the AI finished speaking. */
   startAutoListen: () => void;
-  /** Abandons listening or recording without sending. */
   cancelRecording: () => void;
-  /** "Keep listening": the turn does not end by silence while held. */
   holdListening: (held: boolean) => void;
   pauseMic: () => void;
   resumeMic: () => void;
@@ -29,8 +49,4 @@ export type PracticeActions = {
   startPractice: () => void;
   finishPractice: () => void;
   transitionPracticePhase: (phase: PracticePhase) => void;
-  handlePracticeTurn: (sessionId: number, turn: ConversationTurn) => void;
-  handleRetryComparison: (sessionId: number, comparison: AttemptComparison) => void;
-  isCurrent: () => boolean;
-  onTurnPendingChange: (isPending: boolean) => void;
 };
