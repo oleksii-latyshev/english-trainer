@@ -1,7 +1,8 @@
 use crate::providers::ProviderError;
 use serde::Serialize;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct WrapupPhrase {
     pub sequence: usize,
     pub phrase: String,
@@ -9,7 +10,8 @@ pub struct WrapupPhrase {
     pub you_said: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct RecurringMistake {
     pub original: String,
     pub improved: String,
@@ -17,8 +19,9 @@ pub struct RecurringMistake {
     pub times: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
 #[serde(tag = "state", rename_all = "snake_case")]
+#[ts(export)]
 pub enum WrapupPreparation {
     Legacy,
     Pending,

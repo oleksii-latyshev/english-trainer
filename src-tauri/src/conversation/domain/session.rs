@@ -9,7 +9,8 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct PracticeSession {
     pub session_id: u64,
     pub opening_question: String,
@@ -49,7 +50,8 @@ impl InputSource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct PracticeDialogue {
     pub session_id: u64,
     pub opening_question: String,
@@ -61,7 +63,8 @@ pub struct PracticeDialogue {
     pub coaching: Vec<TurnCoaching>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct FinishedPracticeSession {
     pub session_id: u64,
     pub finished: bool,
@@ -83,7 +86,8 @@ pub struct FinishedPracticeSession {
     pub is_mistake_practice: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct StoredTurn {
     pub learner: String,
     pub assistant_reply: String,

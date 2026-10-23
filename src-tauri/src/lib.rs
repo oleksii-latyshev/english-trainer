@@ -78,7 +78,8 @@ pub fn run() {
                     conversation::QUOTA_PAUSE,
                     conversation::infra::events::coaching_notifier(handle),
                 )
-                .map_err(|_| {
+                .map_err(|error| {
+                    eprintln!("Could not start the coaching worker thread: {error}");
                     std::io::Error::other("Could not start answer coaching. Restart the app.")
                 })?,
             );
@@ -89,7 +90,8 @@ pub fn run() {
                     providers::generate_session_wrapup,
                     conversation::infra::events::wrapup_notifier(handle),
                 )
-                .map_err(|_| {
+                .map_err(|error| {
+                    eprintln!("Could not start the wrap-up worker thread: {error}");
                     std::io::Error::other(
                         "Could not start session phrase preparation. Restart the app.",
                     )
