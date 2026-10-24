@@ -1,7 +1,11 @@
 import type { Page } from '@playwright/test';
-import type { NativeLanguageSettings, TranslationStatus } from '@/core/ipc';
+import type {
+  NativeLanguageSettings,
+  TextExplanation,
+  TextTranslation,
+  TranslationStatus,
+} from '@/core/ipc';
 import type { TranslationLanguage } from '@/core/translation-settings';
-import type { WordTranslation } from '@/lib/translationTypes';
 
 declare global {
   interface Window {
@@ -66,31 +70,33 @@ export async function installTranslation(
       window.localStorage.setItem('e2e_native_language', nativeLanguage);
       return { native_language: nativeLanguage };
     }
-    async function lookup(args: Record<string, unknown>): Promise<WordTranslation> {
+    async function translate(args: Record<string, unknown>): Promise<TextTranslation> {
       if (needsDownload)
         throw { code: 'download_required', message: 'Prepare languages on this Mac, then retry.' };
       if (failNext) {
         failNext = false;
         throw { code: 'process_failed', message: 'Translation could not finish. Retry this word.' };
       }
-      const word = stringField(args.request, 'word');
-      if (word === seed.delayedWord)
+      const text = stringField(args.request, 'text');
+      if (text === seed.delayedWord)
         await new Promise<void>((resolve) => window.setTimeout(resolve, 800));
       window.__ET_TRANSLATION_DONE__ += 1;
-      const missingExplanation = failExplanation;
-      failExplanation = false;
-      return result(word, missingExplanation);
-    }
-    function result(word: string, missingExplanation: boolean): WordTranslation {
       return {
-        word,
+        text,
         native_language: nativeLanguage,
-        translation: nativeLanguage === 'ru' ? `Перевод: ${word}` : `Meaning: ${word}`,
-        english_explanation: missingExplanation ? null : `A simple English explanation of ${word}.`,
-        explanation_error: missingExplanation
-          ? 'Apple could not explain this word. Retry for an English explanation.'
-          : null,
+        translation: nativeLanguage === 'ru' ? `Перевод: ${text}` : `Meaning: ${text}`,
       };
+    }
+    function explain(args: Record<string, unknown>): TextExplanation {
+      const text = stringField(args.request, 'text');
+      if (failExplanation) {
+        failExplanation = false;
+        throw {
+          code: 'unavailable',
+          message: 'Apple could not explain this phrase. Retry for an English explanation.',
+        };
+      }
+      return { text, english_explanation: `A simple English explanation of ${text}.` };
     }
     const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
       get_speech_settings: () => ({
@@ -141,7 +147,8 @@ export async function installTranslation(
         needsDownload = false;
         return status();
       },
-      translate_word: lookup,
+      translate_text: translate,
+      explain_text: explain,
     };
     window.__TAURI_INTERNALS__.invoke = async (command, args = {}) => {
       const handler = handlers[command];

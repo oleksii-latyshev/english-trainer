@@ -22,6 +22,18 @@ impl SessionStore {
         self.lock().database.save_translation_settings(settings)
     }
 
+    pub fn prepare_explanation_lookup(
+        &self,
+        mut request: TranslationRequest,
+    ) -> Result<PreparedTranslation, TranslationError> {
+        validate_request(&mut request)?;
+        let settings = self.lock().database.translation_settings()?;
+        Ok(PreparedTranslation {
+            request,
+            native_language: settings.native_language,
+        })
+    }
+
     pub fn prepare_translation_lookup(
         &self,
         mut request: TranslationRequest,
@@ -55,7 +67,7 @@ mod tests {
         let store = SessionStore::default();
         let session = store.start().unwrap();
         let invalid = TranslationRequest {
-            word: "two words".to_string(),
+            text: "two words and many more words than the limit allows here ok".to_string(),
             context: String::new(),
         };
         assert_eq!(
@@ -72,7 +84,7 @@ mod tests {
 
         let prepared = store
             .prepare_translation_lookup(TranslationRequest {
-                word: "resilient".to_string(),
+                text: "resilient".to_string(),
                 context: "The system remained resilient.".to_string(),
             })
             .unwrap();

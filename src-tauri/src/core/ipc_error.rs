@@ -21,6 +21,7 @@ pub enum IpcErrorCode {
     NoSpeech,
     ModelMissing,
     EngineMissing,
+    DownloadRequired,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -77,7 +78,9 @@ impl From<IpcErrorCode> for ProviderErrorCode {
             IpcErrorCode::DatabaseError => Self::DatabaseError,
             IpcErrorCode::InvalidAudio => Self::InvalidRequest,
             IpcErrorCode::NoSpeech => Self::InvalidOutput,
-            IpcErrorCode::ModelMissing | IpcErrorCode::EngineMissing => Self::Unavailable,
+            IpcErrorCode::ModelMissing
+            | IpcErrorCode::EngineMissing
+            | IpcErrorCode::DownloadRequired => Self::Unavailable,
         }
     }
 }

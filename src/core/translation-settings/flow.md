@@ -2,7 +2,8 @@
 
 The learner's native language and whether Apple Translation has its language pair on this Mac.
 Read and changed by Settings (`TranslationSettings`); the "Prepare languages" action is also offered
-by the word-translation panel. The word lookup itself (`translate_word`) is not part of this slice.
+by the text-translation panel. The lookup itself (`translate_text`, `explain_text`) lives in
+`features/text-translation`.
 
 ## Read the language and its availability
 

@@ -70,7 +70,7 @@ function TranslationRows({ language }: { language: string }) {
   return (
     <>
       <FormRow
-        description="Selected English words are translated into this language on demand."
+        description="Selected English words and short phrases are translated into this language on demand."
         title="Native language"
       >
         <Select<string>

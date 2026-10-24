@@ -425,34 +425,43 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   sixth answer are rejected; coaching stays asynchronous and Finish works at any point. Practice never
   advances independent-use mastery.
 
-### 7.3 On-demand word translation (F13)
+### 7.3 On-demand word and phrase translation (F13)
 
 - English is the source. A locally persisted native language defaults to `ru`; choices: `ru`, `uk`,
   `de`, `fr`, `es`, `it`, `pt`, `ja`, `ko`, `zh-Hans`, `ar`. Pair support and installed-model status
   come from macOS, not from this list.
 - Commands: `get_translation_settings`, `save_translation_settings(settings)`,
-  `get_translation_status`, `prepare_translation_languages`, `translate_word(request)`. The first four
-  fail with `IpcError`; `translate_word` keeps its own typed error until the word-translation step.
-- `translate_word` takes one English word (up to 64 characters, internal apostrophes/hyphens) and
-  optional surrounding English text (up to 500). Sentences, empty words, non-English letters and unsafe
-  controls are rejected. The selected word and returned language must match the request snapshot.
-- Response: `word`, `native_language`, `translation` (nonblank, up to 300 characters), and either
-  `english_explanation` or `explanation_error` (up to 500). A missing explanation does not discard a
-  translation. Errors are typed with recovery text. Translated text never replaces practice content or
-  enters conversation history.
+  `get_translation_status`, `prepare_translation_languages`, `translate_text(request)`,
+  `explain_text(request)`. All fail with `IpcError` (`download_required` tells the UI to offer
+  "Prepare languages").
+- Both lookup commands take English `text` and optional surrounding English `context` (up to 500).
+  `text` is a word or a short phrase of up to 8 whitespace-separated words and 120 characters; outer
+  punctuation is trimmed, whitespace collapsed, internal punctuation (`,.;:!?"()`, apostrophes,
+  hyphens) kept. Empty text, non-English letters and unsafe controls are rejected. The returned text
+  and language must match the request snapshot.
+- `translate_text` answers `text`, `native_language`, `translation` (nonblank, up to 600 characters).
+  `explain_text` answers `text` and `english_explanation` (up to 500 characters, English). The UI shows
+  the translation as soon as it arrives; the explanation is a separate call that may fail or arrive
+  later without discarding the translation. Translated text never replaces practice content or enters
+  conversation history.
 - `apple-translation` is compiled and signed with the app, separate from `apple-conversation`;
   TranslationSession needs macOS 26+ (earlier: actionable unavailable result); English explanations
   need Apple Intelligence. No Gemini or `agy` call, no API-usage count.
-- One child per operation, bounded input/output and concurrency. Timeouts: status 15 s, lookup 45 s,
-  language preparation 300 s. Failed or timed-out children are reaped. No session/database lock is held
-  during native work.
+- Lookups use two warm helper processes (`apple-translation serve translate` and `serve explain`)
+  that exchange one JSON line per request, start lazily, are warmed at app start, and are killed and
+  replaced after a crash, a timeout or an oversized answer; the explainer never delays a translation.
+  Status checks and language preparation use one child per operation. Bounded input/output.
+  Timeouts: status 15 s, translation 15 s, explanation 30 s, language preparation 300 s. No
+  session/database lock is held during native work. A warm translation takes under 1 s on an M1 Pro.
 - Preparing missing models needs an explicit action (a native SwiftUI window lets macOS ask for
   consent); settings changes never download silently.
 - A valid lookup records cue exposure for the active session before native work (existing help/mastery
   exclusion) and never changes learning rules or scores an answer.
-- Selection alone does no lookup. Talk, notes and Memory share one panel and keyboard path; multiword,
-  editable and unmarked selections are excluded. Requests are invalidated when the word changes, the
-  panel closes or the route changes. Practice audio stays usable.
+- Selection alone does no lookup. A visible "Translate" button appears next to a valid selection;
+  Talk, notes and Memory share one opaque panel and keyboard path; selections that are longer than the
+  bound, editable or unmarked are excluded. Requests are invalidated when the text changes, the panel
+  closes or the route changes, so a stale result never replaces a newer one. Practice audio stays
+  usable.
 
 ## 8. Persistence
 
@@ -643,7 +652,7 @@ Synthetic benchmarks record timings and error categories only, never personal tr
 - Fake providers at the edge: `ENG_TRAINER_AGY_BIN` for `agy`; a fake conversation provider and a
   temporary SQLite database for the pipeline test in `src-tauri/tests/`.
 - Live provider checks are `#[ignore]` and run explicitly with synthetic input only. The bundled
-  translation helper has one such check (`real_bundled_helper_translates_a_word_on_device`; needs
+  translation helper has one such check (`real_bundled_helper_translates_and_explains_a_phrase_on_device`; needs
   macOS 26+, installed English/Russian models and Apple Intelligence; downloads nothing).
 - `bun run verify` runs frontend types/lint/unit tests, Rust format/Clippy/tests and Playwright
   scenarios. `bun run test:e2e` exercises the real UI with typed fixtures at the Tauri IPC boundary and

@@ -38,6 +38,17 @@ fn apple_translation_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
         .map(|path| path.join("binaries/apple-translation"))
 }
 
+fn warm_up_translation(
+    translation: translation::TranslationService,
+    sessions: conversation::SessionStore,
+) {
+    std::thread::spawn(move || {
+        if let Ok(settings) = sessions.translation_settings() {
+            translation.warm_up(&settings.native_language);
+        }
+    });
+}
+
 #[tauri::command]
 fn set_dock_icon(
     app: tauri::AppHandle,
@@ -126,6 +137,7 @@ pub fn run() {
                 translation_settings::SessionLanguageStore::new(sessions.clone()),
                 translation_settings::AppleLanguageAvailability::new(translation.clone()),
             ));
+            warm_up_translation(translation.clone(), sessions.clone());
             app.manage(translation);
             let speech_store = std::sync::Arc::new(speech_recognition::SessionSpeechStore::new(
                 sessions.clone(),
@@ -188,7 +200,8 @@ pub fn run() {
             translation_settings::commands::save_translation_settings,
             translation_settings::commands::get_translation_status,
             translation_settings::commands::prepare_translation_languages,
-            translation::commands::translate_word,
+            translation::commands::translate_text,
+            translation::commands::explain_text,
             setup::commands::get_setup_diagnostics,
             ai_settings::commands::get_ai_settings,
             set_dock_icon,

@@ -11,7 +11,7 @@ async function openMistakes(app: App, memory: MemoryPage) {
   await expect(memory.correctedExample('at university')).toBeVisible();
 }
 
-test('Memory translates one selected word only after an explicit action', async ({
+test('Memory translates a selected word only after an explicit action', async ({
   app,
   memory,
   tauri,
@@ -21,17 +21,17 @@ test('Memory translates one selected word only after an explicit action', async 
   const { translation } = app;
   await translation.select(memory.correctedExample('at university'), 'university');
   await expect(translation.offerFor('university')).toBeVisible();
-  expect(await tauri.calls('translate_word')).toEqual([]);
+  expect(await tauri.calls('translate_text')).toEqual([]);
   await translation.translateSelected('university');
   await expect(translation.text('Перевод: university')).toBeVisible();
   await expect(translation.text('A simple English explanation of university.')).toBeVisible();
-  const requests = await tauri.calls('translate_word');
+  const requests = await tauri.calls('translate_text');
   expect(requests).toHaveLength(1);
-  expect(requests[0]?.args.request).toMatchObject({ word: 'university' });
+  expect(requests[0]?.args.request).toMatchObject({ text: 'university' });
   expect(await tauri.speech.counts()).toEqual(noAudio);
 });
 
-test('multiword and unmarked selections do not offer contextual translation', async ({
+test('a selected phrase is translated whole and unmarked text offers nothing', async ({
   app,
   memory,
   tauri,
@@ -40,10 +40,32 @@ test('multiword and unmarked selections do not offer contextual translation', as
   await openMistakes(app, memory);
   const { translation } = app;
   await translation.select(memory.correctedExample('at university'), 'at university');
-  await expect(translation.anyOffer).toHaveCount(0);
+  await expect(translation.offerFor('at university')).toBeVisible();
+  expect(await tauri.calls('translate_text')).toEqual([]);
+  await translation.translateSelected('at university');
+  await expect(translation.text('Перевод: at university')).toBeVisible();
+  await expect(translation.text('A simple English explanation of at university.')).toBeVisible();
+  await translation.close();
   await translation.select(memory.mistakePracticeHeading, 'Practice');
   await expect(translation.anyOffer).toHaveCount(0);
-  expect(await tauri.calls('translate_word')).toEqual([]);
+  expect(await tauri.calls('translate_text')).toHaveLength(1);
+});
+
+test('a whole sentence of up to eight words can be translated from Talk', async ({
+  app,
+  start,
+  tauri,
+}) => {
+  tauri.session.withOpenSession(wordSession, wordDialogue);
+  await app.open();
+  await start.continueSession();
+  const { translation } = app;
+  const sentence = 'Which useful tool helps you plan your projects';
+  await translation.select(app.exactText(wordSession.opening_question), sentence);
+  await translation.translateSelected(sentence);
+  await expect(translation.text(`Перевод: ${sentence}`)).toBeVisible();
+  const requests = await tauri.calls('translate_text');
+  expect(requests[0]?.args.request).toMatchObject({ text: sentence });
 });
 
 test('Talk and inline coaching share local word lookup without sending answers', async ({
@@ -71,7 +93,7 @@ test('Talk and inline coaching share local word lookup without sending answers',
   expect(await tauri.speech.counts()).toEqual(noAudio);
 });
 
-test('keyboard lookup rejects sentences and retries provider errors', async ({
+test('keyboard lookup accepts a phrase, rejects long text and retries provider errors', async ({
   app,
   memory,
   tauri,
@@ -81,13 +103,15 @@ test('keyboard lookup rejects sentences and retries provider errors', async ({
   await openMistakes(app, memory);
   const { translation } = app;
   await translation.open();
-  await translation.submitWithKeyboard('two words');
-  await expect(translation.alert).toContainText('one English word');
-  expect(await tauri.calls('translate_word')).toEqual([]);
+  await translation.submitWithKeyboard('one two three four five six seven eight nine');
+  await expect(translation.alert).toContainText('short phrase');
+  expect(await tauri.calls('translate_text')).toEqual([]);
   await translation.submitWithKeyboard('useful');
   await expect(translation.alert).toContainText('Translation could not finish');
   await translation.retryButton.click();
   await expect(translation.text('Перевод: useful')).toBeVisible();
+  await translation.submitWithKeyboard('take it for granted');
+  await expect(translation.text('Перевод: take it for granted')).toBeVisible();
   await translation.dismissWithKeyboard();
   await expect(translation.dialog).toHaveCount(0);
 });
@@ -177,7 +201,7 @@ test('an unavailable English explanation preserves the translation and can be re
   await translation.lookUp('useful');
   await expect(translation.text('Перевод: useful')).toBeVisible();
   await expect(
-    translation.text('Apple could not explain this word. Retry for an English explanation.'),
+    translation.text('Apple could not explain this phrase. Retry for an English explanation.'),
   ).toBeVisible();
   await translation.explanationRetryButton.click();
   await expect(translation.text('A simple English explanation of useful.')).toBeVisible();

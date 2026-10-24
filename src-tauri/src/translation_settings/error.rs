@@ -22,9 +22,8 @@ impl From<TranslationErrorCode> for IpcErrorCode {
             TranslationErrorCode::InvalidRequest | TranslationErrorCode::UnsupportedLanguage => {
                 Self::InvalidRequest
             }
-            TranslationErrorCode::Unavailable | TranslationErrorCode::DownloadRequired => {
-                Self::Unavailable
-            }
+            TranslationErrorCode::Unavailable => Self::Unavailable,
+            TranslationErrorCode::DownloadRequired => Self::DownloadRequired,
             TranslationErrorCode::Busy => Self::Busy,
             TranslationErrorCode::Timeout => Self::Timeout,
             TranslationErrorCode::ProcessFailed => Self::ProcessFailed,
@@ -78,7 +77,7 @@ mod tests {
         let failure = TranslationError::new(TranslationErrorCode::DownloadRequired, "Prepare it.");
         assert_eq!(
             IpcError::from(TranslationSettingsError::Availability(failure)),
-            IpcError::new(IpcErrorCode::Unavailable, "Prepare it.")
+            IpcError::new(IpcErrorCode::DownloadRequired, "Prepare it.")
         );
     }
 }

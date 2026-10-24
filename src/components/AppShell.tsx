@@ -9,6 +9,7 @@ import { type MicrophoneStatus, microphoneSnapshotAtom } from '@/core/audio';
 import { FIRST_RUN_PATH } from '@/core/first-run';
 import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
 import { isSessionBusyAtom, isSessionOpenAtom, practiceStateAtom } from '@/core/practice-session';
+import { isTranslatablePath, TranslationLayer } from '@/features/text-translation';
 import { startOrResumePractice } from '@/routes/talk/start-or-resume';
 import {
   activeSettingsSection,
@@ -19,7 +20,6 @@ import {
 } from '@/screens/settings';
 import { NavItem } from '@/shared/ui/nav-item';
 import { micStatusBox } from './lib/micStatusBox';
-import { WordTranslationLayer } from './WordTranslationLayer';
 
 type NavEntry = {
   path: string;
@@ -161,7 +161,7 @@ export function AppShell() {
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-8 pb-16 max-rail:px-4 max-rail:pt-6 max-rail:pb-12 fills-screen:flex fills-screen:flex-col fills-screen:overflow-hidden fills-screen:p-0 sm:px-8 xl:px-12">
         <Outlet />
       </main>
-      <WordTranslationLayer />
+      {isTranslatablePath(currentPath) && <TranslationLayer key={currentPath} />}
     </div>
   );
 }

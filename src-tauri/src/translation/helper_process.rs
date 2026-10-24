@@ -1,4 +1,4 @@
-use super::domain::{TranslationError, TranslationErrorCode, TranslationRequest};
+use super::domain::{TranslationError, TranslationErrorCode};
 use serde::Serialize;
 use std::io::{Read, Write};
 use std::process::{Child, Command, Stdio};
@@ -10,16 +10,15 @@ const MAX_STDOUT_BYTES: usize = 16 * 1024;
 pub(super) struct HelperOperation<'a> {
     pub(super) operation: &'a str,
     pub(super) native_language: &'a str,
-    pub(super) request: Option<&'a TranslationRequest>,
     pub(super) timeout: Duration,
 }
 
 #[derive(Serialize)]
-struct HelperRequest<'a> {
-    operation: &'a str,
-    native_language: &'a str,
-    word: &'a str,
-    context: &'a str,
+pub(super) struct HelperRequest<'a> {
+    pub(super) operation: &'a str,
+    pub(super) native_language: &'a str,
+    pub(super) text: &'a str,
+    pub(super) context: &'a str,
 }
 
 pub(super) fn run_helper(
@@ -29,14 +28,8 @@ pub(super) fn run_helper(
     let input = serde_json::to_vec(&HelperRequest {
         operation: operation.operation,
         native_language: operation.native_language,
-        word: operation
-            .request
-            .map(|request| request.word.as_str())
-            .unwrap_or_default(),
-        context: operation
-            .request
-            .map(|request| request.context.as_str())
-            .unwrap_or_default(),
+        text: "",
+        context: "",
     })
     .map_err(|_| invalid_output())?;
     if input.len() > MAX_STDIN_BYTES {
@@ -111,26 +104,26 @@ pub(super) fn run_helper(
     }
 }
 
-struct ReapOnDrop {
-    child: Child,
+pub(super) struct ReapOnDrop {
+    pub(super) child: Child,
     reaped: bool,
 }
 
 impl ReapOnDrop {
-    fn new(child: Child) -> Self {
+    pub(super) fn new(child: Child) -> Self {
         Self {
             child,
             reaped: false,
         }
     }
 
-    fn try_wait(&mut self) -> std::io::Result<Option<std::process::ExitStatus>> {
+    pub(super) fn try_wait(&mut self) -> std::io::Result<Option<std::process::ExitStatus>> {
         let status = self.child.try_wait()?;
         self.reaped |= status.is_some();
         Ok(status)
     }
 
-    fn terminate(&mut self) {
+    pub(super) fn terminate(&mut self) {
         if !self.reaped {
             let _ = self.child.kill();
             let _ = self.child.wait();
@@ -171,14 +164,14 @@ fn wait_for_exit(
     }
 }
 
-fn invalid_output() -> TranslationError {
+pub(super) fn invalid_output() -> TranslationError {
     TranslationError::new(
         TranslationErrorCode::InvalidOutput,
         "The translation helper returned invalid data. Please retry.",
     )
 }
 
-fn process_failed() -> TranslationError {
+pub(super) fn process_failed() -> TranslationError {
     TranslationError::new(
         TranslationErrorCode::ProcessFailed,
         "The translation helper failed to complete the request. Please retry.",

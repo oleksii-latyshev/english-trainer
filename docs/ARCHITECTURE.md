@@ -27,7 +27,7 @@ How the running system is shaped. Numbers, limits and error codes live in
 │ audio/         WAV validation, local Whisper                              │
 │ voice/         local natural voice (Supertonic 3 helper)                  │
 │ providers/     conversation engines, batch coaching, UsageReviewEngine    │
-│ translation/   on-device word lookup and bundled helper control           │
+│ translation/   on-device word and phrase lookup and bundled helper control           │
 │ setup/         diagnostics for local dependencies                         │
 └───────┬───────────────────────────┬──────────────────────────────────────┘
         │                           │
@@ -123,7 +123,7 @@ sequenceDiagram
 | `ReviewMaterialEngine` | One situation and model sentence per due review item | `agy`, `gemini-3.8-flash-high` |
 | Mistake-practice planner | Five questions from recurring mistakes | `agy`, background tier |
 | `UsageReviewEngine` | Semantic check of phrase use (frozen subsystem) | `agy` (Gemini API when touched) |
-| Word lookup | Native-language word + English explanation | Bundled one-shot Swift helper `apple-translation` (macOS Translation + local Foundation Models) |
+| Word and phrase lookup | Native-language translation + English explanation | Bundled Swift helper `apple-translation`, warm `serve` processes for lookups (macOS Translation + local Foundation Models) |
 
 Rules:
 

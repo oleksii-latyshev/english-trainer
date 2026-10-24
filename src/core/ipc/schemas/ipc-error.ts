@@ -20,6 +20,7 @@ export const IpcErrorCodeSchema = bindingSchema<IpcErrorCode>()(
     'no_speech',
     'model_missing',
     'engine_missing',
+    'download_required',
   ]),
 );
 
