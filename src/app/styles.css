@@ -290,9 +290,6 @@ h4 {
   width: 6px;
   height: 6px;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
 ::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--et-fg) 14%, transparent);
   border-radius: 9999px;
