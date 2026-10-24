@@ -105,7 +105,7 @@ export function updatePracticeClock(
     activeDurationMs: session.active_duration_ms,
     startedAt: session.started_at,
     isClockRunning: session.is_clock_running,
-    isMistakePractice: session.is_mistake_practice ?? current.isMistakePractice,
+    isMistakePractice: session.is_mistake_practice,
     clockSnapshotAtMs: nowMs,
   };
 }
