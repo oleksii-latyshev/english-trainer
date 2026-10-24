@@ -15,20 +15,23 @@ sequenceDiagram
     participant Legacy as features/practice (legacy)
 
     Learner->>Route: opens /conversation
-    Route->>Screen: slots (help bar, Stuck panel, coaching notes, recall, replay prompt, review stage)
+    Route->>Screen: slots (help bar, Stuck panel, recall, replay prompt, review stage)
     Screen->>Session: header, clock, Pause, Finish
     Screen->>Composer: Eva's stage, composer, live transcript
     Screen->>Dialogue: messages, streaming reply
-    Dialogue-->>Legacy: a render function for the note under each answer
+    Dialogue-->>Learner: a quiet tip marker beside each answer, never a note
     Composer-->>Legacy: Stuck panel beside the microphone, help bar above the composer
     Note over Screen,Legacy: no open session shows the start prompt; review phases hand the screen to the review stage
 ```
+
+Coaching never appears in the chat: each answer gets a quiet marker, and the review of every answer
+lives on the wrap-up screen (`features/coaching-note`, composed by `routes/talk/summary`). The
+write-then-speak review stage also renders `AnswerReview` from that feature.
 
 Slots still filled by legacy components, and the issue that migrates each one:
 
 | Slot | Legacy component | Issue |
 | :--- | :--- | :--- |
-| coaching note under an answer, second try | `AnswerNote`, `SecondTryBox`, `features/coach` | #75 |
 | help bar, planning timer | `HelpBar`, `GuidedAnswerPanel`, `PlanningTimer` | #76 |
 | Stuck panel | `RescuePanel` | #77 |
 | spoken phrase recall, usage review, wrap-up | `DailyRecallPanel`, `MemoryUsageReview`, `PracticeCompletion` | #78 |

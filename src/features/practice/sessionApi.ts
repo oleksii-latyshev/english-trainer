@@ -3,7 +3,6 @@ import { refreshLearningMemory } from '@/core/learning-memory';
 import {
   type DailyRecallPlan,
   type FinishedPracticeSession,
-  isAttemptComparison,
   isDailyRecallPlan,
   isFinishedPracticeSession,
   isSpokenRecallResult,
@@ -27,11 +26,6 @@ export async function submitDailyRecall(
     throw new Error('Unexpected spoken recall response.');
   }
   return result;
-}
-
-/** Gives an answer that could not be checked another try and resumes paused coaching. */
-export async function retryAnswerCoaching(sessionId: number, sequence: number): Promise<void> {
-  await invoke<void>('retry_answer_coaching', { sessionId, sequence });
 }
 
 /** The wrap-up of a finished session as it stands now, after more coaching landed. */
@@ -58,16 +52,6 @@ export async function saveWrapupPhrases(
     throw new Error('Unexpected saved session phrases response.');
   }
   refreshLearningMemory();
-  return result;
-}
-
-export async function retryPracticeTurn(sessionId: number, sequence: number, transcript: string) {
-  const result = await invoke<unknown>('retry_practice_turn', {
-    sessionId,
-    sequence,
-    transcript,
-  });
-  if (!isAttemptComparison(result)) throw new Error('Unexpected retry comparison response.');
   return result;
 }
 

@@ -16,8 +16,8 @@
 - macOS-first Tauri v2 app. React/TypeScript owns UI and audio controls; Rust owns sessions,
   providers, persistence, metrics and learning decisions. IPC types are generated from Rust (ts-rs)
   and decoded with Effect Schema.
-- Preserve the core loop: speak → fast AI reply → inline rephrasing → speak again → remember and
-  review. The conversation never waits for coaching or help. Practice content is English only.
+- Preserve the core loop: speak → fast AI reply → speak again → a review of every answer after the
+  conversation → remember and review. The conversation never waits for coaching or help. Practice content is English only.
 - Local STT and local SQLite are defaults. Discard raw audio after transcription unless the user
   enables retention. Ambient prompts and notifications are opt-in.
 - Real-time AI providers are Apple Foundation Models (bundled helper) and the Gemini API;

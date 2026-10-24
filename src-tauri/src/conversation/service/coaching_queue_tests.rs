@@ -260,7 +260,15 @@ fn finishing_flushes_coaching_without_completing_independent_phrase_preparation(
         crate::conversation::domain::WrapupPreparation::Pending
     );
     assert_eq!(later.turn_count, 2);
-    assert!(fixture.store.dialogue(session.session_id).is_err());
+    assert_eq!(
+        fixture
+            .store
+            .dialogue(session.session_id)
+            .unwrap()
+            .turns
+            .len(),
+        2
+    );
 }
 
 #[test]

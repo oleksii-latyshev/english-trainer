@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { highlightRewrite } from './rewriteDiff';
+import { highlightRewrite } from '.';
 
 function changedText(original: string, rewrite: string): string[] {
   return highlightRewrite(original, rewrite)

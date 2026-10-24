@@ -13,7 +13,7 @@ silently. Light boards exist for Talk and Start; the other screens follow their 
 
 1. **Voice first.** The microphone state is the most visible thing on screen; typing is secondary.
 2. **One next step.** At any moment one action is obvious: listen, speak or continue.
-3. **The conversation never waits for coaching.** Feedback arrives later, quietly, under its answer.
+3. **The conversation never waits for coaching.** Feedback arrives later, quietly: a marker in Talk, the full review on the wrap-up.
 4. **Graduated help.** Frame → phrases → example, each step more revealing.
 5. **Calm, not gamified.** No streak pressure, no red failure states for language mistakes;
    mistakes read as "More natural: …", never as errors. Growth is a reward, never a punishment.

@@ -14,21 +14,32 @@ use std::time::Instant;
 impl SessionStore {
     pub fn dialogue(&self, session_id: u64) -> Result<PracticeDialogue, ConversationError> {
         let state = self.lock();
-        let session = state
+        let (opening_question, turns) = match state
             .active
             .as_ref()
             .filter(|session| session.id == session_id)
-            .ok_or(ConversationError::InvalidSession)?;
+        {
+            Some(active) => (active.opening_question.clone(), active.turns.clone()),
+            None => (
+                state
+                    .database
+                    .session_metadata(session_id)?
+                    .ok_or(ConversationError::InvalidSession)?
+                    .opening_question,
+                state.database.turns(session_id)?,
+            ),
+        };
         let details = state.database.turn_details(session_id)?;
+        let coaching = self.turn_coaching(&state, session_id, turns.len())?;
         Ok(PracticeDialogue {
             session_id,
-            opening_question: session.opening_question.clone(),
-            turns: session.turns.clone(),
+            opening_question,
             input_sources: state.database.turn_input_sources(session_id)?,
             reply_times_ms: details.iter().map(|turn| turn.reply_ms).collect(),
             answer_durations_ms: details.iter().map(|turn| turn.answer_duration_ms).collect(),
             help_used: details.iter().map(|turn| turn.help_used).collect(),
-            coaching: self.turn_coaching(&state, session_id, session.turns.len())?,
+            coaching,
+            turns,
         })
     }
 

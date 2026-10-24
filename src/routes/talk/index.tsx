@@ -2,7 +2,6 @@ import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useContext } from 'react';
 import {
-  acceptRetryComparison,
   canSendPracticeStage,
   practiceKeepsMicrophoneWarm,
   practiceStageIsWriting,
@@ -12,27 +11,20 @@ import {
 } from '@/core/practice-session';
 import { acceptedAnswerAtom, setPlanning } from '@/core/practice-turn';
 import { useSpeech } from '@/core/speech';
-import { AnswerNote, type NoteTools } from '@/features/practice/AnswerNote';
+import { cancelSayAgain, sayAgainActiveAtom } from '@/features/coaching-note';
 import { HelpBar } from '@/features/practice/HelpBar';
 import { OriginalQuestionPrompt } from '@/features/practice/OriginalQuestionPrompt';
 import { PracticeReview } from '@/features/practice/PracticeReview';
 import { RescuePanel } from '@/features/practice/RescuePanel';
-import { useAnswerNotes } from '@/features/practice/useAnswerNotes';
 import { useDailyRecall } from '@/features/practice/useDailyRecall';
-import { useSecondTry } from '@/features/practice/useSecondTry';
 import { useTurn } from '@/features/talk-composer';
-import {
-  type DialogueMessage,
-  HISTORY_FAILED_MESSAGE,
-  useDialogue,
-} from '@/features/talk-dialogue';
-import { isTurnCoaching } from '@/lib/coachingTypes';
+import { HISTORY_FAILED_MESSAGE, useDialogue } from '@/features/talk-dialogue';
 import { isPracticeDialogue } from '@/lib/dialogueTypes';
 import { TalkScreen } from '@/screens/talk';
 import { rescueCaptureOf } from './rescue-capture';
 import { TalkExtras } from './talk-extras';
 import { useHelp } from './use-help';
-import { usePracticeActions, usePracticeModel, useRawCaptureActions } from './use-practice-model';
+import { usePracticeActions, usePracticeModel } from './use-practice-model';
 import { useCancelOnStageChange, useTurnLock } from './use-turn-lock';
 import '@/features/practice/talkCards.css';
 import '@/features/practice/talkComposer.css';
@@ -47,7 +39,7 @@ function lockReason(
   isMistakePractice: boolean,
 ): string | undefined {
   if (isRecalling) return 'Spoken phrase recall is in progress above.';
-  if (isRetrying) return 'Re-speaking in progress. Say it again in the note above, or cancel it.';
+  if (isRetrying) return 'Re-speaking in progress. Finish or cancel it in the review.';
   if (!isStageLocked) return undefined;
   return isMistakePractice
     ? 'Practice complete. Finish when you are ready.'
@@ -65,66 +57,33 @@ function canHelp(session: SessionDetails | undefined, isOccupied: boolean): bool
   return session.question !== '' && !isOccupied;
 }
 
-function renderAnswerNote(noteTools: NoteTools | null, message: DialogueMessage): ReactNode {
-  if (!noteTools || message.sequence === undefined || !isTurnCoaching(message.coaching)) {
-    return null;
-  }
-  return (
-    <AnswerNote
-      coaching={message.coaching}
-      sequence={message.sequence}
-      tools={noteTools}
-      transcript={message.text}
-    />
-  );
-}
-
 function hasRescue(session: SessionDetails): boolean {
   if (session.isMistakePractice || session.practiceMode === 'text_chat') return false;
   return session.practiceMode !== 'write_then_speak' || session.practicePhase === 'speaking';
 }
 
+function useVoiceAvailability() {
+  useSpeech();
+}
+
 export function TalkRoute() {
+  useVoiceAvailability();
   const registry = useContext(RegistryContext);
   const navigate = useNavigate();
-  const speech = useSpeech();
   const model = usePracticeModel();
   const session = sessionDetails(model.practice);
   const turn = useTurn();
   const history = useDialogue();
   const dialogue = isPracticeDialogue(history.dialogue) ? history.dialogue : null;
-  const raw = useRawCaptureActions();
   const recall = useDailyRecall(recallSessionOf(session));
-  const secondTry = useSecondTry({
-    sessionId: session?.sessionId,
-    transcript: model.transcript,
-    currentRequestId: model.currentRequestId,
-    onCompared: (sessionId, comparison) => acceptRetryComparison(registry, sessionId, comparison),
-    resetCapture: raw.resetCapture,
-    startRecording: raw.startRecording,
-  });
-  const isRetrying = secondTry.sequence !== null;
-  const actions = usePracticeActions({
-    isRetrying,
-    startRetry: () => {
-      if (secondTry.sequence !== null) secondTry.start(secondTry.sequence);
-    },
-  });
+  const isRetrying = useAtomValue(sayAgainActiveAtom);
+  const actions = usePracticeActions();
 
   useTurnLock(registry, recall.active || isRetrying);
-  useCancelOnStageChange(session, secondTry.cancel);
+  useCancelOnStageChange(session, () => cancelSayAgain(registry));
 
   const isHelpAvailable = canHelp(session, isRetrying || recall.active);
   const help = useHelp({ session, captureStatus: model.status, isHelpAvailable });
-  const { noteTools, isPhraseSaved } = useAnswerNotes({
-    session,
-    dialogue,
-    secondTry,
-    model,
-    actions,
-    speech,
-    retryHistory: history.retry,
-  });
   const accepted = useAtomValue(acceptedAnswerAtom);
   const sentAnswer =
     accepted?.requestId === model.currentRequestId &&
@@ -190,7 +149,6 @@ export function TalkRoute() {
       dialogue={dialogue}
       historyError={history.hasFailed ? HISTORY_FAILED_MESSAGE : ''}
       model={model}
-      noteTools={noteTools}
       onRetryHistory={history.retry}
       session={session}
     />
@@ -215,11 +173,10 @@ export function TalkRoute() {
           ? lockReason(recall.active, isRetrying, isStageLocked, session.isMistakePractice)
           : undefined
       }
-      moodExtras={{ isPhraseSaved, isHelpOpen: help.helpLevel !== null }}
+      moodExtras={{ isPhraseSaved: false, isHelpOpen: help.helpLevel !== null }}
       onChooseMicrophone={() => void navigate({ to: '/settings', hash: 'microphone' })}
       onOpenSettings={() => void navigate({ to: '/settings' })}
       onStartPractice={() => registry.set(startPracticeAtom, undefined)}
-      renderNote={(message) => renderAnswerNote(noteTools, message)}
       replayPrompt={replayPrompt}
       rescueControl={rescueControl}
       reviewStage={reviewStage}

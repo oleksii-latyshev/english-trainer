@@ -1,10 +1,10 @@
+import { useAtomValue } from '@effect/atom-react';
 import type { SessionDetails } from '@/core/practice-session';
+import { AnswerReview, sayAgainActiveAtom } from '@/features/coaching-note';
 import type { TurnCoaching } from '@/lib/coachingTypes';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { PracticePhase } from '@/lib/practiceOptions';
 import { Button } from '@/shared/ui/button';
-import type { NoteTools } from './AnswerNote';
-import { AnswerNote } from './AnswerNote';
 import type { PracticeActions, PracticeViewModel } from './practiceViewModel';
 import './practiceReview.css';
 
@@ -14,7 +14,6 @@ type Props = {
   historyError: string;
   model: PracticeViewModel;
   actions: PracticeActions;
-  noteTools: NoteTools | null;
   onRetryHistory: () => void;
 };
 
@@ -30,37 +29,31 @@ function CoachingStatus({ state }: { state: TurnCoaching | undefined }) {
 }
 
 function AnswerCard({
+  sessionId,
   sequence,
   label,
   question,
   dialogue,
-  noteTools,
 }: {
+  sessionId: number;
   sequence: number;
   label: string;
   question: string;
   dialogue: PracticeDialogue | null;
-  noteTools: NoteTools | null;
 }) {
   const index = sequence - 1;
   const turn = dialogue?.turns[index];
   if (!turn?.learner.trim()) return null;
   const coaching = dialogue?.coaching?.[index];
-  const olderPausedFeedback =
-    coaching?.state === 'paused' && noteTools?.latestPausedSequence !== sequence;
   return (
     <article className="practice-review-answer">
       <div className="practice-review-answer-label">{label}</div>
       {question && <p className="practice-review-question">{question}</p>}
       <p className="practice-review-answer-text">{turn.learner}</p>
-      {olderPausedFeedback ? (
-        <CoachingStatus state={coaching} />
-      ) : coaching && noteTools ? (
-        <AnswerNote
+      {coaching ? (
+        <AnswerReview
           coaching={coaching}
-          isPinnedOpen
-          sequence={sequence}
-          tools={noteTools}
+          target={{ sessionId, sequence }}
           transcript={turn.learner}
         />
       ) : (
@@ -71,20 +64,20 @@ function AnswerCard({
 }
 
 function AnswerRange({
+  sessionId,
   title,
   start,
   end,
   label,
   dialogue,
-  noteTools,
   writtenEnd,
 }: {
+  sessionId: number;
   title: string;
   start: number;
   end: number;
   label: (sequence: number) => string;
   dialogue: PracticeDialogue | null;
-  noteTools: NoteTools | null;
   writtenEnd: number;
 }) {
   const sequences = Array.from(
@@ -118,8 +111,8 @@ function AnswerRange({
           key={sequence}
           label={label(sequence)}
           question={questionForSequence(dialogue, sequence, writtenEnd)}
-          noteTools={noteTools}
           sequence={sequence}
+          sessionId={sessionId}
         />
       ))}
       {dialogue && sequences.every((sequence) => !dialogue.turns[sequence - 1]?.learner.trim()) && (
@@ -163,7 +156,6 @@ export function PracticeReview({
   historyError,
   model,
   actions,
-  noteTools,
   onRetryHistory,
 }: Props) {
   const copy = phaseCopy(session.practicePhase);
@@ -174,7 +166,7 @@ export function PracticeReview({
   const spokenStart = writtenEnd + 1;
   const spokenEnd = writtenEnd + session.spokenTurnCount;
   const canMoveToSpeaking = isWritingReview && session.practiceMode === 'write_then_speak';
-  const isRetrying = noteTools !== null && noteTools.secondTrySequence !== null;
+  const isRetrying = useAtomValue(sayAgainActiveAtom);
 
   return (
     <section aria-label={copy.title} className="practice-review">
@@ -218,7 +210,7 @@ export function PracticeReview({
             dialogue={dialogue}
             end={writtenEnd}
             label={(sequence) => `Written answer ${sequence}`}
-            noteTools={noteTools}
+            sessionId={session.sessionId}
             start={writtenStart}
             title="Written answers"
             writtenEnd={writtenEnd}
@@ -229,7 +221,7 @@ export function PracticeReview({
             dialogue={dialogue}
             end={spokenEnd}
             label={(sequence) => `Spoken answer ${sequence - writtenEnd}`}
-            noteTools={noteTools}
+            sessionId={session.sessionId}
             start={spokenStart}
             title="Spoken answers"
             writtenEnd={writtenEnd}

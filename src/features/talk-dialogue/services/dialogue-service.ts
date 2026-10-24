@@ -1,5 +1,6 @@
 import { Context, Effect, Layer, Stream } from 'effect';
 import {
+  COACHING_UPDATED_EVENT,
   CoachingUpdatedSchema,
   Ipc,
   IpcDecodeError,
@@ -8,8 +9,6 @@ import {
   PracticeDialogueSchema,
 } from '@/core/ipc';
 import type { DialogueFailure, PracticeDialogue } from '../types';
-
-export const COACHING_UPDATED_EVENT = 'coaching-updated';
 
 type DialogueServiceShape = {
   readonly read: (sessionId: number) => Effect.Effect<PracticeDialogue, DialogueFailure>;

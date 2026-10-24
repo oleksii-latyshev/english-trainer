@@ -2,7 +2,7 @@ import { ArrowDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
-import { buildDialogueMessages, type DialogueMessage } from '../../helpers/dialogue-messages';
+import { buildDialogueMessages } from '../../helpers/dialogue-messages';
 import { useDialogue, useReplay } from '../../model/use-dialogue';
 import { useFollow } from '../../model/use-follow';
 import { EvaMessage } from '../eva-message';
@@ -14,11 +14,10 @@ export const HISTORY_FAILED_MESSAGE = 'Could not refresh dialogue history.';
 type Props = {
   currentQuestion: string | undefined;
   canReplay: boolean;
-  renderNote?: (message: DialogueMessage) => ReactNode;
   children?: ReactNode;
 };
 
-export function Dialogue({ currentQuestion, canReplay, renderNote, children }: Props) {
+export function Dialogue({ currentQuestion, canReplay, children }: Props) {
   const { dialogue, hasFailed, pendingReply, retry } = useDialogue();
   const replay = useReplay();
   const messages = buildDialogueMessages(dialogue, currentQuestion);
@@ -56,7 +55,7 @@ export function Dialogue({ currentQuestion, canReplay, renderNote, children }: P
                 onPlaySpeech={canReplay ? replay : undefined}
               />
             ) : (
-              <LearnerMessage key={message.id} message={message} note={renderNote?.(message)} />
+              <LearnerMessage key={message.id} message={message} />
             ),
           )}
           {pendingReply === '' && <Thinking />}

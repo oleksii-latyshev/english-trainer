@@ -11,12 +11,9 @@ type Props = {
   kicker: string;
   /** What to say: a recall cue or the stronger version to re-speak. */
   cue: string;
-  surface: 'recall' | 'retry';
-  isRetrying?: boolean;
+  surface: 'recall';
   /** Recording is locked while an attempt is being saved or shown. */
   isLocked?: boolean;
-  /** Sits inside another card (the coaching note) instead of being a card itself. */
-  isEmbedded?: boolean;
 };
 
 function formatDuration(durationMs: number): string {
@@ -50,32 +47,14 @@ function transcribeButtonLabel(
   return failure ? 'Retry transcription' : 'Transcribe';
 }
 
-function recordButtonLabel(
-  status: RecordingStatus,
-  hasTranscript: boolean,
-  isRetrying: boolean,
-): string {
-  if (isRetrying) {
-    if (status === 'error') return 'Try recording retry again';
-    if (status === 'ready' || hasTranscript) return 'Record retry again';
-    return 'Start re-speaking';
-  }
+function recordButtonLabel(status: RecordingStatus, hasTranscript: boolean): string {
   if (status === 'error') return 'Try recording again';
   if (status === 'ready' || hasTranscript) return 'Record again';
   return 'Start recording';
 }
 
 /** Manual record, stop and transcribe for the surfaces that do not use the voice-first composer. */
-export function ManualRecorder({
-  model,
-  actions,
-  kicker,
-  cue,
-  surface,
-  isRetrying = false,
-  isLocked = false,
-  isEmbedded = false,
-}: Props) {
+export function ManualRecorder({ model, actions, kicker, cue, surface, isLocked = false }: Props) {
   const { status, error, elapsedMs, durationMs, playbackUrl, transcript, transcribing } = model;
   const isRecording = status === 'recording';
   const isWaiting = model.practice.tag === 'waiting';
@@ -83,7 +62,7 @@ export function ManualRecorder({
   const playbackId = `${surface}-recording-playback`;
 
   return (
-    <section aria-label={kicker} className={isEmbedded ? 'talk-card talk-embedded' : 'talk-card'}>
+    <section aria-label={kicker} className="talk-card">
       <div className="talk-card-label" data-tone="accent">
         {kicker}
       </div>
@@ -92,11 +71,7 @@ export function ManualRecorder({
         <MicButton
           icon={isRecording ? 'stop' : 'mic'}
           isDisabled={!isRecording && (model.busy || transcribing || isWaiting || isLocked)}
-          name={
-            isRecording
-              ? 'Stop recording'
-              : recordButtonLabel(status, Boolean(transcript), isRetrying)
-          }
+          name={isRecording ? 'Stop recording' : recordButtonLabel(status, Boolean(transcript))}
           onPress={() => (isRecording ? actions.stopRecording() : actions.startRecording())}
           variant={isRecording ? 'live' : 'ready'}
         />

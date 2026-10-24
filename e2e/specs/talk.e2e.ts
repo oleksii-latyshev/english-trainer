@@ -70,7 +70,7 @@ test('typed answers save as text and show the reply while coaching remains pendi
   await talk.composer.typeInsteadAndSend(writtenAnswer);
 
   await expect(talk.reply).toBeVisible();
-  await expect(talk.coachingPending).toBeVisible();
+  await expect(talk.beingChecked).toBeVisible();
   expect(await tauri.calls()).toContainEqual(
     expect.objectContaining({
       command: 'send_practice_turn',

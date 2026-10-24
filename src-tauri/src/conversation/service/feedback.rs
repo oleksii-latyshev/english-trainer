@@ -1,4 +1,4 @@
-use super::{active_session_mut, SessionStore};
+use super::SessionStore;
 use crate::conversation::domain::rules::{
     validate_transcript, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS,
 };
@@ -58,8 +58,17 @@ impl SessionStore {
             return Err(ConversationError::InvalidRetry);
         }
         let mut state = self.lock();
-        if active_session_mut(&mut state, session_id)?.in_flight {
-            return Err(ConversationError::Busy);
+        match state
+            .active
+            .as_ref()
+            .filter(|active| active.id == session_id)
+        {
+            Some(active) if active.in_flight => return Err(ConversationError::Busy),
+            Some(_) => {}
+            None if state.database.session_metadata(session_id)?.is_none() => {
+                return Err(ConversationError::InvalidSession);
+            }
+            None => {}
         }
         let original = state
             .database

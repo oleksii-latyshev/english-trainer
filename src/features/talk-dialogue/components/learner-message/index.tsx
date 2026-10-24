@@ -1,14 +1,33 @@
 import { CircleHelp } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Tooltip } from '@/shared/ui/tooltip';
+import { COACHING_MARKER_HINT, coachingMarker } from '../../helpers/coaching-marker';
 import type { DialogueMessage } from '../../helpers/dialogue-messages';
 import { formatAnswerDuration, inputSourceLabel } from '../../helpers/message-meta';
 
 type Props = {
   message: DialogueMessage;
-  note?: ReactNode;
 };
 
-export function LearnerMessage({ message, note }: Props) {
+function CoachingMarker({ message }: Props) {
+  const marker = coachingMarker(message.coaching);
+  if (marker === undefined) return null;
+  if (marker.kind === 'pending') {
+    return (
+      <span
+        aria-label="Being checked"
+        className="size-1.5 rounded-full bg-faint opacity-50"
+        role="img"
+      />
+    );
+  }
+  return (
+    <Tooltip content={COACHING_MARKER_HINT}>
+      <span>{marker.text}</span>
+    </Tooltip>
+  );
+}
+
+export function LearnerMessage({ message }: Props) {
   const meta = [
     inputSourceLabel(message.inputSource),
     formatAnswerDuration(message.answerDurationMs),
@@ -23,18 +42,16 @@ export function LearnerMessage({ message, note }: Props) {
       >
         {message.text}
       </div>
-      {(meta || message.usedHelp) && (
-        <div className="flex gap-2.5 pr-1 text-caption text-faint">
-          {message.usedHelp && (
-            <span className="inline-flex items-center gap-1">
-              <CircleHelp aria-hidden="true" className="size-3" />
-              used help
-            </span>
-          )}
-          {meta && <span>{meta}</span>}
-        </div>
-      )}
-      {note}
+      <div className="flex h-5 items-center gap-2.5 pr-1 text-caption text-faint">
+        {message.usedHelp && (
+          <span className="inline-flex items-center gap-1">
+            <CircleHelp aria-hidden="true" className="size-3" />
+            used help
+          </span>
+        )}
+        {meta && <span>{meta}</span>}
+        <CoachingMarker message={message} />
+      </div>
     </article>
   );
 }

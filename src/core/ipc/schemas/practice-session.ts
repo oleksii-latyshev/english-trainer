@@ -1,13 +1,17 @@
 import { Schema } from 'effect';
 import type { AttemptComparison } from '../bindings/AttemptComparison';
+import type { FocusFeedback } from '../bindings/FocusFeedback';
 import type { PracticeDialogue } from '../bindings/PracticeDialogue';
 import type { PracticeMode } from '../bindings/PracticeMode';
 import type { PracticePhase } from '../bindings/PracticePhase';
 import type { PracticeSession } from '../bindings/PracticeSession';
 import type { StoredTurn } from '../bindings/StoredTurn';
 import type { TargetEvidence } from '../bindings/TargetEvidence';
+import type { TurnCoaching } from '../bindings/TurnCoaching';
+import type { TurnFeedback } from '../bindings/TurnFeedback';
 import { bindingSchema } from './binding-schema';
 import { AnsweredBySchema } from './conversation-turn';
+import { FocusCategorySchema } from './learning';
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 const Identifier = Schema.Int.check(Schema.isGreaterThan(0));
@@ -75,11 +79,32 @@ export const StoredTurnSchema = bindingSchema<StoredTurn>()(
   }),
 );
 
-type PracticeDialogueWithoutCoaching = {
-  [Key in keyof PracticeDialogue]: Key extends 'coaching' ? unknown[] : PracticeDialogue[Key];
-};
+export const FocusFeedbackSchema = bindingSchema<FocusFeedback>()(
+  Schema.Struct({
+    category: FocusCategorySchema,
+    original: Schema.String,
+    improved: Schema.String,
+    explanation: Schema.String,
+  }),
+);
 
-export const PracticeDialogueSchema = bindingSchema<PracticeDialogueWithoutCoaching>()(
+export const TurnFeedbackSchema = bindingSchema<TurnFeedback>()(
+  Schema.Struct({
+    focus_feedback: Schema.Array(FocusFeedbackSchema),
+    b2_rewrite: Schema.String,
+  }),
+);
+
+export const TurnCoachingSchema = bindingSchema<TurnCoaching>()(
+  Schema.Union([
+    Schema.Struct({ state: Schema.Literal('pending') }),
+    Schema.Struct({ state: Schema.Literal('paused') }),
+    Schema.Struct({ state: Schema.Literal('failed') }),
+    Schema.Struct({ state: Schema.Literal('ready'), feedback: TurnFeedbackSchema }),
+  ]),
+);
+
+export const PracticeDialogueSchema = bindingSchema<PracticeDialogue>()(
   Schema.Struct({
     session_id: Identifier,
     opening_question: Schema.String,
@@ -88,8 +113,10 @@ export const PracticeDialogueSchema = bindingSchema<PracticeDialogueWithoutCoach
     reply_times_ms: Schema.Array(Schema.NullOr(Count)),
     answer_durations_ms: Schema.Array(Schema.NullOr(Count)),
     help_used: Schema.Array(Schema.Boolean),
-    coaching: Schema.Array(Schema.Unknown),
+    coaching: Schema.Array(TurnCoachingSchema),
   }),
 );
+
+export const COACHING_UPDATED_EVENT = 'coaching-updated';
 
 export const CoachingUpdatedSchema = Schema.Struct({ session_id: Identifier });

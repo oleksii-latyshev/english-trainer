@@ -113,7 +113,6 @@
         "src/features/**",
         "src/core/**",
         "src/shared/**",
-        "!src/features/coach/**",
         "!src/features/conversation/**",
         "!src/features/practice/**"
       ],
@@ -183,7 +182,6 @@
         "src/features/**",
         "src/core/**",
         "src/shared/**",
-        "!src/features/coach/**",
         "!src/features/conversation/**",
         "!src/features/practice/**",
         "!src/app/**",
@@ -224,10 +222,8 @@
                       "@/components/**",
                       "@/routes/**",
                       "@/context/**",
-                      "@/features/coach/**",
                       "@/features/conversation/**",
                       "@/features/practice/**",
-                      "@/features/coach",
                       "@/features/conversation",
                       "@/features/practice"
                     ],
@@ -270,10 +266,8 @@
                       "@/components/**",
                       "@/routes/**",
                       "@/context/**",
-                      "@/features/coach/**",
                       "@/features/conversation/**",
                       "@/features/practice/**",
-                      "@/features/coach",
                       "@/features/conversation",
                       "@/features/practice"
                     ],
@@ -320,10 +314,8 @@
                       "@/components/**",
                       "@/routes/**",
                       "@/context/**",
-                      "@/features/coach/**",
                       "@/features/conversation/**",
                       "@/features/practice/**",
-                      "@/features/coach",
                       "@/features/conversation",
                       "@/features/practice"
                     ],
@@ -341,12 +333,7 @@
       }
     },
     {
-      "includes": [
-        "src/features/**",
-        "!src/features/coach/**",
-        "!src/features/conversation/**",
-        "!src/features/practice/**"
-      ],
+      "includes": ["src/features/**", "!src/features/conversation/**", "!src/features/practice/**"],
       "linter": {
         "rules": {
           "style": {
@@ -371,10 +358,8 @@
                       "@/components/**",
                       "@/routes/**",
                       "@/context/**",
-                      "@/features/coach/**",
                       "@/features/conversation/**",
                       "@/features/practice/**",
-                      "@/features/coach",
                       "@/features/conversation",
                       "@/features/practice"
                     ],
@@ -414,10 +399,8 @@
                       "@/components/**",
                       "@/routes/**",
                       "@/context/**",
-                      "@/features/coach/**",
                       "@/features/conversation/**",
                       "@/features/practice/**",
-                      "@/features/coach",
                       "@/features/conversation",
                       "@/features/practice"
                     ],

@@ -54,7 +54,6 @@ function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
         <Dialogue
           canReplay={practiceStageUsesAudio(session)}
           currentQuestion={isReplayComplete ? undefined : session.question}
-          renderNote={props.renderNote}
         >
           <TalkNotices />
           <LiveTranscript />

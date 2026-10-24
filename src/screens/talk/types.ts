@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import type { DialogueMessage } from '@/features/talk-dialogue';
 
 export type TalkScreenProps = {
   readonly onStartPractice: () => void;
@@ -13,5 +12,4 @@ export type TalkScreenProps = {
   readonly replayPrompt?: ReactNode;
   readonly dialogueExtras?: ReactNode;
   readonly reviewStage?: ReactNode;
-  readonly renderNote?: (message: DialogueMessage) => ReactNode;
 };
