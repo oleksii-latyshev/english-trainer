@@ -3,9 +3,8 @@
 The open conversation: its state (`practiceStateAtom`), the commands that change its stage, and
 the typed boundary to the `conversation` Rust context. Every screen that needs to know whether a
 conversation is open (the sidebar, the start screen, Memory, first run, the summary) reads these
-atoms; nothing here depends on a component. Sessions come from Rust as `PracticeSession`; the
-hand-written `PracticeSessionSchema` stands in for a generated binding until the Rust type derives
-`ts_rs::TS` (tracked in the migration notes).
+atoms; nothing here depends on a component. Sessions come from Rust as `PracticeSession`, decoded
+by `PracticeSessionSchema`, which is checked against the generated binding.
 
 ## Restore on launch, start, finish
 

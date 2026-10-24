@@ -6,7 +6,7 @@ export type DialogueMessage = {
   sender: 'assistant' | 'learner';
   text: string;
   question?: string;
-  inputSource?: 'voice' | 'edited' | 'text';
+  inputSource?: string;
   answeredBy?: string;
   isBackup?: boolean;
   replyMs?: number;

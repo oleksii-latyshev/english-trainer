@@ -19,9 +19,13 @@ export const wordDialogue: PracticeDialogue = {
       learner: 'I use a useful tool for my projects.',
       assistant_reply: 'That sounds practical.',
       assistant_question: wordSession.opening_question,
+      answered_by: null,
     },
   ],
   input_sources: ['text'],
+  reply_times_ms: [250],
+  answer_durations_ms: [null],
+  help_used: [false],
   coaching: [
     {
       state: 'ready',

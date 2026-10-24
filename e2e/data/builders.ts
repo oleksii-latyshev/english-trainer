@@ -35,8 +35,12 @@ export function savedMistakePractice(answered: number): {
             ? ''
             : session.opening_question
           : `What helped you learn skill ${index + 2}?`,
+      answered_by: null,
     })),
     input_sources: Array.from({ length: answered }, () => 'voice'),
+    reply_times_ms: Array.from({ length: answered }, () => 250),
+    answer_durations_ms: Array.from({ length: answered }, () => null),
+    help_used: Array.from({ length: answered }, () => false),
     coaching: Array.from({ length: answered }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -60,6 +64,7 @@ export function longConversation(turns: number): {
       assistant_reply: `Earlier reply number ${index + 1}.`,
       assistant_question:
         index === turns - 1 ? session.opening_question : `Earlier question ${index + 2}?`,
+      answered_by: null,
     })),
     input_sources: Array.from({ length: turns }, () => 'text'),
     reply_times_ms: Array.from({ length: turns }, () => 250),
@@ -87,11 +92,13 @@ export function restoredSpeakingReview(): { session: PracticeSession; dialogue: 
         learner: 'I use a small task board to plan my day.',
         assistant_reply: 'That sounds useful.',
         assistant_question: 'How did you choose it?',
+        answered_by: null,
       },
       {
         learner: 'I have used it for a year.',
         assistant_reply: 'That is a helpful routine.',
         assistant_question: 'What changed for you?',
+        answered_by: null,
       },
     ],
     input_sources: ['text', 'voice'],

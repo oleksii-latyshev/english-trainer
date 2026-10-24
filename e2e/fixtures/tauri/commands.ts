@@ -47,10 +47,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
     ): value is NonNullable<PracticeOptions['practice_mode']> =>
       value === 'voice' || value === 'text_chat' || value === 'write_then_speak';
     const isPhase = (value: unknown): value is PracticePhase =>
-      value === 'writing' ||
-      value === 'writing_review' ||
-      value === 'speaking' ||
-      value === 'speaking_review';
+      ['writing', 'writing_review', 'speaking', 'speaking_review'].some((phase) => phase === value);
     function consumeFailure(
       fail: 'failNextStart' | 'failNextSend' | 'failNextTransition',
       message: string,
@@ -178,6 +175,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
             learner: transcript,
             assistant_reply: 'That sounds useful.',
             assistant_question: 'How did you choose it?',
+            answered_by: null,
           },
         ],
         input_sources: [...(harness.dialogue.input_sources ?? []), source],
