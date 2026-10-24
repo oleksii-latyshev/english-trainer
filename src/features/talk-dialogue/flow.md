@@ -28,3 +28,17 @@ sequenceDiagram
     Turn-->>Screen: reply text while streaming
     Note over Screen: shown until the saved history has the turn, then the saved message replaces it
 ```
+
+## Following the newest message
+
+The history is one surface with Eva: no frame, and a top fade mask lets older messages dissolve
+under her. The view follows the newest message while a reply streams and while notes, notices or
+answer help change the height of the content.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Following
+    Following --> Paused: learner scrolls up
+    Paused --> Paused: new message arrives, the New message pill appears
+    Paused --> Following: learner reaches the end or presses the pill
+```

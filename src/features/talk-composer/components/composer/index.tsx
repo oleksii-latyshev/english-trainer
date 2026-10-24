@@ -45,8 +45,8 @@ export function Composer({
       : 'Your answer to Eva';
 
   return (
-    <div className="mx-auto flex w-full max-w-205 flex-col gap-2.5 px-6 pb-4">
-      {helpSlot}
+    <div className="mx-auto flex w-full max-w-205 shrink-0 flex-col gap-2.5 px-6 pb-4">
+      {helpSlot && <div className="max-h-44 overflow-y-auto">{helpSlot}</div>}
       <section
         aria-label="Answer composer"
         className="flex flex-col gap-3 rounded-card border border-line bg-surface px-4 py-3 shadow-overlay backdrop-blur-glass backdrop-saturate-170 data-live:border-accent-line"
@@ -81,7 +81,7 @@ export function Composer({
           </p>
         )}
       </section>
-      {isAudioStage && (
+      {isAudioStage && !isEditing && (
         <div className="flex justify-center gap-4 text-caption text-faint">
           <span className="inline-flex items-center gap-1.5">
             <Kbd>Space</Kbd>

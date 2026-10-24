@@ -5,6 +5,10 @@
 @custom-variant eva-full (:root[data-eva-motion="full"] &);
 @custom-variant eva-live (:root:not([data-eva-motion="still"]) &);
 
+@utility mask-fade-top {
+  mask-image: linear-gradient(to bottom, transparent 6rem, #000 11rem);
+}
+
 @theme static {
   --color-background: #05070c;
   --color-surface: rgba(255, 255, 255, 0.055);
@@ -285,9 +289,6 @@ h4 {
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--et-fg) 14%, transparent);

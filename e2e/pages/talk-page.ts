@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { Chat } from '../components/chat';
 import { Composer } from '../components/composer';
 import { PlannerPanel } from '../components/planner-panel';
 import { Recorder } from '../components/recorder';
@@ -6,6 +7,7 @@ import { RescuePanel } from '../components/rescue-panel';
 import { openingQuestion } from '../data/sessions';
 
 export class TalkPage {
+  readonly chat: Chat;
   readonly composer: Composer;
   readonly recorder: Recorder;
   readonly planner: PlannerPanel;
@@ -30,6 +32,7 @@ export class TalkPage {
   readonly listeningAny: Locator;
   readonly thinking: Locator;
   readonly speakAnywayButton: Locator;
+  readonly flowButton: Locator;
   readonly autoListenToggle: Locator;
   readonly autoListenSwitch: Locator;
   readonly voiceFailureNotice: Locator;
@@ -40,6 +43,7 @@ export class TalkPage {
   readonly preparingQuestions: Locator;
 
   constructor(private readonly page: Page) {
+    this.chat = new Chat(page);
     this.composer = new Composer(page);
     this.recorder = new Recorder(page);
     this.planner = new PlannerPanel(page);
@@ -64,6 +68,7 @@ export class TalkPage {
     this.listeningAny = page.getByRole('heading', { name: /^Listening/u });
     this.thinking = page.getByRole('heading', { name: 'Thinking', exact: true });
     this.speakAnywayButton = page.getByRole('button', { name: 'Speak anyway', exact: true });
+    this.flowButton = page.getByRole('button', { name: /^Hands-free/u });
     this.autoListenToggle = page.getByText('Listen after Eva speaks', { exact: true });
     this.autoListenSwitch = page.getByRole('switch', { name: 'Listen after Eva speaks' });
     this.voiceFailureNotice = page.getByText(
@@ -106,6 +111,7 @@ export class TalkPage {
   }
 
   async turnOnAutoListen(): Promise<void> {
+    await this.flowButton.click();
     await this.autoListenToggle.click();
   }
 
@@ -114,7 +120,7 @@ export class TalkPage {
   }
 
   async focusThinking(): Promise<void> {
-    await this.thinking.click();
+    await this.thinking.click({ force: true });
   }
 
   async speakAnyway(): Promise<void> {
