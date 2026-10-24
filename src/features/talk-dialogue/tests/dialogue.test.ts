@@ -41,7 +41,12 @@ function dialogueOf(sessionId: number, turns: number) {
       learner: `Answer ${index + 1}`,
       assistant_reply: 'Nice.',
       assistant_question: 'Why?',
+      answered_by: null,
     })),
+    input_sources: Array.from({ length: turns }, () => 'text'),
+    reply_times_ms: Array.from({ length: turns }, () => null),
+    answer_durations_ms: Array.from({ length: turns }, () => null),
+    help_used: Array.from({ length: turns }, () => false),
     coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
   };
 }

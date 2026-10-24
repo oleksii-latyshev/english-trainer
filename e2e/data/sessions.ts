@@ -35,6 +35,11 @@ export const initialSession: PracticeSession = {
   active_duration_ms: 0,
   started_at: 1_800_000_000_000,
   is_clock_running: false,
+  practice_mode: 'voice',
+  practice_phase: 'speaking',
+  written_turn_count: 0,
+  spoken_turn_count: 0,
+  is_mistake_practice: false,
 };
 
 export const finishedSession: FinishedPracticeSession = {

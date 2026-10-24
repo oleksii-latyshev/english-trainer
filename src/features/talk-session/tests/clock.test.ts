@@ -39,6 +39,11 @@ function layerOf(backend: Backend) {
             active_duration_ms: 9000,
             started_at: 1,
             is_clock_running: Reflect.get(args ?? {}, 'running') === true,
+            practice_mode: 'voice',
+            practice_phase: 'speaking',
+            written_turn_count: 0,
+            spoken_turn_count: 1,
+            is_mistake_practice: false,
           });
         }),
       ),

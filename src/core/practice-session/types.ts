@@ -38,7 +38,7 @@ export type SessionDetails = {
   readonly topicId: string;
   readonly topicLabel: string;
   readonly topicCustom: string | null;
-  readonly durationGoalSeconds: DurationGoalSeconds;
+  readonly durationGoalSeconds: number;
   readonly activeDurationMs: number;
   readonly startedAt: number;
   readonly isClockRunning: boolean;

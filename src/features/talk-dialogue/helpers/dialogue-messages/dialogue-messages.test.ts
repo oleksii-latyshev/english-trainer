@@ -1,21 +1,44 @@
 import { describe, expect, it } from 'bun:test';
+import type { PracticeDialogue } from '../../types';
 import { buildDialogueMessages } from '.';
+
+type Turn = PracticeDialogue['turns'][number];
+
+type DialogueInput = Omit<Partial<PracticeDialogue>, 'turns'> & {
+  turns: (Omit<Turn, 'answered_by'> & Partial<Pick<Turn, 'answered_by'>>)[];
+};
+
+function aDialogue(input: DialogueInput): PracticeDialogue {
+  return {
+    session_id: 1,
+    opening_question: 'Hi?',
+    input_sources: [],
+    reply_times_ms: [],
+    answer_durations_ms: [],
+    help_used: [],
+    coaching: [],
+    ...input,
+    turns: input.turns.map((turn) => ({ answered_by: null, ...turn })),
+  };
+}
 
 describe('message labels', () => {
   it('labels Eva replies with their origin and leaves old turns unlabelled', () => {
-    const msgs = buildDialogueMessages({
-      session_id: 1,
-      opening_question: 'Hi?',
-      turns: [
-        {
-          learner: 'A',
-          assistant_reply: 'Ok.',
-          assistant_question: 'Why?',
-          answered_by: { provider: 'apple', model: 'apple-foundation-models', is_backup: true },
-        },
-        { learner: 'B', assistant_reply: 'Fine.', assistant_question: 'How?', answered_by: null },
-      ],
-    });
+    const msgs = buildDialogueMessages(
+      aDialogue({
+        session_id: 1,
+        opening_question: 'Hi?',
+        turns: [
+          {
+            learner: 'A',
+            assistant_reply: 'Ok.',
+            assistant_question: 'Why?',
+            answered_by: { provider: 'apple', model: 'apple-foundation-models', is_backup: true },
+          },
+          { learner: 'B', assistant_reply: 'Fine.', assistant_question: 'How?', answered_by: null },
+        ],
+      }),
+    );
     const eva = msgs.filter((m) => m.id.endsWith('-assistant'));
     expect(eva[0].answeredBy).toBe('Apple on-device (backup)');
     expect(eva[1].answeredBy).toBeUndefined();
@@ -24,18 +47,20 @@ describe('message labels', () => {
   });
 
   it('carries reply time, answer duration and help use per turn and leaves old turns bare', () => {
-    const msgs = buildDialogueMessages({
-      session_id: 1,
-      opening_question: 'Hi?',
-      turns: [
-        { learner: 'A', assistant_reply: 'Ok.', assistant_question: 'Why?' },
-        { learner: 'B', assistant_reply: 'Fine.', assistant_question: 'How?' },
-      ],
-      input_sources: ['voice', 'text'],
-      reply_times_ms: [800, null],
-      answer_durations_ms: [14_000, null],
-      help_used: [true, false],
-    });
+    const msgs = buildDialogueMessages(
+      aDialogue({
+        session_id: 1,
+        opening_question: 'Hi?',
+        turns: [
+          { learner: 'A', assistant_reply: 'Ok.', assistant_question: 'Why?' },
+          { learner: 'B', assistant_reply: 'Fine.', assistant_question: 'How?' },
+        ],
+        input_sources: ['voice', 'text'],
+        reply_times_ms: [800, null],
+        answer_durations_ms: [14_000, null],
+        help_used: [true, false],
+      }),
+    );
     const learner = msgs.filter((m) => m.sender === 'learner');
     const eva = msgs.filter((m) => m.id.endsWith('-assistant'));
     expect(learner[0].answerDurationMs).toBe(14_000);
@@ -60,11 +85,11 @@ describe('the current prompt', () => {
 
   it('omits duplicate when current question matches opening question', () => {
     const msgs = buildDialogueMessages(
-      {
+      aDialogue({
         session_id: 1,
         opening_question: 'What did you do today?',
         turns: [],
-      },
+      }),
       'What did you do today?',
     );
     expect(msgs).toHaveLength(1);
@@ -74,7 +99,7 @@ describe('the current prompt', () => {
 
   it('omits the empty reply of an answer an older Coach session never continued', () => {
     const msgs = buildDialogueMessages(
-      {
+      aDialogue({
         session_id: 1,
         opening_question: 'Introduce yourself.',
         turns: [
@@ -84,7 +109,7 @@ describe('the current prompt', () => {
             assistant_question: '',
           },
         ],
-      },
+      }),
       'Introduce yourself.',
     );
     expect(msgs).toHaveLength(2);
@@ -98,7 +123,7 @@ describe('the current prompt', () => {
 describe('turn order', () => {
   it('renders completed turns in order with learner then assistant', () => {
     const msgs = buildDialogueMessages(
-      {
+      aDialogue({
         session_id: 1,
         opening_question: 'Introduce yourself.',
         turns: [
@@ -108,7 +133,7 @@ describe('turn order', () => {
             assistant_question: 'What technologies do you use?',
           },
         ],
-      },
+      }),
       'What technologies do you use?',
     );
     expect(msgs).toHaveLength(3);
@@ -121,7 +146,7 @@ describe('turn order', () => {
 
   it('appends current question when it is a new prompt not yet in history', () => {
     const msgs = buildDialogueMessages(
-      {
+      aDialogue({
         session_id: 1,
         opening_question: 'Introduce yourself.',
         turns: [
@@ -131,7 +156,7 @@ describe('turn order', () => {
             assistant_question: '',
           },
         ],
-      },
+      }),
       'What do you like about it?',
     );
     expect(msgs).toHaveLength(4);
@@ -140,15 +165,17 @@ describe('turn order', () => {
   });
 
   it('numbers each learner answer and carries where its coaching stands', () => {
-    const msgs = buildDialogueMessages({
-      session_id: 1,
-      opening_question: 'Q?',
-      turns: [
-        { learner: 'First', assistant_reply: 'Ok.', assistant_question: 'And?' },
-        { learner: 'Second', assistant_reply: 'Ok.', assistant_question: 'Why?' },
-      ],
-      coaching: [{ state: 'failed' }, { state: 'pending' }],
-    });
+    const msgs = buildDialogueMessages(
+      aDialogue({
+        session_id: 1,
+        opening_question: 'Q?',
+        turns: [
+          { learner: 'First', assistant_reply: 'Ok.', assistant_question: 'And?' },
+          { learner: 'Second', assistant_reply: 'Ok.', assistant_question: 'Why?' },
+        ],
+        coaching: [{ state: 'failed' }, { state: 'pending' }],
+      }),
+    );
     const learner = msgs.filter((message) => message.sender === 'learner');
     expect(learner.map((message) => message.sequence)).toEqual([1, 2]);
     expect(learner.map((message) => message.coaching)).toEqual([
