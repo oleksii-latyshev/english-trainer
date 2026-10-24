@@ -27,7 +27,7 @@ import {
   type TurnPresentation,
   type TurnState,
 } from '../helpers/turn-state';
-import { countdownLabelAtom, isSendingAtom } from './draft-atoms';
+import { countdownLabelAtom, draftAtom, isDraftFocusedAtom, isSendingAtom } from './draft-atoms';
 
 const OFF = { status: 'off', error: '' } as const;
 
@@ -142,3 +142,7 @@ export const liveTextAtom = Atom.make((get) => {
 });
 
 export const levelAtom = Atom.make((get) => listeningOf(get(captureStateAtom))?.level ?? 0);
+
+export const isComposingAtom = Atom.make(
+  (get) => get(isDraftFocusedAtom) || get(draftAtom).text.trim().length > 0,
+);

@@ -30,6 +30,8 @@ export const draftAtom = Atom.writable(
   },
 );
 
+export const isDraftFocusedAtom = Atom.keepAlive(Atom.make(false));
+
 export const isSendingAtom = Atom.keepAlive(Atom.make(false));
 
 export const countdownLabelAtom = Atom.keepAlive(Atom.make<string | null>(null));

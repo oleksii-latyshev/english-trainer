@@ -39,7 +39,8 @@ describe('follow scroll', () => {
   });
 
   it('counts the streaming reply as the newest message', () => {
-    expect(newestKey(3, false)).toBe(3);
-    expect(newestKey(3, true)).toBe(4);
+    expect(newestKey(3, undefined)).not.toBe(newestKey(3, ''));
+    expect(newestKey(3, 'Hi')).not.toBe(newestKey(3, 'Hi there'));
+    expect(newestKey(3, 'Hi')).toBe(newestKey(3, 'Ho'));
   });
 });

@@ -22,13 +22,13 @@ export function Dialogue({ currentQuestion, canReplay, renderNote, children }: P
   const { dialogue, hasFailed, pendingReply, retry } = useDialogue();
   const replay = useReplay();
   const messages = buildDialogueMessages(dialogue, currentQuestion);
-  const follow = useFollow(messages.length, pendingReply !== undefined);
+  const follow = useFollow(messages.length, pendingReply);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         aria-label="Conversation message history"
-        className="mask-fade-top min-h-0 flex-1 overflow-y-auto px-10 pt-12 pb-3"
+        className="mask-fade-top min-h-0 flex-1 overflow-y-auto px-10 pt-24 pb-3"
         onScroll={follow.onScroll}
         ref={follow.viewportRef}
         role="log"

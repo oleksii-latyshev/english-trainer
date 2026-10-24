@@ -32,6 +32,6 @@ export function afterNewContent(state: FollowState): FollowState {
   return state.isFollowing ? state : { isFollowing: false, hasUnseen: true };
 }
 
-export function newestKey(messageCount: number, hasPendingReply: boolean): number {
-  return messageCount + (hasPendingReply ? 1 : 0);
+export function newestKey(messageCount: number, pendingReply: string | undefined): string {
+  return `${messageCount}:${pendingReply === undefined ? '-' : pendingReply.length}`;
 }

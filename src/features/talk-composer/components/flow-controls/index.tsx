@@ -15,10 +15,7 @@ export function FlowControls() {
   const [flow, setFlow] = useAtom(conversationFlowAtom);
   const isSendLocked = useAtomValue(isLockedAtom);
   return (
-    <section
-      aria-label="Conversation flow"
-      className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-full border border-line bg-surface px-4 py-2 backdrop-blur-glass"
-    >
+    <section aria-label="Conversation flow" className="flex w-72 flex-col items-stretch gap-3 p-2">
       <Switch
         checked={flow.handsFree}
         label="Hands-free"

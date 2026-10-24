@@ -32,6 +32,8 @@ test('the chat follows the streaming reply, pauses when the learner scrolls up a
   await talk.chat.scrollToTop();
   await expect.poll(() => talk.chat.distanceFromEnd()).toBeGreaterThan(200);
   await tauri.streaming.finishProvider();
+  await expect(talk.exactReply).toBeVisible();
+  await talk.composer.writeAndSend('I chose it because it saves time.');
   await expect(talk.chat.newMessageButton).toBeVisible();
   expect(await talk.chat.distanceFromEnd()).toBeGreaterThan(200);
   await talk.chat.newMessageButton.click();

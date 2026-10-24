@@ -6,7 +6,13 @@ import {
   practiceStageUsesAudio,
   type SessionDetails,
 } from '@/core/practice-session';
-import { Composer, LiveTranscript, TurnStage, useComposerEffects } from '@/features/talk-composer';
+import {
+  Composer,
+  FlowMenu,
+  LiveTranscript,
+  TurnStage,
+  useComposerEffects,
+} from '@/features/talk-composer';
 import { Dialogue } from '@/features/talk-dialogue';
 import {
   NoSession,
@@ -28,6 +34,7 @@ function isSpokenReplay(session: SessionDetails): boolean {
 
 function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
   const isReplay = isSpokenReplay(session);
+  const isWriting = practiceStageIsWriting(session);
   const isReplayComplete = isReplay && session.spokenTurnCount >= session.writtenTurnCount;
   return (
     <section
@@ -38,10 +45,12 @@ function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
         isFinishBlocked={props.isFinishBlocked}
         isFinishing={isFinishing}
         session={session}
-      />
-      <TurnStage isWriting={practiceStageIsWriting(session)} mood={props.moodExtras} />
-      <div className="flex min-h-56 w-full flex-1 flex-col">
-        {isReplay && props.replayPrompt}
+      >
+        <FlowMenu />
+      </SessionHeader>
+      {isReplay && props.replayPrompt}
+      <TurnStage isWriting={isWriting} mood={props.moodExtras} />
+      <div className={`flex min-h-56 w-full flex-1 flex-col ${isWriting ? '' : '-mt-24'}`}>
         <Dialogue
           canReplay={practiceStageUsesAudio(session)}
           currentQuestion={isReplayComplete ? undefined : session.question}

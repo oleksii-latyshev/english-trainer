@@ -4,8 +4,7 @@ import { micLevelAtom } from '@/core/practice-turn';
 import { Eva } from '@/shared/ui/eva';
 import { evaMoodFor, type MoodExtras } from '../../helpers/turn-state';
 import { useTurn } from '../../model/use-composer';
-import { flowSignalsAtom } from '../../model/view-atoms';
-import { FlowControls } from '../flow-controls';
+import { flowSignalsAtom, isComposingAtom } from '../../model/view-atoms';
 
 type Props = {
   mood: MoodExtras;
@@ -33,16 +32,24 @@ export function TurnStage({ mood, isWriting }: Props) {
   const { state, presentation } = useTurn();
   const flow = useAtomValue(flowSignalsAtom);
   const audioLevel = useAtomValue(micLevelAtom);
+  const isCompact = useAtomValue(isComposingAtom) || mood.isHelpOpen;
   const { actualInput } = usePreferredMicrophone();
   if (isWriting) return <WritingStage />;
   return (
-    <aside aria-label="Eva" className="flex flex-col items-center gap-3">
-      <Eva
-        audioLevel={audioLevel}
-        label={`Eva, ${presentation.stageTitle.toLowerCase()}`}
-        mood={evaMoodFor(state, flow, mood)}
-        size={150}
-      />
+    <aside
+      aria-label="Eva"
+      className="pointer-events-none relative z-10 flex flex-col items-center gap-3"
+    >
+      <div
+        className={`origin-top transition-[transform,margin] duration-200 motion-reduce:transition-none ${isCompact ? '-mb-16 scale-60' : ''}`}
+      >
+        <Eva
+          audioLevel={audioLevel}
+          label={`Eva, ${presentation.stageTitle.toLowerCase()}`}
+          mood={evaMoodFor(state, flow, mood)}
+          size={150}
+        />
+      </div>
       <div className="flex flex-col items-center gap-1 text-center" role="status">
         <span
           className={`font-bold text-pip uppercase tracking-wide ${ACTOR_TONE[presentation.actor]}`}
@@ -50,10 +57,11 @@ export function TurnStage({ mood, isWriting }: Props) {
           {presentation.stageLabel}
         </span>
         <h2 className="m-0 font-bold text-title">{presentation.stageTitle}</h2>
-        <p className="m-0 text-caption text-muted">{presentation.stageHint}</p>
+        {!isCompact && <p className="m-0 text-caption text-muted">{presentation.stageHint}</p>}
       </div>
-      <FlowControls />
-      {actualInput && <p className="m-0 text-faint text-xs">Microphone: {actualInput.label}</p>}
+      {!isCompact && actualInput && (
+        <p className="m-0 text-faint text-xs">Microphone: {actualInput.label}</p>
+      )}
     </aside>
   );
 }

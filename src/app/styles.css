@@ -6,7 +6,7 @@
 @custom-variant eva-live (:root:not([data-eva-motion="still"]) &);
 
 @utility mask-fade-top {
-  mask-image: linear-gradient(to bottom, transparent 0, #000 3rem);
+  mask-image: linear-gradient(to bottom, transparent 2rem, #000 9rem);
 }
 
 @theme static {
