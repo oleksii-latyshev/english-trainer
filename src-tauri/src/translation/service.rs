@@ -1,8 +1,9 @@
 use super::domain::{
-    TranslationError, TranslationErrorCode, TranslationRequest, TranslationResult,
-    TranslationStatus, TranslationStatusKind,
+    validate_explanation, validate_translation, TextExplanation, TextTranslation, TranslationError,
+    TranslationErrorCode, TranslationRequest, TranslationStatus, TranslationStatusKind,
 };
-use super::helper_process::{run_helper, HelperOperation};
+use super::helper_process::{run_helper, HelperOperation, HelperRequest};
+use super::warm_worker::WarmWorker;
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -13,27 +14,46 @@ use std::time::Duration;
 #[path = "service_tests.rs"]
 mod tests;
 
+const TRANSLATE_TIMEOUT: Duration = Duration::from_secs(15);
+const EXPLAIN_TIMEOUT: Duration = Duration::from_secs(30);
+const WARM_UP_TEXT: &str = "Hello";
+
 #[derive(Clone)]
 pub struct TranslationService {
     binary: Option<PathBuf>,
     in_flight: Arc<AtomicBool>,
+    translator: WarmWorker,
+    explainer: WarmWorker,
 }
 
 impl TranslationService {
     pub fn new(binary: Option<PathBuf>) -> Self {
         Self {
+            translator: WarmWorker::new(binary.clone(), "translate"),
+            explainer: WarmWorker::new(binary.clone(), "explain"),
             binary,
             in_flight: Arc::new(AtomicBool::new(false)),
         }
     }
 
+    pub fn warm_up(&self, native_language: &str) {
+        let request = HelperRequest {
+            operation: "translate",
+            native_language,
+            text: WARM_UP_TEXT,
+            context: "",
+        };
+        ignore_warm_up_failure(self.translator.call(&request, TRANSLATE_TIMEOUT));
+        ignore_warm_up_failure(self.explainer.start());
+    }
+
     pub fn status(&self, native_language: &str) -> Result<TranslationStatus, TranslationError> {
-        let response = self.invoke("status", native_language, None, Duration::from_secs(15))?;
+        let response = self.invoke("status", native_language, Duration::from_secs(15))?;
         parse_status(response, native_language)
     }
 
     pub fn prepare(&self, native_language: &str) -> Result<TranslationStatus, TranslationError> {
-        let response = self.invoke("prepare", native_language, None, Duration::from_secs(300))?;
+        let response = self.invoke("prepare", native_language, Duration::from_secs(300))?;
         parse_status(response, native_language)
     }
 
@@ -41,80 +61,80 @@ impl TranslationService {
         &self,
         request: &TranslationRequest,
         native_language: &str,
-    ) -> Result<TranslationResult, TranslationError> {
-        let response = self.invoke(
-            "translate",
-            native_language,
-            Some(request),
-            Duration::from_secs(45),
-        )?;
-        #[derive(Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Envelope {
-            error: Option<HelperError>,
-            word: Option<String>,
-            native_language: Option<String>,
-            translation: Option<String>,
-            english_explanation: Option<String>,
-            explanation_error: Option<String>,
-        }
-        let envelope: Envelope = serde_json::from_value(response).map_err(|_| invalid_output())?;
-        if let Some(error) = envelope.error {
-            return Err(error.into_translation_error());
-        }
-        super::domain::validate_result(
-            TranslationResult {
-                word: envelope.word.ok_or_else(invalid_output)?,
-                native_language: envelope.native_language.ok_or_else(invalid_output)?,
-                translation: envelope.translation.ok_or_else(invalid_output)?,
-                english_explanation: envelope.english_explanation,
-                explanation_error: envelope.explanation_error,
+    ) -> Result<TextTranslation, TranslationError> {
+        self.ensure_available()?;
+        let response = self.translator.call(
+            &HelperRequest {
+                operation: "translate",
+                native_language,
+                text: &request.text,
+                context: &request.context,
             },
-            request,
-            native_language,
-        )
+            TRANSLATE_TIMEOUT,
+        )?;
+        let translation: TextTranslation = parse_answer(response)?;
+        validate_translation(translation, request, native_language)
+    }
+
+    pub fn explain(
+        &self,
+        request: &TranslationRequest,
+        native_language: &str,
+    ) -> Result<TextExplanation, TranslationError> {
+        self.ensure_available()?;
+        let response = self.explainer.call(
+            &HelperRequest {
+                operation: "explain",
+                native_language,
+                text: &request.text,
+                context: &request.context,
+            },
+            EXPLAIN_TIMEOUT,
+        )?;
+        let explanation: TextExplanation = parse_answer(response)?;
+        validate_explanation(explanation, request)
+    }
+
+    fn ensure_available(&self) -> Result<(), TranslationError> {
+        #[cfg(not(any(target_os = "macos", test)))]
+        {
+            return Err(TranslationError::new(
+                TranslationErrorCode::Unavailable,
+                "Phrase translation is available in the macOS app. Open this feature on a supported Mac.",
+            ));
+        }
+        #[cfg(any(target_os = "macos", test))]
+        Ok(())
     }
 
     fn invoke(
         &self,
         operation: &str,
         native_language: &str,
-        request: Option<&TranslationRequest>,
         timeout: Duration,
     ) -> Result<serde_json::Value, TranslationError> {
         let _guard = self.try_enter()?;
-        #[cfg(not(any(target_os = "macos", test)))]
-        {
-            let _ = (operation, native_language, request, timeout);
+        self.ensure_available()?;
+        let binary = self.binary.as_ref().ok_or_else(|| {
+            TranslationError::new(
+                TranslationErrorCode::Unavailable,
+                "The bundled translation helper is unavailable. Reinstall the app and try again.",
+            )
+        })?;
+        if !binary.is_file() {
             return Err(TranslationError::new(
                 TranslationErrorCode::Unavailable,
-                "Word translation is available in the macOS app. Open this feature on a supported Mac.",
+                "The bundled translation helper is missing. Reinstall the app and try again.",
             ));
         }
-        #[cfg(any(target_os = "macos", test))]
-        {
-            let binary = self.binary.as_ref().ok_or_else(|| {
-                TranslationError::new(
-                    TranslationErrorCode::Unavailable,
-                    "The bundled translation helper is unavailable. Reinstall the app and try again.",
-                )
-            })?;
-            if !binary.is_file() {
-                return Err(TranslationError::new(
-                    TranslationErrorCode::Unavailable,
-                    "The bundled translation helper is missing. Reinstall the app and try again.",
-                ));
-            }
-            run_helper(
-                binary,
-                HelperOperation {
-                    operation,
-                    native_language,
-                    request,
-                    timeout,
-                },
-            )
-        }
+        run_helper(
+            binary,
+            HelperOperation {
+                operation,
+                native_language,
+                timeout,
+            },
+        )
     }
 
     fn try_enter(&self) -> Result<OperationGuard, TranslationError> {
@@ -136,6 +156,26 @@ impl Drop for OperationGuard {
     fn drop(&mut self) {
         self.0.store(false, Ordering::Release);
     }
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Answer<T> {
+    Failure { error: HelperError },
+    Success(T),
+}
+
+fn parse_answer<T: serde::de::DeserializeOwned>(
+    value: serde_json::Value,
+) -> Result<T, TranslationError> {
+    match serde_json::from_value(value).map_err(|_| invalid_output())? {
+        Answer::Failure { error } => Err(error.into_translation_error()),
+        Answer::Success(answer) => Ok(answer),
+    }
+}
+
+fn ignore_warm_up_failure<T>(result: Result<T, TranslationError>) {
+    drop(result);
 }
 
 #[derive(Deserialize)]

@@ -12,19 +12,19 @@ export class TranslationDialog {
   private readonly closeButton: Locator;
 
   constructor(private readonly page: Page) {
-    this.dialog = page.getByRole('dialog', { name: 'Translate a word' });
-    this.input = this.dialog.getByRole('textbox', { name: 'English word' });
+    this.dialog = page.getByRole('dialog', { name: 'Translate a phrase' });
+    this.input = this.dialog.getByRole('textbox', { name: 'English word or phrase' });
     this.translateButton = this.dialog.getByRole('button', { name: 'Translate', exact: true });
     this.retryButton = this.dialog.getByRole('button', { name: 'Retry', exact: true });
     this.prepareButton = this.dialog.getByRole('button', { name: 'Prepare languages' });
     this.alert = this.dialog.getByRole('alert');
     this.pendingStatus = this.dialog.getByRole('status').filter({ hasText: 'Translating useful' });
-    this.openButton = page.getByRole('button', { name: 'Translate a word', exact: true });
+    this.openButton = page.getByRole('button', { name: 'Translate a phrase', exact: true });
     this.closeButton = page.getByRole('button', { name: 'Close translation' });
   }
 
-  offerFor(word: string): Locator {
-    return this.page.getByRole('button', { name: `Translate “${word}”` });
+  offerFor(text: string): Locator {
+    return this.page.getByRole('button', { name: `Translate “${text}”` });
   }
 
   get anyOffer(): Locator {
@@ -47,13 +47,13 @@ export class TranslationDialog {
     await this.closeButton.click();
   }
 
-  async lookUp(word: string): Promise<void> {
-    await this.input.fill(word);
+  async lookUp(text: string): Promise<void> {
+    await this.input.fill(text);
     await this.translateButton.click();
   }
 
-  async submitWithKeyboard(word: string): Promise<void> {
-    await this.input.fill(word);
+  async submitWithKeyboard(text: string): Promise<void> {
+    await this.input.fill(text);
     await this.input.press('Enter');
   }
 
@@ -61,11 +61,11 @@ export class TranslationDialog {
     await this.input.press('Escape');
   }
 
-  async translateSelected(word: string): Promise<void> {
-    await this.offerFor(word).click();
+  async translateSelected(text: string): Promise<void> {
+    await this.offerFor(text).click();
   }
 
-  async select(scope: Locator, word: string): Promise<void> {
+  async select(scope: Locator, text: string): Promise<void> {
     await scope.evaluate((element, selectedText) => {
       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
       let node = walker.nextNode();
@@ -84,6 +84,6 @@ export class TranslationDialog {
         node = walker.nextNode();
       }
       throw new Error('Selection text was not present.');
-    }, word);
+    }, text);
   }
 }

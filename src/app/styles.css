@@ -12,6 +12,7 @@
   --color-surface-3: rgba(255, 255, 255, 0.16);
   --color-sidebar: rgba(255, 255, 255, 0.04);
   --color-overlay: rgba(18, 23, 34, 0.82);
+  --color-panel: #171d2b;
   --color-line: rgba(255, 255, 255, 0.11);
   --color-line-soft: rgba(255, 255, 255, 0.08);
   --color-foreground: #f2f5fa;
@@ -180,6 +181,7 @@
     0 2px 8px 0 rgba(0, 0, 0, 0.06), 0 -6px 12px 0 rgba(0, 0, 0, 0.03),
     0 14px 28px 0 rgba(0, 0, 0, 0.08);
   --color-overlay: #f1f1f4;
+  --color-panel: #ffffff;
 }
 
 :root {

@@ -41,7 +41,7 @@ Principles:
 4. **Help is graduated and fades.** Frame → phrases → full example; cued answers are marked so they
    do not count as independent evidence.
 5. **English only in practice.** The learner never needs to switch language to get help. One
-   approved exception: on demand, a selected word can be translated into the native language chosen
+   approved exception: on demand, a selected word or short phrase can be translated into the native language chosen
    in Settings, on this Mac (F13). Conversation, help, coaching and review stay in English.
 6. **Evidence, not scores.** Progress is shown as concrete examples and simple local numbers.
 7. **Privacy by default.** Speech is transcribed locally and raw audio is discarded unless the learner turns on "Keep raw audio" (local, deletable). The speech check recordings the learner makes are kept locally until deleted.

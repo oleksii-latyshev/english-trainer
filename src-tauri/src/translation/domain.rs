@@ -6,6 +6,12 @@ pub const NATIVE_LANGUAGES: &[&str] = &[
     "ru", "uk", "de", "fr", "es", "it", "pt", "ja", "ko", "zh-Hans", "ar",
 ];
 
+pub const MAX_PHRASE_WORDS: usize = 8;
+pub const MAX_PHRASE_CHARS: usize = 120;
+const MAX_CONTEXT_CHARS: usize = 500;
+const MAX_TRANSLATION_CHARS: usize = 600;
+const MAX_EXPLANATION_CHARS: usize = 500;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(deny_unknown_fields)]
 #[ts(export)]
@@ -13,21 +19,29 @@ pub struct NativeLanguageSettings {
     pub native_language: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct TranslationRequest {
-    pub word: String,
+    pub text: String,
     pub context: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(deny_unknown_fields)]
-pub struct TranslationResult {
-    pub word: String,
+#[ts(export)]
+pub struct TextTranslation {
+    pub text: String,
     pub native_language: String,
     pub translation: String,
-    pub english_explanation: Option<String>,
-    pub explanation_error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(deny_unknown_fields)]
+#[ts(export)]
+pub struct TextExplanation {
+    pub text: String,
+    pub english_explanation: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -81,7 +95,7 @@ impl TranslationError {
     pub fn invalid_request() -> Self {
         Self::new(
             TranslationErrorCode::InvalidRequest,
-            "Enter one English word (up to 64 letters) and try again.",
+            "Enter an English word or a short phrase (up to 8 words) and try again.",
         )
     }
 
@@ -113,81 +127,108 @@ pub fn validate_native_language(language: &str) -> Result<(), TranslationError> 
 }
 
 pub fn validate_request(request: &mut TranslationRequest) -> Result<(), TranslationError> {
-    if request.context.chars().count() > 500
-        || request
-            .context
-            .chars()
-            .any(|character| character.is_control() && !matches!(character, '\n' | '\r' | '\t'))
-    {
+    if request.context.chars().count() > MAX_CONTEXT_CHARS || has_unsafe_control(&request.context) {
         return Err(TranslationError::invalid_request());
     }
-
-    if request.word.chars().any(char::is_control) {
-        return Err(TranslationError::invalid_request());
-    }
-    let trimmed = request.word.trim().trim_matches(is_surrounding_punctuation);
-    let normalized = trimmed.replace(['’', '‘'], "'");
-    let word = normalized.as_str();
-    if word.is_empty()
-        || word.chars().count() > 64
-        || !word
-            .chars()
-            .all(|character| character.is_ascii_alphabetic() || matches!(character, '\'' | '-'))
-        || !word
-            .chars()
-            .next()
-            .is_some_and(|character| character.is_ascii_alphabetic())
-        || !word
-            .chars()
-            .last()
-            .is_some_and(|character| character.is_ascii_alphabetic())
-        || word.contains("--")
-        || word.contains("''")
-        || word.contains("'-")
-        || word.contains("-'")
-    {
-        return Err(TranslationError::invalid_request());
-    }
-    request.word = word.to_string();
+    request.text = normalize_phrase(&request.text).ok_or_else(TranslationError::invalid_request)?;
     Ok(())
 }
 
-fn is_surrounding_punctuation(character: char) -> bool {
-    (character.is_ascii_punctuation() && !matches!(character, '\'' | '-'))
-        || matches!(character, '“' | '”' | '‘' | '’')
+fn normalize_phrase(raw: &str) -> Option<String> {
+    if raw
+        .chars()
+        .any(|character| character.is_control() && !character.is_whitespace())
+    {
+        return None;
+    }
+    let unified = raw.replace(['’', '‘'], "'");
+    let collapsed = unified.split_whitespace().collect::<Vec<_>>().join(" ");
+    let phrase = collapsed.trim_matches(is_outer_punctuation);
+    let tokens: Vec<&str> = phrase.split(' ').collect();
+    let is_bounded = !phrase.is_empty()
+        && phrase.chars().count() <= MAX_PHRASE_CHARS
+        && tokens.len() <= MAX_PHRASE_WORDS;
+    let has_letter = phrase
+        .chars()
+        .any(|character| character.is_ascii_alphabetic());
+    (is_bounded && has_letter && tokens.iter().all(|token| is_phrase_token(token)))
+        .then(|| phrase.to_string())
 }
 
-pub fn validate_result(
-    mut result: TranslationResult,
+fn is_sentence_punctuation(character: char) -> bool {
+    matches!(
+        character,
+        ',' | '.' | ';' | ':' | '!' | '?' | '"' | '(' | ')' | '“' | '”'
+    )
+}
+
+fn is_outer_punctuation(character: char) -> bool {
+    is_sentence_punctuation(character) || character == '\''
+}
+
+fn is_phrase_token(token: &str) -> bool {
+    let core = token.trim_matches(is_sentence_punctuation);
+    let has_alphanumeric_edges = core
+        .chars()
+        .next()
+        .zip(core.chars().last())
+        .is_some_and(|(first, last)| first.is_ascii_alphanumeric() && last.is_ascii_alphanumeric());
+    has_alphanumeric_edges
+        && token.chars().all(|character| {
+            character.is_ascii_alphanumeric()
+                || is_sentence_punctuation(character)
+                || matches!(character, '\'' | '-')
+        })
+        && !["--", "''", "'-", "-'"]
+            .iter()
+            .any(|sequence| core.contains(sequence))
+}
+
+pub fn validate_translation(
+    translation: TextTranslation,
     request: &TranslationRequest,
     native_language: &str,
-) -> Result<TranslationResult, TranslationError> {
-    if result.word.replace(['’', '‘'], "'") != request.word
-        || result.native_language != native_language
-        || result.translation.trim().is_empty()
-        || result.translation.chars().count() > 300
-        || has_unsafe_control(&result.translation)
-        || result.english_explanation.is_some() == result.explanation_error.is_some()
-        || result.english_explanation.as_ref().is_some_and(|text| {
-            text.trim().is_empty()
-                || text.chars().count() > 500
-                || has_unsafe_control(text)
-                || !is_english_text(text)
+) -> Result<TextTranslation, TranslationError> {
+    let is_valid = translation.text.replace(['’', '‘'], "'") == request.text
+        && translation.native_language == native_language
+        && !translation.translation.trim().is_empty()
+        && translation.translation.chars().count() <= MAX_TRANSLATION_CHARS
+        && !has_unsafe_control(&translation.translation);
+    if is_valid {
+        Ok(TextTranslation {
+            text: request.text.clone(),
+            ..translation
         })
-        || result.explanation_error.as_ref().is_some_and(|text| {
-            text.trim().is_empty()
-                || text.chars().count() > 500
-                || has_unsafe_control(text)
-                || !is_english_text(text)
-        })
-    {
-        return Err(TranslationError::new(
-            TranslationErrorCode::InvalidOutput,
-            "The translation helper returned an invalid result. Please retry.",
-        ));
+    } else {
+        Err(invalid_helper_result())
     }
-    result.word = request.word.clone();
-    Ok(result)
+}
+
+pub fn validate_explanation(
+    explanation: TextExplanation,
+    request: &TranslationRequest,
+) -> Result<TextExplanation, TranslationError> {
+    let text = &explanation.english_explanation;
+    let is_valid = explanation.text.replace(['’', '‘'], "'") == request.text
+        && !text.trim().is_empty()
+        && text.chars().count() <= MAX_EXPLANATION_CHARS
+        && !has_unsafe_control(text)
+        && is_english_text(text);
+    if is_valid {
+        Ok(TextExplanation {
+            text: request.text.clone(),
+            ..explanation
+        })
+    } else {
+        Err(invalid_helper_result())
+    }
+}
+
+fn invalid_helper_result() -> TranslationError {
+    TranslationError::new(
+        TranslationErrorCode::InvalidOutput,
+        "The translation helper returned an invalid result. Please retry.",
+    )
 }
 
 fn has_unsafe_control(text: &str) -> bool {
@@ -207,67 +248,109 @@ fn is_english_text(text: &str) -> bool {
 mod tests {
     use super::*;
 
-    #[test]
-    fn validates_one_bounded_english_word_and_trims_outer_punctuation() {
+    fn normalized(text: &str) -> Option<String> {
         let mut request = TranslationRequest {
-            word: "  “don't,”  ".to_string(),
-            context: "I don't know.".to_string(),
-        };
-        validate_request(&mut request).unwrap();
-        assert_eq!(request.word, "don't");
-
-        let mut request = TranslationRequest {
-            word: "‘don’t’".to_string(),
+            text: text.to_string(),
             context: String::new(),
         };
-        validate_request(&mut request).unwrap();
-        assert_eq!(request.word, "don't");
+        validate_request(&mut request).ok().map(|_| request.text)
+    }
 
-        for word in ["two words", "café", "", "word\nnext", "-word", "word-"] {
-            let mut request = TranslationRequest {
-                word: word.to_string(),
-                context: String::new(),
-            };
+    #[test]
+    fn trims_outer_punctuation_and_normalises_a_single_word() {
+        assert_eq!(normalized("  “don't,”  ").as_deref(), Some("don't"));
+        assert_eq!(normalized("‘don’t’").as_deref(), Some("don't"));
+    }
+
+    #[test]
+    fn accepts_a_phrase_up_to_eight_words_and_collapses_whitespace() {
+        assert_eq!(
+            normalized("I have  been working\nhere, really.").as_deref(),
+            Some("I have been working here, really")
+        );
+        assert!(normalized("one two three four five six seven eight").is_some());
+        assert!(normalized("one two three four five six seven eight nine").is_none());
+    }
+
+    #[test]
+    fn rejects_phrases_over_the_character_limit() {
+        assert!(normalized(&"a".repeat(MAX_PHRASE_CHARS + 1)).is_none());
+        assert!(normalized(&"a".repeat(MAX_PHRASE_CHARS)).is_some());
+    }
+
+    #[test]
+    fn rejects_non_english_empty_and_malformed_text() {
+        for text in [
+            "café",
+            "привет",
+            "",
+            "  ",
+            "...",
+            "2020",
+            "-word",
+            "word-",
+            "a--b",
+            "bad\u{0000}",
+        ] {
+            assert!(normalized(text).is_none(), "{text:?} should be rejected");
+        }
+    }
+
+    #[test]
+    fn rejects_unsafe_context() {
+        let mut request = TranslationRequest {
+            text: "word".to_string(),
+            context: "safe\u{0000}context".to_string(),
+        };
+        assert!(validate_request(&mut request).is_err());
+        request.context = "x".repeat(501);
+        assert!(validate_request(&mut request).is_err());
+    }
+
+    fn request() -> TranslationRequest {
+        TranslationRequest {
+            text: "take it for granted".to_string(),
+            context: String::new(),
+        }
+    }
+
+    #[test]
+    fn rejects_a_translation_for_another_text_or_language() {
+        let translation = |text: &str, language: &str| TextTranslation {
+            text: text.to_string(),
+            native_language: language.to_string(),
+            translation: "принимать как должное".to_string(),
+        };
+        assert!(
+            validate_translation(translation("take it for granted", "ru"), &request(), "ru")
+                .is_ok()
+        );
+        for wrong in [
+            translation("other", "ru"),
+            translation("take it for granted", "de"),
+        ] {
             assert_eq!(
-                validate_request(&mut request).unwrap_err().code,
-                TranslationErrorCode::InvalidRequest
+                validate_translation(wrong, &request(), "ru")
+                    .unwrap_err()
+                    .code,
+                TranslationErrorCode::InvalidOutput
             );
         }
     }
 
     #[test]
-    fn rejects_controls_and_invalid_helper_outputs() {
-        let mut request = TranslationRequest {
-            word: "word".to_string(),
-            context: "safe\u{0000}context".to_string(),
+    fn rejects_explanations_that_are_not_english() {
+        let explanation = |text: &str| TextExplanation {
+            text: "take it for granted".to_string(),
+            english_explanation: text.to_string(),
         };
-        assert!(validate_request(&mut request).is_err());
-
-        let request = TranslationRequest {
-            word: "word".to_string(),
-            context: String::new(),
-        };
-        let result = TranslationResult {
-            word: "other".to_string(),
-            native_language: "ru".to_string(),
-            translation: "перевод".to_string(),
-            english_explanation: Some("Meaning".to_string()),
-            explanation_error: None,
-        };
+        assert!(validate_explanation(
+            explanation("To assume something will always be there."),
+            &request()
+        )
+        .is_ok());
         assert_eq!(
-            validate_result(result, &request, "ru").unwrap_err().code,
-            TranslationErrorCode::InvalidOutput
-        );
-
-        let non_english = TranslationResult {
-            word: "word".to_string(),
-            native_language: "ru".to_string(),
-            translation: "перевод".to_string(),
-            english_explanation: Some("слово".to_string()),
-            explanation_error: None,
-        };
-        assert_eq!(
-            validate_result(non_english, &request, "ru")
+            validate_explanation(explanation("слово"), &request())
                 .unwrap_err()
                 .code,
             TranslationErrorCode::InvalidOutput

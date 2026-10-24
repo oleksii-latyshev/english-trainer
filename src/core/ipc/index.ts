@@ -47,7 +47,10 @@ export type { SpeechEngineStatus } from './bindings/SpeechEngineStatus';
 export type { SpeechModel } from './bindings/SpeechModel';
 export type { SpeechModels } from './bindings/SpeechModels';
 export type { SpeechSettings } from './bindings/SpeechSettings';
+export type { TextExplanation } from './bindings/TextExplanation';
+export type { TextTranslation } from './bindings/TextTranslation';
 export type { Transcript } from './bindings/Transcript';
+export type { TranslationRequest } from './bindings/TranslationRequest';
 export type { TranslationStatus } from './bindings/TranslationStatus';
 export type { TranslationStatusKind } from './bindings/TranslationStatusKind';
 export type { TurnUsageAssessment } from './bindings/TurnUsageAssessment';
@@ -138,6 +141,11 @@ export {
   SpeechSettingsSchema,
   TranscriptSchema,
 } from './schemas/speech-recognition';
+export {
+  TextExplanationSchema,
+  TextTranslationSchema,
+  TranslationRequestSchema,
+} from './schemas/text-translation';
 export {
   NativeLanguageSettingsSchema,
   TranslationStatusKindSchema,

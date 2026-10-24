@@ -43,7 +43,7 @@ only F1–F10 and reports that answers are easier to structure than in the first
 | F10 | Spoken phrase review + warm-up | `[~]` | six-item review, shadowing, Show phrase, warm-up choose/skip |
 | F11 | Write, then speak | `[~]` | full write → review → speak → review run with real audio |
 | F12 | Practice my usual mistakes | `[~]` | five relevant questions, real audio, resume (the question and answers screen is rebuilt with Talk, #26) |
-| F13 | Translate a word | `[~]` | selection in Talk/notes/Memory; translation relevant; model download consent |
+| F13 | Translate a word or phrase | `[~]` | selection of a word or phrase (up to 8 words) in Talk/notes/Memory; visible trigger; readable panel; translation under 1 s warm; model download consent |
 | V1 | Natural local voice (Supertonic 3, four voices, system fallback) — taken ahead of the avatar | `[~]` | sounds natural; first audio quick; busy or slow engine falls back without a gap |
 
 The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one later pass.
@@ -93,7 +93,7 @@ Ordered by expected value; start only with real usage data.
 
 | Topic | Decision |
 | :--- | :--- |
-| Practice language | English only. One exception: on-demand translation of a selected word into the native language (F13), on device. |
+| Practice language | English only. One exception: on-demand translation of a selected word or short phrase into the native language (F13), on device. |
 | Conversation provider | Gemini API (default, free tier) and Apple Foundation Models (on-device fallback), both streaming behind one trait. Default chosen by measured time to first spoken word. |
 | Background AI | Coaching (batches of ≤ 5 answers), wrap-up, review material and rescue run through `agy` pinned to Gemini Flash models; the Gemini API free quota is reserved for conversation and the F6 planner. `agy` never runs on the real-time path. |
 | Speech | Local Whisper (`small.en` when installed). Local natural voice (Supertonic 3) with macOS system voices as fallback; it came before the avatar at the learner's request. |
