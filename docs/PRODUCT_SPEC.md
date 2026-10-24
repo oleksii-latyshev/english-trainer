@@ -28,14 +28,17 @@ The level is treated as a trend (roughly B1 → B2), never as a certified CEFR r
 
 ```text
 AI asks → plan (optional help) → speak → AI replies quickly
-        → inline rephrasing of what you meant → say it again (optional)
+        → speak again, the conversation moves on without notes
+        → after the conversation: a review of every answer, with a way to say it again
         → keep useful phrases → they return in later sessions
 ```
 
 Principles:
 
 1. **Speaking time first.** The learner should speak more than read.
-2. **The conversation never waits for coaching.** Feedback appears when ready, under the answer.
+2. **The conversation never interrupts itself for coaching.** In a live talk the learner moves
+   forward and does not scroll back, so Talk shows only a quiet marker per answer; the full review
+   waits on the wrap-up screen.
 3. **One useful correction beats ten.** At most one focus point per answer, plus a natural
    rephrasing.
 4. **Help is graduated and fades.** Frame → phrases → full example; cued answers are marked so they
@@ -54,9 +57,10 @@ Principles:
   interrupt her; "Speak anyway" also cancels a pending reply. Voice interruption is an optional
   Conversation flow setting, available only when the microphone confirms echo cancellation.
   Auto-listening waits until the whole reply has finished speaking.
-- **Middle:** the dialogue. Each learner message can grow an inline coaching note: "More natural:
-  …" and at most one focus point, plus a "Say it again" action that records a second attempt and
-  shows what changed.
+- **Middle:** the dialogue. A learner message carries a quiet marker beside its input label: nothing
+  while the answer is checked or when checking failed, "N tip(s)" or "Looks good" once it is ready.
+  The marker is not a control and never changes the height of the message; the review is read on
+  the wrap-up screen (§7).
 - **Bottom:** voice-first composer. Push-to-talk or hands-free mode (end of turn after a
   configurable pause; "hold, I'm thinking" keeps the turn open). The recognised text can be
   corrected before it is sent; typing is possible but recorded as typed input.
@@ -81,7 +85,7 @@ mistakes continue into the existing spoken Memory review.
 
 ### 4.2 Translate a word
 
-On demand, the learner can select one English word in Talk, an inline coaching note or Memory
+On demand, the learner can select one English word in Talk, the wrap-up review or Memory
 and request its translation into the native language chosen in Settings (Russian by default).
 The original text stays in English. A keyboard word field offers the same lookup. Translation
 runs through macOS Translation; a short English explanation uses local Apple Intelligence.
@@ -133,9 +137,14 @@ memory evidence. Planning expiry never starts recording; the learner chooses whe
 
 At the end of a session:
 
-- up to three phrases worth learning and up to two recurring mistakes, each with an example from
-  the learner's own answers, saved to Learning Memory in one action;
+- up to three phrases worth learning, each with an example from the learner's own answers, saved
+  to Learning Memory in one action; recurring mistakes live in Memory and in the answer reviews;
 - local numbers for the session: speaking time, words per minute, average answer length;
+- **Your conversation:** every turn in order, Eva's question and reply, then the learner's answer
+  with its review: what was said, a more natural version with the changed words marked, one short
+  reason, "Hear it" and "Say it again" (record, transcribe locally, compare with the first try).
+  An answer still being checked says so and fills in when coaching lands; one that could not be
+  checked offers a retry;
 - no fluency or level claims.
 
 ## 8. Learning Memory
@@ -159,7 +168,7 @@ At the end of a session:
 Memory offers a short spoken practice on mistakes seen at least twice: five questions, about
 two minutes, even when those mistakes are not due for scheduled review. Eva prepares varied
 questions that invite the corrected forms, then asks them without waiting for feedback. The
-learner can finish early or resume an unfinished practice. Normal inline coaching appears in
+learner can finish early or resume an unfinished practice. Normal coaching runs in
 the background; the drill is cued practice and does not establish independent mastery.
 
 ## 9. Settings

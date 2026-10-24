@@ -68,10 +68,11 @@ test('a whole sentence of up to eight words can be translated from Talk', async 
   expect(requests[0]?.args.request).toMatchObject({ text: sentence });
 });
 
-test('Talk and inline coaching share local word lookup without sending answers', async ({
+test('Talk and the wrap-up review share local word lookup without sending answers', async ({
   app,
   start,
   talk,
+  wrapup,
   tauri,
 }) => {
   tauri.session.withOpenSession(wordSession, wordDialogue);
@@ -82,7 +83,8 @@ test('Talk and inline coaching share local word lookup without sending answers',
   await translation.translateSelected('projects');
   await expect(translation.text('Перевод: projects')).toBeVisible();
   await translation.close();
-  await expect(talk.collapseNoteButton).toBeVisible();
+  await talk.finish();
+  await expect(wrapup.heading).toBeVisible();
   await translation.select(
     app.exactText('The present perfect connects your experience to now.'),
     'experience',

@@ -1,10 +1,5 @@
 import { Bookmark, Check, X } from 'lucide-react';
-import type {
-  FinishedPracticeSession,
-  RecurringMistake,
-  Trend,
-  WrapupPhrase,
-} from '@/lib/finishedPracticeSession';
+import type { FinishedPracticeSession, Trend, WrapupPhrase } from '@/lib/finishedPracticeSession';
 import { Button } from '@/shared/ui/button';
 import { formatDuration, savePhrasesLabel, trendLine } from './lib/wrapup';
 
@@ -89,20 +84,6 @@ function PhraseCard(props: { phrase: WrapupPhrase; canRemove: boolean; onRemove:
   );
 }
 
-function MistakeCard({ mistake }: { mistake: RecurringMistake }) {
-  return (
-    <div className="wrapup-card wrapup-mistake">
-      <div className="wrapup-mistake-change">
-        <span className="wrapup-strike">{mistake.original}</span> →{' '}
-        <span className="wrapup-highlight">{mistake.improved}</span>
-      </div>
-      <div className="wrapup-mistake-rule">
-        {mistake.explanation} · {mistake.times} times today
-      </div>
-    </div>
-  );
-}
-
 function PreparationState(props: {
   preparation: FinishedPracticeSession['wrapup_preparation'];
   hasGeneratedPhrases: boolean;
@@ -158,8 +139,12 @@ export function PhraseSection(props: {
   retrying: boolean;
   retryMessage: string | undefined;
   checking: string;
+  toSaveCount: number;
+  isSaved: boolean;
+  saveState: SaveState;
   onRemove: (phrase: string) => void;
   onRetry: () => void;
+  onSave: () => void;
 }) {
   const { summary, phrases, selection } = props;
   return (
@@ -181,6 +166,15 @@ export function PhraseSection(props: {
         retryMessage={props.retryMessage}
       />
       {props.checking && <p className="wrapup-note">{props.checking}</p>}
+      {summary.wrapup_preparation?.state !== 'pending' &&
+        summary.wrapup_preparation?.state !== 'failed' && (
+          <PhraseSaveButton
+            count={props.toSaveCount}
+            isSaved={props.isSaved}
+            onSave={props.onSave}
+            saveState={props.saveState}
+          />
+        )}
     </section>
   );
 }
@@ -213,48 +207,5 @@ function PhraseSaveButton(props: {
         </p>
       )}
     </>
-  );
-}
-
-export function MistakesSection(props: {
-  summary: FinishedPracticeSession;
-  checking: string;
-  toSaveCount: number;
-  isSaved: boolean;
-  saveState: SaveState;
-  onSave: () => void;
-}) {
-  const { summary } = props;
-  return (
-    <section aria-labelledby="wrapup-mistakes" className="wrapup-section">
-      <SectionHeading
-        count={summary.recurring_mistakes.length}
-        id="wrapup-mistakes"
-        title="Came up more than once"
-      />
-      {summary.recurring_mistakes.map((mistake) => (
-        <MistakeCard key={`${mistake.original}→${mistake.improved}`} mistake={mistake} />
-      ))}
-      {summary.recurring_mistakes.length === 0 ? (
-        <p className="wrapup-empty">
-          {props.checking ||
-            'Nothing repeated in this session. Mistakes that come up twice or more show up here.'}
-        </p>
-      ) : (
-        <>
-          {props.checking && <p className="wrapup-note">{props.checking}</p>}
-          <p className="wrapup-note">These are already in Memory and will come back to review.</p>
-        </>
-      )}
-      {summary.wrapup_preparation?.state !== 'pending' &&
-        summary.wrapup_preparation?.state !== 'failed' && (
-          <PhraseSaveButton
-            count={props.toSaveCount}
-            isSaved={props.isSaved}
-            onSave={props.onSave}
-            saveState={props.saveState}
-          />
-        )}
-    </section>
   );
 }

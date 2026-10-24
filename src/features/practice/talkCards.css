@@ -1,4 +1,4 @@
-/* Coaching note, retry and recall surfaces */
+/* Recall surfaces */
 .talk-card {
   display: flex;
   flex-direction: column;
@@ -31,19 +31,6 @@
   color: var(--et-faint);
 }
 
-.talk-card-text {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.55;
-}
-
-.talk-hl {
-  padding: 0 2px;
-  border-radius: 4px;
-  background: var(--et-ok-bg);
-  color: var(--et-ok);
-}
-
 .talk-focus {
   padding: 8px 12px;
   border-radius: 12px;
@@ -69,58 +56,6 @@
   gap: 8px;
 }
 
-.talk-retry {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px dashed color-mix(in oklab, var(--et-me) 40%, transparent);
-  border-radius: 12px;
-}
-
-.talk-retry p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.talk-retry .talk-help-caption {
-  font-size: 12px;
-}
-
-.talk-retry-win {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--et-ok);
-  font-size: 12px;
-}
-
-.talk-compare {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.talk-compare > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--et-bg);
-}
-
-.talk-compare > div[data-retry="true"] {
-  border: 1px dashed color-mix(in oklab, var(--et-me) 40%, transparent);
-}
-
-.talk-compare p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 .talk-pills {
   display: flex;
   flex-wrap: wrap;
@@ -133,17 +68,6 @@
   border-radius: 999px;
   color: var(--et-muted);
   font-size: 12px;
-}
-
-.talk-collapsed {
-  max-width: 100%;
-  justify-content: flex-start;
-}
-
-.talk-collapsed .talk-collapsed-text {
-  overflow: hidden;
-  color: var(--et-muted);
-  text-overflow: ellipsis;
 }
 
 .talk-recorder {
@@ -169,38 +93,4 @@
 .talk-recorder audio {
   width: 100%;
   height: 32px;
-}
-
-.talk-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  max-width: 520px;
-  margin: 48px auto;
-  padding: 0 24px;
-}
-
-.talk-empty h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.talk-empty p {
-  margin: 0 0 8px;
-  color: var(--et-muted);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-/* A recorder inside the coaching note's second-try box */
-.talk-card.talk-embedded {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.talk-note .talk-retry {
-  gap: 8px;
 }

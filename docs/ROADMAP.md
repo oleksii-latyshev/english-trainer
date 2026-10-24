@@ -11,7 +11,7 @@ natural spoken conversation in which:
 1. the AI starts answering within ~2 s of the learner finishing a sentence;
 2. technical and personal vocabulary is transcribed correctly most of the time;
 3. help for structuring an answer is available before and during speaking, inside the chat;
-4. corrections arrive inline and never delay the next reply;
+4. coaching never delays or interrupts the conversation and is reviewed after it;
 5. useful phrases come back later for spoken review.
 
 **MVP acceptance:** the learner practises ≥ 10 minutes on five different days within two weeks using
@@ -35,7 +35,7 @@ only F1–F10 and reports that answers are easier to structure than in the first
 | F2 | Warm microphone, hands-free turns | `[x]` | first word captured 10/10; listening starts < 200 ms; 10 min hands-free |
 | F3 | Accurate speech recognition (`small.en`, warm `whisper-server`, glossary prompt, live transcript) | `[~]` | 30 own technical terms ≥ 90 %; 15 s answer transcribed < 1.5 s |
 | F4 | Speak while generating + voice visual | `[~]` | end of speech → first AI audio < 2.5 s median over 10 turns; interruption works on speakers and headphones |
-| F5 | One Talk screen with inline coaching | `[~]` | 10 turns: feedback for every answer, reply never delayed by it |
+| F5 | One Talk screen with a quiet tip marker and the answer review on the wrap-up | `[~]` | 10 turns: feedback for every answer, reply never delayed by it |
 | F6 | Answer planner (frame → phrases → example, prefetched) | `[~]` | help instant for ≥ 9 of 10 questions |
 | F7 | Stuck rescue (next step, simpler, missing word) | `[~]` | a stuck moment resolved in < 10 s without leaving the chat |
 | F8 | Topics, profile, time-based sessions | `[~]` | three sessions on different topics feel relevant |

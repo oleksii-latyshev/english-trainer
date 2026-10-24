@@ -1,4 +1,4 @@
-import type { PracticeDialogue } from '../../types';
+import type { PracticeDialogue, TurnCoaching } from '../../types';
 import { answeredByLabel } from '../answered-by';
 
 export type DialogueMessage = {
@@ -13,7 +13,7 @@ export type DialogueMessage = {
   answerDurationMs?: number;
   usedHelp?: boolean;
   sequence?: number;
-  coaching?: unknown;
+  coaching?: TurnCoaching;
 };
 
 function turnMessages(dialogue: PracticeDialogue, index: number): DialogueMessage[] {

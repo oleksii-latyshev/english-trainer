@@ -103,12 +103,16 @@ export {
 export { PersonalProfileSchema } from './schemas/personal-profile';
 export {
   AttemptComparisonSchema,
+  COACHING_UPDATED_EVENT,
   CoachingUpdatedSchema,
   FinishedSessionSchema,
+  FocusFeedbackSchema,
   PracticeDialogueSchema,
   PracticeModeSchema,
   PracticePhaseSchema,
   PracticeSessionSchema,
+  TurnCoachingSchema,
+  TurnFeedbackSchema,
 } from './schemas/practice-session';
 export {
   MemoryRecallResultSchema,

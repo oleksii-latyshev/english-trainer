@@ -7,8 +7,7 @@ function normalizeWord(word: string): string {
     .replace(/[^\p{L}\p{N}']/gu, '');
 }
 
-/** Which words of `rewrite` have no counterpart in `original`, keeping the original's word order. */
-function changedFlags(original: string[], rewrite: string[]): boolean[] {
+function commonLengths(original: string[], rewrite: string[]): number[][] {
   const rows = original.length + 1;
   const cols = rewrite.length + 1;
   const lengths: number[][] = Array.from({ length: rows }, () => new Array<number>(cols).fill(0));
@@ -20,6 +19,11 @@ function changedFlags(original: string[], rewrite: string[]): boolean[] {
           : Math.max(lengths[i + 1][j], lengths[i][j + 1]);
     }
   }
+  return lengths;
+}
+
+function changedFlags(original: string[], rewrite: string[]): boolean[] {
+  const lengths = commonLengths(original, rewrite);
   const flags = new Array<boolean>(rewrite.length).fill(true);
   let i = 0;
   let j = 0;
@@ -47,10 +51,6 @@ function mergeParts(parts: RewritePart[]): RewritePart[] {
   return merged;
 }
 
-/**
- * Splits a rewrite into runs, marking the words the learner did not say. Spacing between two
- * changed words belongs to the highlight so a changed phrase reads as one piece.
- */
 export function highlightRewrite(original: string, rewrite: string): RewritePart[] {
   const originalWords = original.split(/\s+/).map(normalizeWord).filter(Boolean);
   if (originalWords.length === 0) return rewrite ? [{ text: rewrite, isChanged: false }] : [];

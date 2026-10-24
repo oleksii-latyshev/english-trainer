@@ -28,11 +28,6 @@ import { captureViewOf } from './capture-view';
 
 const OFF = { status: 'off', error: '' } as const;
 
-export type RetryControl = {
-  isRetrying: boolean;
-  startRetry: () => void;
-};
-
 export function usePracticeModel(): PracticeViewModel {
   const capture = useAtomValue(captureStateAtom);
   const timing = useAtomValue(captureTimingAtom);
@@ -51,21 +46,10 @@ export function usePracticeModel(): PracticeViewModel {
   };
 }
 
-export function useRawCaptureActions() {
+export function usePracticeActions(): PracticeActions {
   const registry = useContext(RegistryContext);
   return {
-    startRecording: () => startListening(registry, { mode: 'manual', discardPreRoll: false }),
-    resetCapture: () => resetCapture(registry),
-  };
-}
-
-export function usePracticeActions(retry: RetryControl): PracticeActions {
-  const registry = useContext(RegistryContext);
-  return {
-    startRecording: () => {
-      if (retry.isRetrying) retry.startRetry();
-      else interruptReply(registry, { record: true, retainPreRoll: false });
-    },
+    startRecording: () => interruptReply(registry, { record: true, retainPreRoll: false }),
     stopRecording: () => stopListening(registry),
     startAutoListen: () => startListening(registry, { mode: 'auto', discardPreRoll: false }),
     cancelRecording: () => cancelListening(registry),

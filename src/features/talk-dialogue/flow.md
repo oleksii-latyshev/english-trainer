@@ -1,8 +1,8 @@
 # Talk dialogue
 
 Eva's and the learner's messages, with the reply that is still arriving, and the reads that keep
-them current. Coaching notes are not here: the screen passes a render function for the note under
-each answer.
+them current. Coaching never expands in the chat: a learner message carries only a quiet marker
+from its coaching state, and the review lives in `features/coaching-note` on the wrap-up.
 
 ```mermaid
 sequenceDiagram
@@ -42,3 +42,15 @@ stateDiagram-v2
     Paused --> Paused: new message arrives, the New message pill appears
     Paused --> Following: learner reaches the end or presses the pill
 ```
+
+## The quiet coaching marker
+
+The meta line under a learner message always has its own row, so a marker appearing never changes the
+height of the message and the chat never shifts. It is not a button.
+
+| Coaching state | Marker |
+| :--- | :--- |
+| pending | a faint dot ("Being checked") |
+| ready, N focus items | "1 tip" or "N tips", tooltip "Reviewed after the conversation" |
+| ready, none | "Looks good" |
+| failed, paused | nothing |

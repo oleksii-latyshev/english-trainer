@@ -16,7 +16,8 @@ export class TalkPage {
   readonly finishButton: Locator;
   readonly reply: Locator;
   readonly exactReply: Locator;
-  readonly coachingPending: Locator;
+  readonly beingChecked: Locator;
+  readonly learnerMessages: Locator;
   readonly writeHeading: Locator;
   readonly reviewWritingButton: Locator;
   readonly reviewWritingHeading: Locator;
@@ -38,7 +39,6 @@ export class TalkPage {
   readonly voiceFailureNotice: Locator;
   readonly timingButton: Locator;
   readonly timingDialog: Locator;
-  readonly collapseNoteButton: Locator;
   readonly practiceComplete: Locator;
   readonly preparingQuestions: Locator;
 
@@ -52,7 +52,8 @@ export class TalkPage {
     this.finishButton = page.getByRole('button', { name: 'Finish', exact: true });
     this.reply = page.getByText('That sounds useful.');
     this.exactReply = page.getByText('That sounds useful.', { exact: true });
-    this.coachingPending = page.getByText('Checking your answer…');
+    this.beingChecked = page.getByRole('img', { name: 'Being checked' });
+    this.learnerMessages = page.getByRole('article', { name: 'You said' });
     this.writeHeading = page.getByRole('heading', { name: 'Write your answer' });
     this.reviewWritingButton = page.getByRole('button', { name: 'Review writing' });
     this.reviewWritingHeading = page.getByRole('heading', { name: 'Review writing' });
@@ -77,7 +78,6 @@ export class TalkPage {
     );
     this.timingButton = page.getByLabel('Speech pipeline timing', { exact: true });
     this.timingDialog = page.getByRole('dialog', { name: 'Speech pipeline timing' });
-    this.collapseNoteButton = page.getByRole('button', { name: 'Collapse note' });
     this.practiceComplete = page.getByText('Practice complete', { exact: true });
     this.preparingQuestions = page.getByText('Preparing five questions…');
   }

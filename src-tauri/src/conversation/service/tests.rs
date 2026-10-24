@@ -325,6 +325,33 @@ fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
 }
 
 #[test]
+fn retry_works_after_the_session_is_finished_and_rejects_unknown_sessions() {
+    let store = SessionStore::default();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "I work in there".into(), |_| {
+            Ok(turn("Next?", "Follow up?"))
+        })
+        .unwrap();
+    store
+        .save_feedback(session.session_id, 1, "I work in there", &sample_feedback())
+        .unwrap();
+    store.finish(session.session_id).unwrap();
+
+    let result = store
+        .retry_turn(session.session_id, 1, "I work there now".into())
+        .unwrap();
+    assert_eq!(
+        result.target_evidence,
+        crate::providers::TargetEvidence::NewlyObservedInRetry
+    );
+    let error = store
+        .retry_turn(session.session_id + 1, 1, "I work there now".into())
+        .unwrap_err();
+    assert_eq!(code_of(error), ProviderErrorCode::InvalidSession);
+}
+
+#[test]
 fn retry_validation_failure_preserves_the_reviewed_answer_and_session() {
     let store = SessionStore::default();
     let session = store.start().unwrap();
@@ -1670,7 +1697,7 @@ fn coaching_is_saved_for_a_finished_session_only_for_the_answer_it_belongs_to() 
 }
 
 #[test]
-fn dialogue_restores_all_saved_turns_and_rejects_finished_or_other_sessions() {
+fn dialogue_restores_all_saved_turns_of_open_and_finished_sessions_and_rejects_other_sessions() {
     let path = temporary_database_path();
     let store = SessionStore::open(&path).unwrap();
     let session = store.start().unwrap();
@@ -1694,7 +1721,11 @@ fn dialogue_restores_all_saved_turns_and_rejects_finished_or_other_sessions() {
     let reopened = SessionStore::open(&path).unwrap();
     assert_eq!(reopened.dialogue(session.session_id).unwrap(), dialogue);
     reopened.finish(session.session_id).unwrap();
-    assert!(reopened.dialogue(session.session_id).is_err());
+    let finished = reopened.dialogue(session.session_id).unwrap();
+    assert_eq!(finished.opening_question, dialogue.opening_question);
+    assert_eq!(finished.turns, dialogue.turns);
+    assert_eq!(finished.coaching.len(), 2);
+    assert!(reopened.dialogue(session.session_id + 1).is_err());
     std::fs::remove_file(path).unwrap();
 }
 

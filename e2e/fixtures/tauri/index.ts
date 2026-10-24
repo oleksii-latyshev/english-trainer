@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { type AiSettingsOptions, installAiSettings } from './ai-settings';
 import { installBase } from './base';
+import { CoachingBackend } from './coaching';
 import type { IpcCall } from './harness';
 import { LiveReviewBackend } from './live-review';
 import { MemoryBackend } from './memory';
@@ -26,6 +27,7 @@ export class FakeBackend {
   readonly review: ReviewBackend;
   readonly liveReview: LiveReviewBackend;
   readonly wrapup: WrapupBackend;
+  readonly coaching: CoachingBackend;
   readonly streaming: StreamingBackend;
   readonly rescue: RescueBackend;
   readonly naturalVoice: NaturalVoiceBackend;
@@ -44,6 +46,7 @@ export class FakeBackend {
     this.review = new ReviewBackend(page);
     this.liveReview = new LiveReviewBackend(page);
     this.wrapup = new WrapupBackend(page);
+    this.coaching = new CoachingBackend(page);
     this.streaming = new StreamingBackend(page);
     this.rescue = new RescueBackend(page);
     this.naturalVoice = new NaturalVoiceBackend(page);
@@ -74,6 +77,7 @@ export class FakeBackend {
     await this.review.install();
     await this.liveReview.install();
     await this.wrapup.install();
+    await this.coaching.install();
     await this.streaming.install();
     await this.rescue.install();
     await this.naturalVoice.install();

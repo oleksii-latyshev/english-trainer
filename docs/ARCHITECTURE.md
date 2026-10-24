@@ -96,15 +96,15 @@ sequenceDiagram
         UI->>User: speaks first sentence while the rest arrives
     and slow path
         Core->>Eval: rephrasing + focus point, help for next question
-        Eval-->>UI: inline note when ready
+        Eval-->>UI: quiet marker in Talk, review on the wrap-up
     end
 ```
 
 - The reply streams from `send_practice_turn`; the UI queues completed sentences to the speech facade
   independently of coaching.
 - Each saved answer joins a per-session coaching queue in Rust. Batches of up to five answers run in
-  the background through `agy`; notes appear under the answers when a batch lands (`coaching-updated`
-  event). The UI re-reads on events and never polls.
+  the background through `agy`; Talk marks the answers and the wrap-up fills in their reviews when
+  a batch lands (`coaching-updated` event). The UI re-reads on events and never polls.
 - A turn cancellation token is owned by Rust and checked atomically before saving; the UI also
   invalidates late stream and speech callbacks. Voice interruption is opt-in and gated by actual
   echo cancellation.

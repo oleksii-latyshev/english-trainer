@@ -280,9 +280,14 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   transcript, with texts in bounds and a different `improved`, becomes the single focus point
   (`TurnFeedback.focus_feedback` has at most one). A bad entry costs only its own answer.
 - `get_practice_dialogue` returns `coaching[]` per turn: `{ state: pending | paused | failed }` or
-  `{ state: ready, feedback }`. `get_session_wrapup(session_id)` rebuilds a finished session's
+  `{ state: ready, feedback }`. It reads an open session from memory and a finished one from SQLite
+  (opening question and turns), so the wrap-up shows the whole conversation. Talk uses only the
+  state (marker: pending → faint dot, ready → "N tip(s)" or "Looks good", failed or paused → none);
+  the wrap-up renders the feedback (`features/coaching-note`, re-read on `coaching-updated`). `get_session_wrapup(session_id)` rebuilds a finished session's
   wrap-up; `FinishedPracticeSession` has `pending_coaching` and `is_coaching_paused`.
-  `retry_practice_turn` saves a second attempt and returns a local `AttemptComparison`
+  `retry_practice_turn` saves a second attempt and returns a local `AttemptComparison`; it works for
+  an open session (rejected with `busy` while a reply is in flight) and for a finished one
+  (rejected with `invalid_session` when the session does not exist)
   (`target_evidence`: `already_present_in_both | newly_observed_in_retry | partially_observed |
   not_observed | uncertain`, word-count change).
 
@@ -493,7 +498,7 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
 - Mistake observations are stored from the first occurrence, but Memory listing, due count,
   conversation targets and spoken Memory review selection require `times_seen >= 2`. Distinct answers
   (including across sessions) count; identical feedback delivery is idempotent. Replacing feedback can
-  reduce eligibility. Inline coaching is unaffected.
+  reduce eligibility. Coaching is unaffected.
 - **Schedule** (spoken recall only; there is no self-reported review): a miss ("need practice") →
   interval 1 day, status `learning`; a wording match ("remembered") → interval 2 → 4 → previous ×
   ease (4-365 days), ease +0.1 up to 3.0. `new → learning`; `learning → improving` once the interval

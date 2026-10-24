@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { showSavedToast } from '@/components/savedToast';
 import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
 import {
@@ -13,13 +13,7 @@ import { checkingLine, formatDuration } from './lib/wrapup';
 import { deletePhraseCard } from './practiceMemoryApi';
 import { getSessionWrapup, retrySessionWrapup, saveWrapupPhrases } from './sessionApi';
 import { useWrapupUpdates } from './useWrapupUpdates';
-import {
-  MistakesSection,
-  PhraseSection,
-  type PhraseSelection,
-  type SaveState,
-  Stats,
-} from './WrapupSections';
+import { PhraseSection, type PhraseSelection, type SaveState, Stats } from './WrapupSections';
 import './wrapup.css';
 
 type Props = {
@@ -28,6 +22,8 @@ type Props = {
   onTalkMore: () => void;
   /** The wrap-up read again after more coaching landed. */
   onSummaryUpdated: (summary: FinishedPracticeSession) => void;
+  /** The conversation review, shown between the numbers and the phrases. */
+  children?: ReactNode;
 };
 
 type CurrentSession = { mounted: boolean; sessionId: number };
@@ -67,7 +63,13 @@ function sessionLabel(summary: FinishedPracticeSession): string {
   return `${summary.topic_label} · ${mode} · ${phase} · ${formatDuration(summary.duration_ms)}`;
 }
 
-export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdated }: Props) {
+export function PracticeCompletion({
+  summary,
+  onDone,
+  onTalkMore,
+  onSummaryUpdated,
+  children,
+}: Props) {
   useWrapupUpdates(summary, onSummaryUpdated);
   const [selection, setSelection] = useState<{
     sessionId: number;
@@ -182,28 +184,23 @@ export function PracticeCompletion({ summary, onDone, onTalkMore, onSummaryUpdat
       </header>
 
       <Stats numbers={summary.numbers} />
-      <div className="wrapup-columns">
-        <PhraseSection
-          checking={checking}
-          onRemove={(phrase) =>
-            updateSelection((value) => ({ ...value, removed: new Set([...value.removed, phrase]) }))
-          }
-          onRetry={() => void handleRetryPhrases()}
-          phrases={phrases}
-          retryMessage={retryMessageForSession}
-          retrying={canRetry}
-          selection={{ removed, saved }}
-          summary={summary}
-        />
-        <MistakesSection
-          checking={checking}
-          isSaved={isSaved}
-          onSave={() => void handleSaveAll()}
-          saveState={saveState}
-          summary={summary}
-          toSaveCount={toSave.length}
-        />
-      </div>
+      {children}
+      <PhraseSection
+        checking={checking}
+        isSaved={isSaved}
+        onRemove={(phrase) =>
+          updateSelection((value) => ({ ...value, removed: new Set([...value.removed, phrase]) }))
+        }
+        onRetry={() => void handleRetryPhrases()}
+        onSave={() => void handleSaveAll()}
+        phrases={phrases}
+        retryMessage={retryMessageForSession}
+        retrying={canRetry}
+        saveState={saveState}
+        selection={{ removed, saved }}
+        summary={summary}
+        toSaveCount={toSave.length}
+      />
     </div>
   );
 }
