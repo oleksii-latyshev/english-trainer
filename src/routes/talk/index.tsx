@@ -16,7 +16,7 @@ import { HelpBar } from '@/features/practice/HelpBar';
 import { OriginalQuestionPrompt } from '@/features/practice/OriginalQuestionPrompt';
 import { PracticeReview } from '@/features/practice/PracticeReview';
 import { RescuePanel } from '@/features/practice/RescuePanel';
-import { useDailyRecall } from '@/features/practice/useDailyRecall';
+import { recallActiveAtom } from '@/features/spoken-recall';
 import { useTurn } from '@/features/talk-composer';
 import { HISTORY_FAILED_MESSAGE, useDialogue } from '@/features/talk-dialogue';
 import { isPracticeDialogue } from '@/lib/dialogueTypes';
@@ -46,11 +46,6 @@ function lockReason(
     : 'All original questions have been answered. Review this stage to continue.';
 }
 
-function recallSessionOf(session: SessionDetails | undefined): number | undefined {
-  if (!session || session.isMistakePractice) return undefined;
-  return session.turnCount >= session.targetTurns ? session.sessionId : undefined;
-}
-
 function canHelp(session: SessionDetails | undefined, isOccupied: boolean): boolean {
   if (session === undefined || !practiceKeepsMicrophoneWarm(session)) return false;
   if (session.isMistakePractice || practiceStageIsWriting(session)) return false;
@@ -75,32 +70,28 @@ export function TalkRoute() {
   const turn = useTurn();
   const history = useDialogue();
   const dialogue = isPracticeDialogue(history.dialogue) ? history.dialogue : null;
-  const recall = useDailyRecall(recallSessionOf(session));
+  const isRecalling = useAtomValue(recallActiveAtom);
   const isRetrying = useAtomValue(sayAgainActiveAtom);
   const actions = usePracticeActions();
 
-  useTurnLock(registry, recall.active || isRetrying);
+  useTurnLock(registry, isRecalling || isRetrying);
   useCancelOnStageChange(session, () => cancelSayAgain(registry));
 
-  const isHelpAvailable = canHelp(session, isRetrying || recall.active);
+  const isHelpAvailable = canHelp(session, isRetrying || isRecalling);
   const help = useHelp({ session, captureStatus: model.status, isHelpAvailable });
   const accepted = useAtomValue(acceptedAnswerAtom);
-  const sentAnswer =
-    accepted?.requestId === model.currentRequestId &&
-    accepted.originalTranscript === model.transcript
-      ? accepted
-      : null;
 
   const isStageLocked = session !== undefined && !canSendPracticeStage(session);
   const isListening = turn.state.tag === 'listening' || turn.state.tag === 'auto-listen';
-  const isHelpDisabled =
-    model.busy ||
-    model.practice.tag !== 'active' ||
-    turn.isSending ||
-    model.transcribing ||
-    recall.active ||
-    isRetrying ||
-    isStageLocked;
+  const isHelpDisabled = [
+    model.busy,
+    model.practice.tag !== 'active',
+    turn.isSending,
+    model.transcribing,
+    isRecalling,
+    isRetrying,
+    isStageLocked,
+  ].some(Boolean);
 
   const helpBar: ReactNode =
     isHelpAvailable && session ? (
@@ -133,12 +124,10 @@ export function TalkRoute() {
 
   const extras: ReactNode = session ? (
     <TalkExtras
-      actions={actions}
+      accepted={accepted}
       dialogue={dialogue}
+      isRecalling={isRecalling}
       isRetrying={isRetrying}
-      model={model}
-      recall={recall}
-      sentAnswer={sentAnswer}
       session={session}
     />
   ) : undefined;
@@ -167,13 +156,13 @@ export function TalkRoute() {
     <TalkScreen
       dialogueExtras={extras}
       helpBar={helpBar}
-      isFinishBlocked={recall.active}
+      isFinishBlocked={isRecalling}
       lockedReason={
         session
-          ? lockReason(recall.active, isRetrying, isStageLocked, session.isMistakePractice)
+          ? lockReason(isRecalling, isRetrying, isStageLocked, session.isMistakePractice)
           : undefined
       }
-      moodExtras={{ isPhraseSaved: false, isHelpOpen: help.helpLevel !== null }}
+      moodExtras={{ isHelpOpen: help.helpLevel !== null }}
       onChooseMicrophone={() => void navigate({ to: '/settings', hash: 'microphone' })}
       onOpenSettings={() => void navigate({ to: '/settings' })}
       onStartPractice={() => registry.set(startPracticeAtom, undefined)}

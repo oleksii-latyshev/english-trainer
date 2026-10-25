@@ -153,7 +153,8 @@ Rules:
   transitions. Rehearsal and mistake practice are cued, so they never become independent-use
   evidence. Rules: TR §7.
 - Session finish commits a durable wrap-up job. A `WrapupQueue` resumes pending jobs at startup and
-  calls the engine outside the session mutex; results or typed failures persist before events
+  calls the engine outside the session mutex, behind the `WrapupGenerator` and `WrapupNotifier`
+  ports of the `conversation` context; results or typed failures persist before events
   refresh the UI. Review material has its own SQLite cache so background generation cannot delay
   first-answer scoring.
 

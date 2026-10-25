@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
+import type { FinishedPracticeSession } from '@/core/ipc';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
 import type { PracticeOptions } from '@/lib/practiceOptions';
 import type { PracticeSession } from '@/lib/practiceSessionTypes';
 

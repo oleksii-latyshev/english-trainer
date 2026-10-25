@@ -8,12 +8,9 @@ import {
 import {
   isAttemptComparison,
   isConversationTurn,
-  isDailyRecallPlan,
-  isFinishedPracticeSession,
   isPracticeSession,
   isProviderError,
   isQuestionScaffold,
-  isSpokenRecallResult,
   isTurnFeedback,
 } from './types';
 
@@ -167,58 +164,6 @@ describe('conversation IPC payloads', () => {
     expect(isPracticeSession({ session_id: 1, opening_question: 'Question?', turn_count: 0 })).toBe(
       false,
     );
-    const finished = {
-      session_id: 1,
-      finished: true,
-      turn_count: 3,
-      target_turns: 8,
-      duration_ms: 624000,
-      topic_label: 'Daily life',
-      duration_goal_seconds: 600,
-      numbers: {
-        speaking_time: { duration_ms: null, trend: { kind: 'first' } },
-        words_per_minute: { value: null, trend: { kind: 'first' } },
-        average_answer: { words: 3, trend: { kind: 'first' } },
-      },
-      phrases: [],
-      recurring_mistakes: [],
-      pending_coaching: 0,
-      is_coaching_paused: false,
-    };
-    expect(isFinishedPracticeSession(finished)).toBe(true);
-    const mistakeFinished = {
-      ...finished,
-      target_turns: 5,
-      is_mistake_practice: true,
-      practice_mode: 'voice',
-      practice_phase: 'speaking',
-      written_turn_count: 0,
-      spoken_turn_count: 3,
-    };
-    expect(isFinishedPracticeSession(mistakeFinished)).toBe(true);
-    expect(isFinishedPracticeSession({ ...mistakeFinished, practice_mode: 'text_chat' })).toBe(
-      false,
-    );
-    expect(isFinishedPracticeSession({ ...mistakeFinished, target_turns: 8 })).toBe(false);
-    expect(isFinishedPracticeSession({ ...mistakeFinished, spoken_turn_count: 2 })).toBe(false);
-    expect(isFinishedPracticeSession({ ...finished, is_mistake_practice: 'yes' })).toBe(false);
-    expect(isFinishedPracticeSession({ ...finished, turn_count: -1 })).toBe(false);
-    expect(isFinishedPracticeSession({ ...finished, target_turns: 0 })).toBe(false);
-    expect(isFinishedPracticeSession({ session_id: 1, finished: false })).toBe(false);
-  });
-
-  it('accepts bounded spoken recall plans and evidence', () => {
-    const plan = { completed_count: 1, items: [{ phrase_id: 7, cue: 'A trade-off' }] };
-    expect(isDailyRecallPlan(plan)).toBe(true);
-    expect(isDailyRecallPlan({ ...plan, completed_count: 3 })).toBe(false);
-    const result = {
-      phrase_id: 7,
-      transcript: 'The trade off matters.',
-      target: 'trade-off',
-      wording_observed: true,
-    };
-    expect(isSpokenRecallResult(result)).toBe(true);
-    expect(isSpokenRecallResult({ ...result, wording_observed: 'yes' })).toBe(false);
   });
 
   it('accepts bounded question help and rejects malformed IPC data', () => {

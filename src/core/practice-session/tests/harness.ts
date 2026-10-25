@@ -3,7 +3,7 @@ import { AtomRegistry } from 'effect/reactivity';
 import { Ipc, IpcDecodeError, IpcError } from '@/core/ipc';
 import { runtime } from '../model/runtime';
 import { PracticeSessions } from '../services/practice-session-service';
-import { aPracticeSession } from './builders';
+import { aFinishedSession, aPracticeSession } from './builders';
 
 if (typeof window === 'undefined') {
   Object.defineProperty(globalThis, 'window', { value: {}, configurable: true, writable: true });
@@ -36,7 +36,7 @@ function answer(backend: Backend, command: string, args: unknown): unknown {
         written_turn_count: 2,
       });
     case 'finish_practice_session':
-      return { session_id: 12, finished: true };
+      return aFinishedSession({ session_id: 12 });
     case 'set_practice_clock':
       return aPracticeSession({ session_id: 12, active_duration_ms: 5000 });
     default:

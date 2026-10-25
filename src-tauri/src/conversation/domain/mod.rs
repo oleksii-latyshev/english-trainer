@@ -14,4 +14,6 @@ pub use session::{
     StoredTurn,
 };
 pub use topics::{PracticeMode, PracticePhase, StartPracticeOptions};
-pub use wrapup::{RecurringMistake, SavedWrapupPhrases, WrapupPhrase, WrapupPreparation};
+pub use wrapup::{
+    RecurringMistake, SavedWrapupPhrases, WrapupEvent, WrapupPhrase, WrapupPreparation,
+};

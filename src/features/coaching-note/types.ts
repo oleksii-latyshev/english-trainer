@@ -22,6 +22,11 @@ export type AnswerTarget = {
   readonly sequence: number;
 };
 
+export type ReviewedAnswer = {
+  readonly target: AnswerTarget;
+  readonly feedback: TurnFeedback;
+};
+
 export type SayAgainView =
   | { readonly tag: 'idle' }
   | { readonly tag: 'busy' }

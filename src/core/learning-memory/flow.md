@@ -106,5 +106,5 @@ runs them, so the card, the library and the badges reload after every answer.
 ## Refresh after a change
 
 Changes made through atoms (`archive`, `delete` in `features/memory-library`) carry the
-`LEARNING_MEMORY` reactivity key, so every atom above reloads. Legacy code that still changes
-Memory (saving a phrase from Talk, a finished review or session) calls `refreshLearningMemory()`.
+`LEARNING_MEMORY` reactivity key, so every atom above reloads. That includes the saves and undos of
+`features/wrap-up` and the usage review of `features/usage-review`.

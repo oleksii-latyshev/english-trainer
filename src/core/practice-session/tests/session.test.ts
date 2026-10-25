@@ -7,7 +7,7 @@ import {
   startPracticeAtom,
   transitionPhaseAtom,
 } from '../model/commands';
-import { aPracticeSession } from './builders';
+import { aFinishedSession, aPracticeSession } from './builders';
 import { makeBackend, openRegistry, until } from './harness';
 
 const OPTIONS = {
@@ -107,7 +107,7 @@ describe('finishing and changing stage', () => {
     await until(() => registry.get(practiceStateAtom).tag === 'completed');
     expect(registry.get(practiceStateAtom)).toEqual({
       tag: 'completed',
-      summary: { session_id: 12, finished: true },
+      summary: aFinishedSession({ session_id: 12 }),
     });
   });
 

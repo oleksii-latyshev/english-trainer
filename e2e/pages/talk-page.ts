@@ -4,6 +4,8 @@ import { Composer } from '../components/composer';
 import { PlannerPanel } from '../components/planner-panel';
 import { Recorder } from '../components/recorder';
 import { RescuePanel } from '../components/rescue-panel';
+import { SpokenRecall } from '../components/spoken-recall';
+import { UsageReview } from '../components/usage-review';
 import { openingQuestion } from '../data/sessions';
 
 export class TalkPage {
@@ -12,6 +14,8 @@ export class TalkPage {
   readonly recorder: Recorder;
   readonly planner: PlannerPanel;
   readonly rescue: RescuePanel;
+  readonly usageReview: UsageReview;
+  readonly spokenRecall: SpokenRecall;
   readonly openingQuestion: Locator;
   readonly finishButton: Locator;
   readonly reply: Locator;
@@ -48,6 +52,8 @@ export class TalkPage {
     this.recorder = new Recorder(page);
     this.planner = new PlannerPanel(page);
     this.rescue = new RescuePanel(page);
+    this.usageReview = new UsageReview(page);
+    this.spokenRecall = new SpokenRecall(page);
     this.openingQuestion = page.getByText(openingQuestion);
     this.finishButton = page.getByRole('button', { name: 'Finish', exact: true });
     this.reply = page.getByText('That sounds useful.');

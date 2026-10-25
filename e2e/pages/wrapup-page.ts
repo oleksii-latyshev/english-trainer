@@ -29,7 +29,7 @@ export class WrapupPage {
     this.conversation = page.getByRole('region', { name: 'Your conversation' });
     this.retryPhrasesButton = page.getByRole('button', { name: 'Retry phrases' });
     this.noPhrases = page.getByText('No phrases to keep from this session.');
-    this.savedButton = page.getByRole('button', { name: 'Saved to Memory' });
+    this.savedButton = this.phrasesRegion.getByRole('button', { name: 'Saved to Memory' });
     this.undoButton = page.getByRole('button', { name: 'Undo' });
   }
 
@@ -46,6 +46,14 @@ export class WrapupPage {
     await expect(stop).toBeEnabled();
     await this.page.waitForTimeout(CAPTURE_BUFFER_MS);
     await stop.click();
+  }
+
+  async saveAnswerPhrase(sequence: number): Promise<void> {
+    await this.review(sequence).getByRole('button', { name: 'Save phrase' }).click();
+  }
+
+  answerSaved(sequence: number): Locator {
+    return this.review(sequence).getByRole('button', { name: 'Saved to Memory' });
   }
 
   summaryLine(text: string): Locator {

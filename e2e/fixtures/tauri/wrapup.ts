@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
-import type { PhraseCardRecord } from '@/lib/learningTypes';
+import type { FinishedPracticeSession, PhraseCardRecord } from '@/core/ipc';
 
 export type WrapupOptions = {
   finished: FinishedPracticeSession;
@@ -62,7 +61,7 @@ export async function installWrapup(page: Page, options: WrapupOptions): Promise
       return true;
     }
 
-    function retryPhrases(args: Record<string, unknown> | undefined): undefined {
+    function retryPhrases(args: Record<string, unknown> | undefined): null {
       harness.calls.push({ command: 'retry_session_wrapup', args: args ?? {} });
       const sessionId = args?.sessionId;
       const current = harness.finished;
@@ -75,7 +74,7 @@ export async function installWrapup(page: Page, options: WrapupOptions): Promise
       fixture.emit('wrapup-updated', { session_id: sessionId });
       const afterRetry = fixture.afterRetry;
       if (afterRetry) window.setTimeout(() => fixture.completePreparation(afterRetry), 10);
-      return undefined;
+      return null;
     }
 
     function isStringList(value: unknown): value is string[] {
@@ -148,7 +147,38 @@ export async function installWrapup(page: Page, options: WrapupOptions): Promise
       return { cards, created_ids };
     }
 
+    function saveAnswerPhrase(args: Record<string, unknown> | undefined): PhraseCardRecord {
+      harness.calls.push({ command: 'save_phrase_card', args: args ?? {} });
+      const phrase = args?.phrase;
+      const sessionId = args?.session_id;
+      const sequence = args?.sequence;
+      if (typeof phrase !== 'string' || typeof sessionId !== 'number') {
+        throw { code: 'invalid_request', message: 'Choose a phrase to save.' };
+      }
+      const fixture = window.__ET_WRAPUP__;
+      const now = Date.now();
+      const card: PhraseCardRecord = {
+        id: fixture.nextId++,
+        phrase,
+        normalized_phrase: phrase.trim().toLocaleLowerCase(),
+        meaning_or_note: typeof args?.meaning_or_note === 'string' ? args.meaning_or_note : '',
+        session_id: sessionId,
+        sequence: typeof sequence === 'number' ? sequence : null,
+        created_at: now,
+        last_reviewed_at: null,
+        next_review_at: now,
+        interval_days: 1,
+        ease_factor: 2.5,
+        status: 'new',
+        is_due: true,
+        times_used_on_own: 0,
+      };
+      fixture.cards.push(card);
+      return card;
+    }
+
     window.__TAURI_INTERNALS__.invoke = async (command, args) => {
+      if (command === 'save_phrase_card') return saveAnswerPhrase(args);
       if (command === 'delete_phrase_card') return deletePhrase(args);
       if (command === 'retry_session_wrapup') return retryPhrases(args);
       if (command === 'save_wrapup_phrases') return savePhrases(args);

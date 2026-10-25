@@ -228,12 +228,9 @@ export function describeTurn(state: TurnState, flow: FlowSignals): TurnPresentat
   }
 }
 
-export type MoodExtras = { isPhraseSaved: boolean; isHelpOpen: boolean };
+export type MoodExtras = { isHelpOpen: boolean };
 
 export function evaMoodFor(state: TurnState, flow: FlowSignals, extras: MoodExtras): EvaMood {
-  if (state.tag === 'idle') {
-    if (extras.isPhraseSaved) return 'happy';
-    if (extras.isHelpOpen) return 'curious';
-  }
+  if (state.tag === 'idle' && extras.isHelpOpen) return 'curious';
   return describeTurn(state, flow).mood;
 }

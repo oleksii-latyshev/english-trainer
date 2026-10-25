@@ -1,7 +1,6 @@
 import type { ConversationTurn } from '@/core/ipc';
 import type {
   AttemptComparison,
-  FinishedSession,
   PracticeSession,
   PracticeState,
   SessionDetails,
@@ -79,13 +78,6 @@ export function recordRetryComparison(
     ...current,
     retryEvidence: [...others, comparison].sort((a, b) => a.turn_sequence - b.turn_sequence),
   };
-}
-
-export function updateSummary(current: PracticeState, summary: FinishedSession): PracticeState {
-  if (current.tag !== 'completed' || current.summary.session_id !== summary.session_id) {
-    return current;
-  }
-  return { tag: 'completed', summary };
 }
 
 export function updatePracticeClock(

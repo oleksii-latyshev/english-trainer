@@ -5,9 +5,8 @@ import {
   recordRetryComparison,
   setTurnPending,
   updatePracticeClock,
-  updateSummary,
 } from '../helpers/practice-state';
-import type { AttemptComparison, FinishedSession, PracticeSession, PracticeState } from '../types';
+import type { AttemptComparison, PracticeSession, PracticeState } from '../types';
 import { practiceErrorAtom, practiceStateAtom } from './atoms';
 
 export function acceptTurn(
@@ -30,10 +29,6 @@ export function acceptRetryComparison(
   registry.update(practiceStateAtom, (state) =>
     recordRetryComparison(state, sessionId, comparison),
   );
-}
-
-export function replaceSummary(registry: AtomRegistry.AtomRegistry, summary: FinishedSession) {
-  registry.update(practiceStateAtom, (state) => updateSummary(state, summary));
 }
 
 export function dismissSummary(registry: AtomRegistry.AtomRegistry) {

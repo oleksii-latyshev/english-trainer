@@ -1,20 +1,21 @@
 import { RegistryContext, useAtom } from '@effect/atom-react';
 import { AsyncResult } from 'effect/reactivity';
 import { Volume2 } from 'lucide-react';
-import { useContext } from 'react';
+import { type ReactNode, useContext } from 'react';
 import { createPlayback } from '@/core/speech';
 import { Button } from '@/shared/ui/button';
 import { answerKey } from '../../helpers/answer-key';
 import { reviewView } from '../../helpers/review-view';
 import { highlightRewrite } from '../../helpers/rewrite-diff';
 import { retryCoachingAtom } from '../../model/atoms';
-import type { AnswerTarget, TurnCoaching, TurnFeedback } from '../../types';
+import type { AnswerTarget, ReviewedAnswer, TurnCoaching, TurnFeedback } from '../../types';
 import { SayAgain } from '../say-again';
 
 type Props = {
   target: AnswerTarget;
   transcript: string;
   coaching: TurnCoaching | undefined;
+  renderActions?: (answer: ReviewedAnswer) => ReactNode;
 };
 
 const PAUSED_MESSAGE =
@@ -79,6 +80,7 @@ function ReadyReview({
   target,
   transcript,
   feedback,
+  renderActions,
 }: Omit<Props, 'coaching'> & { feedback: TurnFeedback }) {
   const registry = useContext(RegistryContext);
   return (
@@ -89,21 +91,24 @@ function ReadyReview({
       <SayAgain
         target={target}
         trailing={
-          <Button
-            onClick={() => void createPlayback(registry).play(feedback.b2_rewrite)}
-            size="sm"
-            tone="quiet"
-          >
-            <Volume2 aria-hidden="true" />
-            Hear it
-          </Button>
+          <>
+            <Button
+              onClick={() => void createPlayback(registry).play(feedback.b2_rewrite)}
+              size="sm"
+              tone="quiet"
+            >
+              <Volume2 aria-hidden="true" />
+              Hear it
+            </Button>
+            {renderActions?.({ target, feedback })}
+          </>
         }
       />
     </>
   );
 }
 
-export function AnswerReview({ target, transcript, coaching }: Props) {
+export function AnswerReview({ target, transcript, coaching, renderActions }: Props) {
   const view = reviewView(coaching);
   return (
     <section
@@ -122,7 +127,12 @@ export function AnswerReview({ target, transcript, coaching }: Props) {
         <RetryLine actionLabel="Retry" message="Couldn’t check this answer." target={target} />
       )}
       {view.tag === 'ready' && (
-        <ReadyReview feedback={view.feedback} target={target} transcript={transcript} />
+        <ReadyReview
+          feedback={view.feedback}
+          renderActions={renderActions}
+          target={target}
+          transcript={transcript}
+        />
       )}
     </section>
   );

@@ -8,7 +8,10 @@ export type { ComponentCheck } from './bindings/ComponentCheck';
 export type { ComponentStatus } from './bindings/ComponentStatus';
 export type { ConversationProvider } from './bindings/ConversationProvider';
 export type { ConversationTurn } from './bindings/ConversationTurn';
+export type { DailyRecallItem } from './bindings/DailyRecallItem';
+export type { DailyRecallPlan } from './bindings/DailyRecallPlan';
 export type { EvaStyle } from './bindings/EvaStyle';
+export type { FinishedPracticeSession } from './bindings/FinishedPracticeSession';
 export type { FocusCategory } from './bindings/FocusCategory';
 export type { GeminiKeyStatus } from './bindings/GeminiKeyStatus';
 export type { GeminiUsage } from './bindings/GeminiUsage';
@@ -30,13 +33,16 @@ export type { NativeLanguageSettings } from './bindings/NativeLanguageSettings';
 export type { PersonalProfile } from './bindings/PersonalProfile';
 export type { PhraseCardRecord } from './bindings/PhraseCardRecord';
 export type { RecordingResult } from './bindings/RecordingResult';
+export type { RecurringMistake } from './bindings/RecurringMistake';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
 export type { ReviewMaterials } from './bindings/ReviewMaterials';
 export type { ReviewMaterialView } from './bindings/ReviewMaterialView';
 export type { ReviewPreparation } from './bindings/ReviewPreparation';
 export type { ReviewResponse } from './bindings/ReviewResponse';
+export type { SavedWrapupPhrases } from './bindings/SavedWrapupPhrases';
 export type { SentenceStatus } from './bindings/SentenceStatus';
 export type { ServerState } from './bindings/ServerState';
+export type { SessionNumbers } from './bindings/SessionNumbers';
 export type { SetupDiagnostics } from './bindings/SetupDiagnostics';
 export type { SpeakingActivity } from './bindings/SpeakingActivity';
 export type { SpeakingDay } from './bindings/SpeakingDay';
@@ -47,16 +53,20 @@ export type { SpeechEngineStatus } from './bindings/SpeechEngineStatus';
 export type { SpeechModel } from './bindings/SpeechModel';
 export type { SpeechModels } from './bindings/SpeechModels';
 export type { SpeechSettings } from './bindings/SpeechSettings';
+export type { SpokenRecallResult } from './bindings/SpokenRecallResult';
 export type { TextExplanation } from './bindings/TextExplanation';
 export type { TextTranslation } from './bindings/TextTranslation';
 export type { Transcript } from './bindings/Transcript';
 export type { TranslationRequest } from './bindings/TranslationRequest';
 export type { TranslationStatus } from './bindings/TranslationStatus';
 export type { TranslationStatusKind } from './bindings/TranslationStatusKind';
+export type { Trend } from './bindings/Trend';
 export type { TurnUsageAssessment } from './bindings/TurnUsageAssessment';
 export type { UsageAssessmentFinding } from './bindings/UsageAssessmentFinding';
 export type { UsageEventRecord } from './bindings/UsageEventRecord';
 export type { UsageOutcome } from './bindings/UsageOutcome';
+export type { WrapupPhrase } from './bindings/WrapupPhrase';
+export type { WrapupPreparation } from './bindings/WrapupPreparation';
 export { IpcDecodeError, IpcError } from './errors';
 export { ipcFailureMessage } from './failure-message';
 export { invokeBinaryCommand, invokeCommand, invokeUnitCommand } from './invoke-command';
@@ -87,6 +97,18 @@ export {
   ConversationTurnSchema,
   ReplyStreamEventSchema,
 } from './schemas/conversation-turn';
+export {
+  FinishedSessionSchema,
+  ProviderErrorSchema,
+  RecurringMistakeSchema,
+  SavedWrapupPhrasesSchema,
+  SessionNumbersSchema,
+  TrendSchema,
+  WRAPUP_UPDATED_EVENT,
+  WrapupPhraseSchema,
+  WrapupPreparationSchema,
+  WrapupUpdatedSchema,
+} from './schemas/finished-session';
 export { GeminiKeyStatusSchema, KeySourceSchema } from './schemas/gemini-key-status';
 export { IpcErrorCodeSchema } from './schemas/ipc-error';
 export {
@@ -105,7 +127,6 @@ export {
   AttemptComparisonSchema,
   COACHING_UPDATED_EVENT,
   CoachingUpdatedSchema,
-  FinishedSessionSchema,
   FocusFeedbackSchema,
   PracticeDialogueSchema,
   PracticeModeSchema,
@@ -146,6 +167,11 @@ export {
   TranscriptSchema,
 } from './schemas/speech-recognition';
 export {
+  DailyRecallItemSchema,
+  DailyRecallPlanSchema,
+  SpokenRecallResultSchema,
+} from './schemas/spoken-recall';
+export {
   TextExplanationSchema,
   TextTranslationSchema,
   TranslationRequestSchema,
@@ -155,3 +181,7 @@ export {
   TranslationStatusKindSchema,
   TranslationStatusSchema,
 } from './schemas/translation-settings';
+export {
+  TurnUsageAssessmentSchema,
+  UsageAssessmentFindingSchema,
+} from './schemas/usage-review';

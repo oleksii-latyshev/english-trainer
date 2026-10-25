@@ -1,5 +1,5 @@
+use crate::conversation::domain::WrapupEvent;
 use crate::conversation::service::coaching_queue::CoachingEvent;
-use crate::conversation::service::WrapupEvent;
 use tauri::{AppHandle, Emitter};
 
 pub fn coaching_notifier(handle: AppHandle) -> impl Fn(CoachingEvent) + Send + Sync + 'static {

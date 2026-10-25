@@ -68,8 +68,6 @@ export const PracticeSessionSchema = bindingSchema<PracticeSession>()(
   }),
 );
 
-export const FinishedSessionSchema = Schema.Record(Schema.String, Schema.Unknown);
-
 export const StoredTurnSchema = bindingSchema<StoredTurn>()(
   Schema.Struct({
     learner: Schema.String,

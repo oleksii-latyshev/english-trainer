@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { aPracticeSession, aSessionDetails } from '../../tests/builders';
 import type { AttemptComparison, PracticeState } from '../../types';
-import {
-  advancePractice,
-  recordRetryComparison,
-  setTurnPending,
-  updatePracticeClock,
-  updateSummary,
-} from '.';
+import { advancePractice, recordRetryComparison, setTurnPending, updatePracticeClock } from '.';
 
 const active: PracticeState = { tag: 'active', ...aSessionDetails() };
 const turn = { spoken_reply: 'That sounds interesting.', question: 'What happened next?' };
@@ -95,17 +89,6 @@ describe('retry evidence', () => {
 
   it('ignores another session', () => {
     expect(recordRetryComparison(active, 6, aComparison())).toBe(active);
-  });
-});
-
-describe('wrap-up', () => {
-  const completed: PracticeState = { tag: 'completed', summary: { session_id: 7, phrases: [] } };
-
-  it('replaces the wrap-up with a fuller one of the same session only', () => {
-    const fuller = { session_id: 7, phrases: ['I work there'] };
-    expect(updateSummary(completed, fuller)).toEqual({ tag: 'completed', summary: fuller });
-    expect(updateSummary(completed, { ...fuller, session_id: 8 })).toBe(completed);
-    expect(updateSummary(active, fuller)).toBe(active);
   });
 });
 
