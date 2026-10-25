@@ -50,6 +50,29 @@ test('prefetch stays hidden and opens graduated cached help without another prov
   await expect.poll(async () => (await tauri.session.dialogue())?.help_used).toEqual([true]);
 });
 
+test('H and the number keys open, switch and close help levels', async ({
+  app,
+  start,
+  talk,
+  tauri,
+}) => {
+  await openWithWarmMicrophone({ app, start, tauri });
+  const { planner } = talk;
+  await expect.poll(async () => (await tauri.planner.state()).completed).toBe(1);
+  await planner.pressKey('h');
+  await expect(planner.content('Name the tool')).toBeVisible();
+  await planner.pressKey('2');
+  await expect(planner.content('One tool I use is')).toBeVisible();
+  await planner.pressKey('3');
+  await expect(planner.content(plannedExample)).toBeVisible();
+  await planner.pressKey('3');
+  await expect(planner.content(plannedExample)).toHaveCount(0);
+  await planner.pressKey('h');
+  await expect(planner.content('Name the tool')).toBeVisible();
+  await planner.pressKey('h');
+  await expect(planner.content('Name the tool')).toHaveCount(0);
+});
+
 test('a failed plan can be retried while the answer composer stays usable', async ({
   app,
   start,

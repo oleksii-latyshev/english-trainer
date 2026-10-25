@@ -8,7 +8,6 @@ export const HELP_LEVELS: { id: HelpLevel; label: string; keyNumber: number }[] 
   { id: 'example', label: 'Example', keyNumber: 3 },
 ];
 
-/** What a help key does to the open level; `null` means the key is not a help key. */
 export function helpLevelForKey(
   key: string,
   current: HelpLevel | null,
@@ -26,7 +25,6 @@ export type HelpKeyPress = {
   target: KeyTarget;
 };
 
-/** Which help level a key press asks for; null when the key is not for help right now. */
 export function helpLevelForPress(
   press: HelpKeyPress,
   context: { helpLevel: HelpLevel | null; isHelpAvailable: boolean },

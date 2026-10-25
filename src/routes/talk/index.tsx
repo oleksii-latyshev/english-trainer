@@ -9,10 +9,10 @@ import {
   sessionDetails,
   startPracticeAtom,
 } from '@/core/practice-session';
-import { acceptedAnswerAtom, setPlanning } from '@/core/practice-turn';
+import { acceptedAnswerAtom } from '@/core/practice-turn';
 import { useSpeech } from '@/core/speech';
+import { AnswerHelp, helpLevelAtom, useAnswerHelpEffects } from '@/features/answer-help';
 import { cancelSayAgain, sayAgainActiveAtom } from '@/features/coaching-note';
-import { HelpBar } from '@/features/practice/HelpBar';
 import { OriginalQuestionPrompt } from '@/features/practice/OriginalQuestionPrompt';
 import { PracticeReview } from '@/features/practice/PracticeReview';
 import { RescuePanel } from '@/features/practice/RescuePanel';
@@ -23,13 +23,11 @@ import { isPracticeDialogue } from '@/lib/dialogueTypes';
 import { TalkScreen } from '@/screens/talk';
 import { rescueCaptureOf } from './rescue-capture';
 import { TalkExtras } from './talk-extras';
-import { useHelp } from './use-help';
 import { usePracticeActions, usePracticeModel } from './use-practice-model';
 import { useCancelOnStageChange, useTurnLock } from './use-turn-lock';
 import '@/features/practice/talkCards.css';
 import '@/features/practice/talkComposer.css';
 import '@/features/practice/talkDialogue.css';
-import '@/features/practice/talkHelp.css';
 import '@/features/practice/talkStage.css';
 
 function lockReason(
@@ -78,11 +76,11 @@ export function TalkRoute() {
   useCancelOnStageChange(session, () => cancelSayAgain(registry));
 
   const isHelpAvailable = canHelp(session, isRetrying || isRecalling);
-  const help = useHelp({ session, captureStatus: model.status, isHelpAvailable });
+  useAnswerHelpEffects();
+  const isHelpOpen = useAtomValue(helpLevelAtom) !== null;
   const accepted = useAtomValue(acceptedAnswerAtom);
 
   const isStageLocked = session !== undefined && !canSendPracticeStage(session);
-  const isListening = turn.state.tag === 'listening' || turn.state.tag === 'auto-listen';
   const isHelpDisabled = [
     model.busy,
     model.practice.tag !== 'active',
@@ -94,20 +92,7 @@ export function TalkRoute() {
   ].some(Boolean);
 
   const helpBar: ReactNode =
-    isHelpAvailable && session ? (
-      <HelpBar
-        disabled={isHelpDisabled}
-        isRecording={isListening}
-        key={help.helpKey}
-        level={help.helpLevel}
-        notice={help.helpNotice}
-        onLevelChange={help.changeHelpLevel}
-        onPlanningChange={(isPlanning) => setPlanning(registry, isPlanning)}
-        question={session.question}
-        sequence={session.turnCount + 1}
-        sessionId={session.sessionId}
-      />
-    ) : undefined;
+    isHelpAvailable && session ? <AnswerHelp isDisabled={isHelpDisabled} /> : undefined;
 
   const rescueControl: ReactNode =
     isHelpAvailable && session && hasRescue(session) && model.status === 'recording' ? (
@@ -162,7 +147,7 @@ export function TalkRoute() {
           ? lockReason(isRecalling, isRetrying, isStageLocked, session.isMistakePractice)
           : undefined
       }
-      moodExtras={{ isHelpOpen: help.helpLevel !== null }}
+      moodExtras={{ isHelpOpen }}
       onChooseMicrophone={() => void navigate({ to: '/settings', hash: 'microphone' })}
       onOpenSettings={() => void navigate({ to: '/settings' })}
       onStartPractice={() => registry.set(startPracticeAtom, undefined)}

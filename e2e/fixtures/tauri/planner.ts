@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { AnswerPlan } from '@/lib/answerPlanTypes';
+import type { AnswerPlan } from '@/core/ipc';
 
 export type PlannerOptions = {
   failFirstPlan?: boolean;

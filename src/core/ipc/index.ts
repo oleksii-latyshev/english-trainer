@@ -1,6 +1,7 @@
 export type { AgyModel } from './bindings/AgyModel';
 export type { AiSettings } from './bindings/AiSettings';
 export type { AnsweredBy } from './bindings/AnsweredBy';
+export type { AnswerPlan } from './bindings/AnswerPlan';
 export type { AnswerProvider } from './bindings/AnswerProvider';
 export type { AntigravityUsage } from './bindings/AntigravityUsage';
 export type { ApiUsageOverview } from './bindings/ApiUsageOverview';
@@ -83,6 +84,7 @@ export {
   ConversationProviderSchema,
   EvaStyleSchema,
 } from './schemas/ai-settings';
+export { AnswerPlanSchema } from './schemas/answer-plan';
 export {
   AntigravityUsageSchema,
   ApiUsageOverviewSchema,

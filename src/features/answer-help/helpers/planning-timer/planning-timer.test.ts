@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { remainingPlanningSeconds } from './planningTimer';
+import { remainingPlanningSeconds } from './index';
 
 describe('planning timer deadline', () => {
   it('counts down to zero at the deadline without extending fractional seconds', () => {

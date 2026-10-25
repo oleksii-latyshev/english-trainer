@@ -1,6 +1,7 @@
 use super::SessionStore;
 use crate::conversation::domain::PracticePhase;
 use crate::conversation::error::invalid_session_error;
+use crate::conversation::ports::AnswerPlanner;
 use crate::providers::{AnswerPlan, ProviderError, ProviderErrorCode};
 
 #[derive(Clone, PartialEq, Eq)]
@@ -17,17 +18,14 @@ pub(super) struct CachedPlan {
 }
 
 impl SessionStore {
-    pub fn answer_plan<F>(
+    pub fn answer_plan(
         &self,
         session_id: u64,
         sequence: usize,
         question: &str,
         retry: bool,
-        generate: F,
-    ) -> Result<AnswerPlan, ProviderError>
-    where
-        F: FnOnce(&str) -> Result<AnswerPlan, ProviderError>,
-    {
+        planner: impl AnswerPlanner,
+    ) -> Result<AnswerPlan, ProviderError> {
         let key = self.plan_key(session_id, sequence, question)?;
         let mut cache = self
             .answer_plan_cache
@@ -37,7 +35,7 @@ impl SessionStore {
         let result = match cache.as_ref().filter(|saved| saved.key == key) {
             Some(saved) if !retry || saved.result.is_ok() => saved.result.clone(),
             _ => {
-                let result = generate(question);
+                let result = planner.plan(question);
                 *cache = Some(CachedPlan {
                     key,
                     result: result.clone(),

@@ -1,19 +1,17 @@
 use super::SessionStore;
 use crate::conversation::error::{busy_error, database_error, invalid_session_error};
+use crate::conversation::ports::GuidedAnswerSource;
 use crate::learning::{now_ms, record_cue_exposure};
 use crate::providers::{GuidedAnswer, ProviderError, ProviderErrorCode};
 
 impl SessionStore {
-    pub fn guided_answer<F>(
+    pub fn guided_answer(
         &self,
         session_id: u64,
         sequence: usize,
         question: &str,
-        generate: F,
-    ) -> Result<GuidedAnswer, ProviderError>
-    where
-        F: FnOnce(&str) -> Result<GuidedAnswer, ProviderError>,
-    {
+        source: impl GuidedAnswerSource,
+    ) -> Result<GuidedAnswer, ProviderError> {
         {
             let state = self.lock();
             let active = state
@@ -36,7 +34,7 @@ impl SessionStore {
             )
             .map_err(database_error)?;
         }
-        let answer = generate(question)?;
+        let answer = source.guide(question)?;
         let state = self.lock();
         let active = state
             .active
@@ -99,30 +97,35 @@ mod tests {
         let store = SessionStore::default();
         let session = store.start().unwrap();
         store
-            .guided_answer(session.session_id, 1, &session.opening_question, |_| {
-                assert!(store
-                    .lock()
-                    .database
-                    .has_session_cue_exposure_before(
-                        session.session_id,
-                        Some("phrase"),
-                        Some(1),
-                        i64::MAX
-                    )
-                    .unwrap());
-                Ok(example())
-            })
+            .guided_answer(
+                session.session_id,
+                1,
+                &session.opening_question,
+                |_: &str| {
+                    assert!(store
+                        .lock()
+                        .database
+                        .has_session_cue_exposure_before(
+                            session.session_id,
+                            Some("phrase"),
+                            Some(1),
+                            i64::MAX
+                        )
+                        .unwrap());
+                    Ok(example())
+                },
+            )
             .unwrap();
         assert!(store
             .guided_answer(
                 session.session_id,
                 2,
                 &session.opening_question,
-                |_| panic!("stale request must not generate")
+                |_: &str| panic!("stale request must not generate")
             )
             .is_err());
         assert!(store
-            .guided_answer(session.session_id, 1, "Wrong question?", |_| panic!(
+            .guided_answer(session.session_id, 1, "Wrong question?", |_: &str| panic!(
                 "wrong question must not generate"
             ))
             .is_err());
@@ -135,9 +138,12 @@ mod tests {
         let store = SessionStore::open(&path).unwrap();
         let session = store.start().unwrap();
         store
-            .guided_answer(session.session_id, 1, &session.opening_question, |_| {
-                Ok(example())
-            })
+            .guided_answer(
+                session.session_id,
+                1,
+                &session.opening_question,
+                |_: &str| Ok(example()),
+            )
             .unwrap();
         drop(store);
         let restored = SessionStore::open(path).unwrap();
@@ -146,22 +152,27 @@ mod tests {
             .database
             .has_session_cue_exposure_before(session.session_id, Some("phrase"), Some(1), i64::MAX)
             .unwrap());
-        let late = restored.guided_answer(session.session_id, 1, &session.opening_question, |_| {
-            restored
-                .send_turn(session.session_id, "I am making an app.".into(), |_| {
-                    Ok(crate::providers::ConversationTurn {
-                        spoken_reply: "I see.".into(),
-                        question: Some("Why?".into()),
-                        session_phase: "active".into(),
-                        is_complete: false,
-                        provider_latency_ms: None,
-                        first_token_ms: None,
-                        answered_by: None,
+        let late = restored.guided_answer(
+            session.session_id,
+            1,
+            &session.opening_question,
+            |_: &str| {
+                restored
+                    .send_turn(session.session_id, "I am making an app.".into(), |_| {
+                        Ok(crate::providers::ConversationTurn {
+                            spoken_reply: "I see.".into(),
+                            question: Some("Why?".into()),
+                            session_phase: "active".into(),
+                            is_complete: false,
+                            provider_latency_ms: None,
+                            first_token_ms: None,
+                            answered_by: None,
+                        })
                     })
-                })
-                .unwrap();
-            Ok(example())
-        });
+                    .unwrap();
+                Ok(example())
+            },
+        );
         assert_eq!(
             code_of(late.unwrap_err()),
             ProviderErrorCode::InvalidRequest
@@ -174,19 +185,27 @@ mod tests {
         let store = SessionStore::default();
         let session = store.start().unwrap();
         let error = store
-            .guided_answer(session.session_id, 1, &session.opening_question, |_| {
-                Err(ProviderError::new(
-                    ProviderErrorCode::Timeout,
-                    "Retry example",
-                ))
-            })
+            .guided_answer(
+                session.session_id,
+                1,
+                &session.opening_question,
+                |_: &str| {
+                    Err(ProviderError::new(
+                        ProviderErrorCode::Timeout,
+                        "Retry example",
+                    ))
+                },
+            )
             .unwrap_err();
         assert_eq!(code_of(error), ProviderErrorCode::Timeout);
         assert_eq!(store.get_active().unwrap().unwrap().turn_count, 0);
         assert!(store
-            .guided_answer(session.session_id, 1, &session.opening_question, |_| Ok(
-                example()
-            ))
+            .guided_answer(
+                session.session_id,
+                1,
+                &session.opening_question,
+                |_: &str| Ok(example())
+            )
             .is_ok());
     }
 }

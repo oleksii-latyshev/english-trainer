@@ -157,6 +157,9 @@ Rules:
   ports of the `conversation` context; results or typed failures persist before events
   refresh the UI. Review material has its own SQLite cache so background generation cannot delay
   first-answer scoring.
+- Answer help calls its providers through the `AnswerPlanner` and `GuidedAnswerSource` ports of the
+  `conversation` context; the session store validates session, sequence and question and caches the
+  plan, the Gemini planner and its schema stay in `providers`.
 
 ## 8. Persistence
 
