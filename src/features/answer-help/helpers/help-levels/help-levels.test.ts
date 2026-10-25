@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { type HelpKeyPress, helpLevelForPress } from './helpLevels';
+import { type HelpKeyPress, helpLevelForPress } from './index';
 
 function press(key: string, patch: Partial<HelpKeyPress> = {}): HelpKeyPress {
   return { key, isRepeat: false, hasModifier: false, target: 'other', ...patch };

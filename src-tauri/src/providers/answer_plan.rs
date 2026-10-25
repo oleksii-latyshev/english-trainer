@@ -8,8 +8,9 @@ const MAX_ITEM_CHARS: usize = 120;
 const MAX_LONG_FIELD_CHARS: usize = 500;
 const MAX_WORDS: usize = 60;
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct AnswerPlan {
     pub frame: Vec<String>,
     pub phrases: Vec<String>,

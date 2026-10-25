@@ -50,7 +50,7 @@ fn prefetch_is_cached_without_recording_help_or_exposing_a_cue() {
                 1,
                 &session.opening_question,
                 false,
-                |_| panic!("same question must use cache")
+                |_: &str| panic!("same question must use cache")
             )
             .unwrap(),
         expected
@@ -74,7 +74,7 @@ fn prefetch_is_cached_without_recording_help_or_exposing_a_cue() {
             1,
             &session.opening_question,
             false,
-            |_| panic!("opening cached example must not generate again"),
+            |_: &str| panic!("opening cached example must not generate again"),
         )
         .unwrap();
     assert!(store
@@ -93,7 +93,7 @@ fn failed_preparation_is_cached_until_explicit_retry_and_stale_requests_do_not_g
             1,
             &session.opening_question,
             false,
-            |_| {
+            |_: &str| {
                 Err(ProviderError::new(
                     ProviderErrorCode::RateLimited,
                     "Retry later",
@@ -108,7 +108,7 @@ fn failed_preparation_is_cached_until_explicit_retry_and_stale_requests_do_not_g
                 1,
                 &session.opening_question,
                 false,
-                |_| panic!("cached failures must not consume more quota")
+                |_: &str| panic!("cached failures must not consume more quota")
             )
             .unwrap_err()
             .code,
@@ -123,13 +123,17 @@ fn failed_preparation_is_cached_until_explicit_retry_and_stale_requests_do_not_g
             2,
             &session.opening_question,
             false,
-            |_| panic!("stale sequence must not generate")
+            |_: &str| panic!("stale sequence must not generate")
         )
         .is_err());
     assert!(store
-        .answer_plan(session.session_id, 1, "Wrong question?", false, |_| panic!(
-            "stale question must not generate"
-        ))
+        .answer_plan(
+            session.session_id,
+            1,
+            "Wrong question?",
+            false,
+            |_: &str| panic!("stale question must not generate")
+        )
         .is_err());
 }
 #[test]
@@ -142,7 +146,7 @@ fn slow_planning_does_not_block_the_reply_and_its_late_result_is_rejected() {
     let question = session.opening_question.clone();
     let id = session.session_id;
     let worker = std::thread::spawn(move || {
-        preparing.answer_plan(id, 1, &question, false, |q| {
+        preparing.answer_plan(id, 1, &question, false, |q: &str| {
             began.send(()).unwrap();
             wait.recv().unwrap();
             plan(q)

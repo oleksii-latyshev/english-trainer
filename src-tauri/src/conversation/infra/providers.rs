@@ -1,8 +1,11 @@
 use crate::ai_settings::AiSettings;
-use crate::conversation::ports::{MistakeQuestionSource, ReplyEngine};
+use crate::conversation::ports::{
+    AnswerPlanner, GuidedAnswerSource, MistakeQuestionSource, ReplyEngine,
+};
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use crate::providers::{
-    self, AppleHelper, ConversationContext, ConversationTurn, ProviderError, ReplyStreamEvent,
+    self, AnswerPlan, AppleHelper, ConversationContext, ConversationTurn, GuidedAnswer,
+    ProviderError, ReplyStreamEvent,
 };
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -61,5 +64,21 @@ impl MistakeQuestionSource for AgyMistakeQuestions {
         candidates: &[MistakePracticeCandidate],
     ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError> {
         providers::agy::mistake_practice::generate(candidates)
+    }
+}
+
+pub struct GeminiAnswerPlanner;
+
+impl AnswerPlanner for GeminiAnswerPlanner {
+    fn plan(&self, question: &str) -> Result<AnswerPlan, ProviderError> {
+        providers::generate_answer_plan(question)
+    }
+}
+
+pub struct AgyGuidedAnswers;
+
+impl GuidedAnswerSource for AgyGuidedAnswers {
+    fn guide(&self, question: &str) -> Result<GuidedAnswer, ProviderError> {
+        providers::generate_guided_answer(question)
     }
 }

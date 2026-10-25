@@ -19,6 +19,10 @@ export class PlannerPanel {
     this.cueFailure = page.getByText(/Help could not be marked/);
   }
 
+  async pressKey(key: string): Promise<void> {
+    await this.page.keyboard.press(key);
+  }
+
   content(text: string): Locator {
     return this.page.getByText(text, { exact: true });
   }

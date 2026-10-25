@@ -1,4 +1,6 @@
-use super::infra::providers::{AgyMistakeQuestions, ConfiguredReplyEngine};
+use super::infra::providers::{
+    AgyGuidedAnswers, AgyMistakeQuestions, ConfiguredReplyEngine, GeminiAnswerPlanner,
+};
 use super::ports::ReplyEngine;
 use super::{
     CoachingQueue, FinishedPracticeSession, InputSource, PracticeDialogue, PracticePhase,
@@ -316,14 +318,7 @@ pub async fn get_guided_answer(
     blocking(
         sessions,
         "Could not prepare an answer example. Please retry.",
-        move |store| {
-            store.guided_answer(
-                session_id,
-                sequence,
-                &question,
-                providers::generate_guided_answer,
-            )
-        },
+        move |store| store.guided_answer(session_id, sequence, &question, AgyGuidedAnswers),
     )
     .await
 }
@@ -362,7 +357,7 @@ pub async fn prefetch_answer_plan(
                 sequence,
                 &question,
                 retry.unwrap_or(false),
-                providers::generate_answer_plan,
+                GeminiAnswerPlanner,
             )
         },
     )
