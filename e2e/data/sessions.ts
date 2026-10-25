@@ -1,6 +1,5 @@
-import type { SpeechEngineStatus } from '@/core/ipc';
+import type { FinishedPracticeSession, SpeechEngineStatus } from '@/core/ipc';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
 import type { PracticeSession } from '@/lib/practiceSessionTypes';
 
 export const unavailableSpeechStatus: SpeechEngineStatus = {
@@ -59,6 +58,12 @@ export const finishedSession: FinishedPracticeSession = {
   recurring_mistakes: [],
   pending_coaching: 1,
   is_coaching_paused: false,
+  wrapup_preparation: { state: 'legacy' },
+  practice_mode: 'voice',
+  practice_phase: 'speaking',
+  written_turn_count: 0,
+  spoken_turn_count: 0,
+  is_mistake_practice: false,
 };
 
 export const openingQuestion = 'What is one tool that makes your work easier?';

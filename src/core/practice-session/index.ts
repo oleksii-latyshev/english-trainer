@@ -20,7 +20,6 @@ export {
   sessionDetails,
   setTurnPending,
   updatePracticeClock,
-  updateSummary,
 } from './helpers/practice-state';
 export { sessionDetailsFrom } from './helpers/session-from-ipc';
 export {
@@ -45,7 +44,6 @@ export {
   applyClockSnapshot,
   dismissSummary,
   markTurnPending,
-  replaceSummary,
   reportPracticeError,
 } from './model/updates';
 export { PracticeSessions } from './services/practice-session-service';

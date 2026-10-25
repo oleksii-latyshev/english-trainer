@@ -1,8 +1,8 @@
-import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
+import type { FinishedPracticeSession } from '@/core/ipc';
 import { finishedSession } from './sessions';
 
 export function wrapupSummary(
-  wrapupPreparation: NonNullable<FinishedPracticeSession['wrapup_preparation']>,
+  wrapupPreparation: FinishedPracticeSession['wrapup_preparation'],
   phrases = finishedSession.phrases,
   pendingCoaching = 0,
 ): FinishedPracticeSession {

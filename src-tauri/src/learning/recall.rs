@@ -1,19 +1,22 @@
 use super::normalization::normalize_phrase;
 use serde::Serialize;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct DailyRecallItem {
     pub phrase_id: u64,
     pub cue: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct DailyRecallPlan {
     pub items: Vec<DailyRecallItem>,
     pub completed_count: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct SpokenRecallResult {
     pub phrase_id: u64,
     pub transcript: String,

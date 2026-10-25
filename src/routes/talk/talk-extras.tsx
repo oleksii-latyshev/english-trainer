@@ -1,79 +1,36 @@
 import type { SessionDetails } from '@/core/practice-session';
 import type { SentAnswer } from '@/core/practice-turn';
-import { DailyRecallPanel } from '@/features/practice/DailyRecallPanel';
-import { ManualRecorder } from '@/features/practice/ManualRecorder';
-import { MemoryUsageReview } from '@/features/practice/MemoryUsageReview';
-import type { PracticeActions, PracticeViewModel } from '@/features/practice/practiceViewModel';
-import type { useDailyRecall } from '@/features/practice/useDailyRecall';
+import { SpokenRecall } from '@/features/spoken-recall';
+import { UsageReviewCard, usageReviewTarget } from '@/features/usage-review';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 
 type Props = {
   session: SessionDetails;
-  model: PracticeViewModel;
-  actions: PracticeActions;
-  recall: ReturnType<typeof useDailyRecall>;
-  isRetrying: boolean;
   dialogue: PracticeDialogue | null;
-  sentAnswer: SentAnswer | null;
+  accepted: SentAnswer | null;
+  isRetrying: boolean;
+  isRecalling: boolean;
 };
 
-function RecallExtras({ session, model, actions, recall, isRetrying }: Props) {
-  if (session.isMistakePractice) return null;
-  if (session.practiceMode !== 'voice' || session.practicePhase !== 'speaking') return null;
-  if (session.turnCount < session.targetTurns) return null;
-  return (
-    <>
-      {recall.active && (
-        <ManualRecorder
-          actions={actions}
-          cue={recall.currentItem?.cue ?? 'Review your saved recall below.'}
-          isLocked={recall.saving || recall.result !== null}
-          kicker="Phrase recall cue"
-          model={model}
-          surface="recall"
-        />
-      )}
-      <DailyRecallPanel
-        canLeave={model.canChangeSession}
-        canStart={
-          model.canChangeSession && !model.busy && !isRetrying && model.practice.tag === 'active'
-        }
-        recall={{
-          ...recall,
-          start: () => {
-            actions.resetCapture();
-            recall.start();
-          },
-        }}
-        resetCapture={actions.resetCapture}
-        transcript={model.transcript}
-      />
-    </>
-  );
+function offersRecall(session: SessionDetails): boolean {
+  if (session.isMistakePractice) return false;
+  if (session.practiceMode !== 'voice' || session.practicePhase !== 'speaking') return false;
+  return session.turnCount >= session.targetTurns;
 }
 
-function shouldReviewUsage({ session, sentAnswer, dialogue, isRetrying, recall }: Props) {
-  if (session.isMistakePractice || session.practiceMode !== 'voice' || sentAnswer === null) {
-    return false;
-  }
-  const index = sentAnswer.sequence - 1;
-  return (
-    sentAnswer.sequence <= 2 &&
-    dialogue?.input_sources?.[index] === 'voice' &&
-    dialogue?.help_used?.[index] !== true &&
-    !isRetrying &&
-    !recall.active
-  );
-}
-
-export function TalkExtras(props: Props) {
-  const { sentAnswer } = props;
+export function TalkExtras({ session, dialogue, accepted, isRetrying, isRecalling }: Props) {
+  const reviewed = usageReviewTarget({
+    answer: accepted && { sessionId: accepted.sessionId, sequence: accepted.sequence },
+    session,
+    dialogue,
+    isBlocked: isRetrying || isRecalling,
+  });
   return (
     <>
-      <RecallExtras {...props} />
-      {sentAnswer !== null && shouldReviewUsage(props) && (
-        <MemoryUsageReview sequence={sentAnswer.sequence} sessionId={sentAnswer.sessionId} />
+      {offersRecall(session) && (
+        <SpokenRecall isStartBlocked={isRetrying} sessionId={session.sessionId} />
       )}
+      {reviewed && <UsageReviewCard target={reviewed} />}
     </>
   );
 }

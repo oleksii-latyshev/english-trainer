@@ -1,5 +1,8 @@
+use crate::conversation::domain::WrapupEvent;
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
-use crate::providers::{ConversationContext, ConversationTurn, ProviderError};
+use crate::providers::{
+    ConversationContext, ConversationTurn, ProviderError, WrapupRequest, WrapupResult,
+};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
@@ -16,4 +19,30 @@ pub(crate) trait MistakeQuestionSource {
         &mut self,
         candidates: &[MistakePracticeCandidate],
     ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError>;
+}
+
+pub trait WrapupGenerator: Send + Sync {
+    fn generate(&self, request: &WrapupRequest) -> Result<WrapupResult, ProviderError>;
+}
+
+impl<F> WrapupGenerator for F
+where
+    F: Fn(&WrapupRequest) -> Result<WrapupResult, ProviderError> + Send + Sync,
+{
+    fn generate(&self, request: &WrapupRequest) -> Result<WrapupResult, ProviderError> {
+        self(request)
+    }
+}
+
+pub trait WrapupNotifier: Send + Sync {
+    fn notify(&self, event: WrapupEvent);
+}
+
+impl<F> WrapupNotifier for F
+where
+    F: Fn(WrapupEvent) + Send + Sync,
+{
+    fn notify(&self, event: WrapupEvent) {
+        self(event);
+    }
 }

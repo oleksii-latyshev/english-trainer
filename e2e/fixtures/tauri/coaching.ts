@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
+import type { FinishedPracticeSession } from '@/core/ipc';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { FinishedPracticeSession } from '@/lib/finishedPracticeSession';
 
 export const SPOKEN_SECOND_TRY = 'I work there as an engineer.';
 

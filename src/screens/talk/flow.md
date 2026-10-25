@@ -25,8 +25,12 @@ sequenceDiagram
 ```
 
 Coaching never appears in the chat: each answer gets a quiet marker, and the review of every answer
-lives on the wrap-up screen (`features/coaching-note`, composed by `routes/talk/summary`). The
+lives on the wrap-up screen (`features/coaching-note`, composed by `screens/wrap-up`). The
 write-then-speak review stage also renders `AnswerReview` from that feature.
+
+The route fills the `dialogueExtras` slot with `features/spoken-recall` (an optional recall of a
+saved phrase once every answer is in) and `features/usage-review` (the learning use review after a
+spoken answer). Both read the microphone through `core/answer-capture` and keep their own state.
 
 Slots still filled by legacy components, and the issue that migrates each one:
 
@@ -34,6 +38,5 @@ Slots still filled by legacy components, and the issue that migrates each one:
 | :--- | :--- | :--- |
 | help bar, planning timer | `HelpBar`, `GuidedAnswerPanel`, `PlanningTimer` | #76 |
 | Stuck panel | `RescuePanel` | #77 |
-| spoken phrase recall, usage review, wrap-up | `DailyRecallPanel`, `MemoryUsageReview`, `PracticeCompletion` | #78 |
 | write then speak review and prompts | `PracticeReview`, `OriginalQuestionPrompt` | #79 |
 | mistake practice | shares the screen; its progress is in the header | #80 |

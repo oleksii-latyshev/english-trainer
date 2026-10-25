@@ -1,14 +1,18 @@
 import { useAtomMount, useAtomRefresh, useAtomValue } from '@effect/atom-react';
 import { AsyncResult } from 'effect/reactivity';
+import type { ReactNode } from 'react';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
 import { conversationAtom, conversationUpdatesAtom } from '../../model/atoms';
-import type { ReviewedConversation } from '../../types';
+import type { ReviewedAnswer, ReviewedConversation } from '../../types';
 import { AnswerReview } from '../answer-review';
 
 type Props = {
   sessionId: number;
+  renderAnswerActions?: (answer: ReviewedAnswer) => ReactNode;
 };
+
+type Actions = Pick<Props, 'renderAnswerActions'>;
 
 export const CONVERSATION_FAILED_MESSAGE = 'Could not load your conversation.';
 
@@ -36,7 +40,8 @@ function LearnerAnswer({
   sessionId,
   conversation,
   index,
-}: {
+  renderAnswerActions,
+}: Actions & {
   sessionId: number;
   conversation: ReviewedConversation;
   index: number;
@@ -55,6 +60,7 @@ function LearnerAnswer({
       <div className="w-full">
         <AnswerReview
           coaching={conversation.coaching?.[index]}
+          renderActions={renderAnswerActions}
           target={{ sessionId, sequence: index + 1 }}
           transcript={text}
         />
@@ -66,7 +72,8 @@ function LearnerAnswer({
 function Turns({
   sessionId,
   conversation,
-}: {
+  renderAnswerActions,
+}: Actions & {
   sessionId: number;
   conversation: ReviewedConversation;
 }) {
@@ -77,7 +84,12 @@ function Turns({
       {conversation.turns.map((turn, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: A turn is identified by its place in the saved dialogue.
         <div className="flex flex-col gap-4" key={index}>
-          <LearnerAnswer conversation={conversation} index={index} sessionId={sessionId} />
+          <LearnerAnswer
+            conversation={conversation}
+            index={index}
+            renderAnswerActions={renderAnswerActions}
+            sessionId={sessionId}
+          />
           <EvaLine question={turn.assistant_question.trim()} reply={turn.assistant_reply.trim()} />
         </div>
       ))}
@@ -85,14 +97,20 @@ function Turns({
   );
 }
 
-export function ConversationReview({ sessionId }: Props) {
+export function ConversationReview({ sessionId, renderAnswerActions }: Props) {
   useAtomMount(conversationUpdatesAtom(sessionId));
   const result = useAtomValue(conversationAtom(sessionId));
   const refresh = useAtomRefresh(conversationAtom(sessionId));
   const conversation = AsyncResult.value(result);
 
   if (conversation._tag === 'Some') {
-    return <Turns conversation={conversation.value} sessionId={sessionId} />;
+    return (
+      <Turns
+        conversation={conversation.value}
+        renderAnswerActions={renderAnswerActions}
+        sessionId={sessionId}
+      />
+    );
   }
   if (AsyncResult.isFailure(result)) {
     return (

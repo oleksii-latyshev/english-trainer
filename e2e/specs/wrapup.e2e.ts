@@ -1,3 +1,4 @@
+import { coachedConversation, readyWithTip } from '../data/coaching';
 import { phraseSet, wrapupSummary } from '../data/wrapup';
 import { expect, test } from '../fixtures';
 import type { App } from '../pages/app';
@@ -127,8 +128,12 @@ test('save all is atomic, removed phrases stay out, duplicates are not undone', 
     .withExistingCards([existing]);
   await finishSession(app, start, talk, wrapup);
   await wrapup.removePhrase('I tend to plan ahead.');
+  const memoryReads = (await tauri.calls('get_learning_memory')).length;
   await wrapup.saveAll(2);
   await expect(wrapup.savedButton).toBeVisible();
+  await expect
+    .poll(async () => (await tauri.calls('get_learning_memory')).length)
+    .toBeGreaterThan(memoryReads);
   const [savedCall] = await tauri.calls('save_wrapup_phrases');
   expect(savedCall?.args).toEqual({
     sessionId: 41,
@@ -152,4 +157,38 @@ test('ready empty wrap-up has its own message while coaching is still pending', 
 
   await expect(wrapup.noPhrases).toBeVisible();
   await expect(wrapup.pendingCoaching).toBeVisible();
+});
+
+test('an answer’s better version is saved from its review and can be undone', async ({
+  app,
+  start,
+  talk,
+  wrapup,
+  tauri,
+}) => {
+  const { session, dialogue } = coachedConversation([readyWithTip]);
+  tauri.coaching.available();
+  tauri.session.withOpenSession(session, dialogue);
+  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  await app.open();
+  await start.continueSession();
+  await talk.finish();
+  await expect(wrapup.review(1)).toContainText('I work there as an engineer.');
+
+  await wrapup.saveAnswerPhrase(1);
+  await expect(wrapup.answerSaved(1)).toBeVisible();
+  expect(await tauri.calls('save_phrase_card')).toEqual([
+    expect.objectContaining({
+      args: {
+        phrase: 'I work there',
+        meaning_or_note: 'Drop the extra preposition after work.',
+        session_id: 41,
+        sequence: 1,
+      },
+    }),
+  ]);
+
+  await wrapup.undo();
+  await expect.poll(() => tauri.wrapup.deletedPhraseIds()).toEqual([500]);
+  await expect(wrapup.review(1).getByRole('button', { name: 'Save phrase' })).toBeVisible();
 });

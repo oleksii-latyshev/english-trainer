@@ -15,7 +15,6 @@ export {
   memoryUsageEvidenceAtom,
   openedLearningMemoryAtom,
 } from './model/atoms';
-export { refreshLearningMemory } from './model/refresh-learning-memory';
 export { LearningMemoryLive, runtime as learningMemoryRuntime } from './model/runtime';
 export { LearningMemoryService } from './services/learning-memory-service';
 export { ReviewRunService } from './services/review-run-service';

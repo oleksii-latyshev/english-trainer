@@ -182,21 +182,15 @@ describe('describeTurn', () => {
 });
 
 describe('evaMoodFor', () => {
-  const none = { isPhraseSaved: false, isHelpOpen: false };
+  const none = { isHelpOpen: false };
 
   it('follows the turn', () => {
     expect(evaMoodFor({ tag: 'idle' }, FLOW, none)).toBe('idle');
     expect(evaMoodFor({ tag: 'paused' }, FLOW, none)).toBe('asleep');
   });
 
-  it('is happy after a saved phrase and curious while help is open, only when idle', () => {
-    expect(evaMoodFor({ tag: 'idle' }, FLOW, { ...none, isPhraseSaved: true })).toBe('happy');
-    expect(evaMoodFor({ tag: 'idle' }, FLOW, { ...none, isHelpOpen: true })).toBe('curious');
-    expect(evaMoodFor({ tag: 'idle' }, FLOW, { isPhraseSaved: true, isHelpOpen: true })).toBe(
-      'happy',
-    );
-    expect(evaMoodFor({ tag: 'thinking' }, FLOW, { ...none, isPhraseSaved: true })).toBe(
-      'thinking',
-    );
+  it('is curious while help is open, only when idle', () => {
+    expect(evaMoodFor({ tag: 'idle' }, FLOW, { isHelpOpen: true })).toBe('curious');
+    expect(evaMoodFor({ tag: 'thinking' }, FLOW, { isHelpOpen: true })).toBe('thinking');
   });
 });

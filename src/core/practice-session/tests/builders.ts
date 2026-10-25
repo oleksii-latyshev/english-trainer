@@ -1,4 +1,4 @@
-import type { PracticeSession, SessionDetails } from '../types';
+import type { FinishedSession, PracticeSession, SessionDetails } from '../types';
 
 export function aSessionDetails(overrides: Partial<SessionDetails> = {}): SessionDetails {
   return {
@@ -42,6 +42,34 @@ export function aPracticeSession(overrides: Partial<PracticeSession> = {}): Prac
     practice_phase: 'speaking',
     written_turn_count: 0,
     spoken_turn_count: 0,
+    is_mistake_practice: false,
+    ...overrides,
+  };
+}
+
+export function aFinishedSession(overrides: Partial<FinishedSession> = {}): FinishedSession {
+  return {
+    session_id: 7,
+    finished: true,
+    turn_count: 3,
+    target_turns: 8,
+    duration_ms: 90000,
+    topic_label: 'Daily life',
+    duration_goal_seconds: 600,
+    numbers: {
+      speaking_time: { duration_ms: null, trend: { kind: 'first' } },
+      words_per_minute: { value: null, trend: { kind: 'first' } },
+      average_answer: { words: null, trend: { kind: 'first' } },
+    },
+    phrases: [],
+    recurring_mistakes: [],
+    pending_coaching: 0,
+    is_coaching_paused: false,
+    wrapup_preparation: { state: 'ready' },
+    practice_mode: 'voice',
+    practice_phase: 'speaking',
+    written_turn_count: 0,
+    spoken_turn_count: 3,
     is_mistake_practice: false,
     ...overrides,
   };

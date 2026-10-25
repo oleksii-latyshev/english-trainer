@@ -2,9 +2,10 @@
 
 The review of one answer, and of the whole conversation on the wrap-up: what the learner said, the
 more natural version with the changed words marked, one short reason, Hear it and Say it again.
-Talk never shows it; Talk only marks an answer (`features/talk-dialogue`). The wrap-up route
-(`routes/talk/summary`) renders `ConversationReview`, and the write-then-speak review stage renders
-`AnswerReview` per answer.
+Talk never shows it; Talk only marks an answer (`features/talk-dialogue`). The wrap-up screen
+(`screens/wrap-up`) renders `ConversationReview`, and the write-then-speak review stage renders
+`AnswerReview` per answer. Both take an optional `renderAnswerActions` slot that adds actions beside
+Hear it; the wrap-up screen uses it for the per-answer save of `features/wrap-up`.
 
 ## Read the conversation and fill in pending answers
 

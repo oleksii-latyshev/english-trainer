@@ -1,23 +1,17 @@
 use super::SessionStore;
-use crate::providers::{ProviderError, WrapupRequest, WrapupResult};
-use serde::Serialize;
+use crate::conversation::domain::WrapupEvent;
+use crate::conversation::ports::{WrapupGenerator, WrapupNotifier};
+use crate::providers::{ProviderError, WrapupResult};
 use std::sync::{Arc, Condvar, Mutex};
 
-#[derive(Debug, Clone, Copy, Serialize)]
-pub struct WrapupEvent {
-    pub session_id: u64,
-}
-
-type Generate = dyn Fn(&WrapupRequest) -> Result<WrapupResult, ProviderError> + Send + Sync;
-type Notify = dyn Fn(WrapupEvent) + Send + Sync;
 struct Control {
     is_awake: bool,
     is_stopped: bool,
 }
 struct Shared {
     store: SessionStore,
-    generate: Box<Generate>,
-    notify: Box<Notify>,
+    generate: Box<dyn WrapupGenerator>,
+    notify: Box<dyn WrapupNotifier>,
     control: Mutex<Control>,
     wake: Condvar,
 }
@@ -28,13 +22,13 @@ pub struct WrapupQueue {
 impl WrapupQueue {
     pub fn start(
         store: SessionStore,
-        generate: impl Fn(&WrapupRequest) -> Result<WrapupResult, ProviderError> + Send + Sync + 'static,
-        notify: impl Fn(WrapupEvent) + Send + Sync + 'static,
+        generator: impl WrapupGenerator + 'static,
+        notifier: impl WrapupNotifier + 'static,
     ) -> std::io::Result<Self> {
         let shared = Arc::new(Shared {
             store,
-            generate: Box::new(generate),
-            notify: Box::new(notify),
+            generate: Box::new(generator),
+            notify: Box::new(notifier),
             control: Mutex::new(Control {
                 is_awake: true,
                 is_stopped: false,
@@ -107,13 +101,13 @@ impl Shared {
                         phrases: Vec::new(),
                     })
                 } else {
-                    (self.generate)(&request)
+                    self.generate.generate(&request)
                 };
                 match self
                     .store
                     .complete_session_wrapup(session_id, &request, result)
                 {
-                    Ok(true) => (self.notify)(WrapupEvent { session_id }),
+                    Ok(true) => self.notify.notify(WrapupEvent { session_id }),
                     Ok(false) => {}
                     Err(_) => {
                         eprintln!("Could not save session phrases; the next wake will retry.");

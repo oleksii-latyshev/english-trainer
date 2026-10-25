@@ -29,8 +29,14 @@ pub enum WrapupPreparation {
     Failed { error: ProviderError },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, ts_rs::TS)]
+#[ts(export)]
 pub struct SavedWrapupPhrases {
     pub cards: Vec<crate::learning::PhraseCardRecord>,
     pub created_ids: Vec<u64>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct WrapupEvent {
+    pub session_id: u64,
 }

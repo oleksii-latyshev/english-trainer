@@ -1,6 +1,6 @@
 use super::*;
 use crate::conversation::domain::WrapupPreparation;
-use crate::providers::{ConversationTurn, GeneratedWrapupPhrase, ProviderErrorCode};
+use crate::providers::{ConversationTurn, GeneratedWrapupPhrase, ProviderErrorCode, WrapupRequest};
 use std::sync::mpsc;
 use std::time::Duration;
 
@@ -48,7 +48,7 @@ fn slow_generation_never_blocks_a_new_conversation_and_emits_only_finished_id() 
     let (event_tx, event_rx) = mpsc::channel();
     let queue = WrapupQueue::start(
         store.clone(),
-        move |_| {
+        move |_request: &WrapupRequest| {
             entered_tx.send(()).unwrap();
             release.lock().unwrap().recv_timeout(WAIT).unwrap();
             Ok(result())
@@ -91,7 +91,7 @@ fn startup_resumes_durable_pending_work_and_keeps_the_prepared_snapshot_on_reope
     let (event_tx, event_rx) = mpsc::channel();
     let queue = WrapupQueue::start(
         reopened.clone(),
-        |_| Ok(result()),
+        |_request: &WrapupRequest| Ok(result()),
         move |event| {
             event_tx.send(event).unwrap();
         },
@@ -123,7 +123,7 @@ fn failures_wait_for_explicit_retry_and_empty_sessions_never_call_the_provider()
     let (event_tx, event_rx) = mpsc::channel();
     let queue = WrapupQueue::start(
         store.clone(),
-        move |_| {
+        move |_request: &WrapupRequest| {
             call_tx.send(()).unwrap();
             Err(ProviderError::new(
                 ProviderErrorCode::RateLimited,
