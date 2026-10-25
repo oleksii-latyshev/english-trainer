@@ -31,13 +31,15 @@ sequenceDiagram
     else IpcError or decode failure
         Rust-->>Screen: the snapshot already on screen stays
     end
+    Atoms->>Atoms: both listeners registered, the marker triggers a read
     Rust-->>Ipc: wrapup-updated or coaching-updated for this session
     Ipc-->>Atoms: refresh (events of other sessions are dropped)
     Atoms-->>Screen: the new snapshot replaces the old one
 ```
 
-The listener and the first read start together, so the stream also refreshes once 250 ms after it
-starts. That covers a result that lands while the listener is still being registered.
+`IpcEvents.listenAll` registers both listeners and then emits a "listening" marker before any
+event. The feature reads the summary when the marker arrives and again on each matching event, so a
+result that lands between registration and the first read is not lost. There is no timer.
 
 ## Save all and Undo
 

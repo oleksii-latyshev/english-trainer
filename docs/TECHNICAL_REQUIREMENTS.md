@@ -302,8 +302,8 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   90 s process bound, one call, no automatic retry, schema in the prompt. Strict validation: sequence
   provenance, exact quote substrings, unique normalised phrases, English plain text, bounded
   phrases/notes/quotes; a note cannot simply copy the quote.
-- Results or typed failures persist before `wrapup-updated { session_id }`. The UI listens first and
-  reads again once the listener is in place. `retry_session_wrapup(sessionId)` starts only failed or legacy finished sessions.
+- Results or typed failures persist before `wrapup-updated { session_id }`. The UI reads once the
+  listeners are registered. `retry_session_wrapup(sessionId)` starts only failed or legacy finished sessions.
   `get_session_wrapup` keeps the cached snapshot; already saved phrases are excluded at completion.
 - `save_wrapup_phrases(sessionId, phrases)` takes one to three exact cached suggestions, saves all
   transactionally and returns `{ cards, created_ids }`. Undo uses only the new IDs; existing

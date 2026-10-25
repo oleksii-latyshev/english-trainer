@@ -1,4 +1,4 @@
-import { Context, Duration, Effect, Layer, Stream } from 'effect';
+import { Context, Effect, Layer, Option, Stream } from 'effect';
 import {
   COACHING_UPDATED_EVENT,
   CoachingUpdatedSchema,
@@ -20,8 +20,6 @@ import type {
   SavedPhrases,
   WrapUpFailure,
 } from '../types';
-
-const SUBSCRIPTION_SETTLE = Duration.millis(250);
 
 type WrapUpServiceShape = {
   readonly read: (sessionId: number) => Effect.Effect<FinishedSession, WrapUpFailure>;
@@ -69,13 +67,17 @@ export class WrapUpService extends Context.Service<WrapUpService, WrapUpServiceS
             sequence,
           }),
         updates: (sessionId) =>
-          Stream.merge(
-            Stream.merge(
-              events.listen(COACHING_UPDATED_EVENT, CoachingUpdatedSchema),
-              events.listen(WRAPUP_UPDATED_EVENT, WrapupUpdatedSchema),
-            ).pipe(Stream.filter((event) => event.session_id === sessionId)),
-            Stream.fromEffect(Effect.sleep(SUBSCRIPTION_SETTLE)),
-          ).pipe(Stream.map(() => undefined)),
+          events
+            .listenAll([
+              { event: COACHING_UPDATED_EVENT, schema: CoachingUpdatedSchema },
+              { event: WRAPUP_UPDATED_EVENT, schema: WrapupUpdatedSchema },
+            ])
+            .pipe(
+              Stream.filter(
+                (event) => Option.isNone(event) || event.value.session_id === sessionId,
+              ),
+              Stream.map(() => undefined),
+            ),
       };
     }),
   );

@@ -80,7 +80,8 @@ function layerOf(backend: Backend) {
       }),
   });
   const events = Layer.succeed(IpcEvents, {
-    listen: () => Stream.fromPubSub(backend.events) as never,
+    listen: () => Stream.empty,
+    listenAll: () => Stream.fromPubSub(backend.events) as never,
   });
   return Layer.mergeAll(WrapUpService.layer, LearningMemoryService.layer).pipe(
     Layer.provide(Layer.mergeAll(ipc, events)),
@@ -129,16 +130,17 @@ describe('the wrap-up of a finished session', () => {
     const registry = opened(backend);
     await until(() => summaryOf(registry)?.wrapup_preparation.state === 'pending');
     backend.summary = aFinishedSession({ phrases: [aPhrase()], pending_coaching: 0 });
-    PubSub.publishUnsafe(backend.events, { session_id: SESSION });
+    PubSub.publishUnsafe(backend.events, Option.some({ session_id: SESSION }));
     await until(() => summaryOf(registry)?.phrases.length === 1);
     expect(summaryOf(registry)?.pending_coaching).toBe(0);
   });
 
-  it('reads once more after the listener is in place, so nothing lands unseen', async () => {
+  it('reads again once the listeners are registered, so a result in the gap is not lost', async () => {
     const backend = aBackend();
     const registry = opened(backend);
-    await until(() => summaryOf(registry) !== undefined);
+    await until(() => summaryOf(registry)?.phrases.length === 2);
     backend.summary = aFinishedSession({ phrases: [aPhrase()] });
+    PubSub.publishUnsafe(backend.events, Option.none());
     await until(() => summaryOf(registry)?.phrases.length === 1);
   });
 
@@ -147,7 +149,7 @@ describe('the wrap-up of a finished session', () => {
     const registry = opened(backend);
     await until(() => summaryOf(registry) !== undefined);
     const reads = commands(backend, 'get_session_wrapup').length;
-    PubSub.publishUnsafe(backend.events, { session_id: 99 });
+    PubSub.publishUnsafe(backend.events, Option.some({ session_id: 99 }));
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(commands(backend, 'get_session_wrapup')).toHaveLength(reads);
   });

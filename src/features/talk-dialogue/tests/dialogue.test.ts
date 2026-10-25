@@ -69,6 +69,7 @@ function layerOf(backend: Backend) {
   });
   const events = Layer.succeed(IpcEvents, {
     listen: () => Stream.fromPubSub(backend.events) as never,
+    listenAll: () => Stream.empty,
   });
   return DialogueService.layer.pipe(Layer.provide(Layer.mergeAll(ipc, events)));
 }
