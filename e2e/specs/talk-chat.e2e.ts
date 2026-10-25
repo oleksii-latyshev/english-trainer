@@ -1,4 +1,5 @@
 import { longConversation } from '../data/builders';
+import { openingQuestion } from '../data/sessions';
 import { expect, test } from '../fixtures';
 import type { FakeBackend } from '../fixtures/tauri';
 import type { App } from '../pages/app';
@@ -9,6 +10,7 @@ type Scene = { app: App; start: StartPage; talk: TalkPage; tauri: FakeBackend };
 
 const READABLE_MIN_HEIGHT_PX = 200;
 const LONG_HISTORY_TURNS = 14;
+const NEAR_COMPOSER_PX = 72;
 
 async function openLongConversation({ app, start, tauri }: Omit<Scene, 'talk'>) {
   const { session, dialogue } = longConversation(LONG_HISTORY_TURNS);
@@ -29,6 +31,7 @@ test('the chat follows the streaming reply, pauses when the learner scrolls up a
   await talk.composer.typeInsteadAndSend('A useful tool helps me plan.');
   await expect(talk.exactReply).toBeVisible();
   await expect.poll(() => talk.chat.distanceFromEnd()).toBeLessThan(24);
+  await expect(talk.chat.history).toHaveAttribute('data-overflowing', 'true');
   await talk.chat.scrollToTop();
   await expect.poll(() => talk.chat.distanceFromEnd()).toBeGreaterThan(200);
   await tauri.streaming.finishProvider();
@@ -56,4 +59,19 @@ test('answer help and the keyboard composer keep the history readable', async ({
   await expect(talk.chat.history).toBeVisible();
   expect(await talk.chat.height()).toBeGreaterThanOrEqual(READABLE_MIN_HEIGHT_PX);
   await expect(talk.chat.history.getByText(/Earlier reply number 14/u)).toBeVisible();
+});
+
+test('a short conversation sits next to the composer, not under the fade', async ({
+  app,
+  start,
+  talk,
+  tauri,
+}) => {
+  tauri.streaming.withWarmMicrophone();
+  await app.open();
+  await start.start();
+  await talk.planner.exampleButton.click();
+  await expect(talk.chat.history.getByText(openingQuestion, { exact: true })).toBeVisible();
+  await expect(talk.chat.history).not.toHaveAttribute('data-overflowing', 'true');
+  expect(await talk.chat.gapBelow(openingQuestion)).toBeLessThan(NEAR_COMPOSER_PX);
 });
