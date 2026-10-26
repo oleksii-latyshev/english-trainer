@@ -12,6 +12,7 @@ import {
   practiceStateAtom,
   sessionDetails,
   startMistakePracticeAtom,
+  startOrResumePractice,
   startPracticeAtom,
 } from '@/core/practice-session';
 import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
@@ -19,7 +20,6 @@ import { useReviewCommands, useWarmupHandoff } from '@/features/spoken-review';
 import { useFirstRunDecision } from '@/routes/first-run/use-first-run-gate';
 import { SpokenReviewScreen } from '@/screens/spoken-review';
 import { TalkStartScreen } from '@/screens/talk-start';
-import { startOrResumePractice } from '../talk/start-or-resume';
 import { mistakePracticeSummary, openSessionOf, reviewSummary } from './summaries';
 
 function startStatus(isRestoring: boolean, isBusy: boolean): StartStatus {

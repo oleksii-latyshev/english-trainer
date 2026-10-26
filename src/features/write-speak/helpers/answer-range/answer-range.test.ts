@@ -59,8 +59,12 @@ describe('questionForSequence', () => {
 describe('feedbackSummary', () => {
   test('counts each coaching state and treats missing ones as unavailable', () => {
     expect(feedbackSummary(aDialogue(), [1, 2, 3])).toBe(
-      '3 answers · 0 with feedback · 1 pending · 1 paused · 1 unavailable',
+      '3 answers · 1 pending · 1 paused · 1 unavailable',
     );
+  });
+
+  test('shows only the states that are present and pluralizes the count', () => {
+    expect(feedbackSummary(aDialogue(), [1])).toBe('1 answer · 1 pending');
   });
 
   test('says feedback is loading without a dialogue', () => {

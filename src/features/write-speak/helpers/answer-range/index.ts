@@ -25,7 +25,15 @@ export function feedbackSummary(
 ): string {
   if (dialogue === null) return 'Feedback status is loading.';
   const counts = feedbackCounts(dialogue, sequences);
-  return `${sequences.length} answers · ${counts.ready} with feedback · ${counts.pending} pending · ${counts.paused} paused · ${counts.unavailable} unavailable`;
+  const states = [
+    [counts.ready, 'with feedback'],
+    [counts.pending, 'pending'],
+    [counts.paused, 'paused'],
+    [counts.unavailable, 'unavailable'],
+  ] as const;
+  const answers = `${sequences.length} ${sequences.length === 1 ? 'answer' : 'answers'}`;
+  const shown = states.filter(([count]) => count > 0).map(([count, label]) => `${count} ${label}`);
+  return [answers, ...shown].join(' · ');
 }
 
 export function questionForSequence(

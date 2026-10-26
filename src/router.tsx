@@ -11,8 +11,8 @@ import { MemoryRoute } from '@/routes/memory';
 import { MemoryReviewRoute } from '@/routes/memory/review';
 import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
 import { TalkRoute } from '@/routes/talk';
-import { SummaryRoute } from '@/routes/talk/summary';
 import { TalkStartRoute } from '@/routes/talk-start';
+import { WrapUpRoute } from '@/routes/wrap-up';
 
 export const rootRoute = createRootRoute({
   component: AppShell,
@@ -63,7 +63,7 @@ export const firstRunRoute = createRoute({
 export const summaryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/summary',
-  component: SummaryRoute,
+  component: WrapUpRoute,
 });
 
 export const routeTree = rootRoute.addChildren([

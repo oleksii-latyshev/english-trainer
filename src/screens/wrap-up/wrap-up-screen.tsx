@@ -1,5 +1,9 @@
+import { RegistryContext, useAtomValue } from '@effect/atom-react';
+import { useContext } from 'react';
+import { dismissSummary, practiceStateAtom } from '@/core/practice-session';
 import { ConversationReview, type ReviewedAnswer } from '@/features/coaching-note';
 import {
+  type FinishedSession,
   PhraseSection,
   SaveAnswerPhrase,
   sessionLabel,
@@ -15,8 +19,18 @@ function renderSaveAnswer({ target, feedback }: ReviewedAnswer) {
   );
 }
 
-export function WrapUpScreen({ summary: initial, onDone, onTalkMore }: WrapUpScreenProps) {
+type ContentProps = {
+  readonly initial: FinishedSession;
+  readonly onLeave: () => void;
+};
+
+function Content({ initial, onLeave }: ContentProps) {
+  const registry = useContext(RegistryContext);
   const summary = useLiveWrapup(initial);
+  function leave() {
+    dismissSummary(registry);
+    onLeave();
+  }
   return (
     <div className="mx-auto flex w-full max-w-270 flex-col gap-7 pt-2">
       <header className="flex flex-wrap items-end gap-4">
@@ -27,10 +41,10 @@ export function WrapUpScreen({ summary: initial, onDone, onTalkMore }: WrapUpScr
           </h1>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button onClick={onTalkMore} tone="secondary">
+          <Button onClick={leave} tone="secondary">
             Talk more
           </Button>
-          <Button onClick={onDone} tone="primary">
+          <Button onClick={leave} tone="primary">
             Done
           </Button>
         </div>
@@ -53,4 +67,10 @@ export function WrapUpScreen({ summary: initial, onDone, onTalkMore }: WrapUpScr
       <PhraseSection summary={summary} />
     </div>
   );
+}
+
+export function WrapUpScreen({ onLeave }: WrapUpScreenProps) {
+  const state = useAtomValue(practiceStateAtom);
+  if (state.tag !== 'completed') return null;
+  return <Content initial={state.summary} onLeave={onLeave} />;
 }

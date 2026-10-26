@@ -113,8 +113,7 @@
         "src/features/**",
         "src/core/**",
         "src/shared/**",
-        "!src/features/conversation/**",
-        "!src/features/practice/**"
+        "!src/features/conversation/**"
       ],
       "plugins": ["./biome/plugins/function-declarations.grit"],
       "linter": {
@@ -183,7 +182,6 @@
         "src/core/**",
         "src/shared/**",
         "!src/features/conversation/**",
-        "!src/features/practice/**",
         "!src/app/**",
         "!**/*.test.ts",
         "!**/*.test.tsx",
@@ -223,9 +221,7 @@
                       "@/routes/**",
                       "@/context/**",
                       "@/features/conversation/**",
-                      "@/features/practice/**",
-                      "@/features/conversation",
-                      "@/features/practice"
+                      "@/features/conversation"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -267,9 +263,7 @@
                       "@/routes/**",
                       "@/context/**",
                       "@/features/conversation/**",
-                      "@/features/practice/**",
-                      "@/features/conversation",
-                      "@/features/practice"
+                      "@/features/conversation"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -315,9 +309,7 @@
                       "@/routes/**",
                       "@/context/**",
                       "@/features/conversation/**",
-                      "@/features/practice/**",
-                      "@/features/conversation",
-                      "@/features/practice"
+                      "@/features/conversation"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -333,7 +325,7 @@
       }
     },
     {
-      "includes": ["src/features/**", "!src/features/conversation/**", "!src/features/practice/**"],
+      "includes": ["src/features/**", "!src/features/conversation/**"],
       "linter": {
         "rules": {
           "style": {
@@ -359,9 +351,7 @@
                       "@/routes/**",
                       "@/context/**",
                       "@/features/conversation/**",
-                      "@/features/practice/**",
-                      "@/features/conversation",
-                      "@/features/practice"
+                      "@/features/conversation"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
@@ -400,9 +390,7 @@
                       "@/routes/**",
                       "@/context/**",
                       "@/features/conversation/**",
-                      "@/features/practice/**",
-                      "@/features/conversation",
-                      "@/features/practice"
+                      "@/features/conversation"
                     ],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
