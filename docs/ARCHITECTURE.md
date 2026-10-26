@@ -159,7 +159,9 @@ Rules:
   first-answer scoring.
 - Answer help calls its providers through the `AnswerPlanner` and `GuidedAnswerSource` ports of the
   `conversation` context; the session store validates session, sequence and question and caches the
-  plan, the Gemini planner and its schema stay in `providers`.
+  plan, the Gemini planner and its schema stay in `providers`. Stuck rescue calls the `agy`
+  `RescueEngine` through the `RescueProvider` port; the session store validates the question, records
+  the help use for the answer and rejects overlapping requests.
 
 ## 8. Persistence
 

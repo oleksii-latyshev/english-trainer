@@ -1,5 +1,5 @@
 use super::infra::providers::{
-    AgyGuidedAnswers, AgyMistakeQuestions, ConfiguredReplyEngine, GeminiAnswerPlanner,
+    AgyGuidedAnswers, AgyMistakeQuestions, AgyRescue, ConfiguredReplyEngine, GeminiAnswerPlanner,
 };
 use super::ports::ReplyEngine;
 use super::{
@@ -11,7 +11,7 @@ use crate::ai_settings::{AiSettings, AiSettingsService};
 use crate::core::IpcError;
 use crate::learning::recall::{DailyRecallPlan, SpokenRecallResult};
 use crate::providers::{
-    self, AnswerPlan, AppleHelper, AttemptComparison, ConversationContext, ConversationTurn,
+    AnswerPlan, AppleHelper, AttemptComparison, ConversationContext, ConversationTurn,
     GuidedAnswer, ReplyStreamEvent, RescueRequest, RescueResponse,
 };
 use std::sync::atomic::AtomicBool;
@@ -333,9 +333,7 @@ pub async fn rescue_answer(
     blocking(
         sessions,
         "Could not prepare rescue help. Keep speaking and try Stuck again.",
-        move |store| {
-            store.rescue_answer(session_id, sequence, &request, providers::generate_rescue)
-        },
+        move |store| store.rescue_answer(session_id, sequence, &request, AgyRescue),
     )
     .await
 }

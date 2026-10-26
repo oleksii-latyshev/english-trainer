@@ -1,8 +1,8 @@
 use crate::conversation::domain::WrapupEvent;
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use crate::providers::{
-    AnswerPlan, ConversationContext, ConversationTurn, GuidedAnswer, ProviderError, WrapupRequest,
-    WrapupResult,
+    AnswerPlan, ConversationContext, ConversationTurn, GuidedAnswer, ProviderError, RescueRequest,
+    RescueResponse, WrapupRequest, WrapupResult,
 };
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -71,5 +71,18 @@ where
 {
     fn guide(&self, question: &str) -> Result<GuidedAnswer, ProviderError> {
         self(question)
+    }
+}
+
+pub trait RescueProvider {
+    fn rescue(&self, request: &RescueRequest) -> Result<RescueResponse, ProviderError>;
+}
+
+impl<F> RescueProvider for F
+where
+    F: Fn(&RescueRequest) -> Result<RescueResponse, ProviderError>,
+{
+    fn rescue(&self, request: &RescueRequest) -> Result<RescueResponse, ProviderError> {
+        self(request)
     }
 }

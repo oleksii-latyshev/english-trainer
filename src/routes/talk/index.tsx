@@ -15,18 +15,16 @@ import { AnswerHelp, helpLevelAtom, useAnswerHelpEffects } from '@/features/answ
 import { cancelSayAgain, sayAgainActiveAtom } from '@/features/coaching-note';
 import { OriginalQuestionPrompt } from '@/features/practice/OriginalQuestionPrompt';
 import { PracticeReview } from '@/features/practice/PracticeReview';
-import { RescuePanel } from '@/features/practice/RescuePanel';
+import { Rescue } from '@/features/rescue';
 import { recallActiveAtom } from '@/features/spoken-recall';
 import { useTurn } from '@/features/talk-composer';
 import { HISTORY_FAILED_MESSAGE, useDialogue } from '@/features/talk-dialogue';
 import { isPracticeDialogue } from '@/lib/dialogueTypes';
 import { TalkScreen } from '@/screens/talk';
-import { rescueCaptureOf } from './rescue-capture';
 import { TalkExtras } from './talk-extras';
 import { usePracticeActions, usePracticeModel } from './use-practice-model';
 import { useCancelOnStageChange, useTurnLock } from './use-turn-lock';
 import '@/features/practice/talkCards.css';
-import '@/features/practice/talkComposer.css';
 import '@/features/practice/talkDialogue.css';
 import '@/features/practice/talkStage.css';
 
@@ -96,15 +94,7 @@ export function TalkRoute() {
 
   const rescueControl: ReactNode =
     isHelpAvailable && session && hasRescue(session) && model.status === 'recording' ? (
-      <RescuePanel
-        capture={rescueCaptureOf(registry)}
-        key={`${session.sessionId}:${session.practicePhase}:${session.turnCount + 1}:${session.question}:${model.currentRequestId}`}
-        phase={session.practicePhase}
-        question={session.question}
-        recordingId={model.currentRequestId}
-        sequence={session.turnCount + 1}
-        sessionId={session.sessionId}
-      />
+      <Rescue />
     ) : undefined;
 
   const extras: ReactNode = session ? (
