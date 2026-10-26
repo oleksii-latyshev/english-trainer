@@ -49,7 +49,8 @@ export function gainAmount(gain: Gain): string {
 }
 
 export function speakingGainLabel(gain: { drops: number; topic: string }): string {
-  return `${gain.drops} min about ${gain.topic}`;
+  const topic = gain.topic.trim();
+  return topic === '' ? `${gain.drops} min of talk` : `${gain.drops} min about ${topic}`;
 }
 
 export function sunshineGainLabel(gain: { phrase: string }): string {

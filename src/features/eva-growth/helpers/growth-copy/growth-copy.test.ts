@@ -65,6 +65,7 @@ describe('gain labels', () => {
     expect(speakingGainLabel({ drops: 12, topic: 'Explaining a bug' })).toBe(
       '12 min about Explaining a bug',
     );
+    expect(speakingGainLabel({ drops: 3, topic: ' ' })).toBe('3 min of talk');
     expect(sunshineGainLabel({ phrase: 'most of' })).toBe('Said “most of” on your own');
   });
 
