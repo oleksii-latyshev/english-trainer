@@ -15,12 +15,11 @@ sequenceDiagram
     participant Legacy as features/practice (legacy)
 
     Learner->>Route: opens /conversation
-    Route->>Screen: slots (help bar from features/answer-help, Stuck panel, recall, replay prompt, review stage)
+    Route->>Screen: slots (help bar from features/answer-help, Stuck panel from features/rescue, recall, replay prompt, review stage)
     Screen->>Session: header, clock, Pause, Finish
     Screen->>Composer: Eva's stage, composer, live transcript
     Screen->>Dialogue: messages, streaming reply
     Dialogue-->>Learner: a quiet tip marker beside each answer, never a note
-    Composer-->>Legacy: Stuck panel beside the microphone
     Note over Screen,Legacy: no open session shows the start prompt; review phases hand the screen to the review stage
 ```
 
@@ -36,6 +35,5 @@ Slots still filled by legacy components, and the issue that migrates each one:
 
 | Slot | Legacy component | Issue |
 | :--- | :--- | :--- |
-| Stuck panel | `RescuePanel` | #77 |
 | write then speak review and prompts | `PracticeReview`, `OriginalQuestionPrompt` | #79 |
 | mistake practice | shares the screen; its progress is in the header | #80 |

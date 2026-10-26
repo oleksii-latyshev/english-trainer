@@ -1,11 +1,11 @@
 use crate::ai_settings::AiSettings;
 use crate::conversation::ports::{
-    AnswerPlanner, GuidedAnswerSource, MistakeQuestionSource, ReplyEngine,
+    AnswerPlanner, GuidedAnswerSource, MistakeQuestionSource, ReplyEngine, RescueProvider,
 };
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use crate::providers::{
     self, AnswerPlan, AppleHelper, ConversationContext, ConversationTurn, GuidedAnswer,
-    ProviderError, ReplyStreamEvent,
+    ProviderError, ReplyStreamEvent, RescueRequest, RescueResponse,
 };
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -80,5 +80,13 @@ pub struct AgyGuidedAnswers;
 impl GuidedAnswerSource for AgyGuidedAnswers {
     fn guide(&self, question: &str) -> Result<GuidedAnswer, ProviderError> {
         providers::generate_guided_answer(question)
+    }
+}
+
+pub struct AgyRescue;
+
+impl RescueProvider for AgyRescue {
+    fn rescue(&self, request: &RescueRequest) -> Result<RescueResponse, ProviderError> {
+        providers::generate_rescue(request)
     }
 }

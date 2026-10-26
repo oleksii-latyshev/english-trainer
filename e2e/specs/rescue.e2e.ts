@@ -111,6 +111,31 @@ test('a typed provider error is shown and Retry preserves missing-word mode and 
   ]);
 });
 
+test('a failed next step keeps the chat and the recording, and Retry brings the suggestion', async ({
+  app,
+  start,
+  talk,
+  tauri,
+}) => {
+  tauri.rescue.failingFirstRequest();
+  await begin({ app, start, tauri });
+  const { rescue, recorder } = talk;
+  await recorder.startAndWaitForSignal();
+  await talk.focusConversation();
+  await talk.pressShortcut('s');
+  await expect(rescue.message(rescueFailureMessage)).toBeVisible();
+  await expect(talk.openingQuestion).toBeVisible();
+  await expect(recorder.stopAndReviewButton).toBeEnabled();
+  await rescue.retryButton.click();
+  await expect(rescue.message(nextStepSuggestion)).toBeVisible();
+  await expect(talk.openingQuestion).toBeVisible();
+  expect((await tauri.rescue.state()).requests.map((request) => request.kind)).toEqual([
+    'next_step',
+    'next_step',
+  ]);
+  expect(await tauri.calls('send_practice_turn')).toHaveLength(0);
+});
+
 test('a late response after cancel cannot appear in a new recording', async ({
   app,
   start,

@@ -1,6 +1,7 @@
 use super::SessionStore;
 use crate::conversation::domain::PracticePhase;
 use crate::conversation::error::{database_error, invalid_session_error};
+use crate::conversation::ports::RescueProvider;
 use crate::providers::{ProviderError, ProviderErrorCode, RescueRequest, RescueResponse};
 
 impl SessionStore {
@@ -30,16 +31,13 @@ impl SessionStore {
         Ok(active.current_question().to_string())
     }
 
-    pub fn rescue_answer<F>(
+    pub fn rescue_answer(
         &self,
         session_id: u64,
         sequence: usize,
         request: &RescueRequest,
-        generate: F,
-    ) -> Result<RescueResponse, ProviderError>
-    where
-        F: FnOnce(&RescueRequest) -> Result<RescueResponse, ProviderError>,
-    {
+        provider: impl RescueProvider,
+    ) -> Result<RescueResponse, ProviderError> {
         request.validate()?;
         self.rescue_in_flight.compare_exchange(false, true,
             std::sync::atomic::Ordering::Acquire, std::sync::atomic::Ordering::Relaxed)
@@ -64,7 +62,7 @@ impl SessionStore {
                 .record_answer_help_used(session_id, sequence)
                 .map_err(database_error)?;
         }
-        let response = generate(request)?;
+        let response = provider.rescue(request)?;
         self.rescue_question(session_id, sequence, Some(&request.question))?;
         Ok(response)
     }

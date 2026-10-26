@@ -36,6 +36,9 @@ export type { PhraseCardRecord } from './bindings/PhraseCardRecord';
 export type { RecordingResult } from './bindings/RecordingResult';
 export type { RecurringMistake } from './bindings/RecurringMistake';
 export type { ReplyStreamEvent } from './bindings/ReplyStreamEvent';
+export type { RescueKind } from './bindings/RescueKind';
+export type { RescueRequest } from './bindings/RescueRequest';
+export type { RescueResponse } from './bindings/RescueResponse';
 export type { ReviewMaterials } from './bindings/ReviewMaterials';
 export type { ReviewMaterialView } from './bindings/ReviewMaterialView';
 export type { ReviewPreparation } from './bindings/ReviewPreparation';
@@ -137,6 +140,7 @@ export {
   TurnCoachingSchema,
   TurnFeedbackSchema,
 } from './schemas/practice-session';
+export { RescueKindSchema, RescueRequestSchema, RescueResponseSchema } from './schemas/rescue';
 export {
   MemoryRecallResultSchema,
   MemoryReviewItemSchema,

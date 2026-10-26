@@ -6,16 +6,18 @@ const MAX_RAW_CHARS: usize = 4_096;
 const MAX_SUGGESTION_CHARS: usize = 160;
 const MAX_CANDIDATE_CHARS: usize = 64;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export)]
 pub enum RescueKind {
     NextStep,
     Simpler,
     MissingWord,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(deny_unknown_fields)]
+#[ts(export)]
 pub struct RescueRequest {
     pub kind: RescueKind,
     pub question: String,
@@ -50,8 +52,9 @@ impl RescueRequest {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[ts(export)]
 pub enum RescueResponse {
     NextStep { suggestion: String },
     Simpler { suggestion: String },

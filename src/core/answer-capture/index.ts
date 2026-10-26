@@ -12,11 +12,14 @@ export { listenAtom, transcribeAgainAtom } from './model/listen';
 export { type RescueRequest, rescueTranscriptAtom } from './model/rescue';
 export { AnswerCaptureLive, captureRuntime } from './model/runtime';
 export {
+  type CaptureControl,
   canChangeSessionAtom,
+  captureControlAtom,
   captureRequestIdAtom,
   captureStateAtom,
   captureTimingAtom,
   recordedClipAtom,
+  rescueHoldAtom,
 } from './model/state';
 export {
   AnswerRecorder,

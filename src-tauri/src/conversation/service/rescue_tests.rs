@@ -30,7 +30,7 @@ fn rescue_records_only_the_current_answer_before_generation_even_if_generation_f
     let session = store.start().unwrap();
     let input = request(session.opening_question);
     let error = store
-        .rescue_answer(session.session_id, 1, &input, |_| {
+        .rescue_answer(session.session_id, 1, &input, |_: &RescueRequest| {
             assert!(store
                 .lock()
                 .database
@@ -76,12 +76,16 @@ fn malformed_and_stale_rescue_requests_never_record_a_cue_or_call_the_provider()
     let mut input = request(session.opening_question);
     input.partial_transcript.clear();
     assert!(store
-        .rescue_answer(session.session_id, 1, &input, |_| panic!("invalid request"))
+        .rescue_answer(session.session_id, 1, &input, |_: &RescueRequest| panic!(
+            "invalid request"
+        ))
         .is_err());
     input.partial_transcript = "I use a tool".into();
     input.question = "Another question?".into();
     assert!(store
-        .rescue_answer(session.session_id, 1, &input, |_| panic!("stale question"))
+        .rescue_answer(session.session_id, 1, &input, |_: &RescueRequest| panic!(
+            "stale question"
+        ))
         .is_err());
     assert!(!store
         .lock()
@@ -99,7 +103,7 @@ fn slow_rescue_does_not_block_a_turn_and_a_late_result_is_discarded() {
     let preparing = store.clone();
     let id = session.session_id;
     let worker = std::thread::spawn(move || {
-        preparing.rescue_answer(id, 1, &input, |_| {
+        preparing.rescue_answer(id, 1, &input, |_: &RescueRequest| {
             began.send(()).unwrap();
             wait.recv().unwrap();
             Ok(RescueResponse::NextStep {
@@ -114,7 +118,7 @@ fn slow_rescue_does_not_block_a_turn_and_a_late_result_is_discarded() {
                 id,
                 1,
                 &request(store.get_active().unwrap().unwrap().opening_question),
-                |_| panic!("duplicate rescue must not launch")
+                |_: &RescueRequest| panic!("duplicate rescue must not launch")
             )
             .unwrap_err()
             .code,
@@ -136,9 +140,11 @@ fn slow_rescue_does_not_block_a_turn_and_a_late_result_is_discarded() {
         .current_question()
         .to_string();
     assert!(store
-        .rescue_answer(id, 2, &request(current), |_| Ok(RescueResponse::NextStep {
-            suggestion: "Another reason is the flexibility.".into(),
-        }))
+        .rescue_answer(id, 2, &request(current), |_: &RescueRequest| Ok(
+            RescueResponse::NextStep {
+                suggestion: "Another reason is the flexibility.".into(),
+            }
+        ))
         .is_ok());
 }
 
@@ -157,7 +163,7 @@ fn writing_review_and_mistake_practice_reject_rescue_without_a_cue() {
                 session.session_id,
                 1,
                 &request(session.opening_question),
-                |_| panic!("non-spoken question")
+                |_: &RescueRequest| panic!("non-spoken question")
             )
             .is_err());
         assert!(!store
@@ -174,7 +180,7 @@ fn writing_review_and_mistake_practice_reject_rescue_without_a_cue() {
             session.session_id,
             1,
             &request(session.opening_question),
-            |_| panic!("mistake practice")
+            |_: &RescueRequest| panic!("mistake practice")
         )
         .is_err());
 }

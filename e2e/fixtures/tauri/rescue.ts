@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { RescueKind, RescueRequest, RescueResponse } from '@/lib/rescueTypes';
+import type { RescueKind, RescueRequest, RescueResponse } from '@/core/ipc';
 
 export type RescueOptions = {
   failFirst?: boolean;
