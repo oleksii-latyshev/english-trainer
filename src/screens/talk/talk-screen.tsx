@@ -1,11 +1,15 @@
-import { useAtomValue } from '@effect/atom-react';
+import { RegistryContext, useAtomValue } from '@effect/atom-react';
+import { useContext } from 'react';
 import {
   isReviewPhase,
   isSessionBusyAtom,
   practiceStageIsWriting,
   practiceStageUsesAudio,
   type SessionDetails,
+  startPracticeAtom,
 } from '@/core/practice-session';
+import { useSpeech } from '@/core/speech';
+import { useAnswerHelpEffects } from '@/features/answer-help';
 import {
   Composer,
   FlowMenu,
@@ -20,10 +24,17 @@ import {
   useSessionClock,
   useSessionState,
 } from '@/features/talk-session';
+import { OriginalQuestion } from '@/features/write-speak';
+import { DialogueExtras } from './components/dialogue-extras';
+import { ReviewStage } from './components/review-stage';
 import { TalkNotices } from './components/talk-notices';
+import { useComposerSlots } from './model/use-composer-slots';
+import { type TalkGuards, useTalkGuards } from './model/use-talk-guards';
 import type { TalkScreenProps } from './types';
 
-type WorkspaceProps = TalkScreenProps & {
+type ContentProps = TalkScreenProps & { guards: TalkGuards };
+
+type WorkspaceProps = ContentProps & {
   session: SessionDetails;
   isFinishing: boolean;
 };
@@ -32,7 +43,8 @@ function isSpokenReplay(session: SessionDetails): boolean {
   return session.practiceMode === 'write_then_speak' && session.practicePhase === 'speaking';
 }
 
-function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
+function Workspace({ session, isFinishing, guards, ...props }: WorkspaceProps) {
+  const slots = useComposerSlots(session, guards);
   const isReplay = isSpokenReplay(session);
   const isWriting = practiceStageIsWriting(session);
   const isReplayComplete = isReplay && session.spokenTurnCount >= session.writtenTurnCount;
@@ -42,14 +54,21 @@ function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
       className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-3 overflow-y-auto"
     >
       <SessionHeader
-        isFinishBlocked={props.isFinishBlocked}
+        isFinishBlocked={guards.isRecalling}
         isFinishing={isFinishing}
         session={session}
       >
         <FlowMenu />
       </SessionHeader>
-      {isReplay && props.replayPrompt}
-      <TurnStage isWriting={isWriting} mood={props.moodExtras} />
+      {isReplay && (
+        <OriginalQuestion
+          isComplete={isReplayComplete}
+          question={session.question}
+          spokenTurnCount={session.spokenTurnCount}
+          writtenTurnCount={session.writtenTurnCount}
+        />
+      )}
+      <TurnStage isWriting={isWriting} mood={{ isHelpOpen: guards.isHelpOpen }} />
       <div className={`flex min-h-56 w-full flex-1 flex-col ${isWriting ? '' : '-mt-24'}`}>
         <Dialogue
           canReplay={practiceStageUsesAudio(session)}
@@ -57,36 +76,42 @@ function Workspace({ session, isFinishing, ...props }: WorkspaceProps) {
         >
           <TalkNotices />
           <LiveTranscript />
-          {props.dialogueExtras}
+          <DialogueExtras guards={guards} session={session} />
         </Dialogue>
       </div>
       <Composer
-        helpSlot={props.helpBar}
-        lockedReason={props.lockedReason}
+        helpSlot={slots.helpBar}
+        lockedReason={guards.lockedReason}
         onChooseMicrophone={props.onChooseMicrophone}
         onOpenSettings={props.onOpenSettings}
-        rescueSlot={props.rescueControl}
+        rescueSlot={slots.rescueControl}
       />
     </section>
   );
 }
 
-function Content(props: TalkScreenProps) {
+function Content(props: ContentProps) {
+  const registry = useContext(RegistryContext);
   const { state } = useSessionState();
   const isBusy = useAtomValue(isSessionBusyAtom);
   if (state.tag !== 'active' && state.tag !== 'waiting' && state.tag !== 'finishing') {
-    return <NoSession isDisabled={isBusy} onStart={props.onStartPractice} />;
+    return (
+      <NoSession isDisabled={isBusy} onStart={() => registry.set(startPracticeAtom, undefined)} />
+    );
   }
-  if (isReviewPhase(state)) return props.reviewStage;
+  if (isReviewPhase(state)) return <ReviewStage guards={props.guards} session={state} />;
   return <Workspace {...props} isFinishing={state.tag === 'finishing'} session={state} />;
 }
 
 export function TalkScreen(props: TalkScreenProps) {
+  useSpeech();
   useSessionClock();
   useComposerEffects();
+  useAnswerHelpEffects();
+  const guards = useTalkGuards();
   return (
-    <div className="talk-screen h-full min-h-0">
-      <Content {...props} />
+    <div className="h-full min-h-0">
+      <Content {...props} guards={guards} />
     </div>
   );
 }

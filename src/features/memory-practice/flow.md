@@ -2,7 +2,7 @@
 
 The two cards at the top of Memory that start spoken practice: the spoken review and "Practice my
 usual mistakes". The cards only offer and start; the review screen and the practice session are
-`features/spoken-review` and, for the five questions, still legacy (`features/practice`, #26), so what
+`features/spoken-review` and, for the five questions, `screens/talk`, so what
 the practice session needs from the app arrives through props.
 
 ```mermaid

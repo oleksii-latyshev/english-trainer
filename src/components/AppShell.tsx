@@ -8,9 +8,13 @@ import { canChangeSessionAtom } from '@/core/answer-capture';
 import { type MicrophoneStatus, microphoneSnapshotAtom } from '@/core/audio';
 import { FIRST_RUN_PATH } from '@/core/first-run';
 import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
-import { isSessionBusyAtom, isSessionOpenAtom, practiceStateAtom } from '@/core/practice-session';
+import {
+  isSessionBusyAtom,
+  isSessionOpenAtom,
+  practiceStateAtom,
+  startOrResumePractice,
+} from '@/core/practice-session';
 import { isTranslatablePath, TranslationLayer } from '@/features/text-translation';
-import { startOrResumePractice } from '@/routes/talk/start-or-resume';
 import {
   activeSettingsSection,
   EVA_SETTINGS_PATH,

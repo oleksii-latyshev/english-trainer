@@ -32,7 +32,7 @@ export function AnswerRange({
   return (
     <section aria-label={title} className="flex min-w-0 flex-col gap-3">
       <h2 className="m-0 font-semibold text-base">
-        {title} ({start}–{end})
+        {title} ({sequences.length})
       </h2>
       <p aria-live="polite" className="m-0 text-caption text-muted leading-snug">
         {feedbackSummary(dialogue, sequences)}

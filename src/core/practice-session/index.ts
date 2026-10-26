@@ -38,6 +38,7 @@ export {
   transitionPhaseAtom,
 } from './model/commands';
 export { PracticeSessionLive, runtime as practiceSessionRuntime } from './model/runtime';
+export { startOrResumePractice } from './model/start-or-resume';
 export {
   acceptRetryComparison,
   acceptTurn,

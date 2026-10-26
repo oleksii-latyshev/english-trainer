@@ -4,7 +4,7 @@ Write, then speak (F11) runs in four stages: `writing`, `writing_review`, `speak
 `speaking_review`. Rust owns the phase and the turn counts (`conversation` context); the frontend
 asks for a change and shows what Rust answers. This feature owns the two review screens and the
 "original question" prompt shown while the learner speaks. The composer, the chat and the stage
-buttons belong to `talk-composer`, `talk-dialogue` and `talk-session`; the route (`routes/talk`)
+buttons belong to `talk-composer`, `talk-dialogue` and `talk-session`; `screens/talk`
 composes them and hands this feature the dialogue, the history error and `AnswerReview` from
 `coaching-note`.
 

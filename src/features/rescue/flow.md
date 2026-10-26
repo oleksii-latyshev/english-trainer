@@ -3,7 +3,7 @@
 The "Stuck" control beside the microphone: while the learner is recording an answer, one press (or
 `S`) asks for a next step, a simpler way to say it, or a missing word. The learner never leaves the
 chat and the recording is never ended: rescue only holds the turn open while it works and releases
-that hold when it is closed or fails. The route (`routes/talk`) decides when rescue is available and
+that hold when it is closed or fails. `screens/talk` decides when rescue is available and
 mounts `Rescue` in the composer's rescue slot while the capture is recording.
 
 ## Ask for a next step or a simpler wording

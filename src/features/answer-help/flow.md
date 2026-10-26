@@ -3,7 +3,7 @@
 The "Need help?" planner above the composer: Frame (three steps), Phrases and Example (a model
 answer), with an optional 15 or 30 second planning timer on the Frame. Help never blocks the
 conversation: the plan is prepared in the background, the learner can speak at any time, and a
-failure only offers a retry. The route (`routes/talk`) decides when help is available and mounts
+failure only offers a retry. `screens/talk` decides when help is available and mounts
 `AnswerHelp`; `useAnswerHelpEffects` keeps the Example guard and the commands alive.
 
 ## Prepare the plan

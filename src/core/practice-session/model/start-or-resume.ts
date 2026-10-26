@@ -1,5 +1,7 @@
 import type { AtomRegistry } from 'effect/reactivity';
-import { isSessionOpen, practiceStateAtom, startPracticeAtom } from '@/core/practice-session';
+import { isSessionOpen } from '../helpers/practice-state';
+import { practiceStateAtom } from './atoms';
+import { startPracticeAtom } from './commands';
 
 export function startOrResumePractice(
   registry: AtomRegistry.AtomRegistry,
