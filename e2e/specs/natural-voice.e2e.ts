@@ -8,7 +8,6 @@ import type { TalkPage } from '../pages/talk-page';
 
 type Scene = { app: App; start: StartPage; talk: TalkPage; tauri: FakeBackend };
 
-const DISCARD_WINDOW_MS = 450;
 const voiceSample = "Hi, I'm glad you picked my voice!";
 
 async function sendTypedAnswer({ app, start, talk, tauri }: Scene, autoListen = false) {
@@ -51,11 +50,12 @@ test('late generated audio is discarded after an interruption', async ({
   talk,
   tauri,
 }) => {
-  tauri.naturalVoice.delayingBy(350);
+  tauri.naturalVoice.holdingGeneration().interruptedOnRequest();
   await sendTypedAnswer({ app, start, talk, tauri });
   await expect.poll(async () => (await tauri.naturalVoice.state()).requests.length).toBe(1);
-  await app.pressEscape();
-  await app.waitForQuietPeriod(DISCARD_WINDOW_MS);
+  await tauri.naturalVoice.releaseGeneration();
+  await expect.poll(async () => (await tauri.naturalVoice.state()).settled).toBe(1);
+  await app.settleRendering();
   expect((await tauri.naturalVoice.state()).played).toBe(0);
   expect(await tauri.streaming.spoken()).toEqual([]);
 });

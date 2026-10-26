@@ -50,6 +50,15 @@ export class App {
     await this.page.waitForTimeout(ms);
   }
 
+  async settleRendering(): Promise<void> {
+    await this.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
+  }
+
   async useFakeClock(): Promise<void> {
     await this.page.clock.install();
   }
