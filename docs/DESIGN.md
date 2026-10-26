@@ -53,13 +53,17 @@ header pills; 8 px spacing grid.
 ## Eva
 
 Eva is the conversation partner and the mascot: **Mochi** — a squishy cloud-white blob with rosy
-cheeks and a smile — with a **sprout** on top that grows with speaking (see ROADMAP › Eva grows).
+cheeks and a smile — with a **sprout** on top that grows with speaking (see the stage bullet below).
 
 - Six designed faces: idle, listening (looks at the learner), thinking (glance away), speaking,
   happy, asleep (paused). The ten moods the app uses map onto them: processing → thinking,
   encouraging → idle, curious → listening, concerned → idle.
-- Sprout stages 0–5 (seed, sprout, two leaves, bud, bloom, full bloom). Until growth lands the app
-  shows the bud (`DEFAULT_EVA_STAGE`).
+- Sprout stages 0–5 (seed, sprout, two leaves, bud, bloom, full bloom) show how far Eva has grown
+  (rules in [TECHNICAL_REQUIREMENTS](TECHNICAL_REQUIREMENTS.md) §9.3); every Eva in the app
+  draws the real stage. With Show growth off she has no sprout and the sidebar card is hidden;
+  progress is still kept. The start greeting shows her asleep while she naps. The sidebar card opens
+  the Growth screen (stage strip, how Eva grows, today). `DEFAULT_EVA_STAGE` is only the fallback of
+  the drawing component.
 - She appears on Talk, the start greeting, review, first run and the app icon — never twice on one
   screen. Colours (body, eyes, leaves, bloom) are adjustable in Settings › Eva; locked leaf and
   bloom colours are listed but not selectable.

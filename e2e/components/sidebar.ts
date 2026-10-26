@@ -1,7 +1,11 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 export class Sidebar {
-  constructor(private readonly page: Page) {}
+  readonly growthCard: Locator;
+
+  constructor(private readonly page: Page) {
+    this.growthCard = page.getByRole('button', { name: /^Eva's growth/ });
+  }
 
   async openSpeak(): Promise<void> {
     await this.page.getByRole('button', { name: /^Speak/ }).click();
@@ -13,6 +17,10 @@ export class Sidebar {
 
   async openMemory(): Promise<void> {
     await this.page.getByRole('button', { name: /^Memory/ }).click();
+  }
+
+  async openGrowth(): Promise<void> {
+    await this.growthCard.click();
   }
 
   async openSettings(): Promise<void> {

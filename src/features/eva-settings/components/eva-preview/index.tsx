@@ -1,20 +1,16 @@
 import { useAtomSet, useAtomValue } from '@effect/atom-react';
+import { growthPreferenceAtom } from '@/core/eva-growth';
 import { Eva } from '@/shared/ui/eva';
 import { GlassPanel } from '@/shared/ui/glass-panel';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { moodName } from '../../helpers/mood-guide';
 import { PREVIEW_STAGES, stageCaption } from '../../helpers/preview-caption';
-import {
-  growthAtom,
-  pickPreviewStageAtom,
-  previewMoodAtom,
-  previewStageAtom,
-} from '../../model/atoms';
+import { pickPreviewStageAtom, previewMoodAtom, previewStageAtom } from '../../model/atoms';
 
 export function EvaPreview() {
   const mood = useAtomValue(previewMoodAtom);
   const stage = useAtomValue(previewStageAtom);
-  const { showGrowth } = useAtomValue(growthAtom);
+  const { showGrowth } = useAtomValue(growthPreferenceAtom);
   const pickStage = useAtomSet(pickPreviewStageAtom);
   return (
     <GlassPanel

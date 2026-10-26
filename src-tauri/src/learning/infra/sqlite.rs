@@ -62,7 +62,7 @@ fn phrase_from_row(row: &Row<'_>, now: i64) -> rusqlite::Result<PhraseCardRecord
     })
 }
 
-fn independent_sessions_by_phrase(
+pub(crate) fn independent_sessions_by_phrase(
     connection: &Connection,
 ) -> rusqlite::Result<HashMap<u64, HashSet<u64>>> {
     let mut statement = connection.prepare(

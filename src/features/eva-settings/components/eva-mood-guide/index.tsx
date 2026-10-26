@@ -1,14 +1,15 @@
 import { useAtom, useAtomValue } from '@effect/atom-react';
+import { growthPreferenceAtom } from '@/core/eva-growth';
 import { ChoiceTile } from '@/shared/ui/choice-tile';
 import { Eva } from '@/shared/ui/eva';
 import { GlassPanel } from '@/shared/ui/glass-panel';
 import { EVA_MOOD_GUIDE } from '../../helpers/mood-guide';
-import { growthAtom, previewMoodAtom, previewStageAtom } from '../../model/atoms';
+import { previewMoodAtom, previewStageAtom } from '../../model/atoms';
 
 export function EvaMoodGuide() {
   const [selected, setSelected] = useAtom(previewMoodAtom);
   const stage = useAtomValue(previewStageAtom);
-  const { showGrowth } = useAtomValue(growthAtom);
+  const { showGrowth } = useAtomValue(growthPreferenceAtom);
   return (
     <GlassPanel aria-labelledby="eva-moods-heading" className="flex flex-col gap-1.5 px-5.5 py-4">
       <div className="flex items-baseline gap-3">

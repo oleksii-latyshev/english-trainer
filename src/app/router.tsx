@@ -5,6 +5,7 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import { FirstRunRoute } from '@/app/routes/first-run';
+import { GrowthRoute } from '@/app/routes/growth';
 import { MemoryRoute } from '@/app/routes/memory';
 import { MemoryReviewRoute } from '@/app/routes/memory/review';
 import { SettingsEvaRoute, SettingsRoute } from '@/app/routes/settings';
@@ -12,6 +13,7 @@ import { TalkRoute } from '@/app/routes/talk';
 import { TalkStartRoute } from '@/app/routes/talk-start';
 import { WrapUpRoute } from '@/app/routes/wrap-up';
 import { FIRST_RUN_PATH } from '@/core/first-run';
+import { GROWTH_PATH } from '@/screens/growth';
 import { AppShell } from './shell/app-shell';
 
 export const rootRoute = createRootRoute({
@@ -54,6 +56,12 @@ export const settingsEvaRoute = createRoute({
   component: SettingsEvaRoute,
 });
 
+export const growthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: GROWTH_PATH,
+  component: GrowthRoute,
+});
+
 export const firstRunRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: FIRST_RUN_PATH,
@@ -73,6 +81,7 @@ export const routeTree = rootRoute.addChildren([
   memoryReviewRoute,
   settingsRoute,
   settingsEvaRoute,
+  growthRoute,
   firstRunRoute,
   summaryRoute,
 ]);

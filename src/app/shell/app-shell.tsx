@@ -13,6 +13,7 @@ import {
   startOrResumePractice,
 } from '@/core/practice-session';
 import { isTranslatablePath, TranslationLayer } from '@/features/text-translation';
+import { GROWTH_PATH } from '@/screens/growth';
 import {
   activeSettingsSection,
   EVA_SETTINGS_PATH,
@@ -47,6 +48,11 @@ function useShellNavigation(navigationLocked: boolean) {
     void navigate({ to: item.path });
   }
 
+  function handleOpenGrowth() {
+    if (navigationLocked) return;
+    void navigate({ to: GROWTH_PATH });
+  }
+
   function handleSettingsSection(id: SettingsSectionId) {
     if (navigationLocked) return;
     if (id === 'eva') {
@@ -56,7 +62,7 @@ function useShellNavigation(navigationLocked: boolean) {
     void navigate({ to: '/settings', hash: id });
   }
 
-  return { handleNavigate, handleSettingsSection };
+  return { handleNavigate, handleOpenGrowth, handleSettingsSection };
 }
 
 export function AppShell() {
@@ -67,7 +73,8 @@ export function AppShell() {
   const navigationLocked = useNavigationLocked();
   const currentPath = useRouterState({ select: (state) => state.location.pathname });
   const currentHash = useRouterState({ select: (state) => state.location.hash });
-  const { handleNavigate, handleSettingsSection } = useShellNavigation(navigationLocked);
+  const { handleNavigate, handleOpenGrowth, handleSettingsSection } =
+    useShellNavigation(navigationLocked);
   const isFocusedPage = currentPath === '/summary' || currentPath === FIRST_RUN_PATH;
 
   return (
@@ -80,6 +87,7 @@ export function AppShell() {
           microphoneStatus={microphone.status}
           navigationLocked={navigationLocked}
           onNavigate={handleNavigate}
+          onOpenGrowth={handleOpenGrowth}
           onSettingsSection={handleSettingsSection}
         />
       )}
