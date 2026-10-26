@@ -1,9 +1,10 @@
 import type { Page } from '@playwright/test';
 import type { FinishedPracticeSession } from '@/core/ipc';
+import type { ConversationTurn } from '@/core/ipc/bindings/ConversationTurn';
 import type { GeminiKeyStatus } from '@/core/ipc/bindings/GeminiKeyStatus';
+import type { PracticeMode } from '@/core/ipc/bindings/PracticeMode';
+import type { PracticePhase } from '@/core/ipc/bindings/PracticePhase';
 import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
-import type { PracticeOptions, PracticePhase } from '@/lib/practiceOptions';
-import type { ConversationTurn } from '@/lib/types';
 export async function installTauriCommands(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const harness = window.__ET_HARNESS__;
@@ -29,7 +30,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
       if (typeof value !== 'string') throw new Error(`Harness expected string ${key}.`);
       return value;
     };
-    const isTopicId = (value: unknown): value is PracticeOptions['topic_id'] =>
+    const isTopicId = (value: unknown): value is string =>
       [
         'work_technology',
         'daily_life',
@@ -42,9 +43,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
         'free_conversation',
         'random',
       ].some((topicId) => topicId === value);
-    const isPracticeMode = (
-      value: unknown,
-    ): value is NonNullable<PracticeOptions['practice_mode']> =>
+    const isPracticeMode = (value: unknown): value is PracticeMode =>
       value === 'voice' || value === 'text_chat' || value === 'write_then_speak';
     const isPhase = (value: unknown): value is PracticePhase =>
       ['writing', 'writing_review', 'speaking', 'speaking_review'].some((phase) => phase === value);
@@ -246,11 +245,6 @@ export async function installTauriCommands(page: Page): Promise<void> {
       get_ai_settings: () => ({ provider: 'gemini', agy_model: 'default', eva_style: 'natural' }),
       get_gemini_key_status: (): GeminiKeyStatus => ({ configured: false, source: null }),
       get_learning_memory: () => ({ mistakes: [], phrase_cards: [], due_count: 0 }),
-      get_question_scaffold: () => ({
-        sentence_starters: ['One tool I use is…'],
-        useful_expressions: ['It saves me time.'],
-        structure: ['Name the tool', 'Explain why it helps', 'Give an example'],
-      }),
       start_practice_session: start,
       set_practice_clock: setClock,
       transition_practice_phase: transition,

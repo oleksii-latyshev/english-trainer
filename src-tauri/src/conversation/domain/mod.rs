@@ -8,7 +8,7 @@ pub(crate) mod topics;
 mod wrapup;
 
 pub use coaching::TurnCoaching;
-pub use scaffold::{question_scaffold, QuestionScaffold};
+pub use scaffold::question_scaffold;
 pub use session::{
     ActiveSession, FinishedPracticeSession, InputSource, PracticeDialogue, PracticeSession,
     StoredTurn,

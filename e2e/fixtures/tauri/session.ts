@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import type { FinishedPracticeSession } from '@/core/ipc';
+import type { PracticeDialogue } from '@/core/ipc/bindings/PracticeDialogue';
 import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
-import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { PracticeOptions } from '@/lib/practiceOptions';
+import type { PracticeOptions } from './harness';
 
 export class SessionBackend {
   open: PracticeSession | null = null;

@@ -1,11 +1,11 @@
 use crate::ai_settings::AiSettings;
 use crate::conversation::ports::{
-    AnswerPlanner, GuidedAnswerSource, MistakeQuestionSource, ReplyEngine, RescueProvider,
+    AnswerPlanner, MistakeQuestionSource, ReplyEngine, RescueProvider,
 };
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use crate::providers::{
-    self, AnswerPlan, AppleHelper, ConversationContext, ConversationTurn, GuidedAnswer,
-    ProviderError, ReplyStreamEvent, RescueRequest, RescueResponse,
+    self, AnswerPlan, AppleHelper, ConversationContext, ConversationTurn, ProviderError,
+    ReplyStreamEvent, RescueRequest, RescueResponse,
 };
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -72,14 +72,6 @@ pub struct GeminiAnswerPlanner;
 impl AnswerPlanner for GeminiAnswerPlanner {
     fn plan(&self, question: &str) -> Result<AnswerPlan, ProviderError> {
         providers::generate_answer_plan(question)
-    }
-}
-
-pub struct AgyGuidedAnswers;
-
-impl GuidedAnswerSource for AgyGuidedAnswers {
-    fn guide(&self, question: &str) -> Result<GuidedAnswer, ProviderError> {
-        providers::generate_guided_answer(question)
     }
 }
 

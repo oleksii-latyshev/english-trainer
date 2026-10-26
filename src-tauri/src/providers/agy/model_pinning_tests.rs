@@ -2,7 +2,7 @@
 //! which is a Claude model and spends the learner's Claude quota.
 
 use super::test_support::{recorded_calls, recording_cli, TestDirectory};
-use super::{coaching, guided, AgyEngine};
+use super::{coaching, AgyEngine};
 use crate::learning::LearningItemType;
 use crate::providers::{
     AgyModel, CoachingAnswer, ConversationContext, ConversationEngine, UsageCandidate,
@@ -47,9 +47,6 @@ fn every_agy_entry_point_passes_a_gemini_model() {
         }],
     );
     assert_every_call_is_gemini(&dir, 1);
-
-    let _ = guided::generate(&cli, "What did you do?");
-    assert_every_call_is_gemini(&dir, 2);
 
     let engine = AgyEngine { binary: cli };
     let _ = engine.review_usage(&UsageReviewRequest {

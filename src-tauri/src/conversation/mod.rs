@@ -12,7 +12,7 @@ pub(crate) mod service;
 
 pub use domain::{
     question_scaffold, FinishedPracticeSession, InputSource, PracticeDialogue, PracticeMode,
-    PracticePhase, PracticeSession, QuestionScaffold, SavedWrapupPhrases, StartPracticeOptions,
-    StoredTurn, WrapupPhrase,
+    PracticePhase, PracticeSession, SavedWrapupPhrases, StartPracticeOptions, StoredTurn,
+    WrapupPhrase,
 };
 pub use service::{CoachingQueue, SessionStore, WrapupQueue, IDLE_FLUSH, QUOTA_PAUSE};

@@ -1,8 +1,15 @@
 import type { FinishedPracticeSession, LearningMemoryView } from '@/core/ipc';
+import type { PracticeDialogue } from '@/core/ipc/bindings/PracticeDialogue';
+import type { PracticeMode } from '@/core/ipc/bindings/PracticeMode';
 import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
-import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { PracticeOptions } from '@/lib/practiceOptions';
 import type { AudioEdgeCounts } from './speech';
+
+export type PracticeOptions = {
+  topic_id: string;
+  topic_custom: string | null;
+  duration_goal_seconds: number;
+  practice_mode: PracticeMode;
+};
 
 export type IpcCall = { command: string; args: Record<string, unknown> };
 

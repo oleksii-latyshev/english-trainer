@@ -1,18 +1,17 @@
 use super::infra::providers::{
-    AgyGuidedAnswers, AgyMistakeQuestions, AgyRescue, ConfiguredReplyEngine, GeminiAnswerPlanner,
+    AgyMistakeQuestions, AgyRescue, ConfiguredReplyEngine, GeminiAnswerPlanner,
 };
 use super::ports::ReplyEngine;
 use super::{
     CoachingQueue, FinishedPracticeSession, InputSource, PracticeDialogue, PracticePhase,
-    PracticeSession, QuestionScaffold, SavedWrapupPhrases, SessionStore, StartPracticeOptions,
-    WrapupQueue,
+    PracticeSession, SavedWrapupPhrases, SessionStore, StartPracticeOptions, WrapupQueue,
 };
 use crate::ai_settings::{AiSettings, AiSettingsService};
 use crate::core::IpcError;
 use crate::learning::recall::{DailyRecallPlan, SpokenRecallResult};
 use crate::providers::{
     AnswerPlan, AppleHelper, AttemptComparison, ConversationContext, ConversationTurn,
-    GuidedAnswer, ReplyStreamEvent, RescueRequest, RescueResponse,
+    ReplyStreamEvent, RescueRequest, RescueResponse,
 };
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -308,21 +307,6 @@ pub async fn record_answer_help_used(
     .await
 }
 
-#[tauri::command]
-pub async fn get_guided_answer(
-    sessions: tauri::State<'_, SessionStore>,
-    session_id: u64,
-    sequence: usize,
-    question: String,
-) -> Result<GuidedAnswer, IpcError> {
-    blocking(
-        sessions,
-        "Could not prepare an answer example. Please retry.",
-        move |store| store.guided_answer(session_id, sequence, &question, AgyGuidedAnswers),
-    )
-    .await
-}
-
 #[tauri::command(rename_all = "snake_case")]
 pub async fn rescue_answer(
     sessions: tauri::State<'_, SessionStore>,
@@ -360,9 +344,4 @@ pub async fn prefetch_answer_plan(
         },
     )
     .await
-}
-
-#[tauri::command]
-pub fn get_question_scaffold(question: String) -> QuestionScaffold {
-    super::question_scaffold(&question)
 }

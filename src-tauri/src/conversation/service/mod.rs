@@ -10,7 +10,7 @@ mod coaching;
 pub(crate) mod coaching_queue;
 mod dialogue;
 mod feedback;
-mod guided;
+mod help_use;
 mod interruption;
 mod lifecycle;
 mod planner;

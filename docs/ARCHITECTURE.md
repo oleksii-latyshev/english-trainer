@@ -117,7 +117,7 @@ sequenceDiagram
 | :--- | :--- | :--- |
 | `ConversationEngine` (tier: conversation) | Short spoken reply + one question | Gemini API (HTTPS streaming, default) raced against the Apple helper as backup; Apple helper (one long-lived process, `prewarm()`); `agy` (legacy: process per turn) |
 | Batch coaching (tier: coaching) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, `gemini-3.8-flash-medium`. The Gemini API is not used (its free quota is reserved for conversation) |
-| Answer planner | Frame, phrases and hidden example for the current question | Gemini API, question-only prefetch; `agy` guided-answer IPC remains for compatibility |
+| Answer planner | Frame, phrases and hidden example for the current question | Gemini API, question-only prefetch |
 | `RescueEngine` | Next step, simpler wording or missing-word candidates during recording | `agy`, `gemini-3.8-flash-high` |
 | `SessionWrapupEngine` | Zero to three phrases from a finished session | `agy`, `gemini-3.8-flash-high` |
 | `ReviewMaterialEngine` | One situation and model sentence per due review item | `agy`, `gemini-3.8-flash-high` |
@@ -157,7 +157,7 @@ Rules:
   ports of the `conversation` context; results or typed failures persist before events
   refresh the UI. Review material has its own SQLite cache so background generation cannot delay
   first-answer scoring.
-- Answer help calls its providers through the `AnswerPlanner` and `GuidedAnswerSource` ports of the
+- Answer help calls its providers through the `AnswerPlanner` port of the
   `conversation` context; the session store validates session, sequence and question and caches the
   plan, the Gemini planner and its schema stay in `providers`. Stuck rescue calls the `agy`
   `RescueEngine` through the `RescueProvider` port; the session store validates the question, records
