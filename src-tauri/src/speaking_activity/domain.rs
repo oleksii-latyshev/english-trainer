@@ -22,8 +22,12 @@ pub fn window_start_ms(now_ms: i64) -> i64 {
     now_ms.saturating_sub(WINDOW_DAYS * DAY_MS)
 }
 
+pub fn rounded_minutes(active_ms: u64) -> u32 {
+    u32::try_from((active_ms + MINUTE_MS / 2) / MINUTE_MS).unwrap_or(u32::MAX)
+}
+
 pub fn speaking_day(date: String, active_ms: u64) -> Option<SpeakingDay> {
-    let minutes = u32::try_from((active_ms + MINUTE_MS / 2) / MINUTE_MS).unwrap_or(u32::MAX);
+    let minutes = rounded_minutes(active_ms);
     (minutes > 0).then_some(SpeakingDay { date, minutes })
 }
 

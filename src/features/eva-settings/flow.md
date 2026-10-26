@@ -3,7 +3,7 @@
 Settings › Eva changes how Eva looks (`core/eva-look`), whether her growth shows, which Dock icon the
 app uses, and previews her faces. Everything except the Dock icon is a pure UI preference kept in
 the WebView's `localStorage`. The Dock icon crosses IPC because only the Dock tile can change it.
-The growth switch is a stored visual preference: nothing reads it yet except this preview.
+The growth switch is a stored visual preference that lives in `core/eva-growth`; every Eva and the sidebar card read it.
 
 ## Choose a look
 
@@ -27,12 +27,12 @@ sequenceDiagram
     actor Learner
     participant Guide as EvaMoodGuide
     participant Controls as EvaPreview
-    participant Atoms as previewMoodAtom, previewStageAtom, growthAtom
+    participant Atoms as previewMoodAtom, previewStageAtom, growthPreferenceAtom
 
     Learner->>Guide: clicks a face
     Guide->>Atoms: previewMoodAtom = mood
     Learner->>Controls: picks Sprout, Bud, Bloom or Full bloom
-    Controls->>Atoms: pickPreviewStageAtom: previewStageAtom = stage, growthAtom = shown
+    Controls->>Atoms: pickPreviewStageAtom: previewStageAtom = stage, growthPreferenceAtom = shown
     Atoms-->>Controls: preview redrawn
 ```
 
@@ -42,7 +42,7 @@ sequenceDiagram
 sequenceDiagram
     actor Learner
     participant Controls as EvaLookControls
-    participant Growth as growthAtom (Atom.kvs)
+    participant Growth as growthPreferenceAtom (Atom.kvs)
     participant Store as KeyValueStore.layerStorage
 
     Learner->>Controls: flips Growth
@@ -102,7 +102,7 @@ sequenceDiagram
     actor Learner
     participant Controls as EvaLookControls
     participant Reset as resetEvaSettingsAtom
-    participant Atoms as evaLookAtom, growthAtom, dockIconAtom, preview atoms
+    participant Atoms as evaLookAtom, growthPreferenceAtom, dockIconAtom, preview atoms
 
     Learner->>Controls: Reset to default
     Controls->>Reset: run

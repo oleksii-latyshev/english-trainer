@@ -3,6 +3,7 @@ mod api_usage;
 mod conversation;
 mod core;
 mod dock_icon;
+mod eva_growth;
 mod gemini_key;
 mod learning;
 mod persistence;
@@ -129,6 +130,9 @@ pub fn run() {
             app.manage(speaking_activity::SpeakingActivityService::new(
                 speaking_activity::SessionActivityStore::new(sessions.clone()),
             ));
+            app.manage(eva_growth::EvaGrowthService::new(
+                eva_growth::SessionGrowthStore::new(sessions.clone()),
+            ));
             app.manage(personal_profile::PersonalProfileService::new(
                 personal_profile::SessionProfileStore::new(sessions.clone()),
             ));
@@ -207,6 +211,7 @@ pub fn run() {
             set_dock_icon,
             api_usage::commands::get_api_usage,
             speaking_activity::commands::get_speaking_activity,
+            eva_growth::commands::get_eva_growth,
             ai_settings::commands::save_ai_settings,
             ai_settings::commands::prewarm_conversation_provider,
             gemini_key::commands::get_gemini_key_status,

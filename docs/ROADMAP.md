@@ -58,9 +58,6 @@ The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one 
 
 Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in the migration plan.
 
-- **Eva grows** — the sprout grows with speaking time (1 min = 1 drop; stages Seed → Sprout → Two
-  leaves → Bud → Bloom → Full bloom at 10/30/60/100/150 drops); days off make Eva nap, nothing wilts,
-  no streaks. Sidebar progress card; on/off switch in Settings › Eva.
 - **Start screen details** — greeting with the learner's name (needs a name in the personal
   profile) and a "No limit" session length beside 5/10/15 min.
 - **Memory details** — "Say it now" on an opened phrase or mistake (spoken practice of one item), a
@@ -85,9 +82,12 @@ Ordered by expected value; start only with real usage data.
 4. **Eva check-ins, menu-bar quick practice and widgets** — opt-in floating panel with one
    spontaneous question (30–90 s answer), frequency and quiet hours, never over full-screen apps or
    Focus, no guilt mechanics.
-5. **Windows build** — Gemini as the provider; needs a Windows CI job and installer.
-6. **4/3/2 retelling drill.**
-7. **Pronunciation** — shadowing feedback, later phoneme-level scoring as a separate pipeline.
+5. **Eva grows further** — a **garden** where a plant in full bloom moves and Eva starts a new
+   seed, **unlockable** leaf and bloom colours, leaves that **light up** at the moment of sunshine,
+   and drops from quick questions asked in the menu bar.
+6. **Windows build** — Gemini as the provider; needs a Windows CI job and installer.
+7. **4/3/2 retelling drill.**
+8. **Pronunciation** — shadowing feedback, later phoneme-level scoring as a separate pipeline.
 
 ## Decisions
 

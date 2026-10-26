@@ -1,5 +1,6 @@
 import { useAtom, useAtomSet } from '@effect/atom-react';
 import type { ReactNode } from 'react';
+import { growthPreferenceAtom } from '@/core/eva-growth';
 import {
   BODY_COLOURS,
   bodySwatch,
@@ -18,7 +19,7 @@ import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { Swatch } from '@/shared/ui/swatch';
 import { Switch } from '@/shared/ui/switch';
 import { growthHint } from '../../helpers/preview-caption';
-import { dockIconAtom, growthAtom, resetEvaSettingsAtom } from '../../model/atoms';
+import { dockIconAtom, resetEvaSettingsAtom } from '../../model/atoms';
 import { DOCK_ICONS } from '../../preferences';
 
 const MOTION_OPTIONS = EVA_MOTIONS.map((motion) => ({ value: motion.id, label: motion.label }));
@@ -48,7 +49,7 @@ function lockedHintOf(option: object): string | undefined {
 
 export function EvaLookControls() {
   const [look, setLook] = useAtom(evaLookAtom);
-  const [{ showGrowth }, setGrowth] = useAtom(growthAtom);
+  const [{ showGrowth }, setGrowth] = useAtom(growthPreferenceAtom);
   const [{ icon }, setDockIcon] = useAtom(dockIconAtom);
   const reset = useAtomSet(resetEvaSettingsAtom);
   const body = BODY_COLOURS.find((option) => option.id === look.body) ?? BODY_COLOURS[0];

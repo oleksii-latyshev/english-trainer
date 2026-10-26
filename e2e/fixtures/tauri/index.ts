@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { type AiSettingsOptions, installAiSettings } from './ai-settings';
 import { installBase } from './base';
 import { CoachingBackend } from './coaching';
+import { EvaGrowthBackend } from './eva-growth';
 import type { IpcCall } from './harness';
 import { LiveReviewBackend } from './live-review';
 import { MemoryBackend } from './memory';
@@ -23,6 +24,7 @@ export class FakeBackend {
   readonly session: SessionBackend;
   readonly memory: MemoryBackend;
   readonly activity: SpeakingActivityBackend;
+  readonly growth: EvaGrowthBackend;
   readonly speech: SpeechBackend;
   readonly translation: TranslationBackend;
   readonly planner: PlannerBackend;
@@ -44,6 +46,7 @@ export class FakeBackend {
     this.session = new SessionBackend(page);
     this.memory = new MemoryBackend(page);
     this.activity = new SpeakingActivityBackend(page);
+    this.growth = new EvaGrowthBackend(page);
     this.speech = new SpeechBackend(page);
     this.translation = new TranslationBackend(page);
     this.planner = new PlannerBackend(page);
@@ -80,6 +83,7 @@ export class FakeBackend {
     });
     await this.memory.install();
     await this.activity.install();
+    await this.growth.install();
     await this.review.install();
     await this.liveReview.install();
     await this.wrapup.install();

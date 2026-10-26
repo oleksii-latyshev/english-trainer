@@ -1,4 +1,5 @@
 import type { MicrophoneStatus } from '@/core/audio';
+import { GrowthCard } from '@/features/eva-growth';
 import { isSettingsPath, type SettingsSectionId } from '@/screens/settings';
 import { NavItem } from '@/shared/ui/nav-item';
 import { MicStatus } from './mic-status';
@@ -12,6 +13,7 @@ type SidebarProps = {
   navigationLocked: boolean;
   microphoneStatus: MicrophoneStatus;
   onNavigate: (item: NavEntry) => void;
+  onOpenGrowth: () => void;
   onSettingsSection: (id: SettingsSectionId) => void;
 };
 
@@ -53,6 +55,7 @@ export function Sidebar({
   navigationLocked,
   microphoneStatus,
   onNavigate,
+  onOpenGrowth,
   onSettingsSection,
 }: SidebarProps) {
   return (
@@ -80,6 +83,7 @@ export function Sidebar({
           onSelect={onSettingsSection}
         />
       )}
+      <GrowthCard disabled={navigationLocked} onOpen={onOpenGrowth} />
       <MicStatus status={microphoneStatus} />
     </nav>
   );

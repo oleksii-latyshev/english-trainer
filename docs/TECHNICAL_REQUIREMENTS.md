@@ -555,6 +555,25 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
    counters, projection and cue exposure atomically. Duplicate reviews return the first assessment.
    Evidence describes transcript wording, not pronunciation or certified proficiency.
 
+### 9.3 Eva growth
+
+`get_eva_growth` reads the saved sessions; nothing is stored apart from them and it is never on the turn
+path. Rust owns every rule (context `eva_growth`).
+
+- **Drops** = for each session, speaking minutes rounded to the nearest minute (the rule of
+  `get_speaking_activity`, text chat excluded) + 5 sunshine for each saved phrase used on the
+  learner's own in a session (an independent success as in §9.2, counted once per phrase per
+  session).
+- **Stages**: Seed 0 · Sprout 10 · Two leaves 30 · Bud 60 · Bloom 100 · Full bloom 150. After 150
+  Eva stays in full bloom.
+- **Nap**: nothing spoken and no sunshine today or yesterday (local days) after drops were earned;
+  the first talk wakes her. Nothing is lost.
+- **Result**: `drops`, `stage` (0–5), `stage_floor`, `next_threshold` (none in full bloom),
+  `napping` and today's gains: one speaking row per session today (drops, topic) and one sunshine
+  row per phrase today. Progress is kept while Show growth is off; the switch only hides it
+  (`english_trainer_eva_growth` in `localStorage`).
+- The UI reads it again when a session completes and when the learning memory changes.
+
 ## 10. IPC
 
 - Every Rust type crossing `invoke()` has a TypeScript counterpart updated in the same commit (the
@@ -574,7 +593,7 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
     channel). Failures are `TranscriptionError` or `ProviderError` values.
   - Settings and setup: `get_setup_diagnostics`, `get_ai_settings`, `save_ai_settings`,
     `set_dock_icon`, `get_api_usage`, `get_speaking_activity` (minutes spoken per local day over the last
-    190 days, from `sessions.active_duration_ms`, text chat excluded), `prewarm_conversation_provider`, Gemini key commands (§5.1),
+    190 days, from `sessions.active_duration_ms`, text chat excluded), `get_eva_growth` (§9.3), `prewarm_conversation_provider`, Gemini key commands (§5.1),
     translation commands (§7.3), profile commands (§7).
   - Practice: `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
     `send_practice_turn`, `cancel_practice_reply`, `get_practice_dialogue`, `finish_practice_session`,

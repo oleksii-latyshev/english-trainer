@@ -9,7 +9,3 @@ export const DOCK_ICONS = [
 ] as const satisfies readonly { value: DockIcon; label: string }[];
 
 export const DEFAULT_DOCK_ICON: DockIconPreference = { icon: 'eva' };
-
-export type GrowthPreference = { showGrowth: boolean };
-
-export const DEFAULT_GROWTH: GrowthPreference = { showGrowth: true };

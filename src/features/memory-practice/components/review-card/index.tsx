@@ -1,4 +1,5 @@
 import { useAtomValue } from '@effect/atom-react';
+import { evaStageAtom } from '@/core/eva-growth';
 import { Button } from '@/shared/ui/button';
 import { Eva } from '@/shared/ui/eva';
 import { GlassPanel } from '@/shared/ui/glass-panel';
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function ReviewCard({ isAudioBusy, onStart }: Props) {
+  const stage = useAtomValue(evaStageAtom);
   const targets = useAtomValue(practiceTargetsAtom);
   const active = useAtomValue(activeReviewAtom);
   const dueCount = targets.tag === 'ready' ? targets.dueCount : 0;
@@ -21,7 +23,7 @@ export function ReviewCard({ isAudioBusy, onStart }: Props) {
       aria-label="Spoken review"
       className="flex items-center gap-4.5 border-accent-line bg-accent-soft px-4.5 py-4 shadow-sky"
     >
-      <Eva decorative mood={copy.state === 'calm' ? 'idle' : 'happy'} size={62} />
+      <Eva decorative mood={copy.state === 'calm' ? 'idle' : 'happy'} size={62} stage={stage} />
       <div className="min-w-0 flex-1">
         <h2 className="font-bold text-lg tracking-tight">{copy.title}</h2>
         <p className="mt-1 mb-0 text-muted leading-copy">{copy.hint}</p>

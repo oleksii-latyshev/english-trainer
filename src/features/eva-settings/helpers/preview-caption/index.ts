@@ -1,3 +1,4 @@
+import { stageInfo } from '@/core/eva-growth';
 import type { EvaStage } from '@/shared/ui/eva';
 
 export const PREVIEW_STAGES = [
@@ -9,17 +10,8 @@ export const PREVIEW_STAGES = [
 
 export const DEFAULT_PREVIEW_STAGE: EvaStage = 4;
 
-const STAGE_NAMES: Record<EvaStage, string> = {
-  0: 'Seed',
-  1: 'Sprout',
-  2: 'Two leaves',
-  3: 'Bud',
-  4: 'Bloom',
-  5: 'Full bloom',
-};
-
 export function stageCaption(stage: EvaStage, showsGrowth: boolean): string {
-  return showsGrowth ? STAGE_NAMES[stage] : 'Growth hidden';
+  return showsGrowth ? stageInfo(stage).name : 'Growth hidden';
 }
 
 export function growthHint(showsGrowth: boolean): string {

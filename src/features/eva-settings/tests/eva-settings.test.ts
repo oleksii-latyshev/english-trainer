@@ -2,13 +2,13 @@ import { expect, it } from 'bun:test';
 import { Effect, Layer } from 'effect';
 import { KeyValueStore } from 'effect/persistence';
 import { AtomRegistry } from 'effect/reactivity';
+import { growthPreferenceAtom } from '@/core/eva-growth';
 import { DEFAULT_EVA_LOOK, evaLookAtom } from '@/core/eva-look';
 import { Ipc, IpcDecodeError } from '@/core/ipc';
 import { installFakeLocalStorage } from '@/shared/testing/fake-local-storage';
 import {
   dockIconAtom,
   dockIconSyncAtom,
-  growthAtom,
   pickPreviewStageAtom,
   previewMoodAtom,
   previewStageAtom,
@@ -63,20 +63,20 @@ it('keeps the choice when the Dock icon cannot be changed', async () => {
 
 it('picking a growth stage shows growth and previews that stage', () => {
   const { registry } = makeRegistry();
-  registry.set(growthAtom, { showGrowth: false });
+  registry.set(growthPreferenceAtom, { showGrowth: false });
   registry.set(pickPreviewStageAtom, 5);
   expect(registry.get(previewStageAtom)).toBe(5);
-  expect(registry.get(growthAtom)).toEqual({ showGrowth: true });
+  expect(registry.get(growthPreferenceAtom)).toEqual({ showGrowth: true });
 });
 
 it('reset restores the look, growth, Dock icon and preview together', () => {
   const { registry } = makeRegistry();
   registry.set(evaLookAtom, { ...DEFAULT_EVA_LOOK, body: 'mint' });
-  registry.set(growthAtom, { showGrowth: false });
+  registry.set(growthPreferenceAtom, { showGrowth: false });
   registry.set(previewMoodAtom, 'asleep');
   registry.set(resetEvaSettingsAtom, undefined);
   expect(registry.get(evaLookAtom)).toEqual(DEFAULT_EVA_LOOK);
-  expect(registry.get(growthAtom)).toEqual({ showGrowth: true });
+  expect(registry.get(growthPreferenceAtom)).toEqual({ showGrowth: true });
   expect(registry.get(dockIconAtom)).toEqual({ icon: 'eva' });
   expect(registry.get(previewMoodAtom)).toBe('happy');
   expect(registry.get(previewStageAtom)).toBe(4);

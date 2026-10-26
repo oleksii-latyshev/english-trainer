@@ -11,6 +11,7 @@ export type { ConversationProvider } from './bindings/ConversationProvider';
 export type { ConversationTurn } from './bindings/ConversationTurn';
 export type { DailyRecallItem } from './bindings/DailyRecallItem';
 export type { DailyRecallPlan } from './bindings/DailyRecallPlan';
+export type { EvaGrowth } from './bindings/EvaGrowth';
 export type { EvaStyle } from './bindings/EvaStyle';
 export type { FinishedPracticeSession } from './bindings/FinishedPracticeSession';
 export type { FocusCategory } from './bindings/FocusCategory';
@@ -102,6 +103,7 @@ export {
   ConversationTurnSchema,
   ReplyStreamEventSchema,
 } from './schemas/conversation-turn';
+export { EvaGrowthSchema } from './schemas/eva-growth';
 export {
   FinishedSessionSchema,
   ProviderErrorSchema,

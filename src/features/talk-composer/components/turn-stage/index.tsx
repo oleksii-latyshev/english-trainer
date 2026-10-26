@@ -1,5 +1,6 @@
 import { useAtomValue } from '@effect/atom-react';
 import { usePreferredMicrophone } from '@/core/audio';
+import { evaStageAtom } from '@/core/eva-growth';
 import { micLevelAtom } from '@/core/practice-turn';
 import { Eva } from '@/shared/ui/eva';
 import { evaMoodFor, type MoodExtras } from '../../helpers/turn-state';
@@ -30,6 +31,7 @@ function WritingStage() {
 
 export function TurnStage({ mood, isWriting }: Props) {
   const { state, presentation } = useTurn();
+  const stage = useAtomValue(evaStageAtom);
   const flow = useAtomValue(flowSignalsAtom);
   const audioLevel = useAtomValue(micLevelAtom);
   const isCompact = useAtomValue(isComposingAtom) || mood.isHelpOpen;
@@ -48,6 +50,7 @@ export function TurnStage({ mood, isWriting }: Props) {
           label={`Eva, ${presentation.stageTitle.toLowerCase()}`}
           mood={evaMoodFor(state, flow, mood)}
           size={150}
+          stage={stage}
         />
       </div>
       <div className="flex flex-col items-center gap-1 text-center" role="status">
