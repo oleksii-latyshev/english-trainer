@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import type { FinishedPracticeSession } from '@/core/ipc';
 import type { GeminiKeyStatus } from '@/core/ipc/bindings/GeminiKeyStatus';
+import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
 import type { PracticeOptions, PracticePhase } from '@/lib/practiceOptions';
-import type { PracticeSession } from '@/lib/practiceSessionTypes';
 import type { ConversationTurn } from '@/lib/types';
 export async function installTauriCommands(page: Page): Promise<void> {
   await page.addInitScript(() => {

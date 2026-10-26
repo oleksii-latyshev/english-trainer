@@ -100,7 +100,7 @@ pub async fn start_mistake_practice(
     blocking(
         sessions,
         "The mistake practice task failed. Please retry.",
-        |store| store.start_mistake_practice_with_source(&mut AgyMistakeQuestions),
+        |store| store.start_mistake_practice(AgyMistakeQuestions),
     )
     .await
 }

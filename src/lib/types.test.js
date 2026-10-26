@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  practiceModeOf,
-  practicePhaseOf,
-  spokenTurnCountOf,
-  writtenTurnCountOf,
-} from './practiceSessionTypes';
-import {
   isAttemptComparison,
   isConversationTurn,
-  isPracticeSession,
   isProviderError,
   isQuestionScaffold,
   isTurnFeedback,
@@ -52,118 +45,6 @@ describe('conversation IPC payloads', () => {
     expect(isProviderError({ code: 'database_error', message: 'Please retry.' })).toBe(true);
     expect(isProviderError({ code: 'unexpected', message: 'Internal data' })).toBe(false);
     expect(isProviderError('unavailable')).toBe(false);
-  });
-
-  it('requires a valid practice session identifier and opening question', () => {
-    const validSession = {
-      session_id: 1,
-      opening_question: 'How was your day?',
-      turn_count: 2,
-      target_turns: 8,
-      retry_evidence: [],
-      topic_id: 'daily_life',
-      topic_label: 'Daily life',
-      topic_custom: null,
-      duration_goal_seconds: 600,
-      active_duration_ms: 30000,
-      started_at: 1780000000000,
-      is_clock_running: false,
-    };
-    expect(isPracticeSession(validSession)).toBe(true);
-    expect(isPracticeSession({ ...validSession, is_mistake_practice: 'yes' })).toBe(false);
-    const mistakeSession = {
-      ...validSession,
-      target_turns: 5,
-      turn_count: 2,
-      is_mistake_practice: true,
-      practice_mode: 'voice',
-      practice_phase: 'speaking',
-      written_turn_count: 0,
-      spoken_turn_count: 2,
-    };
-    expect(isPracticeSession(mistakeSession)).toBe(true);
-    expect(isPracticeSession({ ...mistakeSession, practice_mode: 'text_chat' })).toBe(false);
-    expect(isPracticeSession({ ...mistakeSession, practice_phase: 'writing' })).toBe(false);
-    expect(isPracticeSession({ ...mistakeSession, target_turns: 8 })).toBe(false);
-    expect(isPracticeSession({ ...mistakeSession, turn_count: 6, spoken_turn_count: 6 })).toBe(
-      false,
-    );
-    expect(isPracticeSession({ ...mistakeSession, written_turn_count: 1 })).toBe(false);
-    expect(isPracticeSession({ ...mistakeSession, spoken_turn_count: 1 })).toBe(false);
-    expect(practiceModeOf(validSession)).toBe('voice');
-    expect(practicePhaseOf(validSession)).toBe('speaking');
-    expect(writtenTurnCountOf(validSession)).toBe(0);
-    expect(spokenTurnCountOf(validSession)).toBe(2);
-    expect(
-      isPracticeSession({
-        ...validSession,
-        practice_mode: 'text_chat',
-        practice_phase: 'writing',
-        written_turn_count: 0,
-        spoken_turn_count: 0,
-      }),
-    ).toBe(true);
-    expect(
-      writtenTurnCountOf({
-        ...validSession,
-        practice_mode: 'text_chat',
-        practice_phase: 'writing',
-        written_turn_count: 0,
-        spoken_turn_count: 0,
-      }),
-    ).toBe(2);
-    expect(
-      isPracticeSession({
-        ...validSession,
-        practice_mode: 'write_then_speak',
-        practice_phase: 'writing',
-      }),
-    ).toBe(true);
-    expect(
-      isPracticeSession({
-        ...validSession,
-        practice_mode: 'text_chat',
-        practice_phase: 'speaking',
-      }),
-    ).toBe(false);
-    expect(isPracticeSession({ ...validSession, practice_phase: 'unknown' })).toBe(false);
-    expect(isPracticeSession({ ...validSession, spoken_turn_count: 'two' })).toBe(false);
-    expect(isPracticeSession({ ...validSession, topic_id: 'unknown' })).toBe(false);
-    expect(isPracticeSession({ ...validSession, duration_goal_seconds: 420 })).toBe(false);
-    expect(isPracticeSession({ ...validSession, active_duration_ms: -1 })).toBe(false);
-    expect(
-      isPracticeSession({
-        session_id: 0,
-        opening_question: 'How was your day?',
-        turn_count: 0,
-        target_turns: 8,
-        topic_id: 'daily_life',
-        topic_label: 'Daily life',
-        topic_custom: null,
-        duration_goal_seconds: 600,
-        active_duration_ms: 0,
-        started_at: 1780000000000,
-        is_clock_running: false,
-      }),
-    ).toBe(false);
-    expect(
-      isPracticeSession({
-        session_id: 1,
-        opening_question: '',
-        turn_count: 0,
-        target_turns: 8,
-        topic_id: 'daily_life',
-        topic_label: 'Daily life',
-        topic_custom: null,
-        duration_goal_seconds: 600,
-        active_duration_ms: 0,
-        started_at: 1780000000000,
-        is_clock_running: false,
-      }),
-    ).toBe(false);
-    expect(isPracticeSession({ session_id: 1, opening_question: 'Question?', turn_count: 0 })).toBe(
-      false,
-    );
   });
 
   it('accepts bounded question help and rejects malformed IPC data', () => {

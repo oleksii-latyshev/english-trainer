@@ -101,8 +101,6 @@ export function isTurnFeedback(value: unknown): value is TurnFeedback {
   );
 }
 
-export { isPracticeSession, type PracticeSession } from './practiceSessionTypes';
-
 export type QuestionScaffold = {
   sentence_starters: string[];
   useful_expressions: string[];

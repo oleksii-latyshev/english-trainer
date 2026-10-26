@@ -1,6 +1,6 @@
 import type { FinishedPracticeSession, SpeechEngineStatus } from '@/core/ipc';
+import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { PracticeSession } from '@/lib/practiceSessionTypes';
 
 export const unavailableSpeechStatus: SpeechEngineStatus = {
   server: 'not_running',

@@ -17,9 +17,21 @@ pub trait ReplyEngine {
 
 pub(crate) trait MistakeQuestionSource {
     fn generate(
-        &mut self,
+        &self,
         candidates: &[MistakePracticeCandidate],
     ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError>;
+}
+
+impl<F> MistakeQuestionSource for F
+where
+    F: Fn(&[MistakePracticeCandidate]) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError>,
+{
+    fn generate(
+        &self,
+        candidates: &[MistakePracticeCandidate],
+    ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError> {
+        self(candidates)
+    }
 }
 
 pub trait WrapupGenerator: Send + Sync {

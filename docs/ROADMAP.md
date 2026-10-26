@@ -42,7 +42,7 @@ only F1–F10 and reports that answers are easier to structure than in the first
 | F9 | Session wrap-up | `[~]` | real session → phrases and notes make sense; save/undo; they return in review |
 | F10 | Spoken phrase review + warm-up | `[~]` | six-item review, shadowing, Show phrase, warm-up choose/skip |
 | F11 | Write, then speak | `[~]` | full write → review → speak → review run with real audio |
-| F12 | Practice my usual mistakes | `[~]` | five relevant questions, real audio, resume (the question and answers screen is rebuilt with Talk, #26) |
+| F12 | Practice my usual mistakes | `[~]` | five relevant questions, real audio, resume (runs as a Talk conversation, #80; Mac check pending) |
 | F13 | Translate a word or phrase | `[~]` | selection of a word or phrase (up to 8 words) in Talk/notes/Memory; visible trigger; readable panel; translation under 1 s warm; model download consent |
 | V1 | Natural local voice (Supertonic 3, four voices, system fallback) — taken ahead of the avatar | `[~]` | sounds natural; first audio quick; busy or slow engine falls back without a gap |
 
