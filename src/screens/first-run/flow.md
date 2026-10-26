@@ -3,7 +3,7 @@
 Composes the setup features for the `/welcome` route: Eva large and centred, the step label, a title
 and lead, one grouped list, and a text Back with a primary Continue. The step bars and Skip setup sit
 in the header. The screen owns only the current step and whether the microphone was allowed; the
-router glue (`src/routes/first-run`) passes the practice-capture state, stops speech before the
+router glue (`src/app/routes/first-run`) passes the practice-capture state, stops speech before the
 microphone check and records the marker (`core/first-run`).
 
 ```text

@@ -112,8 +112,7 @@
         "src/screens/**",
         "src/features/**",
         "src/core/**",
-        "src/shared/**",
-        "!src/features/conversation/**"
+        "src/shared/**"
       ],
       "plugins": ["./biome/plugins/function-declarations.grit"],
       "linter": {
@@ -181,7 +180,6 @@
         "src/features/**",
         "src/core/**",
         "src/shared/**",
-        "!src/features/conversation/**",
         "!src/app/**",
         "!**/*.test.ts",
         "!**/*.test.tsx",
@@ -215,14 +213,7 @@
                     "message": "shared/ is the bottom layer and imports nothing above it."
                   },
                   {
-                    "group": [
-                      "@/lib/**",
-                      "@/components/**",
-                      "@/routes/**",
-                      "@/context/**",
-                      "@/features/conversation/**",
-                      "@/features/conversation"
-                    ],
+                    "group": ["@/lib/**", "@/components/**", "@/routes/**", "@/context/**"],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
                   {
@@ -257,14 +248,7 @@
                     "message": "core/ never imports app/, screens/ or features/."
                   },
                   {
-                    "group": [
-                      "@/lib/**",
-                      "@/components/**",
-                      "@/routes/**",
-                      "@/context/**",
-                      "@/features/conversation/**",
-                      "@/features/conversation"
-                    ],
+                    "group": ["@/lib/**", "@/components/**", "@/routes/**", "@/context/**"],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
                   {
@@ -303,14 +287,7 @@
                     "message": "core/ never imports app/, screens/ or features/."
                   },
                   {
-                    "group": [
-                      "@/lib/**",
-                      "@/components/**",
-                      "@/routes/**",
-                      "@/context/**",
-                      "@/features/conversation/**",
-                      "@/features/conversation"
-                    ],
+                    "group": ["@/lib/**", "@/components/**", "@/routes/**", "@/context/**"],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
                   {
@@ -325,7 +302,7 @@
       }
     },
     {
-      "includes": ["src/features/**", "!src/features/conversation/**"],
+      "includes": ["src/features/**"],
       "linter": {
         "rules": {
           "style": {
@@ -345,14 +322,7 @@
                     "message": "A feature imports only core/ and shared/ (its own files relatively); screens compose features."
                   },
                   {
-                    "group": [
-                      "@/lib/**",
-                      "@/components/**",
-                      "@/routes/**",
-                      "@/context/**",
-                      "@/features/conversation/**",
-                      "@/features/conversation"
-                    ],
+                    "group": ["@/lib/**", "@/components/**", "@/routes/**", "@/context/**"],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
                   {
@@ -384,14 +354,7 @@
                     "message": "A screen never imports app/ or another screen."
                   },
                   {
-                    "group": [
-                      "@/lib/**",
-                      "@/components/**",
-                      "@/routes/**",
-                      "@/context/**",
-                      "@/features/conversation/**",
-                      "@/features/conversation"
-                    ],
+                    "group": ["@/lib/**", "@/components/**", "@/routes/**", "@/context/**"],
                     "message": "New layers never import legacy folders; migrate the code first (docs/engineering/MIGRATION.md)."
                   },
                   {

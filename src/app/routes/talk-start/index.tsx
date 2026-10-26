@@ -1,6 +1,7 @@
 import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { Navigate, useNavigate } from '@tanstack/react-router';
 import { useContext, useEffect, useRef, useState } from 'react';
+import { useFirstRunDecision } from '@/app/routes/first-run/use-first-run-gate';
 import { canChangeSessionAtom } from '@/core/answer-capture';
 import { FIRST_RUN_PATH } from '@/core/first-run';
 import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
@@ -17,7 +18,6 @@ import {
 } from '@/core/practice-session';
 import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
 import { useReviewCommands, useWarmupHandoff } from '@/features/spoken-review';
-import { useFirstRunDecision } from '@/routes/first-run/use-first-run-gate';
 import { SpokenReviewScreen } from '@/screens/spoken-review';
 import { TalkStartScreen } from '@/screens/talk-start';
 import { mistakePracticeSummary, openSessionOf, reviewSummary } from './summaries';
