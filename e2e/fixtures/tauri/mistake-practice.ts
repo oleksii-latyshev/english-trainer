@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { PracticeSession } from '@/lib/practiceSessionTypes';
+import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
 
 export async function installMistakePractice(page: Page): Promise<void> {
   await page.addInitScript(() => {

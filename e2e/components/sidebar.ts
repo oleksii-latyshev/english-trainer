@@ -7,6 +7,10 @@ export class Sidebar {
     await this.page.getByRole('button', { name: /^Speak/ }).click();
   }
 
+  async openTalk(): Promise<void> {
+    await this.page.getByRole('button', { name: 'Talk', exact: true }).click();
+  }
+
   async openMemory(): Promise<void> {
     await this.page.getByRole('button', { name: /^Memory/ }).click();
   }

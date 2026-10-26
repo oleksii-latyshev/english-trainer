@@ -1,5 +1,5 @@
+import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
-import type { PracticeSession } from '@/lib/practiceSessionTypes';
 import { initialSession } from './sessions';
 
 export const wordSession: PracticeSession = {

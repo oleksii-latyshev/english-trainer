@@ -4,6 +4,7 @@ use crate::conversation::domain::rules::{
 };
 use crate::conversation::domain::*;
 use crate::conversation::service::code_of;
+use crate::learning::mistake_practice::MistakePracticeCandidate;
 use crate::personal_profile::PersonalProfile;
 use crate::providers::{ConversationTurn, ProviderError, ProviderErrorCode, TurnFeedback};
 use std::sync::mpsc;
@@ -84,7 +85,7 @@ fn mistake_practice_requires_candidates_without_calling_the_provider() {
     let store = SessionStore::default();
     let called = std::cell::Cell::new(false);
     let error = store
-        .start_mistake_practice(|_| {
+        .start_mistake_practice(|_: &[MistakePracticeCandidate]| {
             called.set(true);
             Ok(mistake_plan(1))
         })
@@ -100,7 +101,7 @@ fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
     let store = SessionStore::open(&path).unwrap();
     let mistake_id = seed_practice_mistake(&store);
     let started = store
-        .start_mistake_practice(|_| Ok(mistake_plan(mistake_id)))
+        .start_mistake_practice(|_: &[MistakePracticeCandidate]| Ok(mistake_plan(mistake_id)))
         .unwrap();
     assert!(started.is_mistake_practice);
     assert_eq!(started.target_turns, 5);
@@ -214,7 +215,7 @@ fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
 fn mistake_practice_generation_failure_can_be_retried_and_targets_are_rechecked() {
     let store = SessionStore::default();
     let mistake_id = seed_practice_mistake(&store);
-    let failed = store.start_mistake_practice(|_| {
+    let failed = store.start_mistake_practice(|_: &[MistakePracticeCandidate]| {
         Err(ProviderError::new(ProviderErrorCode::RateLimited, "retry"))
     });
     assert_eq!(code_of(failed.unwrap_err()), ProviderErrorCode::RateLimited);
@@ -222,7 +223,7 @@ fn mistake_practice_generation_failure_can_be_retried_and_targets_are_rechecked(
 
     let archived = store.clone();
     let error = store
-        .start_mistake_practice(move |_| {
+        .start_mistake_practice(move |_: &[MistakePracticeCandidate]| {
             archived
                 .archive_learning_item(crate::learning::LearningItemType::Mistake, mistake_id)
                 .unwrap();
@@ -240,7 +241,7 @@ fn mistake_practice_rejects_another_session_and_a_concurrent_preparation() {
     let ordinary = store.start().unwrap();
     let called = std::cell::Cell::new(false);
     let error = store
-        .start_mistake_practice(|_| {
+        .start_mistake_practice(|_: &[MistakePracticeCandidate]| {
             called.set(true);
             Ok(mistake_plan(1))
         })
@@ -253,7 +254,7 @@ fn mistake_practice_rejects_another_session_and_a_concurrent_preparation() {
     let normal = store.start_practice_session(None).unwrap_err();
     assert_eq!(code_of(normal), ProviderErrorCode::Busy);
     let drill = store
-        .start_mistake_practice(|_| {
+        .start_mistake_practice(|_: &[MistakePracticeCandidate]| {
             called.set(true);
             Ok(mistake_plan(mistake_id))
         })
@@ -269,7 +270,7 @@ fn mistake_practice_database_failure_clears_preparation_and_rolls_back() {
     let mistake_id = seed_practice_mistake(&store);
     store.lock().database.reject_mistake_practice_cue().unwrap();
     let error = store
-        .start_mistake_practice(|_| Ok(mistake_plan(mistake_id)))
+        .start_mistake_practice(|_: &[MistakePracticeCandidate]| Ok(mistake_plan(mistake_id)))
         .unwrap_err();
     assert_eq!(code_of(error), ProviderErrorCode::DatabaseError);
     assert_eq!(store.lock().database.session_count().unwrap(), 0);

@@ -7,8 +7,6 @@ use crate::conversation::domain::{
 use crate::conversation::error::ConversationError;
 use crate::conversation::ports::MistakeQuestionSource;
 use crate::learning::mistake_practice::MistakePracticeQuestion;
-#[cfg(test)]
-use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use crate::persistence::session_metadata::{NewSession, PracticePhaseTransition};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -100,9 +98,9 @@ impl SessionStore {
         Ok(practice_session)
     }
 
-    pub(crate) fn start_mistake_practice_with_source(
+    pub(crate) fn start_mistake_practice(
         &self,
-        questions: &mut dyn MistakeQuestionSource,
+        questions: impl MistakeQuestionSource,
     ) -> Result<PracticeSession, ConversationError> {
         let candidates = {
             let mut state = self.lock();
@@ -200,20 +198,6 @@ impl SessionStore {
         })();
         state.mistake_practice_preparing = false;
         result
-    }
-
-    #[cfg(test)]
-    pub(crate) fn start_mistake_practice<F>(
-        &self,
-        generate: F,
-    ) -> Result<PracticeSession, ConversationError>
-    where
-        F: FnOnce(
-            &[MistakePracticeCandidate],
-        )
-            -> Result<Vec<GeneratedMistakeQuestion>, crate::providers::ProviderError>,
-    {
-        self.start_mistake_practice_with_source(&mut OnceQuestions(Some(generate)))
     }
 
     pub fn get_active(&self) -> Result<Option<PracticeSession>, ConversationError> {
@@ -358,30 +342,6 @@ impl SessionStore {
             }
         }
         Ok(terms)
-    }
-}
-
-#[cfg(test)]
-struct OnceQuestions<F>(Option<F>);
-
-#[cfg(test)]
-impl<F> MistakeQuestionSource for OnceQuestions<F>
-where
-    F: FnOnce(
-        &[MistakePracticeCandidate],
-    ) -> Result<Vec<GeneratedMistakeQuestion>, crate::providers::ProviderError>,
-{
-    fn generate(
-        &mut self,
-        candidates: &[MistakePracticeCandidate],
-    ) -> Result<Vec<GeneratedMistakeQuestion>, crate::providers::ProviderError> {
-        match self.0.take() {
-            Some(generate) => generate(candidates),
-            None => Err(crate::providers::ProviderError::new(
-                crate::providers::ProviderErrorCode::Unavailable,
-                "The question source was already used.",
-            )),
-        }
     }
 }
 

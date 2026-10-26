@@ -60,7 +60,7 @@ pub struct AgyMistakeQuestions;
 
 impl MistakeQuestionSource for AgyMistakeQuestions {
     fn generate(
-        &mut self,
+        &self,
         candidates: &[MistakePracticeCandidate],
     ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError> {
         providers::agy::mistake_practice::generate(candidates)

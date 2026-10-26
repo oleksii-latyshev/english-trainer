@@ -1,6 +1,9 @@
 import { savedMistakePractice } from '../data/builders';
+import { finalHeardAnswer } from '../data/rescue';
 import { initialSession, noAudio } from '../data/sessions';
 import { expect, test } from '../fixtures';
+import type { FakeBackend } from '../fixtures/tauri';
+import type { TalkPage } from '../pages/talk-page';
 
 test('usual mistake practice needs a repeated non-archived mistake', async ({
   app,
@@ -107,4 +110,66 @@ test('completed mistake questions lock another answer and finish with pending co
     target_turns: 5,
     pending_coaching: 1,
   });
+});
+
+const QUESTIONS = 5;
+
+async function answerByVoice(talk: TalkPage, tauri: FakeBackend, answered: number): Promise<void> {
+  await talk.recorder.startAndWaitForSignal();
+  await talk.recorder.stopAndReview();
+  await expect(talk.recorder.heardField).toHaveValue(finalHeardAnswer);
+  await talk.composer.send();
+  await expect.poll(async () => (await tauri.session.dialogue())?.turns.length).toBe(answered);
+}
+
+test('a started mistake run takes five voice answers and finishes with pending coaching', async ({
+  app,
+  memory,
+  talk,
+  wrapup,
+  tauri,
+}) => {
+  tauri.memory.withRepeatedMistake();
+  tauri.rescue.available();
+  tauri.streaming.withWarmMicrophone();
+  await app.open();
+  await app.sidebar.openMemory();
+  await memory.startPractice();
+
+  for (let answered = 0; answered < QUESTIONS; answered += 1) {
+    await expect(talk.questionProgress(answered + 1, QUESTIONS)).toBeVisible();
+    await answerByVoice(talk, tauri, answered + 1);
+  }
+
+  await expect(talk.practiceComplete).toBeVisible();
+  expect(await tauri.calls('start_mistake_practice')).toHaveLength(1);
+  await talk.finish();
+  await expect(wrapup.heading).toBeVisible();
+  expect(await tauri.session.finished()).toMatchObject({
+    is_mistake_practice: true,
+    turn_count: QUESTIONS,
+    target_turns: QUESTIONS,
+  });
+});
+
+test('a mistake run left after two answers resumes at the third question', async ({
+  app,
+  memory,
+  talk,
+  tauri,
+}) => {
+  tauri.memory.withRepeatedMistake();
+  tauri.rescue.available();
+  tauri.streaming.withWarmMicrophone();
+  await app.open();
+  await app.sidebar.openMemory();
+  await memory.startPractice();
+  await answerByVoice(talk, tauri, 1);
+  await answerByVoice(talk, tauri, 2);
+
+  await app.sidebar.openSettings();
+  await app.sidebar.openTalk();
+
+  await expect(talk.questionProgress(3, QUESTIONS)).toBeVisible();
+  expect(await tauri.calls('start_mistake_practice')).toHaveLength(1);
 });

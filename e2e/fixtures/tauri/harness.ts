@@ -1,7 +1,7 @@
 import type { FinishedPracticeSession, LearningMemoryView } from '@/core/ipc';
+import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
 import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import type { PracticeOptions } from '@/lib/practiceOptions';
-import type { PracticeSession } from '@/lib/practiceSessionTypes';
 import type { AudioEdgeCounts } from './speech';
 
 export type IpcCall = { command: string; args: Record<string, unknown> };
