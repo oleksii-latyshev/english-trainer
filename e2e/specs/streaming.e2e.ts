@@ -132,11 +132,7 @@ test('releasing Space during reply cancellation abandons the delayed recording',
   talk,
   tauri,
 }) => {
-  tauri.streaming
-    .withoutDeltas()
-    .holdingProvider()
-    .withWarmMicrophone()
-    .cancelAcknowledgedAfter(200);
+  tauri.streaming.withoutDeltas().withWarmMicrophone().cancelAcknowledgedAfter(200);
   await sendTypedAnswer({ app, start, talk, tauri });
   await talk.focusThinking();
   await talk.tapSpace();
