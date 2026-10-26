@@ -3,13 +3,13 @@
 `screens/wrap-up` is the focused full page after Finish (the shell hides the sidebar). It composes
 `features/wrap-up` (numbers, phrases, saves) with `features/coaching-note` (Your conversation) and
 passes the first into the second as a slot, because features never import each other.
-`routes/wrap-up` only mounts it and navigates; the screen reads `practiceStateAtom` and renders nothing
+`app/routes/wrap-up` only mounts it and navigates; the screen reads `practiceStateAtom` and renders nothing
 unless the session is completed.
 
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Route as routes/wrap-up
+    participant Route as app/routes/wrap-up
     participant Screen as WrapUpScreen
     participant WrapUp as features/wrap-up
     participant Review as features/coaching-note

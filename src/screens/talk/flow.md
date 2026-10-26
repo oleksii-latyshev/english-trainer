@@ -1,6 +1,6 @@
 # Talk screen
 
-`screens/talk` composes the Talk features over the core atoms. `routes/talk` only mounts it and passes
+`screens/talk` composes the Talk features over the core atoms. `app/routes/talk` only mounts it and passes
 the two navigation callbacks (Settings, the microphone section of Settings). Features never import
 each other: the screen reads the state that crosses them (`core/practice-session`,
 `core/answer-capture`, `core/practice-turn`) and hands each feature what it needs as props or slots.
@@ -8,7 +8,7 @@ each other: the screen reads the state that crosses them (`core/practice-session
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Route as routes/talk
+    participant Route as app/routes/talk
     participant Screen as TalkScreen
     participant Session as features/talk-session
     participant Composer as features/talk-composer

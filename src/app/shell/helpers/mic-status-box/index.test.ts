@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { micStatusBox } from './micStatusBox';
+import { micStatusBox } from '.';
 
 describe('micStatusBox', () => {
   it('is on while the warm session holds the microphone', () => {

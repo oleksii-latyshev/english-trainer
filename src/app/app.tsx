@@ -1,6 +1,7 @@
 import { useAtomMount, useAtomValue } from '@effect/atom-react';
 import { RouterProvider } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
+import { useFirstRunGate } from '@/app/routes/first-run/use-first-run-gate';
 import {
   isRestoringAtom,
   isSessionOpenAtom,
@@ -8,10 +9,9 @@ import {
   restorePracticeAtom,
 } from '@/core/practice-session';
 import { practiceTurnEffectsAtom } from '@/core/practice-turn';
-import { useFirstRunGate } from '@/routes/first-run/use-first-run-gate';
 import { ToastProvider } from '@/shared/ui/toast';
 import { router } from './router';
-import './app/styles.css';
+import './styles.css';
 
 function useSessionNavigation() {
   const state = useAtomValue(practiceStateAtom);
@@ -31,7 +31,7 @@ function useSessionNavigation() {
   }, [state]);
 }
 
-function App() {
+export function App() {
   useAtomMount(restorePracticeAtom);
   useAtomMount(practiceTurnEffectsAtom);
   useFirstRunGate({
@@ -47,5 +47,3 @@ function App() {
     </>
   );
 }
-
-export default App;

@@ -8,10 +8,6 @@ function offHint(status: MicrophoneStatus): string {
   return 'Opens for spoken practice.';
 }
 
-/**
- * The sidebar's microphone box. "On" means the warm session holds the device (opening, warming or
- * ready); paused, failed and idle microphones are all released.
- */
 export function micStatusBox(status: MicrophoneStatus): MicStatusBox {
   const isOn = status === 'opening' || status === 'warming' || status === 'ready';
   if (isOn) {

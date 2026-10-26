@@ -3,7 +3,7 @@
 Composes the start-of-practice features for the `/` route. It owns layout and the two pieces of
 ephemeral state that connect features (the practice selection and the warm-up choice); everything
 that touches Rust, the open session or the router is passed in by the app layer
-(`src/routes/talk-start`), which keeps the legacy Talk and Memory state out of the screen.
+(`src/app/routes/talk-start`), which keeps the legacy Talk and Memory state out of the screen.
 
 ```text
 TalkStartScreen

@@ -1,7 +1,7 @@
 # Memory screen
 
 Composes the Memory features for the `/memory` route. It owns layout only; what touches the router,
-the open session or the microphone is passed in by `src/routes/memory`, which keeps the legacy Talk
+the open session or the microphone is passed in by `src/app/routes/memory`, which keeps the legacy Talk
 and review state out of the screen.
 
 ```text

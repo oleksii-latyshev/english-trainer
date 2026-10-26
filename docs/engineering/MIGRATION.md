@@ -77,6 +77,6 @@ bridge from `core`. Widgets and the menu-bar panel stay *After MVP*. Steps 2–5
 | `src/context/TrainerContext.tsx` (deleted in #74) | atoms in the owning features/core; screens read them directly |
 | `src/routes/<screen>` (glue that feeds a migrated screen from legacy state) | deleted when the legacy state it reads is migrated; new layers never import it |
 | `src/components/*` | `src/shared/ui/<name>` (generic) or the feature that owns it |
-| `src/router.tsx`, `src/App.tsx` | `src/app/router`, `src/app/providers`, `src/app/shell` |
+| `src/router.tsx`, `src/App.tsx` | `src/app/router.tsx`, `src/app/app.tsx`, `src/app/shell` |
 | `src-tauri/src/lib.rs` commands | `src-tauri/src/<context>/commands.rs` |
 | `ProviderError` for non-provider failures | the context's `thiserror` enum → `IpcError` |

@@ -3,7 +3,7 @@
 The rules that decide whether first run opens and what it records. The marker is a pure UI preference
 kept in the WebView's `localStorage` under `english_trainer_first_run` as `{ status }`; it never
 crosses IPC. The launch check itself (reading memory, the key and the saved choices) is legacy glue in
-`src/routes/first-run/use-first-run-gate.ts` until the memory and practice slices are migrated; it
+`src/app/routes/first-run/use-first-run-gate.ts` until the memory and practice slices are migrated; it
 calls `decideFirstRun` from here.
 
 Statuses: `pending` (never dealt with), `finished` (Start Talking), `skipped` (Skip setup),

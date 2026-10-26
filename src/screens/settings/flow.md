@@ -3,7 +3,7 @@
 Composes every settings feature for `/settings` and the Eva page for `/settings/eva`. It owns the
 page layout, the section order shared with the sidebar sub-navigation (`sections.ts`) and the
 Eva link; everything that touches the open conversation, the system voices or the router is passed
-in by the app layer (`src/routes/settings`), which keeps the legacy Talk state out of the screen.
+in by the app layer (`src/app/routes/settings`), which keeps the legacy Talk state out of the screen.
 
 ```text
 SettingsScreen

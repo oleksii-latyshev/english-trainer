@@ -4,15 +4,15 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { AppShell } from '@/components/AppShell';
+import { FirstRunRoute } from '@/app/routes/first-run';
+import { MemoryRoute } from '@/app/routes/memory';
+import { MemoryReviewRoute } from '@/app/routes/memory/review';
+import { SettingsEvaRoute, SettingsRoute } from '@/app/routes/settings';
+import { TalkRoute } from '@/app/routes/talk';
+import { TalkStartRoute } from '@/app/routes/talk-start';
+import { WrapUpRoute } from '@/app/routes/wrap-up';
 import { FIRST_RUN_PATH } from '@/core/first-run';
-import { FirstRunRoute } from '@/routes/first-run';
-import { MemoryRoute } from '@/routes/memory';
-import { MemoryReviewRoute } from '@/routes/memory/review';
-import { SettingsEvaRoute, SettingsRoute } from '@/routes/settings';
-import { TalkRoute } from '@/routes/talk';
-import { TalkStartRoute } from '@/routes/talk-start';
-import { WrapUpRoute } from '@/routes/wrap-up';
+import { AppShell } from './shell/app-shell';
 
 export const rootRoute = createRootRoute({
   component: AppShell,
@@ -91,6 +91,7 @@ void router.load();
 export type AppRouter = typeof router;
 
 declare module '@tanstack/react-router' {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: module augmentation merges only interfaces
   interface Register {
     router: AppRouter;
   }
