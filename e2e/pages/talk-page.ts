@@ -25,6 +25,7 @@ export class TalkPage {
   readonly writeHeading: Locator;
   readonly reviewWritingButton: Locator;
   readonly reviewWritingHeading: Locator;
+  readonly reviewSpeakingButton: Locator;
   readonly reviewSpeakingHeading: Locator;
   readonly writtenAnswerOne: Locator;
   readonly readyToSpeakButton: Locator;
@@ -62,6 +63,7 @@ export class TalkPage {
     this.learnerMessages = page.getByRole('article', { name: 'You said' });
     this.writeHeading = page.getByRole('heading', { name: 'Write your answer' });
     this.reviewWritingButton = page.getByRole('button', { name: 'Review writing' });
+    this.reviewSpeakingButton = page.getByRole('button', { name: 'Review speaking' });
     this.reviewWritingHeading = page.getByRole('heading', { name: 'Review writing' });
     this.reviewSpeakingHeading = page.getByRole('heading', { name: 'Review speaking' });
     this.writtenAnswerOne = page.getByText('Written answer 1');
@@ -110,6 +112,10 @@ export class TalkPage {
 
   async reviewWriting(): Promise<void> {
     await this.reviewWritingButton.click();
+  }
+
+  async reviewSpeaking(): Promise<void> {
+    await this.reviewSpeakingButton.click();
   }
 
   async readyToSpeak(): Promise<void> {

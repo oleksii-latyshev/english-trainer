@@ -23,6 +23,11 @@ Feature: Practice sessions
     When Ready to speak succeeds
     Then the original question is replayed and the written answer count stays fixed
 
+  Scenario: Write, review, speak and review
+    Given the learner has written an answer and moved to speaking
+    When the learner speaks the original question's answer and chooses Review speaking
+    Then the written and spoken answers are listed separately and Finish counts both
+
   Scenario: Recover a failed transition to speaking
     Given the learner is reviewing written answers
     When moving to speaking fails
