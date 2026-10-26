@@ -37,3 +37,4 @@ src-tauri/binaries/natural-voice/*
 # Claude Code local state
 .claude/settings.local.json
 .claude/worktrees/
+/.build/

@@ -31,8 +31,8 @@ sequenceDiagram
 
 ## Following the newest message
 
-The history is one surface with Eva: no frame, and a top fade mask lets older messages dissolve
-under her. The view follows the newest message while a reply streams and while notes, notices or
+The history is one surface with Eva, with no frame. A short conversation sits at the bottom, next to
+the composer. Once the history overflows, a top fade mask lets older messages dissolve under her. The view follows the newest message while a reply streams and while notes, notices or
 answer help change the height of the content.
 
 ```mermaid

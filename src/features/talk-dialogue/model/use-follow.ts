@@ -38,11 +38,14 @@ export function useFollow(messageCount: number, pendingReply: string | undefined
   }, [update, scrollToEnd]);
 
   useEffect(() => {
+    const viewport = viewportRef.current;
     const content = contentRef.current;
-    if (!content) return;
+    if (!viewport || !content) return;
     const observer = new ResizeObserver(() => {
+      viewport.dataset.overflowing = String(viewport.scrollHeight > viewport.clientHeight);
       if (stateRef.current.isFollowing) scrollToEnd('instant');
     });
+    observer.observe(viewport);
     observer.observe(content);
     return () => observer.disconnect();
   }, [scrollToEnd]);

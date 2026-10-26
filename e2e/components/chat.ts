@@ -13,6 +13,13 @@ export class Chat {
     return this.history.evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight);
   }
 
+  async gapBelow(text: string): Promise<number> {
+    const message = await this.history.getByText(text, { exact: true }).boundingBox();
+    const history = await this.history.boundingBox();
+    if (message === null || history === null) throw new Error(`"${text}" is not on screen.`);
+    return history.y + history.height - (message.y + message.height);
+  }
+
   height(): Promise<number> {
     return this.history.evaluate((node) => node.clientHeight);
   }

@@ -27,14 +27,17 @@ export function Dialogue({ currentQuestion, canReplay, children }: Props) {
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         aria-label="Conversation message history"
-        className="mask-fade-top min-h-0 flex-1 overflow-y-auto px-10 pt-24 pb-3"
+        className="data-[overflowing=true]:mask-fade-top flex min-h-0 flex-1 flex-col overflow-y-auto px-10 pt-24 pb-3"
         onScroll={follow.onScroll}
         ref={follow.viewportRef}
         role="log"
         // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users need to focus this scroll region to read older messages.
         tabIndex={0}
       >
-        <div className="mx-auto flex w-full max-w-205 flex-col gap-5" ref={follow.contentRef}>
+        <div
+          className="mx-auto mt-auto flex w-full max-w-205 flex-col gap-5"
+          ref={follow.contentRef}
+        >
           {hasFailed && (
             <Notice
               className="flex items-center justify-between gap-3 rounded-control border"
