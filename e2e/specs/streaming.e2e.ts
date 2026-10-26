@@ -48,12 +48,16 @@ test('an open stream gap does not auto-listen and completion fires only after th
   await sendTypedAnswer({ app, start, talk, tauri }, true);
   await expect.poll(() => tauri.streaming.spoken()).toHaveLength(1);
   await expect.poll(async () => (await tauri.speech.counts()).mediaRequests).toBeGreaterThan(0);
+  await expect(talk.microphoneStatus).toContainText('Microphone on');
   const initialMedia = (await tauri.speech.counts()).mediaRequests;
   await tauri.streaming.finishSpeech();
+  await app.settleRendering();
   await expect(talk.listening).toHaveCount(0);
   expect((await tauri.speech.counts()).mediaRequests).toBe(initialMedia);
   await tauri.streaming.finishProvider();
   await expect.poll(() => tauri.streaming.spoken()).toHaveLength(2);
+  await expect.poll(() => tauri.streaming.providerFinished()).toBe(true);
+  await app.settleRendering();
   await expect(talk.listening).toHaveCount(0);
   expect((await tauri.speech.counts()).mediaRequests).toBe(initialMedia);
   await tauri.streaming.finishSpeech();

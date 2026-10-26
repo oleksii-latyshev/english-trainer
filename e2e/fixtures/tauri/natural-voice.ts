@@ -6,6 +6,8 @@ export type NaturalVoiceEdge = {
   paused: number;
   resumed: number;
   stopped: number;
+  settled: number;
+  releaseGeneration: () => void;
   finishAudio: () => void;
 };
 declare global {
@@ -17,6 +19,8 @@ export async function installNaturalVoice(
   page: Page,
   options: {
     delayMs?: number;
+    holdGeneration?: boolean;
+    escapeOnRequest?: boolean;
     fails?: boolean;
     failsOnce?: boolean;
     mediaFails?: boolean;
@@ -31,6 +35,8 @@ export async function installNaturalVoice(
       paused: 0,
       resumed: 0,
       stopped: 0,
+      settled: 0,
+      releaseGeneration: () => {},
       finishAudio: () => {},
     };
     window.__ET_NATURAL__ = edge;
@@ -43,16 +49,26 @@ export async function installNaturalVoice(
         throw new Error('Invalid natural speech arguments');
       return { text, voice_id, speed };
     };
+    const receiveRequest = async (args?: Record<string, unknown>) => {
+      edge.requests.push(requestArgs(args));
+      if (seed.escapeOnRequest)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      if (seed.delayMs) await new Promise((resolve) => setTimeout(resolve, seed.delayMs));
+      if (seed.holdGeneration)
+        await new Promise<void>((resolve) => {
+          edge.releaseGeneration = resolve;
+        });
+      edge.settled++;
+      if (seed.fails || (seed.failsOnce && edge.requests.length === 1))
+        throw { code: 'unavailable', message: 'Fixture local speech unavailable' };
+    };
     window.__TAURI_INTERNALS__.invoke = async (command, args) => {
       if (command === 'prewarm_natural_voice') {
         edge.prewarms++;
         return seed.ready !== false;
       }
       if (command !== 'synthesize_natural_voice') return invoke(command, args);
-      edge.requests.push(requestArgs(args));
-      if (seed.delayMs) await new Promise((resolve) => setTimeout(resolve, seed.delayMs));
-      if (seed.fails || (seed.failsOnce && edge.requests.length === 1))
-        throw { code: 'unavailable', message: 'Fixture local speech unavailable' };
+      await receiveRequest(args);
       const wav = new Uint8Array(46);
       wav.set([82, 73, 70, 70, 38, 0, 0, 0, 87, 65, 86, 69]);
       return wav.buffer;
@@ -156,6 +172,14 @@ export class NaturalVoiceBackend {
     return this.configure({ delayMs: ms });
   }
 
+  holdingGeneration(): this {
+    return this.configure({ holdGeneration: true });
+  }
+
+  interruptedOnRequest(): this {
+    return this.configure({ escapeOnRequest: true });
+  }
+
   failing(): this {
     return this.configure({ fails: true });
   }
@@ -176,8 +200,16 @@ export class NaturalVoiceBackend {
     if (this.enabled) await installNaturalVoice(this.page, this.options);
   }
 
-  state(): Promise<Omit<NaturalVoiceEdge, 'finishAudio'>> {
-    return this.page.evaluate(() => ({ ...window.__ET_NATURAL__, finishAudio: undefined }));
+  state(): Promise<Omit<NaturalVoiceEdge, 'finishAudio' | 'releaseGeneration'>> {
+    return this.page.evaluate(() => ({
+      ...window.__ET_NATURAL__,
+      finishAudio: undefined,
+      releaseGeneration: undefined,
+    }));
+  }
+
+  async releaseGeneration(): Promise<void> {
+    await this.page.evaluate(() => window.__ET_NATURAL__.releaseGeneration());
   }
 
   async finishAudio(): Promise<void> {

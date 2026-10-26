@@ -30,7 +30,7 @@ test('write, review, speak and review run end to end and finish with both stages
   await talk.recorder.stopAndReview();
   await expect(talk.recorder.heardField).toHaveValue(finalHeardAnswer);
   await talk.composer.send();
-  await expect(talk.reply).toBeVisible();
+  await expect(talk.reply).toHaveCount(2);
 
   await talk.reviewSpeaking();
   await expect(talk.reviewSpeakingHeading).toBeVisible();
