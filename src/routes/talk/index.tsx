@@ -12,21 +12,19 @@ import {
 import { acceptedAnswerAtom } from '@/core/practice-turn';
 import { useSpeech } from '@/core/speech';
 import { AnswerHelp, helpLevelAtom, useAnswerHelpEffects } from '@/features/answer-help';
-import { cancelSayAgain, sayAgainActiveAtom } from '@/features/coaching-note';
-import { OriginalQuestionPrompt } from '@/features/practice/OriginalQuestionPrompt';
-import { PracticeReview } from '@/features/practice/PracticeReview';
+import { AnswerReview, cancelSayAgain, sayAgainActiveAtom } from '@/features/coaching-note';
 import { Rescue } from '@/features/rescue';
 import { recallActiveAtom } from '@/features/spoken-recall';
 import { useTurn } from '@/features/talk-composer';
 import { HISTORY_FAILED_MESSAGE, useDialogue } from '@/features/talk-dialogue';
+import { OriginalQuestion, WriteSpeakReview } from '@/features/write-speak';
 import { isPracticeDialogue } from '@/lib/dialogueTypes';
 import { TalkScreen } from '@/screens/talk';
 import { TalkExtras } from './talk-extras';
-import { usePracticeActions, usePracticeModel } from './use-practice-model';
+import { usePracticeModel } from './use-practice-model';
 import { useCancelOnStageChange, useTurnLock } from './use-turn-lock';
 import '@/features/practice/talkCards.css';
 import '@/features/practice/talkDialogue.css';
-import '@/features/practice/talkStage.css';
 
 function lockReason(
   isRecalling: boolean,
@@ -68,7 +66,6 @@ export function TalkRoute() {
   const dialogue = isPracticeDialogue(history.dialogue) ? history.dialogue : null;
   const isRecalling = useAtomValue(recallActiveAtom);
   const isRetrying = useAtomValue(sayAgainActiveAtom);
-  const actions = usePracticeActions();
 
   useTurnLock(registry, isRecalling || isRetrying);
   useCancelOnStageChange(session, () => cancelSayAgain(registry));
@@ -108,18 +105,24 @@ export function TalkRoute() {
   ) : undefined;
 
   const reviewStage: ReactNode = session ? (
-    <PracticeReview
-      actions={actions}
+    <WriteSpeakReview
       dialogue={dialogue}
       historyError={history.hasFailed ? HISTORY_FAILED_MESSAGE : ''}
-      model={model}
+      isLocked={isRetrying}
       onRetryHistory={history.retry}
+      renderAnswerReview={(answer) => (
+        <AnswerReview
+          coaching={answer.coaching}
+          target={{ sessionId: answer.sessionId, sequence: answer.sequence }}
+          transcript={answer.transcript}
+        />
+      )}
       session={session}
     />
   ) : undefined;
 
   const replayPrompt: ReactNode = session ? (
-    <OriginalQuestionPrompt
+    <OriginalQuestion
       isComplete={session.spokenTurnCount >= session.writtenTurnCount}
       question={session.question}
       spokenTurnCount={session.spokenTurnCount}
