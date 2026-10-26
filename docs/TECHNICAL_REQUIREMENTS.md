@@ -311,9 +311,6 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
 
 ### 6.3 Answer help (F6)
 
-- `get_guided_answer(session_id, sequence, question)` → `{ model_answer, adaptation }` for the active
-  unanswered prompt only; Rust checks session, sequence and exact question. The cue exposure is saved
-  **before** generation; a stale result cannot help another turn; failure does not change the session.
 - `prefetch_answer_plan(session_id, sequence, question, retry?)` (snake-case arguments) returns
   `{ frame[3], phrases[3..5], model_answer, adaptation }` for the active unanswered spoken question.
   Gemini receives only that question, uses JSON-schema output and the usage tracker. Every field is
@@ -582,7 +579,7 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
   - Practice: `generate_follow_up`, `start_practice_session`, `get_active_practice_session`,
     `send_practice_turn`, `cancel_practice_reply`, `get_practice_dialogue`, `finish_practice_session`,
     `set_practice_clock`, `transition_practice_phase`, `start_mistake_practice`, `retry_practice_turn`,
-    `retry_answer_coaching`, `get_question_scaffold`, `get_guided_answer`, `prefetch_answer_plan`,
+    `retry_answer_coaching`, `prefetch_answer_plan`,
     `rescue_answer`, `record_answer_help_used`.
   - Wrap-up: `get_session_wrapup`, `retry_session_wrapup`, `save_wrapup_phrases`.
   - Memory: `get_daily_recall_plan`, `submit_daily_recall`, `save_phrase_card`, `delete_phrase_card`,

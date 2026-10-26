@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import type { LearningMemoryView } from '@/core/ipc';
+import type { PracticeDialogue } from '@/core/ipc/bindings/PracticeDialogue';
 import type { PracticeSession } from '@/core/ipc/bindings/PracticeSession';
-import type { PracticeDialogue } from '@/lib/dialogueTypes';
 import { emptyDialogue, finishedSession, initialSession } from '../../data/sessions';
 import { installTauriCommands } from './commands';
 import type { HarnessState } from './harness';

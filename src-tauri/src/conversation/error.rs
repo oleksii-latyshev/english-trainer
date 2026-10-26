@@ -154,10 +154,6 @@ pub(crate) fn invalid_session_error() -> ProviderError {
     ConversationError::InvalidSession.into()
 }
 
-pub(crate) fn busy_error() -> ProviderError {
-    ConversationError::Busy.into()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

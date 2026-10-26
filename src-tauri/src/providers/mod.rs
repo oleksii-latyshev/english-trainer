@@ -12,7 +12,6 @@ mod session_wrapup;
 mod settings;
 pub(crate) mod spoken_review;
 pub use crate::ai_settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
-pub use agy::guided::{generate_guided_answer, GuidedAnswer};
 pub use agy::session_wrapup::generate_session_wrapup;
 pub use agy::spoken_review::generate_review_material;
 pub use answer_plan::{parse_answer_plan, AnswerPlan};

@@ -1,7 +1,7 @@
 use crate::conversation::domain::WrapupEvent;
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use crate::providers::{
-    AnswerPlan, ConversationContext, ConversationTurn, GuidedAnswer, ProviderError, RescueRequest,
+    AnswerPlan, ConversationContext, ConversationTurn, ProviderError, RescueRequest,
     RescueResponse, WrapupRequest, WrapupResult,
 };
 use std::sync::atomic::AtomicBool;
@@ -69,19 +69,6 @@ where
     F: Fn(&str) -> Result<AnswerPlan, ProviderError>,
 {
     fn plan(&self, question: &str) -> Result<AnswerPlan, ProviderError> {
-        self(question)
-    }
-}
-
-pub trait GuidedAnswerSource {
-    fn guide(&self, question: &str) -> Result<GuidedAnswer, ProviderError>;
-}
-
-impl<F> GuidedAnswerSource for F
-where
-    F: Fn(&str) -> Result<GuidedAnswer, ProviderError>,
-{
-    fn guide(&self, question: &str) -> Result<GuidedAnswer, ProviderError> {
         self(question)
     }
 }
