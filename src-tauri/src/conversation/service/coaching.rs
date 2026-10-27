@@ -1,10 +1,9 @@
 use super::{SessionStore, State};
 use crate::conversation::domain::rules::MAX_SAFE_SESSION_ID;
 use crate::conversation::domain::TurnCoaching;
-use crate::conversation::error::database_error;
 use crate::conversation::error::ConversationError;
 use crate::persistence::CoachingProgress;
-use crate::providers::{ProviderError, ProviderErrorCode, TurnFeedback};
+use crate::providers::TurnFeedback;
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -85,18 +84,14 @@ impl SessionStore {
         &self,
         session_id: u64,
         sequence: usize,
-    ) -> Result<bool, ProviderError> {
+    ) -> Result<bool, ConversationError> {
         if session_id > MAX_SAFE_SESSION_ID || sequence == 0 {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "This answer could not be found. Refresh the conversation and try again.",
-            ));
+            return Err(ConversationError::AnswerNotFound);
         }
         let mut state = self.lock();
         let needs_feedback = state
             .database
-            .reset_coaching_failures(session_id, sequence)
-            .map_err(database_error)?;
+            .reset_coaching_failures(session_id, sequence)?;
         self.coaching.resume();
         Ok(needs_feedback)
     }
@@ -104,24 +99,23 @@ impl SessionStore {
     pub(crate) fn coaching_queue(
         &self,
         session_id: u64,
-    ) -> Result<Vec<crate::persistence::UncoachedAnswer>, ProviderError> {
+    ) -> Result<Vec<crate::persistence::UncoachedAnswer>, ConversationError> {
         self.lock()
             .database
             .coaching_queue(session_id)
-            .map_err(database_error)
+            .map_err(ConversationError::from)
     }
 
     pub(crate) fn record_coaching_failures(
         &self,
         session_id: u64,
         sequences: &[usize],
-    ) -> Result<(), ProviderError> {
+    ) -> Result<(), ConversationError> {
         let mut state = self.lock();
         for sequence in sequences {
             state
                 .database
-                .record_coaching_failure(session_id, *sequence)
-                .map_err(database_error)?;
+                .record_coaching_failure(session_id, *sequence)?;
         }
         Ok(())
     }

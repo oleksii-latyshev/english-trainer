@@ -35,9 +35,8 @@ Dependency direction inside a context: `commands → service → domain`, `servi
 `domain`. Contexts talk to each other through the other context's `mod.rs` surface, never its
 internals. A context that grows past ~10 files splits into sub-contexts, not into `utils.rs`.
 
-Why: today `conversation::SessionStore` is one ~700-line `impl` holding the database, five
-`Arc<Mutex|AtomicBool>` flags, provider calls and validation, and `ProviderError` is used for
-database failures and the Dock icon. Slicing by context and layering inside makes each rule testable
+Why: `conversation::SessionStore` was one ~700-line `impl` holding the database, five
+`Arc<Mutex|AtomicBool>` flags, provider calls and validation. `ProviderError` stays inside `providers` and the provider-facing ports; a service maps it into its context error (`ConversationError::Provider`). Slicing by context and layering inside makes each rule testable
 without SQLite or a provider, and keeps commands from reaching into state.
 
 ## 2. Commands

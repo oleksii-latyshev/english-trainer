@@ -61,8 +61,7 @@ for a screen are built inside that screen's step.
 | 9 | Eva grows | #28 | Eva grows as you speak | — |
 | 10 | Ratchet | — | — | — |
 
-Ratchet: delete the legacy override from `biome.json`, enable `knip` in CI, remove `ProviderError` from non-provider code and the
-`ProviderError ↔ IpcError` bridge from `core` (strict Rust lints are already crate-wide). Widgets and the menu-bar panel stay *After MVP*. Steps 2–5 may swap; 6 precedes 7.
+Ratchet (complete): the legacy override is gone from `biome.json`, `knip` runs in CI, and `ProviderError` lives only in `providers` and the ports and adapters that wrap provider calls (strict Rust lints are crate-wide). Widgets and the menu-bar panel stay *After MVP*. Steps 2–5 may swap; 6 precedes 7.
 
 ## 4. Mapping legacy → target
 

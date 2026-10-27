@@ -106,7 +106,6 @@ export {
 export { EvaGrowthSchema } from './schemas/eva-growth';
 export {
   FinishedSessionSchema,
-  ProviderErrorSchema,
   RecurringMistakeSchema,
   SavedWrapupPhrasesSchema,
   SessionNumbersSchema,

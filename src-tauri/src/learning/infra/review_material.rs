@@ -1,7 +1,8 @@
 use super::ids::{storage, to_sql_id, to_sql_sequence};
+use crate::core::IpcError;
 use crate::learning::review_material::{ReviewMaterialRow, StoredReviewMaterial};
 use crate::learning::LearningError;
-use crate::providers::{ProviderError, ReviewMaterialRequest, ReviewMaterialResult, ReviewTarget};
+use crate::providers::{ReviewMaterialRequest, ReviewMaterialResult, ReviewTarget};
 use rusqlite::{params, Connection, OptionalExtension};
 
 fn decode<T: serde::de::DeserializeOwned>(value: String) -> rusqlite::Result<T> {
@@ -102,7 +103,7 @@ pub(crate) fn begin_preparation(connection: &Connection, run_id: u64) -> rusqlit
 pub(crate) fn complete_preparation(
     connection: &Connection,
     run_id: u64,
-    result: &Result<ReviewMaterialResult, ProviderError>,
+    result: &Result<ReviewMaterialResult, IpcError>,
 ) -> rusqlite::Result<()> {
     require_open_run(connection, run_id)?;
     let (state, result_json, error_json) = match result {

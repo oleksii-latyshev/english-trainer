@@ -1,9 +1,9 @@
 use super::{active_session_mut, SessionStore};
-use crate::providers::ProviderError;
+use crate::conversation::error::ConversationError;
 use std::sync::atomic::Ordering;
 
 impl SessionStore {
-    pub fn cancel_pending_reply(&self, session_id: u64) -> Result<bool, ProviderError> {
+    pub fn cancel_pending_reply(&self, session_id: u64) -> Result<bool, ConversationError> {
         let mut state = self.lock();
         let session = active_session_mut(&mut state, session_id)?;
         if !session.in_flight {
@@ -19,7 +19,8 @@ impl SessionStore {
 mod tests {
     use super::*;
     use crate::conversation::service::code_of;
-    use crate::providers::{ConversationTurn, ProviderErrorCode};
+    use crate::core::IpcErrorCode;
+    use crate::providers::ConversationTurn;
     use std::sync::mpsc;
 
     fn turn() -> ConversationTurn {
@@ -65,7 +66,7 @@ mod tests {
         release.send(()).unwrap();
         assert_eq!(
             code_of(old.join().unwrap().unwrap_err()),
-            ProviderErrorCode::Cancelled
+            IpcErrorCode::Cancelled
         );
         assert_eq!(
             code_of(
@@ -73,7 +74,7 @@ mod tests {
                     .send_turn(id, "Third answer.".into(), |_| Ok(turn()))
                     .unwrap_err()
             ),
-            ProviderErrorCode::Busy
+            IpcErrorCode::Busy
         );
         release_new.send(()).unwrap();
         new.join().unwrap().unwrap();

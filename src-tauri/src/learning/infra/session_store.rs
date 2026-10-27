@@ -12,8 +12,7 @@ use crate::learning::{
     PhraseCardRecord, TurnUsageAssessment,
 };
 use crate::providers::{
-    ProviderError, ReviewMaterialRequest, ReviewMaterialResult, UsageReviewRequest,
-    UsageReviewResponse,
+    ReviewMaterialRequest, ReviewMaterialResult, UsageReviewRequest, UsageReviewResponse,
 };
 
 pub struct SessionLearningStore {
@@ -167,7 +166,7 @@ impl ReviewMaterialStore for SessionLearningStore {
     fn complete_preparation(
         &self,
         run_id: u64,
-        result: &Result<ReviewMaterialResult, ProviderError>,
+        result: &Result<ReviewMaterialResult, crate::core::IpcError>,
     ) -> Result<(), LearningError> {
         self.sessions
             .with_connection(|connection| {

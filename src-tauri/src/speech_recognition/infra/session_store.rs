@@ -1,4 +1,5 @@
 use crate::conversation::SessionStore;
+use crate::core::IpcError;
 use crate::speech_recognition::{
     domain::{AnswerContext, SettingsChange, SpeechSettings},
     error::SpeechRecognitionError,
@@ -68,6 +69,6 @@ impl PracticeConversation for SessionSpeechStore {
     ) -> PortResult<String> {
         self.sessions
             .rescue_question(session_id, sequence, question)
-            .map_err(SpeechRecognitionError::Conversation)
+            .map_err(|error| SpeechRecognitionError::Conversation(IpcError::from(error)))
     }
 }
