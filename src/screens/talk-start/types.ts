@@ -15,6 +15,7 @@ export type MistakePracticeSummary = {
 };
 
 export type TalkStartScreenProps = {
+  readonly learnerName: string;
   readonly status: StartStatus;
   readonly error: string;
   readonly openSession: OpenSession | undefined;

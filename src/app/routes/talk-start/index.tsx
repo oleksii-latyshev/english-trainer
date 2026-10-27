@@ -16,6 +16,7 @@ import {
   startOrResumePractice,
   startPracticeAtom,
 } from '@/core/practice-session';
+import { learnerNameAtom } from '@/features/personal-profile';
 import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
 import { useReviewCommands, useWarmupHandoff } from '@/features/spoken-review';
 import { SpokenReviewScreen } from '@/screens/spoken-review';
@@ -36,6 +37,7 @@ export function TalkStartRoute() {
   const isRestoring = useAtomValue(isRestoringAtom);
   const canChangeSession = useAtomValue(canChangeSessionAtom);
   const due = dueMemory(useAtomValue(learningMemoryAtom));
+  const learnerName = useAtomValue(learnerNameAtom);
   const firstRun = useFirstRunDecision();
   const navigate = useNavigate();
 
@@ -84,6 +86,7 @@ export function TalkStartRoute() {
   return (
     <TalkStartScreen
       error={practiceError}
+      learnerName={learnerName}
       mistakePractice={mistakePracticeSummary(due, {
         isSessionOpen,
         isAudioBusy: isBusy || !canChangeSession,

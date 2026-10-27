@@ -60,13 +60,12 @@ describe('session progress', () => {
   it('reads elapsed time against the suggested length and the mode', () => {
     expect(sessionProgress(SESSION, 62_000)).toMatchObject({
       label: '01:02 of 10:00 · Speak',
-      value: 62,
-      max: 600,
+      bar: { value: 62, max: 600 },
     });
   });
 
   it('caps the bar at the suggested length', () => {
-    expect(sessionProgress(SESSION, 900_000).percent).toBe(100);
+    expect(sessionProgress(SESSION, 900_000).bar?.percent).toBe(100);
   });
 
   it('adds the stage and the spoken count for write then speak', () => {
@@ -89,7 +88,14 @@ describe('session progress', () => {
     const drill = { ...SESSION, isMistakePractice: true, targetTurns: 5, turnCount: 2 };
     expect(sessionProgress(drill, 0)).toMatchObject({
       label: 'Question 3 of 5 · About 2 minutes',
-      max: 5,
+      bar: { max: 5 },
+    });
+  });
+
+  it('shows only the elapsed time and the mode, without a bar, when there is no limit', () => {
+    expect(sessionProgress({ ...SESSION, durationGoalSeconds: null }, 62_000)).toEqual({
+      label: '01:02 · Speak',
+      bar: null,
     });
   });
 });

@@ -1,6 +1,6 @@
 export type PracticeMode = 'voice' | 'text_chat' | 'write_then_speak';
 
-export type DurationGoalSeconds = 300 | 600 | 900;
+export type DurationGoalSeconds = 300 | 600 | 900 | null;
 
 export type TopicChoiceId =
   | 'work_technology'

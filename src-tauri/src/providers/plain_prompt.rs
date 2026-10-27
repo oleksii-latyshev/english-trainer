@@ -240,6 +240,7 @@ mod tests {
         let mut ctx = context();
         ctx.topic = Some("Work & technology".into());
         ctx.profile = Some(crate::personal_profile::PersonalProfile {
+            name: String::new(),
             role: "Frontend Engineer".into(),
             stack: "React, TypeScript".into(),
             interests: "Hiking, chess".into(),

@@ -58,8 +58,6 @@ The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one 
 
 Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in the migration plan.
 
-- **Start screen details** — greeting with the learner's name (needs a name in the personal
-  profile) and a "No limit" session length beside 5/10/15 min.
 - **Talk details** (screen and turn loop, #74) — the canvas boards Main, TalkThinking, TalkError and
   TalkLight were not reachable while the screen was built, so it follows [DESIGN](DESIGN.md) and the
   tokens. Still to compare with the boards on the Mac: hands-free as a pill in the header (it is a

@@ -1,3 +1,4 @@
+use super::domain::{MAX_PROFILE_FIELD_CHARS, MAX_PROFILE_NAME_CHARS};
 use crate::core::{IpcError, IpcErrorCode};
 use thiserror::Error;
 
@@ -16,10 +17,17 @@ pub enum PersonalProfileError {
 impl From<PersonalProfileError> for IpcError {
     fn from(error: PersonalProfileError) -> Self {
         match error {
-            PersonalProfileError::FieldTooLong { field } => Self::new(
-                IpcErrorCode::InvalidRequest,
-                format!("{field} must be 150 characters or fewer."),
-            ),
+            PersonalProfileError::FieldTooLong { field } => {
+                let limit = if field == "Name" {
+                    MAX_PROFILE_NAME_CHARS
+                } else {
+                    MAX_PROFILE_FIELD_CHARS
+                };
+                Self::new(
+                    IpcErrorCode::InvalidRequest,
+                    format!("{field} must be {limit} characters or fewer."),
+                )
+            }
             PersonalProfileError::Storage { .. } => Self::new(
                 IpcErrorCode::DatabaseError,
                 "Could not read or save your profile locally. Please retry.",

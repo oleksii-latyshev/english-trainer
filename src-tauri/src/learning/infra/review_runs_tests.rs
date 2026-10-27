@@ -579,7 +579,7 @@ fn saving_an_archived_phrase_again_brings_it_back_for_tomorrow() {
 }
 
 #[test]
-fn saying_one_item_now_runs_a_single_item_review_even_when_it_is_not_due() {
+fn saying_one_item_now_leaves_the_schedule_alone_and_can_be_answered_when_not_due() {
     let mut db = SessionDatabase::open_in_memory().unwrap();
     let other = phrase(&mut db, "turn out", "End up being");
     let chosen = phrase(&mut db, "come across", "Find or seem to be");
@@ -599,6 +599,15 @@ fn saying_one_item_now_runs_a_single_item_review_even_when_it_is_not_due() {
     assert_eq!(run.items[0].item_id, chosen);
     assert!(run.items[0].target.is_none());
     assert_ne!(run.items[0].item_id, other);
+    let due_after_opening: i64 = db
+        .connection()
+        .query_row(
+            "SELECT next_review_at FROM phrase_cards WHERE id = ?1",
+            [chosen as i64],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(due_after_opening, week_ahead);
     let result = review_answers::record_recall(
         db.connection_mut(),
         run.run_id,
@@ -647,4 +656,28 @@ fn a_single_item_review_returns_the_review_that_is_already_open() {
 
     assert_eq!(run, open);
     assert!(open.items.iter().any(|item| item.item_id == first));
+}
+
+#[test]
+fn a_not_yet_due_item_is_rejected_in_a_normal_run() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let due = phrase(&mut db, "turn out", "End up being");
+    let run = review_runs::start_run(db.connection_mut(), false)
+        .unwrap()
+        .unwrap();
+    db.connection()
+        .execute(
+            "UPDATE phrase_cards SET next_review_at = ?1 WHERE id = ?2",
+            params![now_ms() + 7 * crate::learning::MS_PER_DAY, due as i64],
+        )
+        .unwrap();
+
+    assert!(review_answers::record_recall(
+        db.connection_mut(),
+        run.run_id,
+        LearningItemType::Phrase,
+        due,
+        "I turn out fine.",
+    )
+    .is_err());
 }

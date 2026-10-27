@@ -9,7 +9,6 @@ import { Input } from '@/shared/ui/input';
 import { Notice } from '@/shared/ui/notice';
 import {
   fieldLength,
-  MAX_PROFILE_FIELD_CHARS,
   PROFILE_FIELDS,
   profileSummary,
   saveProblemMessage,
@@ -32,7 +31,7 @@ function ProfileForm({ draft }: { draft: PersonalProfile }) {
 
   return (
     <form className="grid gap-x-4 gap-y-3 px-5 py-3 sm:grid-cols-2" onSubmit={submit}>
-      {PROFILE_FIELDS.map(({ key, label }) => (
+      {PROFILE_FIELDS.map(({ key, label, limit, hint }) => (
         <label className="text-control grid gap-1" htmlFor={`profile-${key}`} key={key}>
           <span>{label}</span>
           <Input
@@ -43,7 +42,7 @@ function ProfileForm({ draft }: { draft: PersonalProfile }) {
             value={draft[key]}
           />
           <small className="text-caption text-muted">
-            {fieldLength(draft[key])}/{MAX_PROFILE_FIELD_CHARS} · optional
+            {fieldLength(draft[key])}/{limit} · optional{hint ? ` · ${hint}` : ''}
           </small>
         </label>
       ))}

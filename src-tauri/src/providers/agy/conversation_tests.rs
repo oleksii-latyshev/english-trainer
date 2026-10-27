@@ -192,6 +192,7 @@ fn conversation_prompt_serializes_prior_turns_as_bounded_data() {
     let mut context = context("I went to the beach.");
     context.topic = Some("Plans & stories".into());
     context.profile = Some(crate::personal_profile::PersonalProfile {
+        name: String::new(),
         role: "Developer".into(),
         stack: "Rust, Tauri".into(),
         interests: "Travel".into(),

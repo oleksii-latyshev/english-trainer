@@ -4,6 +4,7 @@ import { bindingSchema } from './binding-schema';
 
 export const PersonalProfileSchema = bindingSchema<PersonalProfile>()(
   Schema.Struct({
+    name: Schema.String,
     role: Schema.String,
     stack: Schema.String,
     interests: Schema.String,

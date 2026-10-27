@@ -146,12 +146,13 @@ pub(crate) fn check_still_answerable(
     item: &QueueItem,
     current: Option<&CurrentItem>,
     now: i64,
+    is_on_demand: bool,
 ) -> Result<(), ReviewRejection> {
     let current = current.ok_or(ReviewRejection::ItemRemoved)?;
     if current.cue != item.cue || current.target != item.target {
         return Err(ReviewRejection::ItemChanged);
     }
-    if current.status == "archived" || current.due_at > now {
+    if current.status == "archived" || (current.due_at > now && !is_on_demand) {
         return Err(ReviewRejection::ItemNotDue);
     }
     Ok(())
@@ -250,17 +251,17 @@ mod tests {
     #[test]
     fn an_item_must_still_be_the_same_and_due() {
         let queued = item(1, 10, None);
-        assert!(check_still_answerable(&queued, Some(&current("learning", 5)), 10).is_ok());
+        assert!(check_still_answerable(&queued, Some(&current("learning", 5)), 10, false).is_ok());
         assert_eq!(
-            check_still_answerable(&queued, None, 10),
+            check_still_answerable(&queued, None, 10, false),
             Err(ReviewRejection::ItemRemoved)
         );
         assert_eq!(
-            check_still_answerable(&queued, Some(&current("archived", 5)), 10),
+            check_still_answerable(&queued, Some(&current("archived", 5)), 10, false),
             Err(ReviewRejection::ItemNotDue)
         );
         assert_eq!(
-            check_still_answerable(&queued, Some(&current("learning", 11)), 10),
+            check_still_answerable(&queued, Some(&current("learning", 11)), 10, false),
             Err(ReviewRejection::ItemNotDue)
         );
         let changed = CurrentItem {
@@ -268,8 +269,18 @@ mod tests {
             ..current("learning", 5)
         };
         assert_eq!(
-            check_still_answerable(&queued, Some(&changed), 10),
+            check_still_answerable(&queued, Some(&changed), 10, false),
             Err(ReviewRejection::ItemChanged)
+        );
+    }
+
+    #[test]
+    fn an_on_demand_run_may_answer_an_item_that_is_not_due_yet() {
+        let queued = item(1, 10, None);
+        assert!(check_still_answerable(&queued, Some(&current("learning", 11)), 10, true).is_ok());
+        assert_eq!(
+            check_still_answerable(&queued, Some(&current("archived", 5)), 10, true),
+            Err(ReviewRejection::ItemNotDue)
         );
     }
 

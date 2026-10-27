@@ -65,7 +65,7 @@ export async function installTauriCommands(page: Page): Promise<void> {
       if (
         !isTopicId(topicId) ||
         !(custom === null || typeof custom === 'string') ||
-        !(duration === 300 || duration === 600 || duration === 900) ||
+        !(duration === null || duration === 300 || duration === 600 || duration === 900) ||
         !isPracticeMode(mode)
       )
         throw new Error('Harness received invalid practice options.');
@@ -83,8 +83,9 @@ export async function installTauriCommands(page: Page): Promise<void> {
         topic_id: harness.lastOptions?.topic_id ?? harness.firstSession.topic_id,
         topic_label: harness.lastOptions?.topic_custom || harness.firstSession.topic_label,
         topic_custom: harness.lastOptions?.topic_custom ?? null,
-        duration_goal_seconds:
-          harness.lastOptions?.duration_goal_seconds ?? harness.firstSession.duration_goal_seconds,
+        duration_goal_seconds: harness.lastOptions
+          ? harness.lastOptions.duration_goal_seconds
+          : harness.firstSession.duration_goal_seconds,
         practice_mode: practiceMode,
         practice_phase: practiceMode === 'voice' ? 'speaking' : 'writing',
         written_turn_count: 0,

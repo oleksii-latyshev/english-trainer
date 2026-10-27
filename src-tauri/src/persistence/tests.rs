@@ -460,3 +460,53 @@ fn turn_details_round_trip_per_turn() {
         ]
     );
 }
+
+#[test]
+fn stored_sessions_keep_their_goal_and_a_missing_goal_means_no_limit() {
+    let path = test_database_path();
+    let mut db = SessionDatabase::open(&path).unwrap();
+    let with_goal = db.create_session("With goal?").unwrap();
+    assert!(db.finish_session(with_goal).unwrap());
+    let without_goal = db.create_session("No limit?").unwrap();
+    db.connection
+        .execute(
+            "UPDATE sessions SET duration_goal_seconds = NULL WHERE id = ?1",
+            [i64::try_from(without_goal).unwrap()],
+        )
+        .unwrap();
+    assert_eq!(
+        db.session_metadata(with_goal)
+            .unwrap()
+            .unwrap()
+            .duration_goal_seconds,
+        Some(600)
+    );
+    assert_eq!(
+        db.session_metadata(without_goal)
+            .unwrap()
+            .unwrap()
+            .duration_goal_seconds,
+        None
+    );
+    assert_eq!(
+        db.active_session().unwrap().unwrap().duration_goal_seconds,
+        None
+    );
+    drop(db);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn the_profile_name_survives_a_save_and_old_profiles_get_an_empty_name() {
+    let path = test_database_path();
+    let mut db = SessionDatabase::open(&path).unwrap();
+    assert_eq!(db.get_personal_profile().unwrap().name, "");
+    db.save_personal_profile(&crate::personal_profile::PersonalProfile {
+        name: "Oleksii".into(),
+        ..Default::default()
+    })
+    .unwrap();
+    assert_eq!(db.get_personal_profile().unwrap().name, "Oleksii");
+    drop(db);
+    let _ = std::fs::remove_file(path);
+}

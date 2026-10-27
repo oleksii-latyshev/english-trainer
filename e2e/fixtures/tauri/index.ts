@@ -7,6 +7,7 @@ import type { IpcCall } from './harness';
 import { LiveReviewBackend } from './live-review';
 import { MemoryBackend } from './memory';
 import { NaturalVoiceBackend } from './natural-voice';
+import { PersonalProfileBackend } from './personal-profile';
 import { PlannerBackend } from './planner';
 import { RescueBackend } from './rescue';
 import { ReviewBackend } from './review-backend';
@@ -25,6 +26,7 @@ export class FakeBackend {
   readonly memory: MemoryBackend;
   readonly activity: SpeakingActivityBackend;
   readonly growth: EvaGrowthBackend;
+  readonly profile: PersonalProfileBackend;
   readonly speech: SpeechBackend;
   readonly translation: TranslationBackend;
   readonly planner: PlannerBackend;
@@ -47,6 +49,7 @@ export class FakeBackend {
     this.memory = new MemoryBackend(page);
     this.activity = new SpeakingActivityBackend(page);
     this.growth = new EvaGrowthBackend(page);
+    this.profile = new PersonalProfileBackend(page);
     this.speech = new SpeechBackend(page);
     this.translation = new TranslationBackend(page);
     this.planner = new PlannerBackend(page);
@@ -84,6 +87,7 @@ export class FakeBackend {
     await this.memory.install();
     await this.activity.install();
     await this.growth.install();
+    await this.profile.install();
     await this.review.install();
     await this.liveReview.install();
     await this.wrapup.install();

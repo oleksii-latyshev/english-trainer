@@ -112,7 +112,6 @@ export async function installTranslation(
       list_speech_models: () => ({ models: [], override_path: null }),
       get_speech_check: () => ({ sentences: [], results: { runs: [] } }),
       get_glossary: () => [],
-      get_personal_profile: () => ({ role: '', stack: '', interests: '', goals: '' }),
       get_kept_recordings: () => ({ count: 0, size_bytes: 0 }),
       get_setup_diagnostics: () => {
         const missing = {

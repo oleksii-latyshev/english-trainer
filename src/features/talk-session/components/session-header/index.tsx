@@ -80,21 +80,23 @@ export function SessionHeader({ session, isFinishing, isFinishBlocked, children 
           <span className="text-body truncate font-bold">{session.topicLabel}</span>
           <span className="text-caption text-muted truncate">{progress.label}</span>
         </div>
-        <div
-          aria-label={
-            session.isMistakePractice ? 'Mistake practice questions' : 'Suggested session time'
-          }
-          aria-valuemax={progress.max}
-          aria-valuemin={0}
-          aria-valuenow={progress.value}
-          className="bg-surface-2 h-1.5 overflow-hidden rounded-full"
-          role="progressbar"
-        >
+        {progress.bar && (
           <div
-            className="bg-accent h-full rounded-full"
-            style={{ width: `${progress.percent}%` }}
-          />
-        </div>
+            aria-label={
+              session.isMistakePractice ? 'Mistake practice questions' : 'Suggested session time'
+            }
+            aria-valuemax={progress.bar.max}
+            aria-valuemin={0}
+            aria-valuenow={progress.bar.value}
+            className="bg-surface-2 h-1.5 overflow-hidden rounded-full"
+            role="progressbar"
+          >
+            <div
+              className="bg-accent h-full rounded-full"
+              style={{ width: `${progress.bar.percent}%` }}
+            />
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {!session.isMistakePractice && <TimingPopover timing={timing} />}

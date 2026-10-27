@@ -46,6 +46,8 @@ export class TalkPage {
   readonly timingDialog: Locator;
   readonly practiceComplete: Locator;
   readonly preparingQuestions: Locator;
+  readonly sessionTimeBar: Locator;
+  readonly sessionProgressLabel: Locator;
 
   constructor(private readonly page: Page) {
     this.chat = new Chat(page);
@@ -87,6 +89,8 @@ export class TalkPage {
     this.timingButton = page.getByLabel('Speech pipeline timing', { exact: true });
     this.timingDialog = page.getByRole('dialog', { name: 'Speech pipeline timing' });
     this.practiceComplete = page.getByText('Practice complete', { exact: true });
+    this.sessionProgressLabel = page.getByText(/^\d\d:\d\d( of \d\d:\d\d)? · Speak$/);
+    this.sessionTimeBar = page.getByRole('progressbar', { name: 'Suggested session time' });
     this.preparingQuestions = page.getByText('Preparing five questions…');
   }
 

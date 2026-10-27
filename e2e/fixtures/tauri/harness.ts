@@ -7,7 +7,7 @@ import type { AudioEdgeCounts } from './speech';
 export type PracticeOptions = {
   topic_id: string;
   topic_custom: string | null;
-  duration_goal_seconds: number;
+  duration_goal_seconds: number | null;
   practice_mode: PracticeMode;
 };
 

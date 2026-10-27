@@ -20,7 +20,7 @@ export type FinishedSession = typeof FinishedSessionSchema.Type;
 
 export type PracticeFailure = IpcError | IpcDecodeError;
 
-type DurationGoalSeconds = 300 | 600 | 900;
+type DurationGoalSeconds = 300 | 600 | 900 | null;
 
 export type StartOptions = {
   readonly topic_id: string;
@@ -38,7 +38,7 @@ export type SessionDetails = {
   readonly topicId: string;
   readonly topicLabel: string;
   readonly topicCustom: string | null;
-  readonly durationGoalSeconds: number;
+  readonly durationGoalSeconds: number | null;
   readonly activeDurationMs: number;
   readonly startedAt: number;
   readonly isClockRunning: boolean;

@@ -156,7 +156,7 @@ impl SessionStore {
                         topic_id: "free_conversation",
                         topic_label: "Usual mistakes",
                         topic_custom: None,
-                        duration_goal_seconds: 300,
+                        duration_goal_seconds: Some(300),
                         practice_mode: "voice",
                         practice_phase: "speaking",
                         written_turn_count: 0,

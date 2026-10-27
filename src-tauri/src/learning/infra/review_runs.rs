@@ -124,7 +124,7 @@ pub(crate) fn start_run(
     if candidates.is_empty() {
         return Ok(None);
     }
-    create_run(connection, candidates, now).map(Some)
+    create_run(connection, candidates, now, false).map(Some)
 }
 
 pub(crate) fn start_item_run(
@@ -139,7 +139,7 @@ pub(crate) fn start_item_run(
     let candidate = item_candidate(connection, item_type, item_id)
         .map_err(storage("read"))?
         .ok_or(LearningError::Review(ReviewRejection::NotReviewable))?;
-    let run = create_run(connection, vec![candidate], now).map_err(storage("update"))?;
+    let run = create_run(connection, vec![candidate], now, true).map_err(storage("update"))?;
     Ok(Some(run))
 }
 
@@ -147,19 +147,20 @@ fn create_run(
     connection: &mut Connection,
     candidates: Vec<Candidate>,
     now: i64,
+    is_on_demand: bool,
 ) -> rusqlite::Result<MemoryReviewRun> {
     let transaction = connection.transaction()?;
     transaction.execute(
-        "INSERT INTO memory_review_runs (started_at) VALUES (?1)",
-        [now],
+        "INSERT INTO memory_review_runs (started_at, is_on_demand) VALUES (?1, ?2)",
+        params![now, is_on_demand],
     )?;
     let run_id = to_safe_u64_id(transaction.last_insert_rowid())?;
     let mut items = Vec::with_capacity(candidates.len());
     for (index, candidate) in candidates.into_iter().enumerate() {
         let position = index + 1;
-        let (item_type, table) = match candidate.item_type {
-            LearningItemType::Mistake => ("mistake", "mistakes"),
-            LearningItemType::Phrase => ("phrase", "phrase_cards"),
+        let item_type = match candidate.item_type {
+            LearningItemType::Mistake => "mistake",
+            LearningItemType::Phrase => "phrase",
         };
         transaction.execute(
             "INSERT INTO memory_review_items (run_id, position, item_type, item_id, cue, target)
@@ -173,12 +174,6 @@ fn create_run(
                 candidate.target
             ],
         )?;
-        if candidate.due_at > now {
-            transaction.execute(
-                &format!("UPDATE {table} SET next_review_at = ?1 WHERE id = ?2"),
-                params![now, to_sql_id(candidate.item_id)?],
-            )?;
-        }
         items.push(MemoryReviewItem {
             position,
             item_type: candidate.item_type,
