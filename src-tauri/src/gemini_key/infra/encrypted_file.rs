@@ -54,14 +54,18 @@ impl KeyStore for EncryptedFileStore {
 
 fn device_secret() -> Result<[u8; 32], GeminiKeyError> {
     let machine_id = machine_uid::get().map_err(|_| GeminiKeyError::DeviceSecret)?;
+    Ok(secret_for(&machine_id))
+}
+
+fn secret_for(machine_id: &str) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(CONTEXT);
     hasher.update(machine_id.trim().as_bytes());
-    Ok(hasher.finalize().into())
+    hasher.finalize().into()
 }
 
 fn cipher(secret: &[u8; 32]) -> ChaCha20Poly1305 {
-    ChaCha20Poly1305::new(Key::from_slice(secret))
+    ChaCha20Poly1305::new(&Key::from(*secret))
 }
 
 fn read_key(path: &Path, secret: &[u8; 32]) -> Result<Option<String>, GeminiKeyError> {
@@ -82,9 +86,10 @@ fn read_key(path: &Path, secret: &[u8; 32]) -> Result<Option<String>, GeminiKeyE
         return Err(GeminiKeyError::Unreadable);
     }
     let (nonce, sealed) = rest.split_at(NONCE_LEN);
+    let nonce = Nonce::try_from(nonce).map_err(|_| GeminiKeyError::Unreadable)?;
     let plain = cipher(secret)
         .decrypt(
-            Nonce::from_slice(nonce),
+            &nonce,
             Payload {
                 msg: sealed,
                 aad: CONTEXT,
@@ -101,7 +106,7 @@ fn write_key(path: &Path, secret: &[u8; 32], key: &str) -> Result<(), GeminiKeyE
     getrandom::fill(&mut nonce).map_err(|_| GeminiKeyError::Encryption)?;
     let sealed = cipher(secret)
         .encrypt(
-            Nonce::from_slice(&nonce),
+            &Nonce::from(nonce),
             Payload {
                 msg: key.as_bytes(),
                 aad: CONTEXT,
@@ -204,6 +209,42 @@ mod tests {
     fn a_missing_file_means_no_key() {
         let path = temp_key_file("missing");
         assert_eq!(read_key(&path, &a_device_secret()).unwrap(), None);
+        fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    fn from_hex(hex: &str) -> Vec<u8> {
+        (0..hex.len())
+            .step_by(2)
+            .map(|index| u8::from_str_radix(&hex[index..index + 2], 16).unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn the_device_secret_derivation_is_unchanged() {
+        assert_eq!(
+            secret_for(" 0000-MACHINE-ID\n").to_vec(),
+            from_hex("41fc43aa10b54af15c63937ca490e6dde4f2cfb9cf26df30db9b7e9cbf55a48f")
+        );
+    }
+
+    #[test]
+    fn a_key_file_written_by_the_previous_crypto_crates_still_reads() {
+        let path = temp_key_file("previous-format");
+        fs::write(
+            &path,
+            from_hex(
+                "01090909090909090909090909bd3081b6b777cecbb21f6079ae94d3b40c4524e24f690cf62fdb5be42d6f2e2e602bc264be0a63f7357cb0895d3f",
+            ),
+        )
+        .unwrap();
+        assert_eq!(
+            read_key(&path, &[7u8; 32]).unwrap().as_deref(),
+            Some("AIzaSyKnownAnswerKnownAnswer01")
+        );
+        assert!(matches!(
+            read_key(&path, &[8u8; 32]),
+            Err(GeminiKeyError::Unreadable)
+        ));
         fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 
