@@ -13,19 +13,19 @@ fn reject(rejection: ReviewRejection) -> LearningError {
     LearningError::Review(rejection)
 }
 
-fn open_run(transaction: &Transaction<'_>, sql_run_id: i64) -> Result<(), LearningError> {
-    let completed_at: Option<Option<i64>> = transaction
+fn open_run(transaction: &Transaction<'_>, sql_run_id: i64) -> Result<bool, LearningError> {
+    let run: Option<(Option<i64>, bool)> = transaction
         .query_row(
-            "SELECT completed_at FROM memory_review_runs WHERE id = ?1",
+            "SELECT completed_at, is_on_demand FROM memory_review_runs WHERE id = ?1",
             [sql_run_id],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .optional()
         .map_err(storage("read"))?;
-    match completed_at {
+    match run {
         None => Err(reject(ReviewRejection::RunMissing)),
-        Some(Some(_)) => Err(reject(ReviewRejection::RunFinished)),
-        Some(None) => Ok(()),
+        Some((Some(_), _)) => Err(reject(ReviewRejection::RunFinished)),
+        Some((None, is_on_demand)) => Ok(is_on_demand),
     }
 }
 
@@ -97,7 +97,7 @@ pub(crate) fn record_recall(
     let now = now_ms();
     let transaction = connection.transaction().map_err(storage("update"))?;
     let sql_run_id = to_sql_id(run_id).map_err(storage("update"))?;
-    open_run(&transaction, sql_run_id)?;
+    let is_on_demand = open_run(&transaction, sql_run_id)?;
     let queue = load_queue(&transaction, sql_run_id).map_err(storage("read"))?;
     let item = match slot_of(&queue, item_type, item_id).map_err(reject)? {
         QueueSlot::Skipped => return Err(reject(ReviewRejection::Skipped)),
@@ -106,7 +106,7 @@ pub(crate) fn record_recall(
     };
     let sql_item_id = to_sql_id(item_id).map_err(storage("read"))?;
     let current = current_item(&transaction, item_type, sql_item_id).map_err(storage("read"))?;
-    check_still_answerable(item, current.as_ref(), now).map_err(reject)?;
+    check_still_answerable(item, current.as_ref(), now, is_on_demand).map_err(reject)?;
     let observed = wording_observed(&item.target, transcript);
     let response = response_for(observed);
     let scheduled = record_review_schedule(&transaction, item_type, item_id, response, now)

@@ -33,6 +33,7 @@ const mistake: MistakeRecord = {
 const phrase: PhraseCardRecord = {
   id: 1,
   phrase: 'bring them into one format',
+  kind: 'phrase',
   normalized_phrase: 'bring them into one format',
   meaning_or_note: 'we had to make all data same',
   session_id: 4,

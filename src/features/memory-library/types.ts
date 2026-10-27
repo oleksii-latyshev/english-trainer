@@ -11,3 +11,8 @@ export type ActiveStatus = Exclude<LearningStatus, 'archived'>;
 export type StatusCounts = Readonly<Record<ActiveStatus, number>>;
 
 export type EntryRef = { readonly itemType: LearningItemType; readonly itemId: number };
+
+export type SayNow = {
+  readonly isDisabled: boolean;
+  readonly onSay: (ref: EntryRef) => void;
+};

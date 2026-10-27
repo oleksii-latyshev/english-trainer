@@ -114,6 +114,7 @@ function answer(backend: Backend, command: string, args: Record<string, unknown>
     case 'get_learning_memory':
       return { mistakes: [], phrase_cards: [], due_count: 0 };
     case 'start_memory_review':
+    case 'start_item_review':
     case 'get_memory_review':
       return backend.run;
     case 'prepare_review_material':

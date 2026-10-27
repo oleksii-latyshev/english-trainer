@@ -1,13 +1,13 @@
 import { useAtomSet } from '@effect/atom-react';
-import { Archive, Trash2 } from 'lucide-react';
+import { Archive, Mic, Trash2 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
-import { categoryLabel, gapLabel, nextReviewLabel } from '../../helpers/library-copy';
+import { gapLabel, kindLabel, nextReviewLabel } from '../../helpers/library-copy';
 import { entryLabel, entryRef, entryStatus } from '../../helpers/memory-entries';
 import { archiveEntryAtom, pendingDeleteAtom } from '../../model/atoms';
-import type { MemoryEntry } from '../../types';
+import type { MemoryEntry, SayNow } from '../../types';
 import { EvidenceList } from '../evidence-list';
 
-type Props = { entry: MemoryEntry; now: number };
+type Props = { entry: MemoryEntry; now: number; sayNow: SayNow };
 
 function Fact({ term, children }: { term: string; children: string }) {
   return (
@@ -18,7 +18,7 @@ function Fact({ term, children }: { term: string; children: string }) {
   );
 }
 
-export function EntryDetail({ entry, now }: Props) {
+export function EntryDetail({ entry, now, sayNow }: Props) {
   const archive = useAtomSet(archiveEntryAtom);
   const askDelete = useAtomSet(pendingDeleteAtom);
   const item = entry.kind === 'phrase' ? entry.card : entry.mistake;
@@ -30,9 +30,7 @@ export function EntryDetail({ entry, now }: Props) {
       <dl className="text-caption m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5">
         <Fact term="Next review">{nextReviewLabel(item.next_review_at, item.status, now)}</Fact>
         <Fact term="Gap between reviews">{gapLabel(item.interval_days)}</Fact>
-        {entry.kind === 'mistake' && (
-          <Fact term="Kind">{categoryLabel(entry.mistake.category)}</Fact>
-        )}
+        <Fact term="Kind">{kindLabel(entry)}</Fact>
       </dl>
       <div className="flex flex-col gap-2">
         <EvidenceList entryRef={entryRef(entry)} />
@@ -42,7 +40,18 @@ export function EntryDetail({ entry, now }: Props) {
           </p>
         )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        {!isArchived && (
+          <Button
+            disabled={sayNow.isDisabled}
+            onClick={() => sayNow.onSay(entryRef(entry))}
+            size="sm"
+            tone="primary"
+          >
+            <Mic aria-hidden="true" />
+            Say it now
+          </Button>
+        )}
         {!isArchived && (
           <Button
             aria-label={`Archive ${label}`}

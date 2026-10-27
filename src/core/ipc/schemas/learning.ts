@@ -6,6 +6,7 @@ import type { LearningStatus } from '../bindings/LearningStatus';
 import type { MemoryUsageEvidence } from '../bindings/MemoryUsageEvidence';
 import type { MistakeRecord } from '../bindings/MistakeRecord';
 import type { PhraseCardRecord } from '../bindings/PhraseCardRecord';
+import type { PhraseKind } from '../bindings/PhraseKind';
 import type { UsageEventRecord } from '../bindings/UsageEventRecord';
 import type { UsageOutcome } from '../bindings/UsageOutcome';
 import { bindingSchema } from './binding-schema';
@@ -25,7 +26,11 @@ export const FocusCategorySchema = bindingSchema<FocusCategory>()(
 );
 
 export const UsageOutcomeSchema = bindingSchema<UsageOutcome>()(
-  Schema.Literals(['correct', 'incorrect', 'uncertain']),
+  Schema.Literals(['correct', 'with_help', 'incorrect', 'uncertain']),
+);
+
+const PhraseKindSchema = bindingSchema<PhraseKind>()(
+  Schema.Literals(['phrase', 'phrasal_verb', 'linking_phrase', 'pattern']),
 );
 
 const MistakeRecordSchema = bindingSchema<MistakeRecord>()(
@@ -52,6 +57,7 @@ export const PhraseCardRecordSchema = bindingSchema<PhraseCardRecord>()(
   Schema.Struct({
     id: Schema.Int,
     phrase: Schema.String,
+    kind: PhraseKindSchema,
     normalized_phrase: Schema.String,
     meaning_or_note: Schema.String,
     session_id: Schema.NullOr(Schema.Int),

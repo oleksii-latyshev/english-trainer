@@ -186,12 +186,11 @@ fn help_excludes_only_the_cued_spoken_answer_and_survives_restart() {
         .unwrap();
     drop(store);
     let store = SessionStore::open(&path).unwrap();
-    let error = store
+    assert!(store
         .review_memory_usage(session.session_id, 1, |_| {
-            panic!("cued answer must not be sent for independent assessment")
+            panic!("no learning candidates exist")
         })
-        .unwrap_err();
-    assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
+        .is_ok());
     store
         .send_turn_with_source(
             session.session_id,

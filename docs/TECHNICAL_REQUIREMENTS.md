@@ -321,7 +321,7 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   question are checked before and after preparation. No session lock during generation.
 - Prefetch writes no help exposure. Opening Frame, Phrases or Example first awaits the per-answer cue
   write; if it fails, help stays hidden with a recovery notice. The cue persists in SQLite and
-  excludes only that answer from independent spoken usage review.
+  makes that answer's correct uses count as "with help" in the spoken usage review (§9.2).
 - H opens Frame; 1/2/3 select Frame/Phrases/Example. Example supports Play and Hide and closes on
   capture. The optional Frame timer uses a 15 or 30 s deadline, cancels on capture, closure or
   question change, suppresses auto-listening without releasing the microphone and never starts
@@ -349,8 +349,8 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   repeats and modifiers. An open panel suspends hands-free end-of-turn and auto-listen idle expiry;
   dismissal and failure release only its own hold. Stop and Cancel stay usable. Selecting a word
   neither edits nor sends the answer. Late results are discarded by recording identity and question
-  scope. Help never plays TTS over the microphone. Cued answers are excluded from independent
-  evidence.
+  scope. Help never plays TTS over the microphone. Cued answers never count as independent
+  evidence; the usage review records their correct uses as "with help".
 
 ## 7. Sessions and input provenance
 
@@ -509,7 +509,11 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
   the learner's own words per gap (`conversation/recall.rs`).
 - **Memory review run:** up to six due items, answered in order. `start_memory_review` takes optional
   `warmup: true` to select up to three due phrases for a new run; either route resumes an existing run
-  intact. Safe nonempty saved cues are required for eligibility. A skipped item closes without a
+  intact. `start_item_review(item_type, item_id)` starts a run of that one non-archived item with a
+  safe cue (mistakes seen at least twice), even when it is not due. The run is marked on demand
+  (`memory_review_runs.is_on_demand`, schema v22, old rows 0): opening it changes no schedule, and
+  its answer skips only the "still due" check (archived and changed items are still rejected), then
+  is scored and scheduled like any review answer. An open run is returned unchanged. Safe nonempty saved cues are required for eligibility. A skipped item closes without a
   score, keeps its schedule, stays due, and its wording stays hidden. The first answer to an item is
   the one saved; later tries are practice only. A restored run with all items answered or skipped
   enters a closing state; warm-up cannot start the conversation until the finish write succeeds
@@ -540,12 +544,19 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
    earlier occurrences, phrases with provenance outside the session), 2+ words, ≤ 300 characters.
 2. **Source rejection:** reject a target whose wording appeared in the opening question, the preceding
    AI reply/question, earlier saved feedback or the question scaffold. Targets with a cue exposure at
-   or before the answer time are excluded. No eligible candidates → an empty assessment is saved
+   or before the answer time stay candidates, but their correct use is recorded as with help (3).
+   No eligible candidates → an empty assessment is saved
    without a provider call.
-3. **Review:** `UsageReviewEngine` returns per target `correct | incorrect | uncertain`, confidence
+3. **Review:** answers that used help are reviewed like the others. `UsageReviewEngine` returns per
+   target `correct | incorrect | uncertain`, confidence
    and a contiguous transcript excerpt (≤ 500 characters). Rust re-validates: confidence ≥ 0.9; the
    excerpt is an exact transcript substring containing the normalised target words; incorrect use must
-   quote the full target (or full original mistake wording). One in-flight review per turn.
+   quote the full target (or full original mistake wording). One in-flight review per turn. A
+   confident `correct` for an answer that used help, or for an item cued before the answer, is stored
+   as outcome `with_help` (`UsageOutcome`, a new value of the same text column, so older rows stay
+   valid). The provider cannot report `with_help`. Only `correct` counts as independent success:
+   `times_used_on_own`, `times_correct_afterwards`, streak, status, relapse and Eva's sunshine all
+   read `correct`, so `with_help` events change none of them.
 4. **Progression:** `times_correct_afterwards` counts distinct sessions with accepted correct evidence
    (plus a fixed pre-migration baseline). Streak = accepted correct sessions on separate days after the
    latest relapse. `new → learning` on first success; `learning → improving` after 2 sessions on
@@ -606,15 +617,19 @@ path. Rust owns every rule (context `eva_growth`).
   - Wrap-up: `get_session_wrapup`, `retry_session_wrapup`, `save_wrapup_phrases`.
   - Memory: `get_daily_recall_plan`, `submit_daily_recall`, `save_phrase_card`, `delete_phrase_card`,
     `delete_mistake`, `archive_learning_item`, `get_learning_memory`, `view_learning_memory`,
-    `start_memory_review`, `get_memory_review`, `submit_memory_recall`, `skip_memory_review_item`,
-    `finish_memory_review`, `prepare_review_material`, `get_review_material`, `reveal_review_phrase`,
+    `start_memory_review`, `start_item_review`, `get_memory_review`, `submit_memory_recall`,
+    `skip_memory_review_item`, `finish_memory_review`, `prepare_review_material`, `get_review_material`, `reveal_review_phrase`,
     `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.
     The library commands (`save_phrase_card`, `delete_phrase_card`, `delete_mistake`,
     `archive_learning_item`, `get_learning_memory`, `view_learning_memory`, `get_memory_usage_evidence`)
     belong to the `learning` context and fail with `IpcError`; `view_learning_memory` also records that
     the saved cues were shown. A phrase card reports `times_used_on_own`: the sessions with an
-    independent correct use (confidence at least 0.9); cued answers never count.
-    The review and usage commands (`start_memory_review`, `get_memory_review`, `submit_memory_recall`,
+    independent correct use (confidence at least 0.9); cued and helped answers never count. It also
+    carries `kind` (`phrase | phrasal_verb | linking_phrase | pattern`), computed on read by
+    `learning::phrase_kind` from the wording (a placeholder such as sb, sth, someone, something or X
+    makes a pattern; a listed connector a linking phrase; a verb plus up/out/off/on/in/down/over/back/
+    away/through/around a phrasal verb) and never stored.
+    The review and usage commands (`start_memory_review`, `start_item_review`, `get_memory_review`, `submit_memory_recall`,
     `skip_memory_review_item`, `finish_memory_review`, `prepare_review_material`,
     `get_review_material`, `reveal_review_phrase`, `review_practice_memory_usage`,
     `get_practice_memory_usage`) belong to the `learning` context too and fail with `IpcError`

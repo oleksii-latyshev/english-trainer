@@ -8,6 +8,7 @@ import {
   ReviewMaterialsSchema,
 } from '@/core/ipc';
 import type {
+  LearningItemRef,
   LearningMemoryFailure,
   RecallResult,
   ReviewItemRef,
@@ -19,6 +20,9 @@ type RecallInput = ReviewItemRef & { readonly transcript: string };
 
 type ReviewRunServiceShape = {
   readonly start: (isWarmup: boolean) => Effect.Effect<ReviewRun | null, LearningMemoryFailure>;
+  readonly startItem: (
+    ref: LearningItemRef,
+  ) => Effect.Effect<ReviewRun | null, LearningMemoryFailure>;
   readonly active: Effect.Effect<ReviewRun | null, LearningMemoryFailure>;
   readonly submit: (input: RecallInput) => Effect.Effect<RecallResult, LearningMemoryFailure>;
   readonly skip: (ref: ReviewItemRef) => Effect.Effect<ReviewRun, LearningMemoryFailure>;
@@ -46,6 +50,11 @@ export class ReviewRunService extends Context.Service<ReviewRunService, ReviewRu
       return {
         start: (isWarmup) =>
           invokeCommand(ipc, 'start_memory_review', NullableRun, { warmup: isWarmup }),
+        startItem: ({ itemType, itemId }) =>
+          invokeCommand(ipc, 'start_item_review', NullableRun, {
+            item_type: itemType,
+            item_id: itemId,
+          }),
         active: invokeCommand(ipc, 'get_memory_review', NullableRun),
         submit: ({ runId, itemType, itemId, transcript }) =>
           invokeCommand(ipc, 'submit_memory_recall', MemoryRecallResultSchema, {

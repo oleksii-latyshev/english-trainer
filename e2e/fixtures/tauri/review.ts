@@ -5,6 +5,7 @@ import type {
   ReviewMaterials,
   SpeechEngineStatus,
 } from '@/core/ipc';
+import { reviewMemory, reviewMemoryWithDuePhrase } from '../../data/review-memory';
 import { unavailableSpeechStatus } from '../../data/sessions';
 
 export type ReviewOptions = {
@@ -31,51 +32,6 @@ declare global {
     };
   }
 }
-
-export const reviewMemory: LearningMemoryView = {
-  mistakes: [],
-  due_count: 1,
-  phrase_cards: [
-    {
-      id: 51,
-      phrase: 'find a compromise',
-      normalized_phrase: 'find a compromise',
-      meaning_or_note: 'Agree on a solution.',
-      session_id: null,
-      sequence: null,
-      created_at: 1_800_000_000_000,
-      last_reviewed_at: null,
-      next_review_at: 1_800_000_000_000,
-      interval_days: 1,
-      ease_factor: 2.5,
-      status: 'learning',
-      is_due: true,
-      times_used_on_own: 0,
-    },
-  ],
-};
-
-export const reviewMemoryWithDuePhrase: LearningMemoryView = {
-  ...reviewMemory,
-  due_count: 1,
-  phrase_cards: [
-    {
-      ...reviewMemory.phrase_cards[0],
-      is_due: false,
-      last_reviewed_at: 1_800_000_000_000,
-      next_review_at: 1_800_086_400_000,
-      interval_days: 2,
-      status: 'improving',
-    },
-    {
-      ...reviewMemory.phrase_cards[0],
-      id: 52,
-      phrase: 'raise a concern',
-      normalized_phrase: 'raise a concern',
-      meaning_or_note: 'Mention a problem or worry.',
-    },
-  ],
-};
 
 export async function installReview(page: Page, options: ReviewOptions = {}) {
   const run: MemoryReviewRun = {
@@ -236,6 +192,10 @@ export async function installReview(page: Page, options: ReviewOptions = {}) {
         get_learning_memory: () => seed.memory,
         view_learning_memory: () => seed.memory,
         start_memory_review: startReview,
+        start_item_review: (args) => {
+          state.calls.push(`start_item_review:${String(args.item_type)}:${String(args.item_id)}`);
+          return state.run;
+        },
         prepare_review_material: prepare,
         get_review_material: () => state.materials,
         reveal_review_phrase: reveal,
@@ -252,6 +212,13 @@ export async function installReview(page: Page, options: ReviewOptions = {}) {
           return null;
         },
         get_memory_review: () => null,
+        get_memory_usage_evidence: (args) => ({
+          item_type: args.item_type,
+          item_id: args.item_id,
+          distinct_session_count: 0,
+          streak: 0,
+          events: [],
+        }),
         transcribe_audio: () => ({
           text: 'We can find a compromise.',
           language: 'en',

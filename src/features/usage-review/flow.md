@@ -15,7 +15,7 @@ so anything keyed to the capture's transcript would never match.
 | :--- | :--- |
 | the answer belongs to the open session | an answer of an earlier session is never reviewed |
 | voice session, not mistake practice | typed and rehearsed answers are not independent use |
-| the saved input source is `voice` and no help was used | only unaided speech counts as evidence |
+| the saved input source is `voice` | typed and edited answers are not spoken evidence; a helped answer is reviewed too and recorded as with help |
 | the first two answers only | the same bound as the Rust command |
 | not while Say it again or spoken recall is active | those flows own the microphone |
 
@@ -50,5 +50,6 @@ sequenceDiagram
     end
 ```
 
-An incorrect use is shown as information in amber, never red. No findings means no eligible target,
+A correct use in an answer that used help, or of an item Eva cued before the turn, is recorded as
+"with help": shown in Memory, never counted as use on your own. An incorrect use is shown as information in amber, never red. No findings means no eligible target,
 and no progress is recorded.

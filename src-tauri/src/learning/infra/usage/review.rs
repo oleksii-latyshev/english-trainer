@@ -3,8 +3,7 @@ use super::read::{item_status, item_target_and_status, prepare_usage_review_on, 
 use super::write::{save_turn_usage_assessment, UsageAssessmentCommit};
 use crate::learning::infra::ids::{now_ms, storage};
 use crate::learning::usage_rules::{
-    credit_decision, help_used, not_conversation, not_spoken, stale_review, unknown_turn,
-    UsagePreparation,
+    credit_decision, not_conversation, not_spoken, stale_review, unknown_turn, UsagePreparation,
 };
 use crate::learning::{
     LearningError, LearningItemType, LearningStatus, TurnUsageAssessment, UsageAssessmentFinding,
@@ -68,12 +67,6 @@ pub(crate) fn prepare_review(
         .map_err(storage("read"))?
     {
         return Err(not_spoken());
-    }
-    if database
-        .has_answer_help_used(session_id, sequence)
-        .map_err(storage("read"))?
-    {
-        return Err(help_used());
     }
     if let Some(saved) = read_saved_assessment(database, active_session_id, session_id, sequence)? {
         return Ok(UsagePreparation::Saved(saved));
@@ -156,6 +149,9 @@ pub(crate) fn finalize_review(
     let mut findings = Vec::new();
     let mut events = Vec::new();
     let assessed_at = now_ms();
+    let used_help = database
+        .has_answer_help_used(session_id, sequence)
+        .map_err(storage("read"))?;
     for candidate in &request.candidates {
         let finding = response
             .findings
@@ -179,7 +175,8 @@ pub(crate) fn finalize_review(
             candidate.item_id,
             &candidate.target,
         )?;
-        let (outcome, credited) = credit_decision(reported, confidence, was_cued, unchanged);
+        let (outcome, credited) =
+            credit_decision(reported, confidence, was_cued || used_help, unchanged);
         if credited {
             events.push(UsageEventRecord {
                 id: 0,

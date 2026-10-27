@@ -17,6 +17,8 @@ export class ReviewPage {
   readonly finishButton: Locator;
   readonly endReviewButton: Locator;
   readonly lateProvisional: Locator;
+  readonly doneHeading: Locator;
+  readonly backToMemoryButton: Locator;
   private readonly spokenReviewRegion: Locator;
 
   constructor(page: Page) {
@@ -36,6 +38,11 @@ export class ReviewPage {
     this.finishButton = page.getByRole('button', { name: 'Finish', exact: true });
     this.endReviewButton = page.getByRole('button', { name: 'End review' });
     this.lateProvisional = page.getByText('A late provisional suggestion');
+    this.doneHeading = page.getByRole('heading', { name: 'Review done' });
+    this.backToMemoryButton = page
+      .locator('section')
+      .filter({ has: this.doneHeading })
+      .getByRole('button', { name: 'Back to Memory' });
   }
 
   async reviewNow(): Promise<void> {

@@ -29,6 +29,10 @@ export function MemoryRoute() {
       isStartingMistakePractice={practiceTag === 'starting'}
       mistakePracticeError={practiceError}
       onStartMistakePractice={() => registry.set(startMistakePracticeAtom, undefined)}
+      onSayNow={(ref) => {
+        review.beginItem(ref);
+        void navigate({ to: '/memory/review' });
+      }}
       onStartReview={() => {
         review.begin('review');
         void navigate({ to: '/memory/review' });

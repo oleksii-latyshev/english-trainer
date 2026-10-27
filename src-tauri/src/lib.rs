@@ -247,6 +247,7 @@ pub fn run() {
             learning::commands::get_learning_memory,
             learning::commands::view_learning_memory,
             learning::review_commands::start_memory_review,
+            learning::review_commands::start_item_review,
             learning::review_commands::get_memory_review,
             learning::review_commands::prepare_review_material,
             learning::review_commands::get_review_material,

@@ -203,6 +203,7 @@ fn validate_usage_response(
         }
 
         match outcome {
+            UsageOutcome::WithHelp => return Err(()),
             UsageOutcome::Correct => {
                 if excerpt.is_empty() || !request.transcript.contains(excerpt) {
                     return Err(());

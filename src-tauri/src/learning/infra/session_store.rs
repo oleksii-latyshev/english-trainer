@@ -104,6 +104,16 @@ impl ReviewRunStore for SessionLearningStore {
             .map_err(storage("update"))
     }
 
+    fn start_item(
+        &self,
+        item_type: LearningItemType,
+        item_id: u64,
+    ) -> Result<Option<MemoryReviewRun>, LearningError> {
+        self.sessions.with_connection(|connection| {
+            review_runs::start_item_run(connection, item_type, item_id)
+        })
+    }
+
     fn active(&self) -> Result<Option<MemoryReviewRun>, LearningError> {
         self.sessions
             .with_connection(|connection| review_runs::active_run(connection))

@@ -9,7 +9,7 @@ import {
 } from '../../helpers/library-copy';
 import { usedOnOwnCount } from '../../helpers/memory-entries';
 import { isSelectingInside } from '../../helpers/text-selection';
-import type { MemoryEntry } from '../../types';
+import type { MemoryEntry, SayNow } from '../../types';
 import { EntryDetail } from '../entry-detail';
 import { StatusDot } from '../status-dot';
 import { memoryRow } from './styles';
@@ -19,6 +19,7 @@ type Props = {
   isOpen: boolean;
   now: number;
   onToggle: () => void;
+  sayNow: SayNow;
 };
 
 function EntryText({ entry }: { entry: MemoryEntry }) {
@@ -38,7 +39,7 @@ function EntryText({ entry }: { entry: MemoryEntry }) {
   );
 }
 
-export function MemoryRow({ entry, isOpen, now, onToggle }: Props) {
+export function MemoryRow({ entry, isOpen, now, onToggle, sayNow }: Props) {
   const detailId = useId();
   const item = entry.kind === 'phrase' ? entry.card : entry.mistake;
   const source =
@@ -96,7 +97,7 @@ export function MemoryRow({ entry, isOpen, now, onToggle }: Props) {
         </span>
       </button>
       <div hidden={!isOpen} id={detailId}>
-        {isOpen && <EntryDetail entry={entry} now={now} />}
+        {isOpen && <EntryDetail entry={entry} now={now} sayNow={sayNow} />}
       </div>
     </li>
   );

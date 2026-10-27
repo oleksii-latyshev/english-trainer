@@ -17,7 +17,7 @@ import {
   shownCountsAtom,
   shownEntriesAtom,
 } from '../../model/atoms';
-import type { MemoryTab } from '../../types';
+import type { MemoryTab, SayNow } from '../../types';
 import { MemoryRow } from '../memory-row';
 
 const TABS: readonly { readonly id: MemoryTab; readonly label: string }[] = [
@@ -37,7 +37,7 @@ function EmptyList({ tab }: { tab: MemoryTab }) {
   );
 }
 
-function TabList({ tab }: { tab: MemoryTab }) {
+function TabList({ tab, sayNow }: { tab: MemoryTab; sayNow: SayNow }) {
   const shown = useAtomValue(shownEntriesAtom);
   const [openKey, setOpenKey] = useAtom(openEntryKeyAtom);
   const entries = entriesOfTab(shown, tab);
@@ -65,6 +65,7 @@ function TabList({ tab }: { tab: MemoryTab }) {
             key={key}
             now={now}
             onToggle={() => setOpenKey(openKey === key ? null : key)}
+            sayNow={sayNow}
           />
         );
       })}
@@ -72,7 +73,7 @@ function TabList({ tab }: { tab: MemoryTab }) {
   );
 }
 
-export function LibraryList() {
+export function LibraryList({ sayNow }: { sayNow: SayNow }) {
   const library = useAtomValue(libraryAtom);
   const retry = useAtomRefresh(openedLearningMemoryAtom);
   const [tab, setTab] = useAtom(activeTabAtom);
@@ -128,7 +129,7 @@ export function LibraryList() {
             aria-label={`${id === 'phrases' ? 'Phrases' : 'Mistakes'} in Memory`}
             className="overflow-hidden"
           >
-            <TabList tab={id} />
+            <TabList sayNow={sayNow} tab={id} />
           </GlassPanel>
         </TabsPanel>
       ))}

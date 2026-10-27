@@ -5,7 +5,7 @@ export const evidenceTag = tv({
   variants: {
     tone: {
       own: 'bg-warn text-on-warn',
-      slip: 'bg-quiet-line text-quiet-foreground',
+      quiet: 'bg-quiet-line text-quiet-foreground',
     },
   },
 });

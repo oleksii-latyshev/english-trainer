@@ -1,4 +1,11 @@
-import type { FocusCategory, LearningStatus, MistakeRecord, PhraseCardRecord } from '@/core/ipc';
+import type {
+  FocusCategory,
+  LearningStatus,
+  MistakeRecord,
+  PhraseCardRecord,
+  PhraseKind,
+} from '@/core/ipc';
+import type { MemoryEntry } from '../../types';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -19,8 +26,21 @@ export function statusLabel(status: LearningStatus): string {
   return capitalise(status);
 }
 
-export function categoryLabel(category: FocusCategory): string {
+function categoryLabel(category: FocusCategory): string {
   return capitalise(category);
+}
+
+const PHRASE_KIND_LABELS: Readonly<Record<PhraseKind, string>> = {
+  phrase: 'Phrase',
+  phrasal_verb: 'Phrasal verb',
+  linking_phrase: 'Linking phrase',
+  pattern: 'Pattern',
+};
+
+export function kindLabel(entry: MemoryEntry): string {
+  return entry.kind === 'phrase'
+    ? PHRASE_KIND_LABELS[entry.card.kind]
+    : categoryLabel(entry.mistake.category);
 }
 
 export function whenLabel(timestampMs: number, now: number): string {

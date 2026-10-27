@@ -12,6 +12,7 @@ export function MemoryScreen({
   isSessionOpen,
   isStartingMistakePractice,
   mistakePracticeError,
+  onSayNow,
   onStartReview,
   onStartMistakePractice,
 }: MemoryScreenProps) {
@@ -39,7 +40,7 @@ export function MemoryScreen({
         />
         <StatusSummary />
       </div>
-      <LibraryList />
+      <LibraryList sayNow={{ isDisabled: isAudioBusy, onSay: onSayNow }} />
       <DeleteMemoryDialog />
     </div>
   );

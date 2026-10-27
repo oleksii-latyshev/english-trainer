@@ -6,6 +6,7 @@ import {
   evidenceDate,
   evidenceSource,
   evidenceTone,
+  isShownEvidence,
   evidenceTag as tagText,
 } from '../../helpers/evidence-copy';
 import type { EntryRef } from '../../types';
@@ -31,14 +32,15 @@ export function EvidenceList({ entryRef }: Props) {
             </Button>
           </div>
         ),
-        onSuccess: ({ value }) =>
-          value.events.length === 0 ? (
+        onSuccess: ({ value }) => {
+          const events = value.events.filter(isShownEvidence);
+          return events.length === 0 ? (
             <p className="text-caption text-faint">
               Nothing yet. Use this wording in a conversation and it shows up here.
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {value.events.map((event) => (
+              {events.map((event) => (
                 <li
                   className="text-caption flex items-baseline gap-2.5 leading-snug"
                   key={event.id}
@@ -55,7 +57,8 @@ export function EvidenceList({ entryRef }: Props) {
                 </li>
               ))}
             </ul>
-          ),
+          );
+        },
       })}
     </section>
   );

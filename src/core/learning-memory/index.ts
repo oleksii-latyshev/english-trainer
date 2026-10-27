@@ -18,6 +18,7 @@ export { runtime as learningMemoryRuntime } from './model/runtime';
 export { LearningMemoryService } from './services/learning-memory-service';
 export { ReviewRunService } from './services/review-run-service';
 export type {
+  LearningItemRef,
   LearningMemory,
   LearningMemoryFailure,
   RecallResult,

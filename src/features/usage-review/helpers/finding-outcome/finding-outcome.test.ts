@@ -31,6 +31,13 @@ describe('findingOutcome', () => {
     });
   });
 
+  it('shows a use with help as neutral information, never as progress', () => {
+    expect(findingOutcome(aFinding({ outcome: 'with_help' }))).toEqual({
+      label: 'Used with help / no progress',
+      tone: 'neutral',
+    });
+  });
+
   it('keeps an uncertain finding neutral', () => {
     expect(findingOutcome(aFinding({ outcome: 'uncertain', credited: false })).label).toBe(
       'Uncertain / no progress',

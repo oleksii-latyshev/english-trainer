@@ -1,5 +1,5 @@
 import { type AsyncResult, type Atom, AtomRegistry } from 'effect/reactivity';
-import { learningMemoryRuntime } from '@/core/learning-memory';
+import { type LearningItemRef, learningMemoryRuntime } from '@/core/learning-memory';
 import { beginReview } from '../model/begin-review';
 import { materialsStateAtom } from '../model/materials-atoms';
 import { captureRuntime } from '../model/runtime';
@@ -18,14 +18,18 @@ const SILENT_MICROPHONE: Microphone = {
   liveTexts: [],
 };
 
-function openReview(backend: Backend, mode: ReviewMode = 'review') {
+function openReview(
+  backend: Backend,
+  mode: ReviewMode = 'review',
+  target: LearningItemRef | null = null,
+) {
   const registry = AtomRegistry.make({
     initialValues: [
       [learningMemoryRuntime.layer, learningLayer(backend)],
       [captureRuntime.layer, captureLayer(SILENT_MICROPHONE)],
     ],
   });
-  beginReview(registry, mode);
+  beginReview(registry, mode, target);
   registry.mount(reviewViewAtom);
   registry.mount(sessionAtom);
   registry.mount(materialsStateAtom);
@@ -42,8 +46,12 @@ export async function until(check: () => boolean) {
   throw new Error('the review never reached the expected state');
 }
 
-export async function opened(backend: Backend, mode: ReviewMode = 'review') {
-  const registry = openReview(backend, mode);
+export async function opened(
+  backend: Backend,
+  mode: ReviewMode = 'review',
+  target: LearningItemRef | null = null,
+) {
+  const registry = openReview(backend, mode, target);
   await until(() => registry.get(reviewViewAtom).tag !== 'loading');
   return registry;
 }

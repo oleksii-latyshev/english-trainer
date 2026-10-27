@@ -25,7 +25,6 @@ pub enum UsageRejection {
     OutOfRange,
     AlreadyRunning,
     NotSpoken,
-    HelpUsed,
     NotConversation,
     UnknownTurn,
     Stale,
@@ -49,9 +48,6 @@ impl UsageRejection {
             Self::AlreadyRunning => "A memory usage review is already running for this answer.",
             Self::NotSpoken => {
                 "Typed or edited answers cannot count as independent spoken memory evidence."
-            }
-            Self::HelpUsed => {
-                "This answer used help. Independent evidence needs an answer without help."
             }
             Self::NotConversation => "Usage review is only available for conversation sessions.",
             Self::UnknownTurn => {
@@ -103,10 +99,6 @@ pub fn not_spoken() -> LearningError {
     reject(UsageRejection::NotSpoken)
 }
 
-pub fn help_used() -> LearningError {
-    reject(UsageRejection::HelpUsed)
-}
-
 pub fn not_conversation() -> LearningError {
     reject(UsageRejection::NotConversation)
 }
@@ -114,7 +106,7 @@ pub fn not_conversation() -> LearningError {
 pub fn credit_decision(
     reported: UsageOutcome,
     confidence: f64,
-    was_cued_before_turn: bool,
+    was_helped: bool,
     is_target_unchanged: bool,
 ) -> (UsageOutcome, bool) {
     let is_confident = confidence >= MIN_CONFIDENCE;
@@ -122,13 +114,12 @@ pub fn credit_decision(
         return (UsageOutcome::Uncertain, false);
     }
     match reported {
-        UsageOutcome::Correct if was_cued_before_turn || !is_confident => {
-            (UsageOutcome::Uncertain, false)
-        }
+        UsageOutcome::Correct if !is_confident => (UsageOutcome::Uncertain, false),
+        UsageOutcome::Correct if was_helped => (UsageOutcome::WithHelp, true),
         UsageOutcome::Correct => (UsageOutcome::Correct, true),
         UsageOutcome::Incorrect if !is_confident => (UsageOutcome::Uncertain, false),
         UsageOutcome::Incorrect => (UsageOutcome::Incorrect, true),
-        UsageOutcome::Uncertain => (UsageOutcome::Uncertain, false),
+        UsageOutcome::WithHelp | UsageOutcome::Uncertain => (UsageOutcome::Uncertain, false),
     }
 }
 
@@ -185,6 +176,7 @@ pub fn validate_findings(
                     return Err(invalid());
                 }
             }
+            UsageOutcome::WithHelp => return Err(invalid()),
             UsageOutcome::Uncertain => {
                 if !finding.exact_excerpt.is_empty()
                     && !request.transcript.contains(&finding.exact_excerpt)
@@ -200,6 +192,7 @@ pub fn validate_findings(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::learning::is_independent_success;
 
     #[test]
     fn a_confident_correct_use_without_an_earlier_cue_is_credited() {
@@ -210,9 +203,38 @@ mod tests {
     }
 
     #[test]
-    fn a_cued_answer_never_counts_as_independent_evidence() {
+    fn a_helped_or_cued_correct_use_is_recorded_as_with_help() {
         assert_eq!(
             credit_decision(UsageOutcome::Correct, 0.99, true, true),
+            (UsageOutcome::WithHelp, true)
+        );
+    }
+
+    #[test]
+    fn a_with_help_use_is_never_independent_evidence() {
+        assert!(!is_independent_success(UsageOutcome::WithHelp, 1.0));
+    }
+
+    #[test]
+    fn a_helped_use_below_the_confidence_floor_is_not_recorded() {
+        assert_eq!(
+            credit_decision(UsageOutcome::Correct, 0.5, true, true),
+            (UsageOutcome::Uncertain, false)
+        );
+    }
+
+    #[test]
+    fn a_changed_target_is_never_recorded_even_with_help() {
+        assert_eq!(
+            credit_decision(UsageOutcome::Correct, 0.99, true, false),
+            (UsageOutcome::Uncertain, false)
+        );
+    }
+
+    #[test]
+    fn the_provider_cannot_report_with_help() {
+        assert_eq!(
+            credit_decision(UsageOutcome::WithHelp, 0.99, false, true),
             (UsageOutcome::Uncertain, false)
         );
     }

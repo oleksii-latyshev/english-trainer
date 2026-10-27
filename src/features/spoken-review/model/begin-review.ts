@@ -1,4 +1,5 @@
 import type { AtomRegistry } from 'effect/reactivity';
+import type { LearningItemRef } from '@/core/learning-memory';
 import type { ReviewMode } from '../types';
 import {
   captureOutcomeAtom,
@@ -7,10 +8,15 @@ import {
   lastTranscriptAtom,
   liveTextAtom,
 } from './capture-state';
-import { reviewModeAtom, summaryReachedAtom } from './session-atoms';
+import { reviewModeAtom, reviewTargetAtom, summaryReachedAtom } from './session-atoms';
 
-export function beginReview(registry: AtomRegistry.AtomRegistry, mode: ReviewMode) {
+export function beginReview(
+  registry: AtomRegistry.AtomRegistry,
+  mode: ReviewMode,
+  target: LearningItemRef | null = null,
+) {
   registry.set(reviewModeAtom, mode);
+  registry.set(reviewTargetAtom, target);
   registry.set(summaryReachedAtom, false);
   registry.set(captureOutcomeAtom, IDLE_OUTCOME);
   registry.set(liveTextAtom, '');

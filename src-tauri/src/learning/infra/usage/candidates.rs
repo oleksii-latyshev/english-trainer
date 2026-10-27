@@ -39,8 +39,8 @@ pub(crate) fn eligible_usage_candidates_on(
         )
         .optional()?;
 
-    let (transcript, turn_time) = match transcript {
-        Some((t, time)) if !t.trim().is_empty() => (t, time),
+    let transcript = match transcript {
+        Some((t, _)) if !t.trim().is_empty() => t,
         _ => return Ok(Vec::new()),
     };
 
@@ -137,9 +137,6 @@ pub(crate) fn eligible_usage_candidates_on(
         if is_rejected_by_sources(&corr, &rejected_refs) {
             continue;
         }
-        if was_exposed_before_turn(connection, sql_sid, ("mistake", id), turn_time)? {
-            continue;
-        }
         candidates.push(UsageCandidate {
             item_type: LearningItemType::Mistake,
             item_id: safe_id,
@@ -179,9 +176,6 @@ pub(crate) fn eligible_usage_candidates_on(
         if is_rejected_by_sources(&phrase, &rejected_refs) {
             continue;
         }
-        if was_exposed_before_turn(connection, sql_sid, ("phrase", id), turn_time)? {
-            continue;
-        }
         candidates.push(UsageCandidate {
             item_type: LearningItemType::Phrase,
             item_id: safe_id,
@@ -194,19 +188,4 @@ pub(crate) fn eligible_usage_candidates_on(
     }
 
     Ok(candidates)
-}
-
-fn was_exposed_before_turn(
-    connection: &rusqlite::Connection,
-    session_id: i64,
-    identity: (&str, i64),
-    turn_time: i64,
-) -> rusqlite::Result<bool> {
-    connection.query_row(
-        "SELECT EXISTS(SELECT 1 FROM session_cue_exposures WHERE session_id = ?1
-         AND exposed_at <= ?2 AND ((item_type IS NULL AND item_id IS NULL)
-           OR (item_type = ?3 AND item_id = ?4)))",
-        params![session_id, turn_time, identity.0, identity.1],
-        |row| row.get(0),
-    )
 }

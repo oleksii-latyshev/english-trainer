@@ -66,6 +66,15 @@ impl ReviewService {
         self.runs.start(is_warmup)
     }
 
+    pub fn start_item(
+        &self,
+        item_type: LearningItemType,
+        item_id: u64,
+    ) -> Result<Option<MemoryReviewRun>, LearningError> {
+        validate_review_id(item_id)?;
+        self.runs.start_item(item_type, item_id)
+    }
+
     pub fn active(&self) -> Result<Option<MemoryReviewRun>, LearningError> {
         self.runs.active()
     }

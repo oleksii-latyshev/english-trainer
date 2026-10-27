@@ -1,13 +1,26 @@
 import type { UsageEventRecord } from '@/core/ipc';
 
-export type EvidenceTone = 'own' | 'slip';
+export type EvidenceTone = 'own' | 'quiet';
 
-export function evidenceTone(event: Pick<UsageEventRecord, 'outcome'>): EvidenceTone {
-  return event.outcome === 'correct' ? 'own' : 'slip';
+type Outcome = Pick<UsageEventRecord, 'outcome'>;
+
+export function isShownEvidence(event: Outcome): boolean {
+  return event.outcome !== 'uncertain';
 }
 
-export function evidenceTag(event: Pick<UsageEventRecord, 'outcome'>): string {
-  return evidenceTone(event) === 'own' ? 'On your own' : 'Slipped back';
+export function evidenceTone(event: Outcome): EvidenceTone {
+  return event.outcome === 'correct' ? 'own' : 'quiet';
+}
+
+export function evidenceTag(event: Outcome): string {
+  switch (event.outcome) {
+    case 'correct':
+      return 'On your own';
+    case 'with_help':
+      return 'With help';
+    default:
+      return 'Slipped back';
+  }
 }
 
 export function evidenceDate(timestampMs: number): string {

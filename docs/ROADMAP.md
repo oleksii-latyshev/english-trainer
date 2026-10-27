@@ -58,9 +58,6 @@ The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one 
 
 Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in the migration plan.
 
-- **Memory details** — "Say it now" on an opened phrase or mistake (spoken practice of one item), a
-  kind per phrase (phrase, phrasal verb, linking phrase, pattern) and a "With help" evidence tag
-  beside "On your own" (cued answers are not stored as evidence yet).
 - **Talk details** (screen and turn loop, #74) — the canvas boards Main, TalkThinking, TalkError and
   TalkLight were not reachable while the screen was built, so it follows [DESIGN](DESIGN.md) and the
   tokens. Still to compare with the boards on the Mac: hands-free as a pill in the header (it is a
@@ -86,6 +83,8 @@ Ordered by expected value; start only with real usage data.
 6. **Windows build** — Gemini as the provider; needs a Windows CI job and installer.
 7. **4/3/2 retelling drill.**
 8. **Pronunciation** — shadowing feedback, later phoneme-level scoring as a separate pipeline.
+9. **"Rephrased" evidence** — a Memory tag for when the learner avoided the target wording on
+   purpose. It needs a new outcome from the usage review, so it follows the With help tag.
 
 ## Decisions
 
