@@ -81,7 +81,7 @@ export const FinishedSessionSchema = bindingSchema<FinishedPracticeSession>()(
     target_turns: Identifier,
     duration_ms: Count,
     topic_label: Schema.String,
-    duration_goal_seconds: Count,
+    duration_goal_seconds: Schema.NullOr(Count),
     numbers: SessionNumbersSchema,
     phrases: Schema.Array(WrapupPhraseSchema),
     recurring_mistakes: Schema.Array(RecurringMistakeSchema),

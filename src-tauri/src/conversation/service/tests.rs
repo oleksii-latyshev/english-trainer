@@ -107,7 +107,7 @@ fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
     assert!(started.is_mistake_practice);
     assert_eq!(started.target_turns, 5);
     assert_eq!(started.topic_label, "Usual mistakes");
-    assert_eq!(started.duration_goal_seconds, 300);
+    assert_eq!(started.duration_goal_seconds, Some(300));
     assert_eq!(started.practice_phase, PracticePhase::Speaking);
     assert!(store
         .lock()
@@ -442,12 +442,12 @@ fn practice_start_options_persist_and_active_reopen_starts_paused() {
             practice_mode: None,
             topic_id: Some(topics::TOPIC_PLANS_STORIES.into()),
             topic_custom: None,
-            duration_goal_seconds: Some(300),
+            duration_goal_seconds: Some(Some(300)),
         }))
         .unwrap();
     assert_eq!(session.topic_id, topics::TOPIC_PLANS_STORIES);
     assert_eq!(session.topic_label, "Plans & stories");
-    assert_eq!(session.duration_goal_seconds, 300);
+    assert_eq!(session.duration_goal_seconds, Some(300));
     assert_eq!(session.active_duration_ms, 0);
     assert!(!session.is_clock_running);
     store.set_practice_clock(session.session_id, true).unwrap();
@@ -476,7 +476,7 @@ fn practice_start_options_persist_and_active_reopen_starts_paused() {
     let resumed = reopened.get_active().unwrap().unwrap();
     assert_eq!(resumed.topic_id, session.topic_id);
     assert_eq!(resumed.topic_label, session.topic_label);
-    assert_eq!(resumed.duration_goal_seconds, 300);
+    assert_eq!(resumed.duration_goal_seconds, Some(300));
     assert_eq!(resumed.active_duration_ms, checkpoint.active_duration_ms);
     assert!(!resumed.is_clock_running);
     assert_eq!(
@@ -486,7 +486,7 @@ fn practice_start_options_persist_and_active_reopen_starts_paused() {
     let finished = reopened.finish(session.session_id).unwrap();
     assert_eq!(finished.duration_ms, 2_000);
     assert_eq!(finished.topic_label, "Plans & stories");
-    assert_eq!(finished.duration_goal_seconds, 300);
+    assert_eq!(finished.duration_goal_seconds, Some(300));
     std::fs::remove_file(path).unwrap();
 }
 
@@ -498,7 +498,7 @@ fn finishing_a_new_session_keeps_its_zero_active_duration() {
             practice_mode: None,
             topic_id: Some(topics::TOPIC_DAILY_LIFE.into()),
             topic_custom: None,
-            duration_goal_seconds: Some(600),
+            duration_goal_seconds: Some(Some(600)),
         }))
         .unwrap();
     let finished = store.finish(session.session_id).unwrap();
@@ -924,6 +924,7 @@ fn the_profile_merges_with_the_manual_glossary_and_clearing_it_removes_its_terms
         .unwrap();
     store
         .store_personal_profile(&PersonalProfile {
+            name: String::new(),
             role: "Engineer".into(),
             stack: "Rust, Tauri".into(),
             interests: "Tauri, hiking".into(),
@@ -986,7 +987,7 @@ fn migration_from_version_fourteen_keeps_sessions_turns_glossary_and_retry_evide
     assert_eq!(resumed.session_id, sid);
     assert_eq!(resumed.topic_id, topics::TOPIC_FREE_CONVERSATION);
     assert_eq!(resumed.topic_label, "Free conversation");
-    assert_eq!(resumed.duration_goal_seconds, 600);
+    assert_eq!(resumed.duration_goal_seconds, Some(600));
     assert_eq!(resumed.active_duration_ms, 0);
     assert_eq!(
         store.dialogue(sid).unwrap().turns[0].learner,

@@ -1,8 +1,8 @@
 # About you
 
-The Settings row "About you": role, stack, interests and goals (150 characters each, all optional).
-Rust feeds the saved profile into Eva's prompts and into the speech glossary; the UI only reads and
-edits it.
+The Settings row "About you": a name (40 characters), role, stack, interests and goals (150 characters each, all optional).
+Rust feeds the saved profile, without the name, into Eva's prompts and into the speech glossary; the
+UI only reads and edits it. The Start greeting reads the trimmed name through `learnerNameAtom`.
 
 ## Read the profile
 
@@ -51,8 +51,8 @@ sequenceDiagram
     Component->>Atoms: draft = saved profile
     Learner->>Component: types, clicks Save profile
     Component->>Atoms: save(draft)
-    alt a field has more than 150 characters
-        Atoms-->>Component: ProfileTooLong, "Each field must be 150 characters or fewer." (Rust is not called)
+    alt a field is over its limit (name 40, others 150)
+        Atoms-->>Component: ProfileTooLong, "Name must be 40 characters or fewer." (Rust is not called)
     else
         Atoms->>Service: save(draft)
         Service->>Ipc: invoke("save_personal_profile", { profile })

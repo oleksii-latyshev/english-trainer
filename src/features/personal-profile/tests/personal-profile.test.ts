@@ -3,11 +3,16 @@ import { Effect, Layer } from 'effect';
 import { AsyncResult, AtomRegistry, Reactivity } from 'effect/reactivity';
 import { Ipc, IpcDecodeError, IpcError, type PersonalProfile } from '@/core/ipc';
 import { ProfileTooLong } from '../errors';
-import { personalProfileAtom, profileDraftAtom, savePersonalProfileAtom } from '../model/atoms';
+import {
+  learnerNameAtom,
+  personalProfileAtom,
+  profileDraftAtom,
+  savePersonalProfileAtom,
+} from '../model/atoms';
 import { runtime } from '../model/runtime';
 import { PersonalProfileService } from '../services/personal-profile-service';
 
-const EMPTY: PersonalProfile = { role: '', stack: '', interests: '', goals: '' };
+const EMPTY: PersonalProfile = { name: '', role: '', stack: '', interests: '', goals: '' };
 
 type FakeRust = {
   readonly calls: Array<{ readonly command: string; readonly args: unknown }>;
@@ -77,6 +82,13 @@ it('saves the profile and shows the stored result', async () => {
   expect(rust.calls.find((call) => call.command === 'save_personal_profile')?.args).toEqual({
     profile: edited,
   });
+});
+
+it('exposes the trimmed name for the greeting', async () => {
+  const { registry } = makeRegistry({ ...EMPTY, name: '  Oleksii ' });
+  registry.mount(learnerNameAtom);
+  await settledProfile(registry);
+  expect(registry.get(learnerNameAtom)).toBe('Oleksii');
 });
 
 it('keeps the shown profile and reports the failure when a save is rejected', async () => {

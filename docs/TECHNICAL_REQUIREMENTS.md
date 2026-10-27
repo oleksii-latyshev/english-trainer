@@ -354,8 +354,8 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
 
 ## 7. Sessions and input provenance
 
-- One Talk mode with a suggested 5, 10 or 15 minute goal (default 10). Reaching it never finishes the
-  session or blocks answers. The eight-answer field remains only for the daily-recall gate. New
+- One Talk mode with a suggested 5, 10 or 15 minute goal (default 10) or no goal at all.
+  Reaching a goal never finishes the session or blocks answers. The eight-answer field remains only for the daily-recall gate. New
   sessions are stored with mode `conversation`; sessions saved as `coach` by older versions read the
   same way. The database mode stays internal; practice modes (§7.1) cross IPC separately.
 - `get_practice_dialogue(session_id)` returns `{ session_id, opening_question, turns, input_sources,
@@ -371,7 +371,9 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   sequence but the pending answer, and changes no learning or mastery rule.
 - Voice auto-send applies only to a new successful transcription and only when enabled. Drafts stay in
   memory; answers are not persisted in the browser.
-- **Metadata:** `topic_id`, `topic_label`, nullable `topic_custom`, `duration_goal_seconds`,
+- **Metadata:** `topic_id`, `topic_label`, nullable `topic_custom`, nullable `duration_goal_seconds`
+  (`null` = No limit; `start_practice_session` options send it explicitly, an absent value means the
+  default 600),
   `active_duration_ms`, `started_at`, `is_clock_running`. `start_practice_session` takes optional
   topic/time options validated in Rust; an open session is resumed with its saved options. Topic
   openings are local and vary. `set_practice_clock(session_id, running)` checkpoints a monotonic
@@ -379,8 +381,9 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   leaving Talk or pausing the mic, and extrapolates for display. App exit checkpoints; startup
   restores the clock paused; a crash may lose up to one interval. `FinishedPracticeSession.duration_ms`
   is active time, returned with topic and goal.
-- `get_personal_profile` / `save_personal_profile`: optional `role`, `stack`, `interests`, `goals`
-  (each at most 150 characters). Profile and topic are delimited data in provider instructions and
+- `get_personal_profile` / `save_personal_profile`: optional `name` (at most 40 characters, used only in
+  the Start greeting and removed before the profile reaches a provider), `role`, `stack`,
+  `interests`, `goals` (each at most 150 characters). Profile and topic are delimited data in provider instructions and
   count toward context limits. Profile terms supplement the effective STT glossary without changing
   the editable list.
 - Memory phrase records carry optional `session_topic`; the source line shows topic and date when

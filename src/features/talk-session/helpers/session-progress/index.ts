@@ -1,10 +1,14 @@
 import type { PracticeMode, PracticePhase, SessionDetails } from '@/core/practice-session';
 
-export type SessionProgress = {
-  label: string;
+type ProgressBar = {
   value: number;
   max: number;
   percent: number;
+};
+
+export type SessionProgress = {
+  label: string;
+  bar: ProgressBar | null;
 };
 
 const MODE_LABEL: Record<PracticeMode, string> = {
@@ -63,18 +67,20 @@ export function sessionProgress(session: SessionDetails, elapsedMs: number): Ses
     const drill = mistakePracticeProgress(session.turnCount, session.targetTurns);
     return {
       label: drill.label,
-      value: drill.value,
-      max: session.targetTurns,
-      percent: drill.percent,
+      bar: { value: drill.value, max: session.targetTurns, percent: drill.percent },
     };
   }
-  const goalMs = session.durationGoalSeconds * 1000;
   const elapsed = formatElapsedClock(elapsedMs);
+  const mode = `${MODE_LABEL[session.practiceMode]}${stageSuffix(session)}`;
+  if (session.durationGoalSeconds === null) return { label: `${elapsed} · ${mode}`, bar: null };
+  const goalMs = session.durationGoalSeconds * 1000;
   const goal = formatElapsedClock(goalMs);
   return {
-    label: `${elapsed} of ${goal} · ${MODE_LABEL[session.practiceMode]}${stageSuffix(session)}`,
-    value: Math.min(Math.floor(elapsedMs / 1000), session.durationGoalSeconds),
-    max: session.durationGoalSeconds,
-    percent: Math.min(100, (elapsedMs / goalMs) * 100),
+    label: `${elapsed} of ${goal} · ${mode}`,
+    bar: {
+      value: Math.min(Math.floor(elapsedMs / 1000), session.durationGoalSeconds),
+      max: session.durationGoalSeconds,
+      percent: Math.min(100, (elapsedMs / goalMs) * 100),
+    },
   };
 }

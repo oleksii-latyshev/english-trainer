@@ -12,6 +12,11 @@ it('starts the chosen topic with the chosen mode and length', () => {
   });
 });
 
+it('sends an explicit null goal for a session without a time limit', () => {
+  const selection = { ...DEFAULT_SELECTION, duration: null };
+  expect(toPracticeOptions(selection).duration_goal_seconds).toBeNull();
+});
+
 it('sends the interview focus instead of the generic interview topic', () => {
   const selection = {
     ...DEFAULT_SELECTION,

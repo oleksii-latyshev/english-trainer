@@ -64,6 +64,7 @@ mod tests {
 
     fn engineer() -> PersonalProfile {
         PersonalProfile {
+            name: "  Oleksii ".into(),
             role: "  Engineer  ".into(),
             stack: "Rust, Tauri".into(),
             interests: "hiking".into(),
@@ -81,6 +82,7 @@ mod tests {
     fn saving_trims_persists_and_returns_the_profile() {
         let service = PersonalProfileService::new(FakeStore::default());
         let saved = service.save(engineer()).unwrap();
+        assert_eq!(saved.name, "Oleksii");
         assert_eq!(saved.role, "Engineer");
         assert_eq!(service.get().unwrap(), saved);
     }
@@ -105,6 +107,19 @@ mod tests {
             Err(PersonalProfileError::FieldTooLong { field: "Role" })
         ));
         assert_eq!(service.get().unwrap(), PersonalProfile::default());
+    }
+
+    #[test]
+    fn an_over_long_name_is_rejected() {
+        let service = PersonalProfileService::new(FakeStore::default());
+        let rejected = service.save(PersonalProfile {
+            name: "x".repeat(41),
+            ..Default::default()
+        });
+        assert!(matches!(
+            rejected,
+            Err(PersonalProfileError::FieldTooLong { field: "Name" })
+        ));
     }
 
     #[test]

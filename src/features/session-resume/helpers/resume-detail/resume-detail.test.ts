@@ -32,6 +32,17 @@ it('never reports negative time once the suggested length is over', () => {
   ).toContain('0 min left');
 });
 
+it('reads minutes so far when the session has no time limit', () => {
+  const session = {
+    topicLabel: 'Daily life',
+    startedAt: 1,
+    durationGoalSeconds: null,
+    activeDurationMs: 7 * 60_000 + 30_000,
+  };
+  expect(resumeDetail(session, 1)).toBe('Daily life · Started today · 7 min so far');
+  expect(resumeDetail({ ...session, activeDurationMs: 0 }, 1)).toContain('0 min so far');
+});
+
 it('shows remaining questions for a restored mistake practice', () => {
   const session = {
     topicLabel: 'Usual mistakes',

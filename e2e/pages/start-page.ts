@@ -17,7 +17,7 @@ export class StartPage {
   private readonly continueButton: Locator;
 
   constructor(private readonly page: Page) {
-    this.heading = page.getByRole('heading', { name: /^Good (morning|afternoon|evening)$/ });
+    this.heading = page.getByRole('heading', { name: /^Good (morning|afternoon|evening)(, .+)?$/ });
     this.startButton = page.getByRole('button', { name: 'Start talking' });
     this.tryAgainButton = page.getByRole('button', { name: 'Try again' });
     this.openConversation = page.getByRole('region', { name: 'Open conversation' });
@@ -39,6 +39,10 @@ export class StartPage {
 
   async describeTopic(subject: string): Promise<void> {
     await this.topicField.fill(subject);
+  }
+
+  async chooseNoLimit(): Promise<void> {
+    await this.page.getByRole('button', { name: 'No limit', exact: true }).click();
   }
 
   async chooseLength(minutes: 5 | 10 | 15): Promise<void> {

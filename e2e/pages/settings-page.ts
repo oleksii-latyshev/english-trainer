@@ -10,6 +10,7 @@ export class SettingsPage {
   readonly microphone: Locator;
   readonly speech: Locator;
   readonly showGrowth: Locator;
+  readonly nameField: Locator;
 
   constructor(private readonly page: Page) {
     this.unavailableNotice = page.getByText('Local voice is unavailable. Using system speech.');
@@ -19,8 +20,15 @@ export class SettingsPage {
     this.microphone = page.getByRole('region', { name: 'Microphone', exact: true });
     this.speech = page.getByRole('region', { name: 'Speech recognition', exact: true });
     this.showGrowth = page.getByRole('switch', { name: 'Show growth' });
+    this.nameField = page.getByRole('textbox', { name: /^Name/ });
     this.usageHeading = page.getByRole('heading', { name: 'Usage', exact: true });
     this.statusFailure = page.getByText('Translation availability could not be checked. Retry.');
+  }
+
+  async saveName(name: string): Promise<void> {
+    await this.page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await this.nameField.fill(name);
+    await this.page.getByRole('button', { name: 'Save profile' }).click();
   }
 
   async openEva(): Promise<void> {

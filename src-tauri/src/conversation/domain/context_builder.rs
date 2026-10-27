@@ -254,6 +254,7 @@ mod tests {
     #[test]
     fn bounded_context_retains_topic_and_profile_on_compaction() {
         let profile = crate::personal_profile::PersonalProfile {
+            name: String::new(),
             role: "Software engineer".into(),
             stack: "Rust, TypeScript, React, Tauri".into(),
             interests: "Distributed systems, cycling".into(),

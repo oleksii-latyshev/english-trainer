@@ -56,7 +56,7 @@ export const PracticeSessionSchema = bindingSchema<PracticeSession>()(
     topic_id: Schema.String,
     topic_label: Schema.String,
     topic_custom: Schema.NullOr(Schema.String),
-    duration_goal_seconds: Count,
+    duration_goal_seconds: Schema.NullOr(Count),
     active_duration_ms: Count,
     started_at: Count,
     is_clock_running: Schema.Boolean,

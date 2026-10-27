@@ -58,8 +58,6 @@ The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one 
 
 Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in the migration plan.
 
-- **Start screen details** — greeting with the learner's name (needs a name in the personal
-  profile) and a "No limit" session length beside 5/10/15 min.
 - **Memory details** — "Say it now" on an opened phrase or mistake (spoken practice of one item), a
   kind per phrase (phrase, phrasal verb, linking phrase, pattern) and a "With help" evidence tag
   beside "On your own" (cued answers are not stored as evidence yet).
