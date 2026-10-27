@@ -59,6 +59,7 @@ sequenceDiagram
     participant Controls as EvaLookControls
     participant Icon as dockIconAtom (Atom.kvs)
     participant Store as KeyValueStore.layerStorage
+    participant Stage as evaStageAtom (core/eva-growth)
     participant Sync as dockIconSyncAtom
     participant Service as DockIconService
     participant Ipc as Ipc
@@ -68,9 +69,11 @@ sequenceDiagram
     Controls->>Icon: set({ icon })
     Icon->>Store: encode with DockIconSchema, write to localStorage
     Icon-->>Sync: new value
-    Sync->>Service: apply(icon)
+    Stage-->>Sync: the stage, read only for the Eva style (null while growth is hidden)
+    Sync->>Service: apply(icon, stage)
     Service->>Ipc: invokeUnitCommand
-    Ipc->>Rust: set_dock_icon
+    Ipc->>Rust: set_dock_icon { icon, stage }
+    Note over Rust: Eva with a stage shows that stage's tile, Eva without one the bundle icon, Dark and Light ignore it
     alt the Dock tile changed
         Rust-->>Ipc: null
     else rejected
@@ -78,6 +81,10 @@ sequenceDiagram
         Service-->>Sync: logged as a warning, the choice is kept
     end
 ```
+
+Eva's stage changing (a new drop, or Show growth flipped) re-applies the Dock icon the same way; the
+sync reads the stage only for the Eva style, so Dark and Light never re-apply and an unchanged
+style and stage never cross IPC again.
 
 ## Start the app
 

@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import { Atom } from 'effect/reactivity';
-import { DEFAULT_GROWTH, growthPreferenceAtom } from '@/core/eva-growth';
+import { DEFAULT_GROWTH, evaStageAtom, growthPreferenceAtom } from '@/core/eva-growth';
 import { DEFAULT_EVA_LOOK, type EvaLook, evaLookAtom } from '@/core/eva-look';
 import type { EvaMood, EvaStage } from '@/shared/ui/eva';
 import { DockIconSchema } from '../helpers/dock-icon-schema';
@@ -20,10 +20,14 @@ export const dockIconAtom = Atom.kvs({
   mode: 'sync',
 });
 
+const dockIconChoiceAtom = Atom.make((get) => get(dockIconAtom).icon);
+
 export const dockIconSyncAtom = runtime.atom((get) =>
   Effect.gen(function* () {
     const service = yield* DockIconService;
-    yield* service.apply(get(dockIconAtom).icon);
+    const icon = get(dockIconChoiceAtom);
+    const stage = icon === 'eva' ? get(evaStageAtom) : null;
+    yield* service.apply(icon, stage);
   }),
 );
 

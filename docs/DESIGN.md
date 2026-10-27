@@ -81,8 +81,9 @@ cheeks and a smile — with a **sprout** on top that grows with speaking (see th
   bloom colours are listed but not selectable.
 - Animation: Full breathes, blinks and sways her leaf; Gentle only sways the leaf; Still changes
   faces and nothing else. The system Reduce Motion setting always stops all three.
-- App icon: Eva at stage 1 on a sky-blue squircle. The Dock setting offers Eva (the bundle icon),
-  Dark and Light (the board's Tinted style). Sources are in `assets/icons/`.
+- App icon: Eva at stage 1 on a sky-blue squircle. The Dock setting offers Eva, Dark and Light (the
+  board's Tinted style). The Eva Dock tile grows with her: it shows her current stage on the sky
+  squircle, and falls back to the bundle icon while growth is hidden. Sources are in `assets/icons/`.
 
 ## Turn states
 

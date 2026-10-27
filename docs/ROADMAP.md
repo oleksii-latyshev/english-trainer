@@ -63,7 +63,6 @@ Approved in the glass design canvas ([DESIGN](DESIGN.md)); each has an issue in 
   tokens. Still to compare with the boards on the Mac: hands-free as a pill in the header (it is a
   switch in the flow strip under Eva), the chat fading over Eva's lower half, and the exact spacing
   of the stage.
-- **App icon and Dock icon choice** in the glass style.
 
 ## After the MVP
 
