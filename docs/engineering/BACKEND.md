@@ -123,14 +123,11 @@ pub enum KeySource { Settings, Environment }
 ## 6. Lints and formatting
 
 - `rustfmt` defaults.
-- `Cargo.toml [lints]` holds the rules all code passes. New and migrated modules opt into the
-  stricter set at the top of their `mod.rs`:
-
-  ```rust
-  #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic))]
-  ```
-
-  When no legacy module is left without it, the set moves into `Cargo.toml` (see `MIGRATION.md`).
+- `Cargo.toml [lints.clippy]` denies `unwrap_used`, `expect_used` and `panic` for the whole crate;
+  `clippy.toml` exempts `#[test]` functions and `#[cfg(test)]` modules. Return an error instead (a
+  poisoned mutex becomes an error value). A scoped `#[allow(clippy::expect_used, reason = "...")]`
+  is only for failure that cannot be handled, such as the Tauri builder in `run()`; the reason is
+  mandatory. Integration tests in `tests/` and `build.rs` carry a file-level `#![allow]` with its reason.
 - CI runs `cargo clippy --all-targets -- -D warnings`.
 
 ## 7. Tests

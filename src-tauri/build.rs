@@ -1,3 +1,10 @@
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    reason = "a build script reports failure by aborting the build"
+)]
+
 use std::{env, path::PathBuf, process::Command};
 
 fn main() {

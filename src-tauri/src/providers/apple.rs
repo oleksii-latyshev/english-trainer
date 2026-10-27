@@ -166,10 +166,10 @@ impl AppleHelper {
             }
         };
         for attempt in 0..2 {
-            if running.is_none() {
-                *running = Some(self.spawn()?);
-            }
-            let helper = running.as_mut().expect("helper was just started");
+            let helper = match running.as_mut() {
+                Some(helper) => helper,
+                None => running.insert(self.spawn()?),
+            };
             match helper.request(&instructions, &prompt, on_delta, cancelled) {
                 Ok(text) => return Ok(text),
                 Err(Failure::Died) if attempt == 0 => *running = None,
@@ -315,10 +315,12 @@ impl Running {
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
+#[cfg(unix)]
 #[path = "apple_tests.rs"]
 mod tests;
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
+#[cfg(unix)]
 #[path = "f4_latency_tests.rs"]
 mod f4_latency_tests;
