@@ -7,6 +7,67 @@ behaviour is specified in [PRODUCT_SPEC](docs/PRODUCT_SPEC.md).
 Code layers: a **screen** composes **features**; features share state through **core** modules and
 never import each other ([FRONTEND](docs/engineering/FRONTEND.md)).
 
+## Map
+
+Everything the learner can use, by screen:
+
+```mermaid
+mindmap
+  root((English Trainer))
+    Start
+      Practice setup
+      Greeting by name
+      Say it again today
+      Your usual mistakes
+      Speaking activity
+      Continue
+    Talk
+      Streaming conversation
+      Answer capture
+      Need help?
+      Stuck
+      Quiet tip marker
+      Learning use review
+      Spoken recall
+      Write, then speak
+      Translate a selection
+    Wrap-up
+      Session summary
+      Your conversation
+    Memory
+      Practice cards
+      Spoken review
+      Library
+    Eva growth
+      Growth card and screen
+      Look and Dock icon
+    Settings
+      Conversation AI and key
+      Microphone and speech
+      Voice
+      About you
+      Translation
+      Appearance and privacy
+    First run
+      Microphone
+      AI provider
+      Voice
+```
+
+How the screens connect in the learning loop:
+
+```mermaid
+flowchart LR
+  first["First run<br/>microphone · AI · voice"] --> start["Start<br/>mode · topic · length"]
+  start -->|"Speak · Text chat<br/>Write, then speak"| talk["Talk<br/>help · Stuck · translate"]
+  talk -->|"Finish"| wrap["Wrap-up<br/>review of every answer"]
+  wrap -->|"saved phrases<br/>and mistakes"| memory["Memory<br/>library"]
+  memory -->|"due today"| review["Spoken review<br/>warm-up"]
+  review --> talk
+  memory -->|"usual mistakes"| talk
+  talk -.->|"minutes spoken"| growth["Eva grows<br/>Dock icon"]
+```
+
 ## Start
 
 The first screen: how and what to talk about, and what is due today.
