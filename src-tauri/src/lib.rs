@@ -51,8 +51,12 @@ fn warm_up_translation(
 }
 
 #[tauri::command]
-fn set_dock_icon(app: tauri::AppHandle, icon: dock_icon::DockIcon) -> Result<(), core::IpcError> {
-    dock_icon::apply(&app, icon).map_err(|_| {
+fn set_dock_icon(
+    app: tauri::AppHandle,
+    icon: dock_icon::DockIcon,
+    stage: Option<u8>,
+) -> Result<(), core::IpcError> {
+    dock_icon::apply(&app, icon, stage).map_err(|_| {
         core::IpcError::new(
             core::IpcErrorCode::ProcessFailed,
             "Could not change the Dock icon. Please retry.",

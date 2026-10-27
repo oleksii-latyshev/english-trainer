@@ -644,10 +644,13 @@ path. Rust owns every rule (context `eva_growth`).
   (daylight saving implemented by hand); counts older than 14 days are dropped. `get_api_usage`
   returns today's counts, the last Gemini limit error, the last `agy` quota error and the next Pacific
   midnight; Settings > Usage shows them with a link to the AI Studio usage page.
-- **Dock icon:** `set_dock_icon(icon: "eva" | "dark" | "light")` swaps the running Dock tile via
+- **Dock icon:** `set_dock_icon(icon: "eva" | "dark" | "light", stage: number | null)` swaps the running Dock tile via
   `NSApplication.applicationIconImage` (no-op off macOS). The choice is a localStorage preference
-  re-applied at launch; `eva` restores the bundle icon (Eva with her sprout on sky blue), `dark` and
-  `light` swap in the Icon board's Dark and Tinted styles. The SVG sources live in `assets/icons/`;
+  re-applied at launch and whenever the style or Eva's stage changes; `eva` with a `stage` (0 to 5, null
+  while growth is hidden or for the other styles) swaps in the tile `dock-eva-<stage>.png`, `eva`
+  without one restores the bundle icon (Eva with her sprout on sky blue), `dark` and `light` swap in
+  the Icon board's Dark and Tinted styles and ignore the stage. The six Eva tiles reuse the bundle
+  icon source with the plant geometry of `shared/ui/eva/plant.tsx`. The SVG sources live in `assets/icons/`;
   `bun run build:icons` renders them and runs `tauri icon` for every size.
 
 ## 11. Setup diagnostics
