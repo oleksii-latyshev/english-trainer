@@ -1,29 +1,25 @@
 use super::SessionStore;
-use crate::conversation::error::{database_error, invalid_session_error};
-use crate::providers::{ProviderError, ProviderErrorCode};
+use crate::conversation::error::ConversationError;
 
 impl SessionStore {
     pub fn record_answer_help_used(
         &self,
         session_id: u64,
         sequence: usize,
-    ) -> Result<(), ProviderError> {
+    ) -> Result<(), ConversationError> {
         let mut state = self.lock();
         let active = state
             .active
             .as_ref()
             .filter(|active| active.id == session_id)
-            .ok_or_else(invalid_session_error)?;
+            .ok_or(ConversationError::InvalidSession)?;
         if sequence != active.turns.len() + 1 {
-            return Err(ProviderError::new(
-                ProviderErrorCode::InvalidRequest,
-                "The question changed before help was recorded. Open help again for the current question.",
-            ));
+            return Err(ConversationError::HelpQuestionChanged);
         }
         state
             .database
-            .record_answer_help_used(session_id, sequence)
-            .map_err(database_error)
+            .record_answer_help_used(session_id, sequence)?;
+        Ok(())
     }
 }
 
@@ -31,6 +27,7 @@ impl SessionStore {
 mod tests {
     use super::*;
     use crate::conversation::service::code_of;
+    use crate::core::IpcErrorCode;
     use crate::providers::ConversationTurn;
 
     fn reply(first_token_ms: Option<u64>, latency_ms: Option<u64>) -> ConversationTurn {
@@ -86,11 +83,11 @@ mod tests {
         let other = store
             .record_answer_help_used(session.session_id + 1, 1)
             .unwrap_err();
-        assert_eq!(code_of(other), ProviderErrorCode::InvalidSession);
+        assert_eq!(code_of(other), IpcErrorCode::InvalidSession);
         let stale = store
             .record_answer_help_used(session.session_id, 2)
             .unwrap_err();
-        assert_eq!(code_of(stale), ProviderErrorCode::InvalidRequest);
+        assert_eq!(code_of(stale), IpcErrorCode::InvalidRequest);
         assert_eq!(
             store.dialogue(session.session_id).unwrap().help_used,
             Vec::<bool>::new()

@@ -1,6 +1,8 @@
 use super::*;
 use crate::conversation::domain::WrapupPreparation;
-use crate::providers::{ConversationTurn, GeneratedWrapupPhrase, ProviderErrorCode, WrapupRequest};
+use crate::providers::{
+    ConversationTurn, GeneratedWrapupPhrase, ProviderError, ProviderErrorCode, WrapupRequest,
+};
 use std::sync::mpsc;
 use std::time::Duration;
 
@@ -139,7 +141,7 @@ fn failures_wait_for_explicit_retry_and_empty_sessions_never_call_the_provider()
     call_rx.recv_timeout(WAIT).unwrap();
     assert!(
         matches!(store.session_wrapup(id).unwrap().wrapup_preparation,
-        WrapupPreparation::Failed { error } if error.code == ProviderErrorCode::RateLimited)
+        WrapupPreparation::Failed { error } if error.code == crate::core::IpcErrorCode::RateLimited)
     );
     queue.wake();
     assert!(call_rx.recv_timeout(Duration::from_millis(100)).is_err());

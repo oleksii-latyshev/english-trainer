@@ -1,7 +1,8 @@
 use super::*;
 use crate::conversation::service::code_of;
 use crate::conversation::InputSource;
-use crate::providers::ConversationTurn;
+use crate::core::IpcErrorCode;
+use crate::providers::{ConversationTurn, ProviderErrorCode};
 
 fn plan(_: &str) -> Result<AnswerPlan, ProviderError> {
     Ok(AnswerPlan {
@@ -102,16 +103,17 @@ fn failed_preparation_is_cached_until_explicit_retry_and_stale_requests_do_not_g
         )
         .unwrap_err();
     assert_eq!(
-        store
-            .answer_plan(
-                session.session_id,
-                1,
-                &session.opening_question,
-                false,
-                |_: &str| panic!("cached failures must not consume more quota")
-            )
-            .unwrap_err()
-            .code,
+        code_of(
+            store
+                .answer_plan(
+                    session.session_id,
+                    1,
+                    &session.opening_question,
+                    false,
+                    |_: &str| panic!("cached failures must not consume more quota")
+                )
+                .unwrap_err()
+        ),
         code_of(error)
     );
     assert!(store
@@ -158,8 +160,8 @@ fn slow_planning_does_not_block_the_reply_and_its_late_result_is_rejected() {
         .unwrap();
     release.send(()).unwrap();
     assert_eq!(
-        worker.join().unwrap().unwrap_err().code,
-        ProviderErrorCode::InvalidRequest
+        code_of(worker.join().unwrap().unwrap_err()),
+        IpcErrorCode::InvalidRequest
     );
     let question = store.get_active().unwrap().unwrap().opening_question;
     assert!(store.answer_plan(id, 2, &question, false, plan).is_ok());
@@ -189,7 +191,7 @@ fn help_excludes_only_the_cued_spoken_answer_and_survives_restart() {
             panic!("cued answer must not be sent for independent assessment")
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
     store
         .send_turn_with_source(
             session.session_id,

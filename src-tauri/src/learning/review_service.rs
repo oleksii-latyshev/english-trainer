@@ -6,9 +6,9 @@ use super::review_material::{materials_view, ReviewMaterials};
 use super::review_rules::{
     validate_review_id, validate_review_position, validate_transcript, ReviewRejection,
 };
+use crate::core::{IpcError, IpcErrorCode};
 use crate::providers::{
-    parse_review_material_result, ProviderError, ProviderErrorCode, ReviewMaterialRequest,
-    ReviewMaterialResult,
+    parse_review_material_result, ProviderError, ReviewMaterialRequest, ReviewMaterialResult,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -39,14 +39,14 @@ pub struct ReviewService {
 fn checked_material(
     request: &ReviewMaterialRequest,
     generated: ReviewMaterialResult,
-) -> Result<ReviewMaterialResult, ProviderError> {
+) -> Result<ReviewMaterialResult, IpcError> {
     let raw = serde_json::to_string(&generated).map_err(|_| {
-        ProviderError::new(
-            ProviderErrorCode::InvalidOutput,
+        IpcError::new(
+            IpcErrorCode::InvalidOutput,
             "Could not check review situations. Please retry.",
         )
     })?;
-    parse_review_material_result(&raw, request)
+    parse_review_material_result(&raw, request).map_err(IpcError::from)
 }
 
 impl ReviewService {
@@ -122,7 +122,9 @@ impl ReviewService {
         let Some(request) = self.material.begin_preparation(run_id, retry)? else {
             return self.materials(run_id);
         };
-        let result = generate(&request).and_then(|generated| checked_material(&request, generated));
+        let result = generate(&request)
+            .map_err(IpcError::from)
+            .and_then(|generated| checked_material(&request, generated));
         self.material.complete_preparation(run_id, &result)?;
         self.materials(run_id)
     }

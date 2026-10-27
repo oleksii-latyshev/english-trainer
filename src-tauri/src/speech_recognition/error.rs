@@ -1,5 +1,4 @@
 use crate::core::{IpcError, IpcErrorCode};
-use crate::providers::ProviderError;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -29,7 +28,7 @@ pub enum SpeechRecognitionError {
     #[error("the speech settings could not be read or saved")]
     SettingsStorage,
     #[error("the practice session refused the request")]
-    Conversation(ProviderError),
+    Conversation(IpcError),
 }
 
 impl SpeechRecognitionError {
@@ -77,7 +76,7 @@ impl From<SpeechRecognitionError> for IpcError {
                 IpcErrorCode::DatabaseError,
                 "Could not read or save speech settings locally. Please retry.",
             ),
-            E::Conversation(provider) => Self::from(provider),
+            E::Conversation(error) => error,
         }
     }
 }
@@ -85,7 +84,6 @@ impl From<SpeechRecognitionError> for IpcError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::providers::ProviderErrorCode;
 
     #[test]
     fn recoverable_failures_keep_distinct_codes_for_the_ui() {
@@ -127,11 +125,10 @@ mod tests {
 
     #[test]
     fn a_refusal_from_the_practice_session_passes_through() {
-        let provider =
-            ProviderError::new(ProviderErrorCode::InvalidRequest, "The question changed.");
+        let refusal = IpcError::new(IpcErrorCode::InvalidRequest, "The question changed.");
         assert_eq!(
-            IpcError::from(SpeechRecognitionError::Conversation(provider)),
-            IpcError::new(IpcErrorCode::InvalidRequest, "The question changed.")
+            IpcError::from(SpeechRecognitionError::Conversation(refusal.clone())),
+            refusal
         );
     }
 }

@@ -4,6 +4,7 @@ mod answered_by;
 mod apple;
 mod context;
 mod gemini;
+mod ipc;
 mod plain_prompt;
 mod race;
 mod reply_text;

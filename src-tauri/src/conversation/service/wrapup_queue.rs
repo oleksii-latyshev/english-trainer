@@ -1,7 +1,8 @@
 use super::SessionStore;
 use crate::conversation::domain::WrapupEvent;
+use crate::conversation::error::ConversationError;
 use crate::conversation::ports::{WrapupGenerator, WrapupNotifier};
-use crate::providers::{ProviderError, WrapupResult};
+use crate::providers::WrapupResult;
 use std::sync::{Arc, Condvar, Mutex};
 
 struct Control {
@@ -51,7 +52,7 @@ impl WrapupQueue {
         self.shared.wake.notify_one();
     }
 
-    pub fn retry(&self, session_id: u64) -> Result<(), ProviderError> {
+    pub fn retry(&self, session_id: u64) -> Result<(), ConversationError> {
         self.shared.store.retry_session_wrapup(session_id)?;
         self.wake();
         Ok(())

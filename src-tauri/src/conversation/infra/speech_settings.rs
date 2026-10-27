@@ -1,41 +1,32 @@
+use crate::conversation::error::ConversationError;
 use crate::conversation::SessionStore;
-use crate::providers::{ProviderError, ProviderErrorCode};
 use crate::speech_recognition::{AnswerContext, SpeechSettings};
 
 impl SessionStore {
-    pub fn speech_settings(&self) -> Result<SpeechSettings, ProviderError> {
-        self.lock()
-            .database
-            .speech_settings()
-            .map_err(settings_error)
+    pub fn speech_settings(&self) -> Result<SpeechSettings, ConversationError> {
+        Ok(self.lock().database.speech_settings()?)
     }
 
     pub fn update_speech_settings(
         &self,
         change: impl FnOnce(&mut SpeechSettings),
-    ) -> Result<SpeechSettings, ProviderError> {
+    ) -> Result<SpeechSettings, ConversationError> {
         let state = self.lock();
-        let mut settings = state.database.speech_settings().map_err(settings_error)?;
+        let mut settings = state.database.speech_settings()?;
         change(&mut settings);
-        state
-            .database
-            .save_speech_settings(&settings)
-            .map_err(settings_error)?;
+        state.database.save_speech_settings(&settings)?;
         Ok(settings)
     }
 
-    pub fn glossary_terms(&self) -> Result<Vec<String>, ProviderError> {
-        self.lock()
-            .database
-            .glossary_terms()
-            .map_err(settings_error)
+    pub fn glossary_terms(&self) -> Result<Vec<String>, ConversationError> {
+        Ok(self.lock().database.glossary_terms()?)
     }
 
-    pub fn save_glossary_terms(&self, terms: Vec<String>) -> Result<Vec<String>, ProviderError> {
-        self.lock()
-            .database
-            .replace_glossary_terms(&terms)
-            .map_err(settings_error)?;
+    pub fn save_glossary_terms(
+        &self,
+        terms: Vec<String>,
+    ) -> Result<Vec<String>, ConversationError> {
+        self.lock().database.replace_glossary_terms(&terms)?;
         Ok(terms)
     }
 
@@ -56,13 +47,6 @@ impl SessionStore {
                 .collect(),
         })
     }
-}
-
-fn settings_error(_: rusqlite::Error) -> ProviderError {
-    ProviderError::new(
-        ProviderErrorCode::DatabaseError,
-        "Could not read or save speech settings locally. Please retry.",
-    )
 }
 
 #[cfg(test)]

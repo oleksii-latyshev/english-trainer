@@ -1,5 +1,5 @@
 use crate::core::IpcError;
-use crate::providers::{ProviderError, ReviewMaterialResult};
+use crate::providers::ReviewMaterialResult;
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -44,7 +44,7 @@ impl ReviewMaterials {
 pub(crate) enum StoredReviewMaterial {
     Pending,
     Ready(ReviewMaterialResult),
-    Failed(ProviderError),
+    Failed(IpcError),
 }
 
 pub(crate) struct ReviewMaterialRow {
@@ -62,12 +62,9 @@ pub(crate) fn materials_view(
     let (preparation, generated) = match stored {
         None => (ReviewPreparation::Legacy, Vec::new()),
         Some(StoredReviewMaterial::Pending) => (ReviewPreparation::Pending, Vec::new()),
-        Some(StoredReviewMaterial::Failed(error)) => (
-            ReviewPreparation::Failed {
-                error: IpcError::from(error),
-            },
-            Vec::new(),
-        ),
+        Some(StoredReviewMaterial::Failed(error)) => {
+            (ReviewPreparation::Failed { error }, Vec::new())
+        }
         Some(StoredReviewMaterial::Ready(result)) => (ReviewPreparation::Ready, result.items),
     };
     let items = rows

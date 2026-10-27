@@ -123,8 +123,6 @@ fn active_session_mut(
 }
 
 #[cfg(test)]
-pub(crate) fn code_of(
-    error: impl Into<crate::providers::ProviderError>,
-) -> crate::providers::ProviderErrorCode {
+pub(crate) fn code_of(error: impl Into<crate::core::IpcError>) -> crate::core::IpcErrorCode {
     error.into().code
 }

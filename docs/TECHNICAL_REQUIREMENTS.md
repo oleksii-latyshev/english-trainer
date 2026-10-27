@@ -294,7 +294,7 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
 ### 6.2 Session wrap-up (F9)
 
 - `FinishedPracticeSession.wrapup_preparation` is `{ state: legacy | pending | ready }` or
-  `{ state: failed, error: ProviderError }`. Finish atomically creates a `session_wrapups` row; empty
+  `{ state: failed, error: IpcError }`. Finish atomically creates a `session_wrapups` row; empty
   sessions are ready with no phrases. A worker resumes pending jobs at startup and snapshots up to 24
   answers (1,500 characters each, 12,000 total) with their original questions. No session lock is
   held during generation.
@@ -580,7 +580,7 @@ path. Rust owns every rule (context `eva_growth`).
   frontend's generated/decoded IPC layer, see [engineering/FRONTEND.md](engineering/FRONTEND.md));
   fields stay `snake_case`.
 - Errors cross IPC as typed values with a `code`; the UI branches on codes, never on messages.
-  `ProviderErrorCode` also carries session and database failures (`busy`, `invalid_session`,
+  `IpcErrorCode` also carries session and database failures (`busy`, `invalid_session`,
   `database_error`).
 - Long-running commands are `async` and run blocking work with `spawn_blocking`.
 - Commands by area (the Rust command registration is the complete list):

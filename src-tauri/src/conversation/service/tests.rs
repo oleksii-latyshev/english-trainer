@@ -4,6 +4,7 @@ use crate::conversation::domain::rules::{
 };
 use crate::conversation::domain::*;
 use crate::conversation::service::code_of;
+use crate::core::{IpcError, IpcErrorCode};
 use crate::learning::mistake_practice::MistakePracticeCandidate;
 use crate::personal_profile::PersonalProfile;
 use crate::providers::{ConversationTurn, ProviderError, ProviderErrorCode, TurnFeedback};
@@ -90,7 +91,7 @@ fn mistake_practice_requires_candidates_without_calling_the_provider() {
             Ok(mistake_plan(1))
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
     assert!(!called.get());
     assert_eq!(store.get_active().unwrap(), None);
 }
@@ -123,7 +124,7 @@ fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
             |_| panic!("mistake practice must not call the conversation provider"),
         )
         .unwrap_err();
-    assert_eq!(code_of(text_error), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(text_error), IpcErrorCode::InvalidRequest);
     let first = store
         .send_turn_with_source(
             started.session_id,
@@ -204,7 +205,7 @@ fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
             |_| unreachable!(),
         )
         .unwrap_err();
-    assert_eq!(code_of(extra), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(extra), IpcErrorCode::InvalidRequest);
     let summary = resumed.finish(active.session_id).unwrap();
     assert!(summary.is_mistake_practice);
     assert_eq!(summary.target_turns, 5);
@@ -218,7 +219,7 @@ fn mistake_practice_generation_failure_can_be_retried_and_targets_are_rechecked(
     let failed = store.start_mistake_practice(|_: &[MistakePracticeCandidate]| {
         Err(ProviderError::new(ProviderErrorCode::RateLimited, "retry"))
     });
-    assert_eq!(code_of(failed.unwrap_err()), ProviderErrorCode::RateLimited);
+    assert_eq!(code_of(failed.unwrap_err()), IpcErrorCode::RateLimited);
     assert_eq!(store.get_active().unwrap(), None);
 
     let archived = store.clone();
@@ -230,7 +231,7 @@ fn mistake_practice_generation_failure_can_be_retried_and_targets_are_rechecked(
             Ok(mistake_plan(mistake_id))
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
     assert_eq!(store.get_active().unwrap(), None);
     assert_eq!(store.lock().database.session_count().unwrap(), 0);
 }
@@ -246,20 +247,20 @@ fn mistake_practice_rejects_another_session_and_a_concurrent_preparation() {
             Ok(mistake_plan(1))
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::Busy);
+    assert_eq!(code_of(error), IpcErrorCode::Busy);
     assert!(!called.get());
     store.finish(ordinary.session_id).unwrap();
     let mistake_id = seed_practice_mistake(&store);
     store.lock().mistake_practice_preparing = true;
     let normal = store.start_practice_session(None).unwrap_err();
-    assert_eq!(code_of(normal), ProviderErrorCode::Busy);
+    assert_eq!(code_of(normal), IpcErrorCode::Busy);
     let drill = store
         .start_mistake_practice(|_: &[MistakePracticeCandidate]| {
             called.set(true);
             Ok(mistake_plan(mistake_id))
         })
         .unwrap_err();
-    assert_eq!(code_of(drill), ProviderErrorCode::Busy);
+    assert_eq!(code_of(drill), IpcErrorCode::Busy);
     assert!(!called.get());
     store.lock().mistake_practice_preparing = false;
 }
@@ -272,7 +273,7 @@ fn mistake_practice_database_failure_clears_preparation_and_rolls_back() {
     let error = store
         .start_mistake_practice(|_: &[MistakePracticeCandidate]| Ok(mistake_plan(mistake_id)))
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::DatabaseError);
+    assert_eq!(code_of(error), IpcErrorCode::DatabaseError);
     assert_eq!(store.lock().database.session_count().unwrap(), 0);
     assert!(store.start_practice_session(None).is_ok());
 }
@@ -349,7 +350,7 @@ fn retry_works_after_the_session_is_finished_and_rejects_unknown_sessions() {
     let error = store
         .retry_turn(session.session_id + 1, 1, "I work there now".into())
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidSession);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidSession);
 }
 
 #[test]
@@ -368,7 +369,7 @@ fn retry_validation_failure_preserves_the_reviewed_answer_and_session() {
     let error = store
         .retry_turn(session.session_id, 2, "Different retry".into())
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
     assert_eq!(store.get_active().unwrap().unwrap().turn_count, 1);
     assert_eq!(
         store
@@ -428,7 +429,7 @@ fn start_turn_context_resume_and_finish_form_a_session() {
     assert_eq!(finished.target_turns, DAILY_TARGET_TURNS);
     assert_eq!(
         code_of(store.finish(session.session_id).unwrap_err()),
-        ProviderErrorCode::InvalidSession
+        IpcErrorCode::InvalidSession
     );
 }
 
@@ -694,10 +695,7 @@ fn phase_transition_during_provider_request_is_busy_and_preserves_the_in_flight_
             },
         )
         .unwrap();
-    assert_eq!(
-        attempted_transition.into_inner(),
-        Some(ProviderErrorCode::Busy)
-    );
+    assert_eq!(attempted_transition.into_inner(), Some(IpcErrorCode::Busy));
     let active = store.get_active().unwrap().unwrap();
     assert_eq!(active.practice_phase, PracticePhase::Writing);
     assert_eq!(active.turn_count, 1);
@@ -1059,7 +1057,7 @@ fn summary_evidence_database_failure_keeps_the_session_active() {
         .unwrap();
 
     let error = store.finish(session.session_id).unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::DatabaseError);
+    assert_eq!(code_of(error), IpcErrorCode::DatabaseError);
     assert_eq!(
         store.get_active().unwrap().unwrap().session_id,
         session.session_id
@@ -1074,7 +1072,7 @@ fn spoken_recall_opens_after_speaking_goal_and_keeps_empty_queue_finishable() {
     let session = store.start().unwrap();
     assert_eq!(
         code_of(store.daily_recall_plan(session.session_id).unwrap_err()),
-        ProviderErrorCode::InvalidRequest
+        IpcErrorCode::InvalidRequest
     );
     for index in 0..DAILY_TARGET_TURNS {
         store
@@ -1096,7 +1094,7 @@ fn provider_failure_keeps_session_and_allows_retry() {
     let failed = store.send_turn(session.session_id, "Try again please.".into(), |_| {
         Err(ProviderError::new(ProviderErrorCode::Timeout, "retry"))
     });
-    assert_eq!(code_of(failed.unwrap_err()), ProviderErrorCode::Timeout);
+    assert_eq!(code_of(failed.unwrap_err()), IpcErrorCode::Timeout);
 
     let retried = store
         .send_turn(session.session_id, "Try again please.".into(), |context| {
@@ -1118,7 +1116,7 @@ fn rejects_invalid_and_stale_session_ids() {
             |_| unreachable!(),
         )
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidSession);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidSession);
     let too_long = store
         .send_turn(
             session.session_id,
@@ -1126,11 +1124,11 @@ fn rejects_invalid_and_stale_session_ids() {
             |_| unreachable!(),
         )
         .unwrap_err();
-    assert_eq!(code_of(too_long), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(too_long), IpcErrorCode::InvalidRequest);
     let blank = store
         .send_turn(session.session_id, "  \n".into(), |_| unreachable!())
         .unwrap_err();
-    assert_eq!(code_of(blank), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(blank), IpcErrorCode::InvalidRequest);
 }
 
 #[test]
@@ -1155,9 +1153,9 @@ fn concurrent_turn_is_rejected_without_holding_mutex_during_provider_call() {
         "Second answer.".into(),
         |_| unreachable!(),
     );
-    assert_eq!(code_of(second.unwrap_err()), ProviderErrorCode::Busy);
+    assert_eq!(code_of(second.unwrap_err()), IpcErrorCode::Busy);
     let finish = store.finish(session.session_id).unwrap_err();
-    assert_eq!(code_of(finish), ProviderErrorCode::Busy);
+    assert_eq!(code_of(finish), IpcErrorCode::Busy);
     release_tx.send(()).unwrap();
     assert!(worker.join().unwrap().is_ok());
 }
@@ -1254,7 +1252,7 @@ fn failed_provider_turn_is_not_saved_and_finish_survives_restart() {
             Err(ProviderError::new(ProviderErrorCode::Timeout, "retry"))
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::Timeout);
+    assert_eq!(code_of(error), IpcErrorCode::Timeout);
     assert_eq!(
         store
             .lock()
@@ -1482,7 +1480,7 @@ fn memory_query_failure_does_not_leave_conversation_busy() {
                 panic!("provider should not run when memory lookup fails")
             })
             .unwrap_err();
-        assert_eq!(code_of(error), ProviderErrorCode::DatabaseError);
+        assert_eq!(code_of(error), IpcErrorCode::DatabaseError);
     }
     drop(store);
     std::fs::remove_file(path).unwrap();
@@ -1501,7 +1499,7 @@ fn failure_isolation_keeps_conversation_usable() {
     let error = store
         .save_phrase("".into(), "Note".into(), Some(session.session_id), Some(1))
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::InvalidRequest);
+    assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
 
     let next_turn = store
         .send_turn(session.session_id, "Another answer".into(), |_| {
@@ -1796,7 +1794,7 @@ fn text_and_edited_answers_cannot_be_reviewed_as_independent_spoken_evidence() {
                 panic!("Non-voice answers must never reach the assessor")
             })
             .unwrap_err();
-        assert_eq!(code_of(error), ProviderErrorCode::InvalidRequest);
+        assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
         assert_eq!(
             store.dialogue(session.session_id).unwrap().turns[0].learner,
             "Written answer"
@@ -1861,7 +1859,7 @@ fn failure_after_partial_deltas_saves_nothing_and_keeps_the_answer_retryable() {
             Err(ProviderError::new(ProviderErrorCode::Timeout, "cut off"))
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::Timeout);
+    assert_eq!(code_of(error), IpcErrorCode::Timeout);
     assert_eq!(store.get_active().unwrap().unwrap().turn_count, 0);
     store
         .send_turn(session.session_id, "I walked a lot.".into(), |_| {
@@ -2082,8 +2080,8 @@ fn deleting_a_phrase_card_removes_it_and_tolerates_stale_or_invalid_ids() {
     assert!(!store.delete_phrase(card.id).unwrap());
     assert!(!store.delete_phrase(card.id + 100).unwrap());
     assert_eq!(
-        store.delete_phrase(0).unwrap_err().code,
-        ProviderErrorCode::InvalidRequest
+        IpcError::from(store.delete_phrase(0).unwrap_err()).code,
+        IpcErrorCode::InvalidRequest
     );
 
     let again = store

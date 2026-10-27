@@ -1,4 +1,5 @@
 use super::SessionStore;
+use crate::conversation::error::ConversationError;
 use crate::providers::{CoachedAnswer, CoachingAnswer, ProviderError, ProviderErrorCode};
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -129,7 +130,7 @@ impl CoachingQueue {
         self.shared.wake.notify_all();
     }
 
-    pub fn retry(&self, session_id: u64, sequence: usize) -> Result<(), ProviderError> {
+    pub fn retry(&self, session_id: u64, sequence: usize) -> Result<(), ConversationError> {
         let needs_feedback = self
             .shared
             .store

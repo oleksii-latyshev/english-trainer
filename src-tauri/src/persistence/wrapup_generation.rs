@@ -1,11 +1,12 @@
 use super::{to_sql_id, SessionDatabase};
-use crate::providers::{ProviderError, WrapupAnswer, WrapupResult};
+use crate::core::IpcError;
+use crate::providers::{WrapupAnswer, WrapupResult};
 use rusqlite::{params, OptionalExtension};
 
 pub(crate) enum PreparedWrapup {
     Pending,
     Ready(WrapupResult),
-    Failed(ProviderError),
+    Failed(IpcError),
 }
 
 impl SessionDatabase {
@@ -108,7 +109,7 @@ impl SessionDatabase {
     pub(crate) fn complete_wrapup(
         &mut self,
         session_id: u64,
-        result: &Result<WrapupResult, ProviderError>,
+        result: &Result<WrapupResult, IpcError>,
     ) -> rusqlite::Result<bool> {
         let (state, result_json, error_json) = match result {
             Ok(value) => ("ready", Some(encode(value)?), None),

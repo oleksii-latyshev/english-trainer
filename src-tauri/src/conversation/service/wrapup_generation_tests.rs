@@ -44,7 +44,7 @@ fn invalid_adapter_result_cannot_become_learning_content() {
     assert!(summary.phrases.is_empty());
     assert!(
         matches!(summary.wrapup_preparation, WrapupPreparation::Failed { error }
-        if error.code == ProviderErrorCode::InvalidOutput)
+        if error.code == crate::core::IpcErrorCode::InvalidOutput)
     );
 }
 
