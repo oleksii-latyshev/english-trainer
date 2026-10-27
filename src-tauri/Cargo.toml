@@ -50,3 +50,8 @@ strip = true
 
 [profile.release.build-override]
 strip = false
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
