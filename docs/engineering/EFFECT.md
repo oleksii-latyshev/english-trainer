@@ -8,6 +8,10 @@ Versions: `effect` and `@effect/atom-react` are pinned to the same exact version
 `effect@4.0.3` that was never published, so we stay on `4.0.2` until both line up).
 Atoms come from `effect/reactivity` (stable in 4.0, not `unstable`).
 
+`bun run check:effect` runs `@effect/language-service` diagnostics in strict mode. The service loads
+the TypeScript JS API through `require("typescript")`, so the root `typescript` stays on 6.x while
+type checking itself runs on TypeScript 7 (CODE_REQUIREMENTS › Tooling).
+
 The patterns below were verified against `effect@4.0.2`; snippets are trimmed. The compiling
 reference is the pilot feature `src/features/gemini-key` with `src/core/ipc` — copy from there.
 

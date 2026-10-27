@@ -207,6 +207,11 @@ Patterns and examples: [`TESTING.md`](docs/engineering/TESTING.md).
   add a `biome-ignore` with the reason.
 - Knip (`bun run check:knip`) rejects unused files, exports and dependencies; delete the dead code or
   drop the `export`, and keep `knip.json` ignores to generated code only.
+- Two TypeScripts are installed on purpose. `typecheck` and `typecheck:e2e` run TypeScript 7, the
+  native compiler (`typescript-native`, about 7× faster). The root `typescript` stays on 6.x because
+  `@effect/language-service` (`check:effect`) and the editor's tsserver need its JS API, which
+  TypeScript 7 does not ship. Dependabot ignores majors of the root `typescript`. Drop 6.x once the
+  Effect language service supports TypeScript 7.
 - Generated files (`src/core/ipc/bindings`, `src-tauri/gen`) are never edited by hand.
 - Third-party GitHub Actions are pinned to a commit SHA with the version as the trailing
   `# vX.Y.Z` marker Dependabot reads; never a moving tag.
