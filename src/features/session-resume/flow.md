@@ -12,7 +12,7 @@ sequenceDiagram
 
     App->>Card: open session (topic, start time, suggested length, time spoken)
     Card->>Helper: session
-    Helper-->>Card: "Topic · Started today · 4 min left" or "3 questions left"
+    Helper-->>Card: "Topic · Started today · 4 min left", "Topic · Started today · 7 min so far" (no limit) or "3 questions left"
     Learner->>Card: Continue
     alt the conversation is still being restored
         Card-->>Learner: button disabled

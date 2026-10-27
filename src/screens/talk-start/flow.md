@@ -7,7 +7,7 @@ that touches Rust, the open session or the router is passed in by the app layer
 
 ```text
 TalkStartScreen
-  left column   StartGreeting (Eva + greeting)
+  left column   StartGreeting (Eva + greeting with the learner's name)
                 ResumeCard            when a conversation is open
                 ModeChoice, TopicChoice   otherwise
                 ActivityCard          26-week grid, from local data

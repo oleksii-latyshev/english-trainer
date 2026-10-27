@@ -16,12 +16,12 @@ sequenceDiagram
     participant App as startPractice (app layer)
     participant Rust as start_practice_session
 
-    Learner->>Setup: picks a mode, topic and length
+    Learner->>Setup: picks a mode, topic and length (5, 10, 15 min or No limit)
     Setup->>Screen: onChange(patch)
     Learner->>Setup: Start talking
     Setup->>Screen: onStart
     Screen->>Helper: selection
-    Helper-->>Screen: PracticeOptions
+    Helper-->>Screen: PracticeOptions (duration_goal_seconds is null for No limit)
     Screen->>App: onStart(options)
     App->>Rust: start_practice_session
     alt cannot start

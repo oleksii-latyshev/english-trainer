@@ -1,4 +1,5 @@
 import { daysAgo, spokenToday } from '../data/activity';
+import { initialSession } from '../data/sessions';
 import { expect, test } from '../fixtures';
 
 test('the speaking activity grid shows 26 weeks and what was spoken, read from local data', async ({
@@ -70,4 +71,103 @@ test('without a repeated mistake the usual-mistakes card is not shown', async ({
 
   await expect(start.heading).toBeVisible();
   await expect(start.usualMistakes).toHaveCount(0);
+});
+
+test('a saved name appears in the greeting and a blank name leaves it unchanged', async ({
+  app,
+  start,
+  tauri,
+}) => {
+  tauri.profile.with({ name: 'Oleksii' });
+  await app.open();
+
+  await expect(start.heading).toHaveText(/^Good (morning|afternoon|evening), Oleksii$/);
+});
+
+test('without a name the greeting stays as it was', async ({ app, start }) => {
+  await app.open();
+
+  await expect(start.heading).toHaveText(/^Good (morning|afternoon|evening)$/);
+});
+
+test('the name saved in Settings greets the learner on Start', async ({
+  app,
+  settings,
+  start,
+  tauri,
+}) => {
+  await app.open();
+  await app.sidebar.openSettings();
+  await settings.saveName('  Oleksii ');
+
+  const saved = await tauri.calls('save_personal_profile');
+  expect(saved[saved.length - 1]?.args).toMatchObject({ profile: { name: '  Oleksii ' } });
+  await app.sidebar.openTalk();
+  await expect(start.heading).toHaveText(/^Good (morning|afternoon|evening), Oleksii$/);
+});
+
+test('a name longer than forty characters is not saved', async ({ app, settings, tauri }) => {
+  await app.open();
+  await app.sidebar.openSettings();
+  await settings.saveName('x'.repeat(41));
+
+  await expect(app.alert).toContainText('Name must be 40 characters or fewer.');
+  expect(await tauri.calls('save_personal_profile')).toHaveLength(0);
+});
+
+test('a session without a time limit starts, and Talk shows the time without a goal or bar', async ({
+  app,
+  start,
+  talk,
+  tauri,
+}) => {
+  await app.open();
+  await app.sidebar.openSpeak();
+
+  await start.chooseNoLimit();
+  await start.start();
+
+  await expect(talk.openingQuestion).toBeVisible();
+  expect(await tauri.session.lastOptions()).toMatchObject({ duration_goal_seconds: null });
+  expect((await tauri.session.activeSession())?.duration_goal_seconds).toBeNull();
+  await expect(talk.sessionProgressLabel).toHaveText(/^\d\d:\d\d · Speak$/);
+  await expect(talk.sessionTimeBar).toHaveCount(0);
+});
+
+test('a session with a goal still shows the goal and the bar in Talk', async ({
+  app,
+  start,
+  talk,
+}) => {
+  await app.open();
+  await app.sidebar.openSpeak();
+
+  await start.chooseLength(5);
+  await start.start();
+
+  await expect(talk.sessionProgressLabel).toHaveText(/^\d\d:\d\d of 05:00 · Speak$/);
+  await expect(talk.sessionTimeBar).toHaveCount(1);
+});
+
+test('the resume card of a no-limit session says how long it has run so far', async ({
+  app,
+  start,
+  tauri,
+}) => {
+  tauri.session.withOpenSession({
+    ...initialSession,
+    duration_goal_seconds: null,
+    active_duration_ms: 7 * 60_000,
+  });
+  await app.open();
+
+  await expect(start.openConversation).toContainText('7 min so far');
+  await expect(start.openConversation).not.toContainText('min left');
+});
+
+test('a session with a goal resumes with the minutes left', async ({ app, start, tauri }) => {
+  tauri.session.withOpenSession({ ...initialSession, active_duration_ms: 7 * 60_000 });
+  await app.open();
+
+  await expect(start.openConversation).toContainText('3 min left');
 });

@@ -7,7 +7,7 @@ pub(crate) struct NewSession<'a> {
     pub topic_id: &'a str,
     pub topic_label: &'a str,
     pub topic_custom: Option<&'a str>,
-    pub duration_goal_seconds: u32,
+    pub duration_goal_seconds: Option<u32>,
     pub practice_mode: &'a str,
     pub practice_phase: &'a str,
     pub written_turn_count: usize,
@@ -30,7 +30,7 @@ pub(super) fn insert_session(
         "INSERT INTO sessions (mode, scenario, started_at, opening_question, topic_id, topic_label, topic_custom, duration_goal_seconds, active_duration_ms, practice_mode, practice_phase, written_turn_count, is_mistake_practice)
          VALUES (?1, 'free_conversation', ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9, ?10, ?11)",
         params![options.mode, now_ms(), options.opening_question, options.topic_id, options.topic_label,
-            options.topic_custom, i64::from(options.duration_goal_seconds), options.practice_mode,
+            options.topic_custom, options.duration_goal_seconds.map(i64::from), options.practice_mode,
             options.practice_phase, i64::try_from(options.written_turn_count).unwrap_or(i64::MAX),
             options.is_mistake_practice],
     )?;
@@ -42,7 +42,7 @@ impl SessionDatabase {
     pub fn active_session(&self) -> rusqlite::Result<Option<StoredSession>> {
         self.connection
             .query_row(
-                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, COALESCE(duration_goal_seconds, 600), COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0), COALESCE(is_mistake_practice, 0)
+                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, duration_goal_seconds, COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0), COALESCE(is_mistake_practice, 0)
                  FROM sessions WHERE ended_at IS NULL LIMIT 1",
                 [],
                 stored_session,
@@ -53,7 +53,7 @@ impl SessionDatabase {
     pub fn session_metadata(&self, session_id: u64) -> rusqlite::Result<Option<StoredSession>> {
         self.connection
             .query_row(
-                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, COALESCE(duration_goal_seconds, 600), COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0), COALESCE(is_mistake_practice, 0)
+                "SELECT id, COALESCE(topic_id, 'free_conversation'), COALESCE(topic_label, 'Free conversation'), topic_custom, duration_goal_seconds, COALESCE(active_duration_ms, 0), started_at, opening_question, COALESCE(practice_mode, 'voice'), COALESCE(practice_phase, 'speaking'), COALESCE(written_turn_count, 0), COALESCE(is_mistake_practice, 0)
                  FROM sessions WHERE id = ?1",
                 [to_sql_id(session_id)?],
                 stored_session,
@@ -92,7 +92,7 @@ impl SessionDatabase {
             topic_id: "free_conversation",
             topic_label: "Free conversation",
             topic_custom: None,
-            duration_goal_seconds: 600,
+            duration_goal_seconds: Some(600),
             practice_mode: "voice",
             practice_phase: "speaking",
             written_turn_count: 0,
@@ -166,14 +166,15 @@ impl SessionDatabase {
     ) -> rusqlite::Result<crate::personal_profile::PersonalProfile> {
         self.connection
             .query_row(
-                "SELECT role, stack, interests, goals FROM personal_profile WHERE id = 1",
+                "SELECT name, role, stack, interests, goals FROM personal_profile WHERE id = 1",
                 [],
                 |row| {
                     Ok(crate::personal_profile::PersonalProfile {
-                        role: row.get(0)?,
-                        stack: row.get(1)?,
-                        interests: row.get(2)?,
-                        goals: row.get(3)?,
+                        name: row.get(0)?,
+                        role: row.get(1)?,
+                        stack: row.get(2)?,
+                        interests: row.get(3)?,
+                        goals: row.get(4)?,
                     })
                 },
             )
@@ -186,14 +187,16 @@ impl SessionDatabase {
         profile: &crate::personal_profile::PersonalProfile,
     ) -> rusqlite::Result<()> {
         self.connection.execute(
-            "INSERT INTO personal_profile (id, role, stack, interests, goals)
-             VALUES (1, ?1, ?2, ?3, ?4)
+            "INSERT INTO personal_profile (id, name, role, stack, interests, goals)
+             VALUES (1, ?1, ?2, ?3, ?4, ?5)
              ON CONFLICT(id) DO UPDATE SET
+                 name = excluded.name,
                  role = excluded.role,
                  stack = excluded.stack,
                  interests = excluded.interests,
                  goals = excluded.goals",
             params![
+                profile.name,
                 profile.role,
                 profile.stack,
                 profile.interests,
@@ -206,15 +209,18 @@ impl SessionDatabase {
 
 fn stored_session(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredSession> {
     let id = row.get::<_, i64>(0)?;
-    let duration_goal = row.get::<_, i64>(4)?;
+    let duration_goal = row.get::<_, Option<i64>>(4)?;
     let active_duration = row.get::<_, i64>(5)?;
     Ok(StoredSession {
         id: u64::try_from(id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, id))?,
         topic_id: row.get(1)?,
         topic_label: row.get(2)?,
         topic_custom: row.get(3)?,
-        duration_goal_seconds: u32::try_from(duration_goal)
-            .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(4, duration_goal))?,
+        duration_goal_seconds: duration_goal
+            .map(|goal| {
+                u32::try_from(goal).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(4, goal))
+            })
+            .transpose()?,
         active_duration_ms: u64::try_from(active_duration)
             .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(5, active_duration))?,
         started_at: row.get(6)?,

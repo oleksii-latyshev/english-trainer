@@ -22,7 +22,7 @@ mod translation_settings;
 pub(crate) mod wrapup_generation;
 use std::path::Path;
 
-pub(crate) const SCHEMA_VERSION: i64 = 20;
+pub(crate) const SCHEMA_VERSION: i64 = 21;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;
@@ -347,7 +347,7 @@ pub struct StoredSession {
     pub topic_id: String,
     pub topic_label: String,
     pub topic_custom: Option<String>,
-    pub duration_goal_seconds: u32,
+    pub duration_goal_seconds: Option<u32>,
     pub active_duration_ms: u64,
     pub started_at: i64,
     pub opening_question: String,

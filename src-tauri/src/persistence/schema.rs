@@ -488,6 +488,17 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 "ALTER TABLE memory_review_items ADD COLUMN is_cued INTEGER NOT NULL DEFAULT 0;",
             )?;
         }
+        transaction.pragma_update(None, "user_version", 20)?;
+        transaction.commit()?;
+        version = 20;
+    }
+    if version < 21 {
+        let transaction = connection.unchecked_transaction()?;
+        if !has_column(&transaction, "personal_profile", "name")? {
+            transaction.execute_batch(
+                "ALTER TABLE personal_profile ADD COLUMN name TEXT NOT NULL DEFAULT '';",
+            )?;
+        }
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

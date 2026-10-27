@@ -40,7 +40,15 @@ pub struct StartPracticeOptions {
     pub practice_mode: Option<PracticeMode>,
     pub topic_id: Option<String>,
     pub topic_custom: Option<String>,
-    pub duration_goal_seconds: Option<u32>,
+    #[serde(default, deserialize_with = "explicit_or_absent")]
+    pub duration_goal_seconds: Option<Option<u32>>,
+}
+
+fn explicit_or_absent<'de, D>(deserializer: D) -> Result<Option<Option<u32>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<u32>::deserialize(deserializer).map(Some)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, ts_rs::TS)]
@@ -132,7 +140,7 @@ pub fn validate_start_options(options: &StartPracticeOptions) -> Result<(), Conv
         }
     }
 
-    if let Some(duration) = options.duration_goal_seconds {
+    if let Some(Some(duration)) = options.duration_goal_seconds {
         if !is_valid_duration_goal(duration) {
             return Err(ConversationError::InvalidDuration);
         }
@@ -267,13 +275,13 @@ pub fn topic_opening_question(topic_id: &str, custom_text: Option<&str>, seed: u
 pub fn resolve_start_options(
     options: Option<StartPracticeOptions>,
     session_count: usize,
-) -> Result<(TopicSelection, u32, String), ConversationError> {
+) -> Result<(TopicSelection, Option<u32>, String), ConversationError> {
     let options = options.unwrap_or_default();
     validate_start_options(&options)?;
 
     let duration_goal = options
         .duration_goal_seconds
-        .unwrap_or(DEFAULT_DURATION_GOAL_SECONDS);
+        .unwrap_or(Some(DEFAULT_DURATION_GOAL_SECONDS));
 
     let topic_id_raw = options
         .topic_id
@@ -325,7 +333,7 @@ mod tests {
             practice_mode: None,
             topic_id: Some(TOPIC_FREE_TOPIC.into()),
             topic_custom: Some("  Open source software  ".into()),
-            duration_goal_seconds: Some(900),
+            duration_goal_seconds: Some(Some(900)),
         };
         assert!(validate_start_options(&valid).is_ok());
         assert!(validate_start_options(&StartPracticeOptions {
@@ -334,7 +342,7 @@ mod tests {
         })
         .is_err());
         assert!(validate_start_options(&StartPracticeOptions {
-            duration_goal_seconds: Some(420),
+            duration_goal_seconds: Some(Some(420)),
             ..Default::default()
         })
         .is_err());
@@ -349,6 +357,29 @@ mod tests {
             ..Default::default()
         })
         .is_err());
+    }
+
+    #[test]
+    fn an_explicit_null_goal_means_no_limit_and_an_absent_goal_means_the_default() {
+        let none: StartPracticeOptions = serde_json::from_str(
+            r#"{"topic_id":null,"topic_custom":null,"duration_goal_seconds":null}"#,
+        )
+        .unwrap();
+        assert_eq!(none.duration_goal_seconds, Some(None));
+        let absent: StartPracticeOptions =
+            serde_json::from_str(r#"{"topic_id":null,"topic_custom":null}"#).unwrap();
+        assert_eq!(absent.duration_goal_seconds, None);
+        let fifteen: StartPracticeOptions =
+            serde_json::from_str(r#"{"duration_goal_seconds":900}"#).unwrap();
+        assert_eq!(fifteen.duration_goal_seconds, Some(Some(900)));
+
+        assert!(validate_start_options(&none).is_ok());
+        assert_eq!(resolve_start_options(Some(none), 0).unwrap().1, None);
+        assert_eq!(
+            resolve_start_options(Some(absent), 0).unwrap().1,
+            Some(DEFAULT_DURATION_GOAL_SECONDS)
+        );
+        assert_eq!(resolve_start_options(None, 0).unwrap().1, Some(600));
     }
 
     #[test]

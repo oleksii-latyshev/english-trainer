@@ -55,4 +55,5 @@ export const LENGTH_CHOICES: readonly {
   { value: 300, label: '5 min' },
   { value: 600, label: '10 min' },
   { value: 900, label: '15 min' },
+  { value: null, label: 'No limit' },
 ];

@@ -29,6 +29,12 @@ sequenceDiagram
     end
 ```
 
+## Header progress
+
+The header shows `mm:ss of mm:ss · mode` with a progress bar when the session has a suggested length,
+and only `mm:ss · mode` without a bar when it has none (No limit). Usual-mistake practice shows its
+question count instead.
+
 ## Header actions
 
 ```mermaid

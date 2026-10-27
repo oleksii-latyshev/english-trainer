@@ -65,7 +65,7 @@ impl SessionStore {
         } else {
             Vec::new()
         };
-        let profile = state.database.get_personal_profile()?;
+        let profile = state.database.get_personal_profile()?.without_name();
         let session = active_session_mut(&mut state, session_id)?;
         session.in_flight = true;
         session.reply_cancelled = Arc::new(AtomicBool::new(false));

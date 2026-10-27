@@ -15,11 +15,16 @@ function startedWhen(startedAt: number, now: number): string {
   return new Date(startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function minutesLeft(session: OpenSession): number {
-  return Math.max(
+function timeDetail(session: OpenSession): string {
+  if (session.durationGoalSeconds === null) {
+    const minutes = Math.floor(session.activeDurationMs / MINUTE_MS);
+    return minutes === 0 ? 'less than a minute so far' : `${minutes} min so far`;
+  }
+  const left = Math.max(
     0,
     Math.ceil((session.durationGoalSeconds * 1000 - session.activeDurationMs) / MINUTE_MS),
   );
+  return `${left} min left`;
 }
 
 export function resumeDetail(session: OpenSession, now: number = Date.now()): string {
@@ -27,5 +32,5 @@ export function resumeDetail(session: OpenSession, now: number = Date.now()): st
     const remaining = Math.max(0, session.targetTurns - (session.turnCount ?? 0));
     return `${remaining} ${remaining === 1 ? 'question' : 'questions'} left`;
   }
-  return `${session.topicLabel} · Started ${startedWhen(session.startedAt, now)} · ${minutesLeft(session)} min left`;
+  return `${session.topicLabel} · Started ${startedWhen(session.startedAt, now)} · ${timeDetail(session)}`;
 }

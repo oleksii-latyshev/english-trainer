@@ -18,6 +18,7 @@ import { UsualMistakesCard } from '@/features/usual-mistakes';
 import type { TalkStartScreenProps } from './types';
 
 export function TalkStartScreen({
+  learnerName,
   status,
   error,
   openSession,
@@ -48,7 +49,7 @@ export function TalkStartScreen({
   return (
     <div className="max-narrow:flex-col mx-auto flex max-w-6xl gap-3">
       <section className="flex max-w-190 min-w-0 flex-1 flex-col gap-5">
-        <StartGreeting />
+        <StartGreeting name={learnerName} />
         {openSession ? (
           <ResumeCard
             isDisabled={status === 'restoring'}

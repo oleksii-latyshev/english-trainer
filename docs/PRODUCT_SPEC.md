@@ -68,8 +68,8 @@ Principles:
 - The AI reply starts playing while it is still being generated. Speaking or pressing record
   interrupts it.
 
-Sessions are time-based (default 10 minutes, suggested, not enforced) and can be finished at any
-moment. Closing the app keeps the session resumable.
+Sessions are time-based (suggested 5, 10 or 15 minutes, default 10, or No limit; never enforced)
+and can be finished at any moment. Closing the app keeps the session resumable.
 
 ### 4.1 Write, then speak
 
@@ -127,7 +127,8 @@ memory evidence. Planning expiry never starts recording; the learner chooses whe
 - The AI varies question types: describe, explain, compare, give an opinion, tell a story,
   disagree politely, explain a technical idea simply, react to an unexpected follow-up.
 - A short profile (role, stack, interests, goals) makes questions relevant and feeds the speech
-  recognition glossary.
+  recognition glossary. An optional name (at most 40 characters) is used only in the Start greeting
+  ("Good morning, Oleksii"); it stays on the Mac and is not sent to AI providers.
 - The AI partner speaks natural everyday English and never invents facts about the learner. By
   default (Settings > Conversation AI > Eva's style: Natural) a reply is two to four sentences with
   a varied reaction (agreeing, relating, light humour, a short opinion of her own) and one question;

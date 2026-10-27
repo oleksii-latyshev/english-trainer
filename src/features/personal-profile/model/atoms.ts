@@ -1,8 +1,8 @@
-import { Effect } from 'effect';
-import { Atom } from 'effect/reactivity';
+import { Effect, Option } from 'effect';
+import { AsyncResult, Atom } from 'effect/reactivity';
 import type { PersonalProfile } from '@/core/ipc';
 import { ProfileTooLong } from '../errors';
-import { exceedsFieldLimit, MAX_PROFILE_FIELD_CHARS } from '../helpers/profile';
+import { firstFieldOverLimit, learnerName } from '../helpers/profile';
 import { PersonalProfileService } from '../services/personal-profile-service';
 import { runtime } from './runtime';
 
@@ -17,12 +17,20 @@ export const personalProfileAtom = runtime
   )
   .pipe(Atom.runtime.withReactivity(PERSONAL_PROFILE));
 
+export const learnerNameAtom = Atom.make((get): string =>
+  Option.match(AsyncResult.value(get(personalProfileAtom)), {
+    onNone: () => '',
+    onSome: learnerName,
+  }),
+);
+
 export const profileDraftAtom = Atom.make<PersonalProfile | null>(null);
 
 export const savePersonalProfileAtom = runtime.fn(
   Effect.fn('savePersonalProfile')(function* (profile: PersonalProfile, get: Atom.FnContext) {
-    if (exceedsFieldLimit(profile)) {
-      return yield* new ProfileTooLong({ limit: MAX_PROFILE_FIELD_CHARS });
+    const tooLong = firstFieldOverLimit(profile);
+    if (tooLong) {
+      return yield* new ProfileTooLong({ field: tooLong.label, limit: tooLong.limit });
     }
     const service = yield* PersonalProfileService;
     const saved = yield* service.save(profile);

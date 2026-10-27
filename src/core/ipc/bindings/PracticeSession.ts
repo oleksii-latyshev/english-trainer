@@ -3,4 +3,4 @@ import type { AttemptComparison } from "./AttemptComparison";
 import type { PracticeMode } from "./PracticeMode";
 import type { PracticePhase } from "./PracticePhase";
 
-export type PracticeSession = { session_id: number, opening_question: string, turn_count: number, target_turns: number, retry_evidence: Array<AttemptComparison>, topic_id: string, topic_label: string, topic_custom: string | null, duration_goal_seconds: number, active_duration_ms: number, started_at: number, is_clock_running: boolean, practice_mode: PracticeMode, practice_phase: PracticePhase, written_turn_count: number, spoken_turn_count: number, is_mistake_practice: boolean, };
+export type PracticeSession = { session_id: number, opening_question: string, turn_count: number, target_turns: number, retry_evidence: Array<AttemptComparison>, topic_id: string, topic_label: string, topic_custom: string | null, duration_goal_seconds: number | null, active_duration_ms: number, started_at: number, is_clock_running: boolean, practice_mode: PracticeMode, practice_phase: PracticePhase, written_turn_count: number, spoken_turn_count: number, is_mistake_practice: boolean, };
