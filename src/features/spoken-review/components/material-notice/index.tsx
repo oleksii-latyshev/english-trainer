@@ -15,7 +15,7 @@ export function MaterialNotice() {
   if (failure) {
     return (
       <Notice
-        className="flex items-center justify-between gap-3 rounded-control border"
+        className="rounded-control flex items-center justify-between gap-3 border"
         role="status"
         tone="warn"
       >
@@ -28,7 +28,7 @@ export function MaterialNotice() {
   }
   if (isAnswering && (isBusy || preparation?.state === 'pending')) {
     return (
-      <p className="m-0 text-caption text-faint" role="status">
+      <p className="text-caption text-faint m-0" role="status">
         Preparing review situations…
       </p>
     );

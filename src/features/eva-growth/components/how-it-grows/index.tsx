@@ -12,7 +12,7 @@ const RULE_ICONS = {
 export function HowItGrows() {
   return (
     <GlassPanel aria-labelledby="how-it-grows-heading" className="flex flex-col gap-5 px-6 py-6">
-      <h2 className="font-semibold text-caption text-faint" id="how-it-grows-heading">
+      <h2 className="text-caption text-faint font-semibold" id="how-it-grows-heading">
         How Eva grows
       </h2>
       {GROWTH_RULES.map((rule) => {
@@ -23,8 +23,8 @@ export function HowItGrows() {
               <Icon strokeWidth={1.8} />
             </IconTile>
             <div>
-              <h3 className="font-bold text-body">{rule.title}</h3>
-              <p className="mt-1 mb-0 text-muted leading-copy">{rule.body}</p>
+              <h3 className="text-body font-bold">{rule.title}</h3>
+              <p className="text-muted leading-copy mt-1 mb-0">{rule.body}</p>
             </div>
           </div>
         );

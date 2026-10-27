@@ -20,11 +20,11 @@ export function EvidenceList({ entryRef }: Props) {
 
   return (
     <section aria-label="Evidence from conversations" className="flex flex-col gap-2">
-      <span className="font-semibold text-faint text-xs">In conversations</span>
+      <span className="text-faint text-xs font-semibold">In conversations</span>
       {AsyncResult.match(result, {
         onInitial: () => <p className="text-caption text-faint">Loading evidence…</p>,
         onFailure: () => (
-          <div className="flex items-center gap-3 text-caption text-warn-text" role="alert">
+          <div className="text-caption text-warn-text flex items-center gap-3" role="alert">
             <span>Could not load the evidence from conversations.</span>
             <Button onClick={retry} size="sm" tone="secondary">
               Retry
@@ -40,7 +40,7 @@ export function EvidenceList({ entryRef }: Props) {
             <ul className="flex flex-col gap-2">
               {value.events.map((event) => (
                 <li
-                  className="flex items-baseline gap-2.5 text-caption leading-snug"
+                  className="text-caption flex items-baseline gap-2.5 leading-snug"
                   key={event.id}
                 >
                   <span className={evidenceTag({ tone: evidenceTone(event) })}>
@@ -49,7 +49,7 @@ export function EvidenceList({ entryRef }: Props) {
                   {event.exact_excerpt && (
                     <span className="text-quiet-foreground">“{event.exact_excerpt}”</span>
                   )}
-                  <span className="flex-none text-faint text-xs">
+                  <span className="text-faint flex-none text-xs">
                     {evidenceSource(event)} · {evidenceDate(event.original_turn_time)}
                   </span>
                 </li>

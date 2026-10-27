@@ -23,11 +23,11 @@ const PAUSED_MESSAGE =
 
 function Rewrite({ feedback, transcript }: { feedback: TurnFeedback; transcript: string }) {
   return (
-    <p className="m-0 text-body text-foreground leading-copy" data-word-lookup>
+    <p className="text-body text-foreground leading-copy m-0" data-word-lookup>
       {highlightRewrite(transcript, feedback.b2_rewrite).map((part, index) =>
         part.isChanged ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
-          <mark className="rounded-sm bg-ok-bg px-0.5 text-ok" key={index}>
+          <mark className="bg-ok-bg text-ok rounded-sm px-0.5" key={index}>
             {part.text}
           </mark>
         ) : (
@@ -42,10 +42,10 @@ function Rewrite({ feedback, transcript }: { feedback: TurnFeedback; transcript:
 function Why({ feedback }: { feedback: TurnFeedback }) {
   const focus = feedback.focus_feedback[0];
   if (!focus) {
-    return <p className="m-0 text-caption text-muted">No priority correction was found.</p>;
+    return <p className="text-caption text-muted m-0">No priority correction was found.</p>;
   }
   return (
-    <div className="flex flex-col gap-1 text-caption text-muted">
+    <div className="text-caption text-muted flex flex-col gap-1">
       <p className="m-0" data-word-lookup>
         {focus.explanation}
       </p>
@@ -61,7 +61,7 @@ function RetryLine(props: { target: AnswerTarget; message: string; actionLabel: 
   const [result, retry] = useAtom(retryCoachingAtom(answerKey(target)));
   const hasFailed = AsyncResult.isFailure(result) && !AsyncResult.isWaiting(result);
   return (
-    <div className="flex flex-wrap items-center gap-2 text-caption text-muted">
+    <div className="text-caption text-muted flex flex-wrap items-center gap-2">
       <span>{message}</span>
       <Button
         disabled={AsyncResult.isWaiting(result)}
@@ -113,10 +113,10 @@ export function AnswerReview({ target, transcript, coaching, renderActions }: Pr
   return (
     <section
       aria-label={`Review of answer ${target.sequence}`}
-      className="flex flex-col gap-2.5 rounded-2xl border border-line bg-surface px-4.5 py-3.5"
+      className="border-line bg-surface flex flex-col gap-2.5 rounded-2xl border px-4.5 py-3.5"
     >
       {view.tag === 'pending' && (
-        <p className="m-0 text-caption text-muted" role="status">
+        <p className="text-caption text-muted m-0" role="status">
           Checking your answer…
         </p>
       )}

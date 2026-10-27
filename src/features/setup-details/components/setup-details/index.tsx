@@ -25,7 +25,7 @@ function Findings({ data }: { data: SetupDiagnostics }) {
         <p>
           <strong className="text-foreground">Local database</strong>
         </p>
-        <p className="font-mono text-foreground">{data.database_path}</p>
+        <p className="text-foreground font-mono">{data.database_path}</p>
       </div>
       {data.whisper_cli.status !== 'available' && (
         <p>

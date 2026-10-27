@@ -15,7 +15,7 @@ const CAPTION = 'm-0 text-caption text-faint leading-copy';
 function Finding({ finding }: { finding: UsageFinding }) {
   const outcome = findingOutcome(finding);
   return (
-    <div className="flex flex-col gap-1 rounded-xl bg-background px-3 py-2 text-caption text-muted leading-normal">
+    <div className="bg-background text-caption text-muted flex flex-col gap-1 rounded-xl px-3 py-2 leading-normal">
       <div className="flex items-center gap-2">
         <strong>Target: “{finding.target}”</strong>
         <span className="ml-auto">
@@ -25,7 +25,7 @@ function Finding({ finding }: { finding: UsageFinding }) {
       {finding.exact_excerpt && (
         <p className="m-0">Saved transcript excerpt: “{finding.exact_excerpt}”</p>
       )}
-      <p className="m-0 text-faint text-xs">Saved item status: {finding.status_after}</p>
+      <p className="text-faint m-0 text-xs">Saved item status: {finding.status_after}</p>
     </div>
   );
 }
@@ -61,7 +61,7 @@ function Body({ view, onRetry }: { view: UsageReviewView; onRetry: () => void })
     case 'restore-error':
     case 'review-error':
       return (
-        <Notice className="flex items-center gap-3 rounded-control border" role="alert" tone="warn">
+        <Notice className="rounded-control flex items-center gap-3 border" role="alert" tone="warn">
           <span>{view.message}</span>
           <Button onClick={onRetry} size="sm" tone="secondary">
             Retry
@@ -85,10 +85,10 @@ export function UsageReviewCard({ target: answer }: Props) {
   return (
     <section
       aria-label="Learning use review"
-      className="flex flex-col gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3.5"
+      className="border-line bg-surface flex flex-col gap-2.5 rounded-2xl border px-4 py-3.5"
     >
       <div className="flex items-center gap-2">
-        <span className="font-semibold text-accent text-xs tracking-wide">Learning use review</span>
+        <span className="text-accent text-xs font-semibold tracking-wide">Learning use review</span>
         <Chip>Answer {answer.sequence}</Chip>
         {canCheck && (
           <Button className="ml-auto" onClick={() => check(undefined)} size="sm" tone="secondary">

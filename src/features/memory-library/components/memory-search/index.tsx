@@ -6,7 +6,7 @@ export function MemorySearch() {
   const [query, setQuery] = useAtom(searchQueryAtom);
   return (
     <SearchField
-      className="w-80 max-narrow:w-full"
+      className="max-narrow:w-full w-80"
       label="Search memory"
       onValueChange={setQuery}
       placeholder="Search phrases and mistakes"

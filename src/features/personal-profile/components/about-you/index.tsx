@@ -33,7 +33,7 @@ function ProfileForm({ draft }: { draft: PersonalProfile }) {
   return (
     <form className="grid gap-x-4 gap-y-3 px-5 py-3 sm:grid-cols-2" onSubmit={submit}>
       {PROFILE_FIELDS.map(({ key, label }) => (
-        <label className="grid gap-1 text-control" htmlFor={`profile-${key}`} key={key}>
+        <label className="text-control grid gap-1" htmlFor={`profile-${key}`} key={key}>
           <span>{label}</span>
           <Input
             autoComplete="off"

@@ -9,7 +9,7 @@ export function AnswerHelp({ isDisabled }: Props) {
   return (
     <section aria-label="Answer help" className="flex flex-col gap-2">
       {help.notice !== null && (
-        <p className="m-0 text-caption text-muted leading-normal" role="status">
+        <p className="text-caption text-muted m-0 leading-normal" role="status">
           {help.notice}
         </p>
       )}

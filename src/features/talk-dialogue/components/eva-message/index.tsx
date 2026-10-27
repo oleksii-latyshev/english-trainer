@@ -19,10 +19,10 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: Props
   return (
     <article aria-label="Eva says" className="flex max-w-4/5 items-start gap-3">
       <div className="flex min-w-0 flex-col gap-1.5">
-        <div className="rounded-2xl rounded-tl-md border border-line bg-surface-2 px-4.5 py-3.5 backdrop-blur-glass">
+        <div className="border-line bg-surface-2 backdrop-blur-glass rounded-2xl rounded-tl-md border px-4.5 py-3.5">
           {message.text && (
             <p
-              className="m-0 text-body text-eva-text leading-copy first:last:font-semibold first:last:text-foreground"
+              className="text-body text-eva-text leading-copy first:last:text-foreground m-0 first:last:font-semibold"
               data-word-lookup={lookup}
             >
               {message.text}
@@ -31,7 +31,7 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: Props
           )}
           {message.question && (
             <p
-              className="mt-1.5 mb-0 font-semibold text-body text-foreground leading-copy"
+              className="text-body text-foreground leading-copy mt-1.5 mb-0 font-semibold"
               data-word-lookup={lookup}
             >
               {message.question}
@@ -39,7 +39,7 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: Props
           )}
         </div>
         {!isStreaming && (
-          <div className="flex items-center gap-2 pl-1 text-caption text-faint">
+          <div className="text-caption text-faint flex items-center gap-2 pl-1">
             {onPlaySpeech && (
               <Button
                 aria-label="Replay Eva's reply"
@@ -52,7 +52,7 @@ export function EvaMessage({ message, onPlaySpeech, isStreaming = false }: Props
               </Button>
             )}
             {message.isBackup && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5">
+              <span className="border-line inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
                 <Smartphone aria-hidden="true" className="size-3" />
                 on-device
               </span>

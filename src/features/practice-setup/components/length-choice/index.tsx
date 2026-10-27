@@ -11,7 +11,7 @@ type Props = {
 export function LengthChoice({ value, onChange, disabled }: Props) {
   return (
     <div className="flex flex-col gap-3">
-      <span className="font-semibold text-caption text-faint">Length</span>
+      <span className="text-caption text-faint font-semibold">Length</span>
       <SegmentedControl
         disabled={disabled}
         label="Suggested session length"

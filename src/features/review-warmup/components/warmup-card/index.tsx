@@ -22,7 +22,7 @@ function PhraseBlock({ phrase }: { phrase: WarmupPhrase }) {
   const source = phraseSource(phrase);
   return (
     <>
-      <div className="font-semibold text-lg leading-snug tracking-tight">“{phrase.phrase}”</div>
+      <div className="text-lg leading-snug font-semibold tracking-tight">“{phrase.phrase}”</div>
       {source && <div className="text-caption text-muted leading-copy">{source}</div>}
     </>
   );
@@ -39,16 +39,16 @@ export function WarmupCard({
   return (
     <GlassPanel aria-label="Phrases to review" className="flex flex-col gap-3.5 p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-caption text-faint">Say it again today</h2>
+        <h2 className="text-caption text-faint font-semibold">Say it again today</h2>
         {dueCount > 0 && (
-          <span className="font-bold text-accent-text text-caption">{dueLabel(dueCount)}</span>
+          <span className="text-accent-text text-caption font-bold">{dueLabel(dueCount)}</span>
         )}
       </div>
       {nextPhrase ? (
         <PhraseBlock phrase={nextPhrase} />
       ) : (
         <>
-          <div className="font-semibold text-lg leading-snug tracking-tight">
+          <div className="text-lg leading-snug font-semibold tracking-tight">
             Nothing to review today
           </div>
           <div className="text-caption text-muted leading-copy">{emptyHint()}</div>

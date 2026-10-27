@@ -30,9 +30,9 @@ export function Rescue() {
   return (
     <section
       aria-label="Stuck rescue"
-      className="flex max-w-[min(420px,45vw)] flex-col gap-2 rounded-2xl border border-line bg-surface px-3 py-2.5"
+      className="border-line bg-surface flex max-w-[min(420px,45vw)] flex-col gap-2 rounded-2xl border px-3 py-2.5"
     >
-      <div className="flex items-center justify-between gap-1.5 text-caption text-foreground">
+      <div className="text-caption text-foreground flex items-center justify-between gap-1.5">
         <strong>Need a little help?</strong>
         <Button onClick={rescue.close} size="sm" tone="quiet">
           Continue speaking

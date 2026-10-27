@@ -11,9 +11,9 @@ type Props = {
 
 function Notice({ title, hint, actions }: { title: string; hint: string; actions: ReactNode }) {
   return (
-    <section className="mx-auto mt-24 flex max-w-130 flex-col gap-3.5 rounded-card border border-line bg-surface p-7 shadow-overlay backdrop-blur-glass backdrop-saturate-170">
-      <h1 className="m-0 font-bold text-2xl tracking-tight">{title}</h1>
-      <p className="m-0 text-muted">{hint}</p>
+    <section className="rounded-card border-line bg-surface shadow-overlay backdrop-blur-glass mx-auto mt-24 flex max-w-130 flex-col gap-3.5 border p-7 backdrop-saturate-170">
+      <h1 className="m-0 text-2xl font-bold tracking-tight">{title}</h1>
+      <p className="text-muted m-0">{hint}</p>
       <div className="flex gap-2">{actions}</div>
     </section>
   );
@@ -25,7 +25,7 @@ export function ReviewNotice({ tag, isWarmup, onLeave }: Props) {
 
   if (tag === 'loading') {
     return (
-      <p className="mt-24 text-center text-muted" role="status">
+      <p className="text-muted mt-24 text-center" role="status">
         Getting your review ready…
       </p>
     );

@@ -38,13 +38,13 @@ export function WriteSpeakReview({
       aria-label={copy.title}
       className="mx-auto flex min-h-0 w-full max-w-262 flex-1 flex-col gap-5 overflow-auto p-6"
     >
-      <header className="flex items-start justify-between gap-5 border-line-soft border-b pb-4">
+      <header className="border-line-soft flex items-start justify-between gap-5 border-b pb-4">
         <div>
-          <p className="m-0 font-semibold text-caption text-faint uppercase tracking-wider">
+          <p className="text-caption text-faint m-0 font-semibold tracking-wider uppercase">
             {session.topicLabel} · {modeLabel(session.practiceMode)}
           </p>
-          <h1 className="mt-0.5 mb-1.5 font-semibold text-2xl">{copy.title}</h1>
-          <p className="m-0 max-w-175 text-muted leading-copy">{copy.detail}</p>
+          <h1 className="mt-0.5 mb-1.5 text-2xl font-semibold">{copy.title}</h1>
+          <p className="text-muted leading-copy m-0 max-w-175">{copy.detail}</p>
         </div>
         <Button disabled={controls.isDisabled} onClick={controls.finish} tone="secondary">
           Finish
@@ -93,11 +93,11 @@ export function WriteSpeakReview({
       </div>
 
       {canMoveToSpeaking && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5">
+        <div className="border-line bg-surface flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3.5">
           <Button disabled={controls.isDisabled} onClick={controls.readyToSpeak} tone="primary">
             Ready to speak
           </Button>
-          <p className="m-0 text-caption text-muted">
+          <p className="text-caption text-muted m-0">
             Eva will ask the same questions in order. The microphone opens when you continue.
           </p>
         </div>

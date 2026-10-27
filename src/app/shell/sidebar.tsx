@@ -61,9 +61,9 @@ export function Sidebar({
   return (
     <nav
       aria-label="Main"
-      className="flex w-55 flex-none flex-col gap-1.5 overflow-y-auto rounded-card border border-line bg-surface px-3 py-4 shadow-overlay backdrop-blur-glass backdrop-saturate-170 max-rail:w-17 max-rail:px-2.5"
+      className="rounded-card border-line bg-surface shadow-overlay backdrop-blur-glass max-rail:w-17 max-rail:px-2.5 flex w-55 flex-none flex-col gap-1.5 overflow-y-auto border px-3 py-4 backdrop-saturate-170"
     >
-      <div className="px-2.5 pt-1 pb-3.5 font-bold text-lg tracking-tight max-rail:hidden">
+      <div className="max-rail:hidden px-2.5 pt-1 pb-3.5 text-lg font-bold tracking-tight">
         English Trainer
       </div>
       {NAVIGATION.map((item) => (

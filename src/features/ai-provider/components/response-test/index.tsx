@@ -26,8 +26,8 @@ export function ResponseTest({ provider }: Props) {
     if (timing) {
       return (
         <>
-          First words <span className="font-mono text-foreground">{timing.firstWords}</span> · Full
-          reply <span className="font-mono text-foreground">{timing.fullReply}</span>
+          First words <span className="text-foreground font-mono">{timing.firstWords}</span> · Full
+          reply <span className="text-foreground font-mono">{timing.fullReply}</span>
         </>
       );
     }

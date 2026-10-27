@@ -15,7 +15,7 @@ export function EvaPreview() {
   return (
     <GlassPanel
       aria-label="Preview"
-      className="relative flex w-82.5 flex-none flex-col items-center gap-0.5 overflow-hidden p-5 max-narrow:w-full"
+      className="max-narrow:w-full relative flex w-82.5 flex-none flex-col items-center gap-0.5 overflow-hidden p-5"
     >
       <div className="flex h-68 items-end">
         <Eva
@@ -25,7 +25,7 @@ export function EvaPreview() {
           stage={showGrowth ? stage : null}
         />
       </div>
-      <div className="mt-3.5 font-bold text-lg">{moodName(mood)}</div>
+      <div className="mt-3.5 text-lg font-bold">{moodName(mood)}</div>
       <div className="text-caption text-faint">{stageCaption(stage, showGrowth)}</div>
       <SegmentedControl
         className="mt-auto"

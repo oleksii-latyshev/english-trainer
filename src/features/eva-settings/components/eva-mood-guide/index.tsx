@@ -18,7 +18,7 @@ export function EvaMoodGuide() {
         </h2>
         <span className="text-caption text-faint">Click one to preview it</span>
       </div>
-      <ul className="grid grid-cols-6 gap-2 max-narrow:grid-cols-3">
+      <ul className="max-narrow:grid-cols-3 grid grid-cols-6 gap-2">
         {EVA_MOOD_GUIDE.map((entry) => (
           <li key={entry.mood}>
             <ChoiceTile
@@ -27,7 +27,7 @@ export function EvaMoodGuide() {
               onSelect={() => setSelected(entry.mood)}
             >
               <Eva decorative mood={entry.mood} size={64} stage={showGrowth ? stage : null} />
-              <span className="font-semibold text-caption">{entry.name}</span>
+              <span className="text-caption font-semibold">{entry.name}</span>
               <span className="text-faint text-xs">{entry.when}</span>
             </ChoiceTile>
           </li>

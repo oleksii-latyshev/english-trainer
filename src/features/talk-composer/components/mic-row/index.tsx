@@ -37,7 +37,7 @@ export function MicRow({ rescueSlot }: Props) {
         <span className="font-semibold">
           {presentation.micTitle}
           {state.tag === 'auto-listen' && (
-            <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-accent-text text-pip uppercase">
+            <span className="bg-accent-soft text-accent-text text-pip ml-2 rounded-full px-2 py-0.5 uppercase">
               Auto
             </span>
           )}

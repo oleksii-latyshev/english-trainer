@@ -43,7 +43,7 @@ function SentenceCard({
   return (
     <Notice>
       <div className="flex flex-col gap-2.5">
-        <p className="m-0 text-muted text-xs">
+        <p className="text-muted m-0 text-xs">
           Sentence {sentence.index} of {total}
           {sentence.is_recorded && ' · recorded'}
         </p>
@@ -81,11 +81,11 @@ function SentenceCard({
             {sentence.is_recorded ? 'Next' : 'Skip'}
           </Button>
         </div>
-        <p className="m-0 text-muted text-xs" role={recorder.tag === 'error' ? 'alert' : 'status'}>
+        <p className="text-muted m-0 text-xs" role={recorder.tag === 'error' ? 'alert' : 'status'}>
           {recorderHint(recorder, sentence.is_recorded)}
         </p>
         {isPracticeCapturing && (
-          <p className="m-0 text-muted text-xs" role="status">
+          <p className="text-muted m-0 text-xs" role="status">
             Finish the active practice recording first: it uses the microphone.
           </p>
         )}

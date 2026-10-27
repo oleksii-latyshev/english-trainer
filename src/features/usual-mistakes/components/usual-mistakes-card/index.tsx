@@ -14,8 +14,8 @@ const QUESTION_COUNT = 5;
 export function UsualMistakesCard({ mistakes, blockedReason, isStarting, onPractice }: Props) {
   return (
     <GlassPanel aria-label="Your usual mistakes" className="flex flex-col gap-3 p-5">
-      <h2 className="font-semibold text-caption text-faint">Your usual mistakes</h2>
-      <ul className="flex flex-col gap-2 text-control">
+      <h2 className="text-caption text-faint font-semibold">Your usual mistakes</h2>
+      <ul className="text-control flex flex-col gap-2">
         {mistakes.map((mistake) => (
           <li className="flex justify-between gap-2" key={mistake.id}>
             <s className="text-muted decoration-warn/70">{mistake.original}</s>

@@ -9,7 +9,7 @@ export function SettingsEvaScreen({ onBack }: SettingsEvaScreenProps) {
         <Button className="self-start" onClick={onBack} tone="ghost">
           ← Settings
         </Button>
-        <h1 className="font-bold text-3xl tracking-tight">Eva</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Eva</h1>
         <p className="text-muted">
           How your conversation partner looks, grows and what her face is telling you.
         </p>

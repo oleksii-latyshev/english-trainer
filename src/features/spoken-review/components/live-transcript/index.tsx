@@ -10,12 +10,12 @@ export function LiveTranscript() {
       aria-label="Live transcript"
       className="flex max-w-140 flex-col items-end gap-1 self-end"
     >
-      <span className="font-bold text-faint text-pip uppercase tracking-wide">Live transcript</span>
-      <p className="m-0 rounded-card rounded-br-md border border-accent-line border-dashed bg-surface px-4 py-3 text-body text-live-text leading-copy">
+      <span className="text-faint text-pip font-bold tracking-wide uppercase">Live transcript</span>
+      <p className="rounded-card border-accent-line bg-surface text-body text-live-text leading-copy m-0 rounded-br-md border border-dashed px-4 py-3">
         {text}
         <span
           aria-hidden="true"
-          className="ml-0.75 inline-block h-4 w-0.5 translate-y-0.75 bg-accent"
+          className="bg-accent ml-0.75 inline-block h-4 w-0.5 translate-y-0.75"
         />
       </p>
     </article>

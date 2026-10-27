@@ -39,7 +39,7 @@ function HappyEye({ side }: { side: -1 | 1 }) {
   const x = CENTER_X + side * EYE_SPREAD;
   return (
     <path
-      className="fill-none stroke-eva-ink"
+      className="stroke-eva-ink fill-none"
       d={`M${x - 6} 43.35A6 6 0 0 1 ${x + 6} 43.35`}
       strokeWidth={3}
     />
@@ -50,7 +50,7 @@ function SleepingEye({ side }: { side: -1 | 1 }) {
   const x = CENTER_X + side * EYE_SPREAD;
   return (
     <path
-      className="fill-none stroke-eva-ink"
+      className="stroke-eva-ink fill-none"
       d={`M${x - 5.6} 39.6A5.6 4.6 0 0 0 ${x + 5.6} 39.6`}
       strokeWidth={2.8}
     />
@@ -85,7 +85,7 @@ function Mouth({ face, level }: { face: EvaFace; level: number }) {
     case 'idle':
       return (
         <path
-          className="fill-none stroke-eva-ink"
+          className="stroke-eva-ink fill-none"
           d="M50.3 54.6A6.7 6.7 0 0 0 63.7 54.6"
           strokeWidth={2.6}
         />

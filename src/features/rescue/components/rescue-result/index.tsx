@@ -27,7 +27,7 @@ export function RescueResult({ state, onSelect, onRetry }: Props) {
   }
   if (state.tag === 'error') {
     return (
-      <div className="flex flex-wrap items-center gap-1.5 text-foreground text-xs" role="alert">
+      <div className="text-foreground flex flex-wrap items-center gap-1.5 text-xs" role="alert">
         <span>{rescueFailureMessage(state.failure)}</span>
         <Button onClick={onRetry} size="sm" tone="secondary">
           Retry

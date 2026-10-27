@@ -77,8 +77,8 @@ export function SessionHeader({ session, isFinishing, isFinishBlocked, children 
     <header className="mx-auto flex w-full max-w-205 items-center gap-4 px-6 pt-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-baseline gap-3">
-          <span className="truncate font-bold text-body">{session.topicLabel}</span>
-          <span className="truncate text-caption text-muted">{progress.label}</span>
+          <span className="text-body truncate font-bold">{session.topicLabel}</span>
+          <span className="text-caption text-muted truncate">{progress.label}</span>
         </div>
         <div
           aria-label={
@@ -87,11 +87,11 @@ export function SessionHeader({ session, isFinishing, isFinishBlocked, children 
           aria-valuemax={progress.max}
           aria-valuemin={0}
           aria-valuenow={progress.value}
-          className="h-1.5 overflow-hidden rounded-full bg-surface-2"
+          className="bg-surface-2 h-1.5 overflow-hidden rounded-full"
           role="progressbar"
         >
           <div
-            className="h-full rounded-full bg-accent"
+            className="bg-accent h-full rounded-full"
             style={{ width: `${progress.percent}%` }}
           />
         </div>

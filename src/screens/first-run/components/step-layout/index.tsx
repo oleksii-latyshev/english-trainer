@@ -15,9 +15,9 @@ export function StepLayout({ step, mood, children }: Props) {
       <div className="flex h-42 flex-col items-center justify-end">
         <Eva decorative mood={mood} size={132} stage={stage} />
       </div>
-      <p className="mt-4 font-semibold text-faint text-xs">{stepLabel(step)}</p>
-      <h1 className="mt-2 text-center font-bold text-3xl tracking-tight">{copy.title}</h1>
-      <p className="mt-2 max-w-115 text-center text-body text-muted leading-copy">{copy.lead}</p>
+      <p className="text-faint mt-4 text-xs font-semibold">{stepLabel(step)}</p>
+      <h1 className="mt-2 text-center text-3xl font-bold tracking-tight">{copy.title}</h1>
+      <p className="text-body text-muted leading-copy mt-2 max-w-115 text-center">{copy.lead}</p>
       <div className="mt-8 w-full max-w-115">{children}</div>
     </>
   );

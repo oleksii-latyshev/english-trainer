@@ -40,7 +40,7 @@ export function Dialogue({ currentQuestion, canReplay, children }: Props) {
         >
           {hasFailed && (
             <Notice
-              className="flex items-center justify-between gap-3 rounded-control border"
+              className="rounded-control flex items-center justify-between gap-3 border"
               role="alert"
               tone="warn"
             >
@@ -73,7 +73,7 @@ export function Dialogue({ currentQuestion, canReplay, children }: Props) {
       </div>
       {follow.hasUnseen && (
         <Button
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 shadow-overlay"
+          className="shadow-overlay absolute bottom-3 left-1/2 -translate-x-1/2"
           onClick={follow.jumpToNewest}
           size="sm"
           tone="secondary"

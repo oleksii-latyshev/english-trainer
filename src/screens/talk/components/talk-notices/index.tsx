@@ -7,7 +7,7 @@ import { Notice } from '@/shared/ui/notice';
 function Problem({ message }: { message: string }) {
   return (
     <Notice
-      className="flex items-center gap-3 rounded-control border border-warn-line"
+      className="rounded-control border-warn-line flex items-center gap-3 border"
       role="alert"
       tone="warn"
     >

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -34,7 +34,8 @@
           }
         },
         "noReactForwardRef": "error",
-        "noNestedPromises": "error"
+        "noNestedPromises": "error",
+        "noReactStringRefs": "error"
       },
       "style": {
         "noNonNullAssertion": "error",
@@ -46,7 +47,8 @@
           "options": {
             "maxLines": 300
           }
-        }
+        },
+        "useTestHooksOnTop": "error"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": {
@@ -54,22 +56,20 @@
           "options": {
             "maxAllowedComplexity": 15
           }
-        }
+        },
+        "noPlaywrightUselessAwait": "error"
       },
       "nursery": {
         "noFloatingPromises": "error",
         "noMisusedPromises": "error",
         "useExhaustiveSwitchCases": "error",
-        "noComponentHookFactories": "error",
-        "noReactStringRefs": "error",
-        "useAwaitThenable": "error",
-        "noPlaywrightMissingAwait": "error",
-        "noPlaywrightUselessAwait": "error",
-        "useTestHooksOnTop": "error"
+        "useAwaitThenable": "error"
       },
       "correctness": {
         "noNestedComponentDefinitions": "error",
-        "noReactPropAssignments": "error"
+        "noReactPropAssignments": "error",
+        "noComponentHookFactories": "error",
+        "noPlaywrightMissingAwait": "error"
       }
     },
     "domains": {
@@ -162,12 +162,9 @@
             }
           },
           "nursery": {
-            "useSortedClasses": {
+            "useTailwindSortedClasses": {
               "level": "error",
-              "fix": "safe",
-              "options": {
-                "functions": ["tv", "clsx", "cn"]
-              }
+              "fix": "safe"
             }
           }
         }
@@ -218,7 +215,7 @@
                   },
                   {
                     "group": ["@tauri-apps/api/core"],
-                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md §2)."
                   }
                 ]
               }
@@ -253,7 +250,7 @@
                   },
                   {
                     "group": ["@tauri-apps/api/core"],
-                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md §2)."
                   },
                   {
                     "group": ["@/shared/*/*/**"],
@@ -327,7 +324,7 @@
                   },
                   {
                     "group": ["@tauri-apps/api/core"],
-                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md §2)."
                   },
                   {
                     "group": ["@/core/*/**", "@/shared/*/*/**"],
@@ -359,7 +356,7 @@
                   },
                   {
                     "group": ["@tauri-apps/api/core"],
-                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md §2)."
                   },
                   {
                     "group": ["@/features/*/**", "@/core/*/**", "@/shared/*/*/**"],
@@ -383,7 +380,7 @@
                 "patterns": [
                   {
                     "group": ["@tauri-apps/api/core"],
-                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md \u00a72)."
+                    "message": "Only core/ipc calls invoke(); use the Ipc service (EFFECT.md §2)."
                   },
                   {
                     "group": ["@/features/*/**", "@/core/*/**", "@/shared/*/*/**"],
@@ -396,5 +393,17 @@
         }
       }
     }
-  ]
+  ],
+  "tailwind": {
+    "mergeFunctions": ["clsx", "cn"],
+    "variantFunctions": ["tv"]
+  },
+  "markdown": {
+    "formatter": {
+      "enabled": false
+    },
+    "linter": {
+      "enabled": false
+    }
+  }
 }

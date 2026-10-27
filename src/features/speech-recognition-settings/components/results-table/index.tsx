@@ -7,12 +7,12 @@ const HEADERS = ['Model', 'Prompt', 'Terms right', 'Word errors', 'Median', 'Slo
 
 export function ResultsTable({ runs, modelInUse }: Props) {
   return (
-    <table className="w-full border-collapse text-caption">
+    <table className="text-caption w-full border-collapse">
       <caption className="sr-only">Speech recognition measured on your recordings</caption>
       <thead>
         <tr className="text-faint">
           {HEADERS.map((header) => (
-            <th className="py-1.5 pr-3 text-left font-normal text-xs" key={header} scope="col">
+            <th className="py-1.5 pr-3 text-left text-xs font-normal" key={header} scope="col">
               {header}
             </th>
           ))}
@@ -21,13 +21,13 @@ export function ResultsTable({ runs, modelInUse }: Props) {
       <tbody>
         {runs.map((run) => (
           <tr
-            className="border-line-soft border-t text-muted"
+            className="border-line-soft text-muted border-t"
             key={`${run.model_file}-${run.uses_prompt}`}
           >
-            <th className="py-1.5 pr-3 text-left font-semibold text-foreground" scope="row">
+            <th className="text-foreground py-1.5 pr-3 text-left font-semibold" scope="row">
               {modelName(run.model_file)}
               {run.model_file === modelInUse && !run.uses_prompt && (
-                <span className="ml-1.5 font-normal text-ok text-xs">· in use</span>
+                <span className="text-ok ml-1.5 text-xs font-normal">· in use</span>
               )}
             </th>
             <td className="py-1.5 pr-3">{run.uses_prompt ? 'Glossary' : 'None'}</td>

@@ -15,7 +15,7 @@ export function ModelAnswer({ text, isRecording, onHide }: Props) {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="text-faint text-xs">Model answer — try your own version after reading</div>
-      <p className="m-0 text-body text-eva-text leading-relaxed">{text}</p>
+      <p className="text-body text-eva-text m-0 leading-relaxed">{text}</p>
       <div className="flex flex-wrap gap-2">
         <Button
           disabled={isRecording}

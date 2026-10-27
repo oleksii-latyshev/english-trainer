@@ -2,7 +2,7 @@ import { tv } from '@/shared/ui/tv';
 
 export const chip = tv({
   slots: {
-    root: 'inline-flex w-fit shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border font-semibold',
+    root: 'inline-flex w-fit shrink-0 items-center gap-0.5 rounded-full border font-semibold whitespace-nowrap',
     label: 'px-0.5',
   },
   variants: {
@@ -14,7 +14,7 @@ export const chip = tv({
     },
     size: {
       sm: { root: 'px-1.5 text-xs leading-5' },
-      md: { root: 'h-8 px-3.5 text-control' },
+      md: { root: 'text-control h-8 px-3.5' },
     },
   },
   defaultVariants: { tone: 'neutral', size: 'sm' },

@@ -31,10 +31,10 @@ export function AnswerRange({
   const sequences = sequencesBetween(start, end);
   return (
     <section aria-label={title} className="flex min-w-0 flex-col gap-3">
-      <h2 className="m-0 font-semibold text-base">
+      <h2 className="m-0 text-base font-semibold">
         {title} ({sequences.length})
       </h2>
-      <p aria-live="polite" className="m-0 text-caption text-muted leading-snug">
+      <p aria-live="polite" className="text-caption text-muted m-0 leading-snug">
         {feedbackSummary(dialogue, sequences)}
       </p>
       {sequences.map((sequence) => (
@@ -49,7 +49,7 @@ export function AnswerRange({
         />
       ))}
       {dialogue && !hasSavedAnswers(dialogue, sequences) && (
-        <p className="m-0 text-caption text-muted leading-snug">
+        <p className="text-caption text-muted m-0 leading-snug">
           These answers are not available in the saved dialogue.
         </p>
       )}

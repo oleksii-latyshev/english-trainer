@@ -100,7 +100,7 @@ function trimPadding(samples: Int16Array, rate: number, trim: TrimSettings): Int
   return kept;
 }
 
-function describe(wav: Buffer, synthMs: number, trim: TrimSettings): Clip {
+function clipOf(wav: Buffer, synthMs: number, trim: TrimSettings): Clip {
   const rate = wav.readUInt32LE(24);
   const trimmed = trimPadding(toSamples(wav), rate, trim);
   const window = Math.floor((rate * PADDING_WINDOW_MS) / 1000);
@@ -145,7 +145,7 @@ export async function openHelper(directory: string): Promise<Helper> {
       const size = (await stdout.read(4)).readUInt32LE(0);
       const wav = Buffer.from(await stdout.read(size));
       const synthMs = performance.now() - started;
-      return { synthMs, measure: (trim) => describe(wav, synthMs, trim) };
+      return { synthMs, measure: (trim) => clipOf(wav, synthMs, trim) };
     },
     close: () => {
       child.kill();

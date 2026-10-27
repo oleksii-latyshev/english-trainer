@@ -15,7 +15,7 @@ type Props = {
 export function TopicChoice({ selection, onChange, disabled }: Props) {
   return (
     <fieldset className="flex min-w-0 flex-col gap-3" disabled={disabled}>
-      <legend className="mb-3 font-semibold text-caption text-faint">Topic</legend>
+      <legend className="text-caption text-faint mb-3 font-semibold">Topic</legend>
       <div className="flex flex-wrap gap-2">
         {TOPIC_CHOICES.map((topic) => (
           <ChoiceChip
@@ -39,7 +39,7 @@ export function TopicChoice({ selection, onChange, disabled }: Props) {
         />
       )}
       {selection.topic === 'free_topic' && (
-        <label className="flex flex-col gap-1.5 text-caption text-muted" htmlFor={CUSTOM_TOPIC_ID}>
+        <label className="text-caption text-muted flex flex-col gap-1.5" htmlFor={CUSTOM_TOPIC_ID}>
           What would you like to talk about?
           <Input
             disabled={disabled}

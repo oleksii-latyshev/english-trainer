@@ -22,7 +22,7 @@ function Grid({ grid }: { grid: ActivityGrid }) {
       <div aria-hidden="true" className="flex flex-col gap-1 pr-0.5">
         <span className="h-3.5" />
         {WEEKDAY_ROWS.map((row) => (
-          <span className="h-4.5 text-faint text-pip leading-4.5" key={row.id}>
+          <span className="text-faint text-pip h-4.5 leading-4.5" key={row.id}>
             {row.label}
           </span>
         ))}
@@ -30,7 +30,7 @@ function Grid({ grid }: { grid: ActivityGrid }) {
       <div className="flex gap-1">
         {grid.weeks.map((week) => (
           <div aria-hidden="true" className="flex flex-col gap-1" key={week.cells[0]?.date}>
-            <span className="h-3.5 whitespace-nowrap text-faint text-pip leading-3.5">
+            <span className="text-faint text-pip h-3.5 leading-3.5 whitespace-nowrap">
               {week.monthLabel}
             </span>
             {week.cells.map((cell) => (
@@ -54,20 +54,20 @@ function ActivityBody({ days }: { days: SpeakingActivitySnapshot['days'] }) {
   return (
     <>
       <div className="flex flex-wrap items-baseline gap-3">
-        <h2 className="font-bold text-body">Speaking activity</h2>
+        <h2 className="text-body font-bold">Speaking activity</h2>
         <span className="text-muted">{activitySummary(grid)}</span>
-        <span className="ml-auto text-caption text-quiet-foreground">
+        <span className="text-caption text-quiet-foreground ml-auto">
           This week <b className="text-accent-text">{grid.thisWeekSpokenDays} of 7 days</b>
         </span>
       </div>
       <Grid grid={grid} />
-      <div className="flex items-center gap-1.5 text-faint text-xs">
+      <div className="text-faint flex items-center gap-1.5 text-xs">
         <span>Less</span>
         {LEGEND_LEVELS.map((level) => (
           <HeatCell className="size-3" key={level} level={level} />
         ))}
         <span>More</span>
-        <span className="ml-auto max-rail:hidden">
+        <span className="max-rail:hidden ml-auto">
           Every square is a day · darker = more minutes spoken
         </span>
       </div>
@@ -85,7 +85,7 @@ export function ActivityCard() {
       {activity !== null && <ActivityBody days={activity.days} />}
       {activity === null && AsyncResult.isFailure(result) && (
         <Notice
-          className="flex items-center gap-3 rounded-control border border-line"
+          className="rounded-control border-line flex items-center gap-3 border"
           role="alert"
           tone="quiet"
         >

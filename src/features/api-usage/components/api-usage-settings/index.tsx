@@ -57,7 +57,7 @@ function UsageDetails({ snapshot }: { snapshot: ApiUsageSnapshot }) {
         title={
           <>
             Antigravity: requests today{' '}
-            <span className="ml-1.5 font-medium font-mono text-quiet-foreground">
+            <span className="text-quiet-foreground ml-1.5 font-mono font-medium">
               {antigravity.requests_today}
             </span>
           </>

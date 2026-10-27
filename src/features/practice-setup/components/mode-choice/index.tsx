@@ -19,8 +19,8 @@ const MODE_ICONS: Record<PracticeMode, ReactNode> = {
 export function ModeChoice({ value, onChange, disabled }: Props) {
   return (
     <fieldset className="flex min-w-0 flex-col gap-3" disabled={disabled}>
-      <legend className="mb-3 font-semibold text-caption text-faint">How</legend>
-      <div className="grid grid-cols-3 gap-3 max-rail:grid-cols-1">
+      <legend className="text-caption text-faint mb-3 font-semibold">How</legend>
+      <div className="max-rail:grid-cols-1 grid grid-cols-3 gap-3">
         {MODE_CHOICES.map((mode) => (
           <OptionCard
             description={mode.description}

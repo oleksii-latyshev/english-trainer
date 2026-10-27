@@ -42,10 +42,10 @@ export function RecallRecorder({ cue, isLocked }: Props) {
   return (
     <section
       aria-label={KICKER}
-      className="flex flex-col gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3.5"
+      className="border-line bg-surface flex flex-col gap-2.5 rounded-2xl border px-4 py-3.5"
     >
-      <div className="font-semibold text-accent text-xs tracking-wide">{KICKER}</div>
-      <p className="m-0 font-semibold text-[16px] leading-snug">{cue}</p>
+      <div className="text-accent text-xs font-semibold tracking-wide">{KICKER}</div>
+      <p className="m-0 text-[16px] leading-snug font-semibold">{cue}</p>
       <div className="flex items-center gap-4">
         <RecordButton
           aria-label={name}
@@ -62,7 +62,7 @@ export function RecallRecorder({ cue, isLocked }: Props) {
           )}
         </RecordButton>
         <div aria-live="polite" className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="font-semibold text-body">
+          <span className="text-body font-semibold">
             {recordingLabel(recorder.status, recorder.elapsedMs, recorder.durationMs)}
           </span>
           <span className="text-caption text-muted">

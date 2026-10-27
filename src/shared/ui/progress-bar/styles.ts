@@ -2,9 +2,9 @@ import { tv } from '@/shared/ui/tv';
 
 export const progressBar = tv({
   slots: {
-    track: 'block w-full overflow-hidden rounded-full bg-quiet-line',
+    track: 'bg-quiet-line block w-full overflow-hidden rounded-full',
     indicator:
-      'block h-full rounded-full bg-accent transition-[width] duration-300 motion-reduce:transition-none',
+      'bg-accent block h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none',
   },
   variants: {
     size: {

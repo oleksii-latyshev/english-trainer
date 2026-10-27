@@ -65,7 +65,7 @@ export function GeminiKeyList() {
                   value={draft}
                 />
                 {status?.configured === true && (
-                  <span className="flex items-center gap-1 text-caption text-ok-text" role="status">
+                  <span className="text-caption text-ok-text flex items-center gap-1" role="status">
                     <Check aria-hidden="true" size={13} strokeWidth={2.4} />
                     Saved
                   </span>

@@ -22,13 +22,13 @@ type Props = {
 function Comparison({ comparison }: { comparison: AttemptComparison }) {
   const hint = secondTryHint(comparison);
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-line border-dashed px-3.5 py-3">
+    <div className="border-line flex flex-col gap-1.5 rounded-xl border border-dashed px-3.5 py-3">
       <span className="text-caption text-faint">Second try</span>
-      <p className="m-0 text-body text-foreground" data-word-lookup>
+      <p className="text-body text-foreground m-0" data-word-lookup>
         {comparison.retry_transcript}
       </p>
       {usedImprovedWording(comparison) && (
-        <span className="inline-flex items-center gap-1.5 text-caption text-ok">
+        <span className="text-caption text-ok inline-flex items-center gap-1.5">
           <Check aria-hidden="true" className="size-3.5" />
           You used “{comparison.target}”
         </span>

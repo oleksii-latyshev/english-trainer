@@ -14,9 +14,9 @@ export function WeekCard() {
 
   return (
     <GlassPanel aria-label="This week" className="flex flex-col gap-3 p-5">
-      <h2 className="font-semibold text-caption text-faint">This week</h2>
+      <h2 className="text-caption text-faint font-semibold">This week</h2>
       <div className="flex items-baseline gap-1.5">
-        <span className="font-bold text-3xl tracking-tight">{grid.thisWeekMinutes}</span>
+        <span className="text-3xl font-bold tracking-tight">{grid.thisWeekMinutes}</span>
         <span className="text-muted">minutes spoken</span>
       </div>
       <div aria-hidden="true" className="flex items-end gap-2">

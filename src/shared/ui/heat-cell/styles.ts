@@ -10,8 +10,8 @@ export const heatCell = tv({
       3: 'bg-accent/70',
       4: 'bg-accent shadow-glow',
     },
-    today: { true: 'outline-2 outline-foreground outline-offset-1', false: '' },
-    upcoming: { true: 'border border-line border-dashed bg-transparent', false: '' },
+    today: { true: 'outline-foreground outline-2 outline-offset-1', false: '' },
+    upcoming: { true: 'border-line border border-dashed bg-transparent', false: '' },
   },
   defaultVariants: { level: 0, today: false, upcoming: false },
 });

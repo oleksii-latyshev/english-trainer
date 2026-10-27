@@ -44,7 +44,7 @@ export function DraftField({ label, value, isDisabled, shouldFocus, onChange, on
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="font-semibold text-caption text-muted" htmlFor="talk-draft">
+      <label className="text-caption text-muted font-semibold" htmlFor="talk-draft">
         {label}
       </label>
       <Textarea

@@ -6,13 +6,13 @@ export function MicStatus({ status }: { status: MicrophoneStatus }) {
   return (
     <section
       aria-label="Microphone status"
-      className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-line-soft bg-quiet p-3 max-rail:hidden"
+      className="border-line-soft bg-quiet max-rail:hidden mt-auto flex flex-col gap-1.5 rounded-2xl border p-3"
       role="status"
     >
-      <div className="flex items-center gap-2 font-semibold text-caption text-quiet-foreground">
+      <div className="text-caption text-quiet-foreground flex items-center gap-2 font-semibold">
         <span
           aria-hidden="true"
-          className={box.isOn ? 'size-2 rounded-full bg-warn' : 'size-2 rounded-full bg-faint'}
+          className={box.isOn ? 'bg-warn size-2 rounded-full' : 'bg-faint size-2 rounded-full'}
         />
         {box.title}
       </div>
