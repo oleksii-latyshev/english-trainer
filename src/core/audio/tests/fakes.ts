@@ -1,4 +1,4 @@
-import { Effect, type Stream } from 'effect';
+import { Effect } from 'effect';
 import type { AudioFrame } from '../audio';
 
 export const SAMPLE_RATE_HZ = 1000;
@@ -20,8 +20,3 @@ export function tone(sampleCount: number, amplitude = 0.5): Float32Array {
 export function frameOf(rms: number, durationMs: number): AudioFrame {
   return { samples: new Float32Array(0), rms, durationMs };
 }
-
-export type FrameSource = {
-  readonly frames: Stream.Stream<AudioFrame>;
-  readonly noiseFloor: Effect.Effect<number>;
-};

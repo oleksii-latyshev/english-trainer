@@ -14,7 +14,7 @@ export type ReplyRun = {
   readonly totalPhrases: number;
 };
 
-export type Gap = {
+type Gap = {
   readonly schedulingMs: number;
   readonly audibleMs: number;
   readonly insideSentence: boolean;
@@ -22,7 +22,7 @@ export type Gap = {
 
 const SENTENCE_END = /[.!?]["'”’)]*$/;
 
-export function gapsOf(run: ReplyRun): Gap[] {
+function gapsOf(run: ReplyRun): Gap[] {
   return run.phrases.slice(1).map((phrase, index) => {
     const previous = run.phrases[index];
     const schedulingMs = Math.max(0, phrase.startAt - (previous?.endAt ?? 0));

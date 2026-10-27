@@ -9,7 +9,7 @@ import type { AnswerPhrase, PhraseSelection } from '../types';
 import { runtime } from './runtime';
 import { showRemovedToast, showSavedToast, showUndoFailedToast } from './saved-toast';
 
-export const RETRY_FAILED = 'Could not prepare phrases. Please retry.';
+const RETRY_FAILED = 'Could not prepare phrases. Please retry.';
 
 export const wrapupAtom = Atom.family((sessionId: number) =>
   runtime.atom(Effect.flatMap(WrapUpService, (service) => service.read(sessionId))),

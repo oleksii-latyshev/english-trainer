@@ -1,4 +1,4 @@
-import { Deferred, Effect, Layer, Stream } from 'effect';
+import { Effect, Layer, Stream } from 'effect';
 import { AtomRegistry } from 'effect/reactivity';
 import type { RecordedAudio, TurnEvent } from '@/core/audio';
 import { IpcError } from '@/core/ipc';
@@ -10,7 +10,7 @@ import { AnswerRecorder } from '../services/answer-recorder-service';
 installFakeLocalStorage();
 Reflect.set(globalThis, 'isTauri', true);
 
-export const A_RECORDING: RecordedAudio = {
+const A_RECORDING: RecordedAudio = {
   wav: new Blob(['wav'], { type: 'audio/wav' }),
   durationMs: 1800,
   signal: { capturedMs: 1800, elapsedMs: 1800, windows: [] },
@@ -99,8 +99,4 @@ export async function until(check: () => boolean) {
     await new Promise((resolve) => setTimeout(resolve, 5));
   }
   throw new Error('the capture never reached the expected state');
-}
-
-export function never() {
-  return Deferred.makeUnsafe<void>();
 }

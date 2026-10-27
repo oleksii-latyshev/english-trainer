@@ -3,8 +3,8 @@ import { NaturalVoiceSchema, SpeechVoiceSchema } from '../helpers/voice-preferen
 import { DEFAULT_NATURAL_VOICE, DEFAULT_SPEECH_VOICE } from '../voice-preference';
 import { voicePreferenceRuntime } from './runtime';
 
-export const NATURAL_VOICE_KEY = 'english_trainer_natural_voice';
-export const SPEECH_VOICE_KEY = 'english_trainer_voice';
+const NATURAL_VOICE_KEY = 'english_trainer_natural_voice';
+const SPEECH_VOICE_KEY = 'english_trainer_voice';
 
 export const naturalVoiceAtom = Atom.kvs({
   runtime: voicePreferenceRuntime,

@@ -4,9 +4,8 @@ import { CoreLive } from '@/core/runtime';
 import { LearningMemoryService } from '../services/learning-memory-service';
 import { ReviewRunService } from '../services/review-run-service';
 
-export const LearningMemoryLive = Layer.mergeAll(
-  LearningMemoryService.layer,
-  ReviewRunService.layer,
-).pipe(Layer.provide(CoreLive));
+const LearningMemoryLive = Layer.mergeAll(LearningMemoryService.layer, ReviewRunService.layer).pipe(
+  Layer.provide(CoreLive),
+);
 
 export const runtime = Atom.runtime(LearningMemoryLive);

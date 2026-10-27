@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-export async function installWrapup(page: Page, options: WrapupOptions): Promise<void> {
+async function installWrapup(page: Page, options: WrapupOptions): Promise<void> {
   await page.addInitScript((config: WrapupOptions) => {
     const harness = window.__ET_HARNESS__;
     harness.finishedTemplate = config.finished;

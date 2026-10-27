@@ -36,7 +36,7 @@ export type Capture = {
   readonly stop: Effect.Effect<RecordedAudio, MicrophoneError>;
 };
 
-export type CaptureEngine = {
+type CaptureEngine = {
   readonly frames: Stream.Stream<AudioFrame>;
   readonly ingest: (samples: Float32Array) => void;
   readonly fail: (error: MicrophoneError) => void;

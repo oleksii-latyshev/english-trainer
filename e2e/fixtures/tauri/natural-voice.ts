@@ -15,7 +15,7 @@ declare global {
     __ET_NATURAL__: NaturalVoiceEdge;
   }
 }
-export async function installNaturalVoice(
+async function installNaturalVoice(
   page: Page,
   options: {
     delayMs?: number;

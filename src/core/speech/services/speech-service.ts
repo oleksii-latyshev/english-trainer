@@ -6,7 +6,7 @@ import { NaturalVoice } from './natural-voice-service';
 import { runSpeech } from './speech-pipeline';
 import { SystemVoice } from './system-voice-service';
 
-export type PreviewFailure = NaturalVoiceFailure | AudioOutputError;
+type PreviewFailure = NaturalVoiceFailure | AudioOutputError;
 
 type SpeechShape = {
   readonly speak: (request: SpeakRequest) => Effect.Effect<void>;

@@ -25,4 +25,4 @@ export type OpenedReview = {
   readonly statusBefore: ReadonlyMap<string, LearningStatus>;
 };
 
-export type { Attempt, ReviewActionError };
+export type { ReviewActionError };

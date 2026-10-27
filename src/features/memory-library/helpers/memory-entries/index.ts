@@ -37,7 +37,7 @@ export function entryLabel(entry: MemoryEntry): string {
     : `${entry.mistake.original_example} → ${entry.mistake.corrected_example}`;
 }
 
-export function tabOf(entry: MemoryEntry): MemoryTab {
+function tabOf(entry: MemoryEntry): MemoryTab {
   return entry.kind === 'phrase' ? 'phrases' : 'mistakes';
 }
 

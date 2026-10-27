@@ -69,5 +69,3 @@ export function createPlayback(registry: AtomRegistry.AtomRegistry) {
     },
   };
 }
-
-export type Playback = ReturnType<typeof createPlayback>;

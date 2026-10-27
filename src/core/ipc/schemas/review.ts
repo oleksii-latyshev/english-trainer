@@ -12,11 +12,11 @@ import { LearningItemTypeSchema, LearningStatusSchema } from './learning';
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 
-export const ReviewResponseSchema = bindingSchema<ReviewResponse>()(
+const ReviewResponseSchema = bindingSchema<ReviewResponse>()(
   Schema.Literals(['remembered', 'need_practice']),
 );
 
-export const MemoryReviewItemSchema = bindingSchema<MemoryReviewItem>()(
+const MemoryReviewItemSchema = bindingSchema<MemoryReviewItem>()(
   Schema.Struct({
     position: Count,
     item_type: LearningItemTypeSchema,
@@ -58,7 +58,7 @@ export const MemoryRecallResultSchema = bindingSchema<MemoryRecallResult>()(
   }),
 );
 
-export const ReviewPreparationSchema = bindingSchema<ReviewPreparation>()(
+const ReviewPreparationSchema = bindingSchema<ReviewPreparation>()(
   Schema.Union([
     Schema.Struct({ state: Schema.Literal('legacy') }),
     Schema.Struct({ state: Schema.Literal('pending') }),
@@ -67,7 +67,7 @@ export const ReviewPreparationSchema = bindingSchema<ReviewPreparation>()(
   ]),
 );
 
-export const ReviewMaterialViewSchema = bindingSchema<ReviewMaterialView>()(
+const ReviewMaterialViewSchema = bindingSchema<ReviewMaterialView>()(
   Schema.Struct({
     position: Count,
     situation: Schema.NullOr(Schema.String),

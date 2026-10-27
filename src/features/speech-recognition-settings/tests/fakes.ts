@@ -12,7 +12,7 @@ Object.assign(window, {
   __TAURI_INTERNALS__: { transformCallback: () => 1, unregisterCallback: () => {} },
 });
 
-export const INPUT = { deviceId: 'usb', label: 'USB microphone' };
+const INPUT = { deviceId: 'usb', label: 'USB microphone' };
 
 const SENTENCES = [
   { index: 1, text: 'First sentence.', is_recorded: false },

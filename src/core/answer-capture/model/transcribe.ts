@@ -12,7 +12,7 @@ import type { Recording } from '../types';
 import { discardRecording } from './recording-clip';
 import { captureStateAtom, captureTimingAtom } from './state';
 
-export const DESKTOP_ONLY_TRANSCRIPTION: TranscriptionRecovery = {
+const DESKTOP_ONLY_TRANSCRIPTION: TranscriptionRecovery = {
   kind: 'setup',
   message: 'Open the desktop app with bun run dev to use local transcription.',
 };

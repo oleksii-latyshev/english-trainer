@@ -5,7 +5,7 @@ export type RecallSeed = {
   target: string;
 };
 
-export async function installSpokenRecall(page: Page, seed: RecallSeed): Promise<void> {
+async function installSpokenRecall(page: Page, seed: RecallSeed): Promise<void> {
   await page.addInitScript((config: RecallSeed) => {
     const harness = window.__ET_HARNESS__;
     const internals = window.__TAURI_INTERNALS__;

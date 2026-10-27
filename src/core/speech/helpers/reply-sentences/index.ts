@@ -60,7 +60,7 @@ function sentenceEnd(text: string, index: number): number | null {
   return /\s/.test(text[nextIndex] ?? '') ? nextIndex : null;
 }
 
-export function cleanSpeechText(text: string): string {
+function cleanSpeechText(text: string): string {
   return text
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/`([^`]+)`/g, '$1')

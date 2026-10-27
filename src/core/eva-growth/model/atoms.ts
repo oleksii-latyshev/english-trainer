@@ -10,7 +10,7 @@ import { EvaGrowthService } from '../services/eva-growth-service';
 import type { EvaGrowthSnapshot } from '../types';
 import { growthPreferenceRuntime, runtime } from './runtime';
 
-export const GROWTH_KEY = 'english_trainer_eva_growth';
+const GROWTH_KEY = 'english_trainer_eva_growth';
 
 export const growthPreferenceAtom = Atom.kvs({
   runtime: growthPreferenceRuntime,

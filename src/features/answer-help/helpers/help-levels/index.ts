@@ -8,7 +8,7 @@ export const HELP_LEVELS: { id: HelpLevel; label: string; keyNumber: number }[] 
   { id: 'example', label: 'Example', keyNumber: 3 },
 ];
 
-export function helpLevelForKey(
+function helpLevelForKey(
   key: string,
   current: HelpLevel | null,
 ): { level: HelpLevel | null } | null {

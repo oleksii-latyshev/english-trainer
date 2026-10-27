@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-export async function installLiveReview(page: Page, options: LiveReviewOptions = {}) {
+async function installLiveReview(page: Page, options: LiveReviewOptions = {}) {
   const status: SpeechEngineStatus = {
     server: options.cold ? 'not_running' : 'ready',
     failure: null,

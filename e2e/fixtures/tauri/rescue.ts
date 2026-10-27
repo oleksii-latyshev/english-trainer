@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-export async function installRescue(page: Page, options: RescueOptions = {}) {
+async function installRescue(page: Page, options: RescueOptions = {}) {
   await page.addInitScript((seed: RescueOptions) => {
     if (seed.handsFree || seed.autoListen) {
       window.localStorage.setItem(

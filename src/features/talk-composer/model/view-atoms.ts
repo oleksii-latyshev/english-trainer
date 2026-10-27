@@ -31,7 +31,7 @@ import { countdownLabelAtom, draftAtom, isDraftFocusedAtom, isSendingAtom } from
 
 const OFF = { status: 'off', error: '' } as const;
 
-export const microphoneAtom = Atom.make((get) =>
+const microphoneAtom = Atom.make((get) =>
   AsyncResult.getOrElse(get(microphoneSnapshotAtom), () => OFF),
 );
 
@@ -48,7 +48,7 @@ export const isAudioStageAtom = Atom.make((get) => {
   return session !== undefined && practiceKeepsMicrophoneWarm(session);
 });
 
-export const isStageLockedAtom = Atom.make((get) => {
+const isStageLockedAtom = Atom.make((get) => {
   const session = get(sessionDetailsAtom);
   return session === undefined || !canSendPracticeStage(session);
 });
@@ -66,12 +66,12 @@ export const composerTranscriptAtom = Atom.make((get) => {
   return { requestId: get(captureRequestIdAtom), text: state.text, durationMs: state.durationMs };
 });
 
-export const canSwitchToAppleAtom = Atom.make((get) => {
+const canSwitchToAppleAtom = Atom.make((get) => {
   const settings = AsyncResult.value(get(aiSettingsAtom));
   return settings._tag === 'Some' && settings.value.provider !== 'apple';
 });
 
-export const issueAtom = Atom.make((get) => {
+const issueAtom = Atom.make((get) => {
   const capture = get(captureStateAtom);
   const microphone = get(microphoneAtom);
   const failure = capture.tag === 'ready' || capture.tag === 'error' ? capture.failure : undefined;
@@ -121,7 +121,7 @@ export const presentationAtom = Atom.make((get): TurnPresentation => {
   };
 });
 
-export const usesAudioAtom = Atom.make((get) => {
+const usesAudioAtom = Atom.make((get) => {
   const session = get(sessionDetailsAtom);
   return session !== undefined && practiceStageUsesAudio(session);
 });

@@ -28,7 +28,7 @@ export const UsageOutcomeSchema = bindingSchema<UsageOutcome>()(
   Schema.Literals(['correct', 'incorrect', 'uncertain']),
 );
 
-export const MistakeRecordSchema = bindingSchema<MistakeRecord>()(
+const MistakeRecordSchema = bindingSchema<MistakeRecord>()(
   Schema.Struct({
     id: Schema.Int,
     normalized_key: Schema.String,
@@ -76,7 +76,7 @@ export const LearningMemoryViewSchema = bindingSchema<LearningMemoryView>()(
   }),
 );
 
-export const UsageEventRecordSchema = bindingSchema<UsageEventRecord>()(
+const UsageEventRecordSchema = bindingSchema<UsageEventRecord>()(
   Schema.Struct({
     id: Schema.Int,
     item_type: LearningItemTypeSchema,

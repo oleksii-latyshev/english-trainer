@@ -21,7 +21,7 @@ function isJsonString(raw: string): boolean {
   return raw.startsWith('"');
 }
 
-export function readAsJson(raw: string | null): string | null {
+function readAsJson(raw: string | null): string | null {
   if (raw === null) return null;
   return isJsonString(raw) ? raw : JSON.stringify(raw);
 }
