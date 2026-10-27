@@ -17,7 +17,8 @@ function startedWhen(startedAt: number, now: number): string {
 
 function timeDetail(session: OpenSession): string {
   if (session.durationGoalSeconds === null) {
-    return `${Math.floor(session.activeDurationMs / MINUTE_MS)} min so far`;
+    const minutes = Math.floor(session.activeDurationMs / MINUTE_MS);
+    return minutes === 0 ? 'less than a minute so far' : `${minutes} min so far`;
   }
   const left = Math.max(
     0,
