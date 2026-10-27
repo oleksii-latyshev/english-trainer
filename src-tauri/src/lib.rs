@@ -64,6 +64,10 @@ fn set_dock_icon(
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[allow(
+    clippy::expect_used,
+    reason = "the app cannot start when the Tauri builder fails, so aborting is the only outcome"
+)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
