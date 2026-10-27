@@ -44,6 +44,18 @@ silently. Light boards exist for Talk and Start; the other screens follow their 
 | Text | `#F2F5FA`, secondary `#A9B3C4`, tertiary `#8E99AC` |
 | Buttons | primary: accent fill, 48 px pill, 15/700, glow; secondary: white 8.5 % + line 14 %, 40 px, 600; quiet: white 6 % + line 10 %; round mic 56 px |
 | Controls | switch 42×26 (on: accent + glow, off: white 16 %); segmented control: white 8.5 % track, selected white 16 %; chip selected = sky glass, default = quiet |
+
+Light theme (TalkLight, StartLight; `:root[data-theme="light"]` in `src/app/styles.css`):
+
+| Token | Value |
+| :--- | :--- |
+| Ground | gradient `#F4F8FC → #EAF1F9 → #EEEAF8`, glows sky `rgba(108,196,255,.42)` and lilac `rgba(160,140,255,.3)` |
+| Glass card | white 58 % + inner white edge + top highlight + shadow `0 20px 50px -24px rgba(30,60,110,.28)`, same blur |
+| Raised control | white 66 %, selected segment white |
+| Lines | ink `#0E1726` at 8 % (dividers), 6 % (soft) |
+| Accent | `#0B74DE` for fills and text, white text on it; sky `#6CC4FF` only in glows; learner turn and selection = accent 11 % + line 22 % |
+| "More natural" / Attention | `#16683A` / `#A85F00` |
+| Text | `#0E1726`, secondary `#4A5568`, tertiary `#5B6676`, links `#0B6BCB` |
 | Type | SF Pro (system font): large title 34/700, title 20/700, message 15/1.45, secondary 13, label 11/700 caps |
 
 Layout: floating glass sidebar (Talk · Memory · Settings, microphone status at the bottom; Eva's growth card follows with growth); screens put Eva large and
