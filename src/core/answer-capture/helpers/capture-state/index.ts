@@ -1,6 +1,6 @@
 import type { CaptureState } from '../../types';
 
-export const PRE_ROLL_MS = 300;
+const PRE_ROLL_MS = 300;
 
 export function isCapturing(state: CaptureState): boolean {
   return (

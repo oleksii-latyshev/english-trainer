@@ -4,7 +4,7 @@ export function sequencesBetween(start: number, end: number): number[] {
   return Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
 }
 
-export function feedbackCounts(
+function feedbackCounts(
   dialogue: WriteSpeakDialogue | null,
   sequences: readonly number[],
 ): FeedbackCounts {

@@ -10,7 +10,7 @@ import { DEFAULT_DOCK_ICON } from '../preferences';
 import { DockIconService } from '../services/dock-icon-service';
 import { runtime } from './runtime';
 
-export const DOCK_ICON_KEY = 'english_trainer_dock_icon';
+const DOCK_ICON_KEY = 'english_trainer_dock_icon';
 
 export const dockIconAtom = Atom.kvs({
   runtime,

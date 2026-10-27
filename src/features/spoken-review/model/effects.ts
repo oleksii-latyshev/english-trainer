@@ -15,7 +15,7 @@ export const autoFinishAtom = learningMemoryRuntime.atom((get) => {
   return session?.step.tag === 'closing' ? finishRun(get.registry) : Effect.void;
 });
 
-export const warmSpeechAtom = captureRuntime.atom((get) => {
+const warmSpeechAtom = captureRuntime.atom((get) => {
   const runId = get(runIdAtom);
   if (runId === null || get.once(isRunFinishedAtom)) return Effect.void;
   return Effect.gen(function* () {

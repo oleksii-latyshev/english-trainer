@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-export async function installCoaching(page: Page): Promise<void> {
+async function installCoaching(page: Page): Promise<void> {
   await page.addInitScript((spoken: string) => {
     const harness = window.__ET_HARNESS__;
     const listeners = new Map<number, (payload: unknown) => void>();

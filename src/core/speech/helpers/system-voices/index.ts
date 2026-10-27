@@ -1,10 +1,5 @@
 import { isNoveltyVoice, voiceQuality } from './voice-metadata';
 
-export type VoiceOption = {
-  voice: SpeechSynthesisVoice;
-  isEnglish: boolean;
-};
-
 export type SpeechVoiceInfo = Pick<SpeechSynthesisVoice, 'lang' | 'voiceURI'> & {
   name?: string;
 };

@@ -1,7 +1,6 @@
-export { FIRST_RUN_PATH, type FirstRunMarker, type FirstRunStatus } from './first-run';
+export { FIRST_RUN_PATH } from './first-run';
 export {
   decideFirstRun,
-  type FirstRunDecision,
   type UseEvidence,
 } from './helpers/first-run-decision';
 export {

@@ -2,7 +2,7 @@ import { Effect } from 'effect';
 import { IpcError } from '@/core/ipc';
 import { type RescueTurn, SpeechRecognition } from './speech-recognition-service';
 
-export const NO_AUDIO_YET_MESSAGE = 'No audio is ready yet. Say a few words, then try Stuck again.';
+const NO_AUDIO_YET_MESSAGE = 'No audio is ready yet. Say a few words, then try Stuck again.';
 
 export function rescueTranscript<E>(snapshot: Effect.Effect<Blob | null, E>, turn: RescueTurn) {
   return Effect.gen(function* () {

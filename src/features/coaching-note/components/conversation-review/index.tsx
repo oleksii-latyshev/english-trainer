@@ -14,7 +14,7 @@ type Props = {
 
 type Actions = Pick<Props, 'renderAnswerActions'>;
 
-export const CONVERSATION_FAILED_MESSAGE = 'Could not load your conversation.';
+const CONVERSATION_FAILED_MESSAGE = 'Could not load your conversation.';
 
 function EvaLine({ reply, question }: { reply: string; question: string }) {
   return (

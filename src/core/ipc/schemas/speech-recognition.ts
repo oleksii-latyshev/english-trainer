@@ -1,5 +1,4 @@
 import { Schema } from 'effect';
-import type { KeptRecordings } from '../bindings/KeptRecordings';
 import type { ModelRun } from '../bindings/ModelRun';
 import type { RecordingResult } from '../bindings/RecordingResult';
 import type { SentenceStatus } from '../bindings/SentenceStatus';
@@ -30,7 +29,7 @@ export const SpeechSettingsSchema = bindingSchema<SpeechSettings>()(
   }),
 );
 
-export const ServerStateSchema = bindingSchema<ServerState>()(
+const ServerStateSchema = bindingSchema<ServerState>()(
   Schema.Literals(['ready', 'loading', 'not_running']),
 );
 
@@ -42,7 +41,7 @@ export const SpeechEngineStatusSchema = bindingSchema<SpeechEngineStatus>()(
   }),
 );
 
-export const SpeechModelSchema = bindingSchema<SpeechModel>()(
+const SpeechModelSchema = bindingSchema<SpeechModel>()(
   Schema.Struct({ file: Schema.String, size_bytes: Schema.Number }),
 );
 
@@ -53,15 +52,11 @@ export const SpeechModelsSchema = bindingSchema<SpeechModels>()(
   }),
 );
 
-export const KeptRecordingsSchema = bindingSchema<KeptRecordings>()(
-  Schema.Struct({ count: Schema.Number, size_bytes: Schema.Number }),
-);
-
-export const SentenceStatusSchema = bindingSchema<SentenceStatus>()(
+const SentenceStatusSchema = bindingSchema<SentenceStatus>()(
   Schema.Struct({ index: Schema.Number, text: Schema.String, is_recorded: Schema.Boolean }),
 );
 
-export const RecordingResultSchema = bindingSchema<RecordingResult>()(
+const RecordingResultSchema = bindingSchema<RecordingResult>()(
   Schema.Struct({
     index: Schema.Number,
     reference: Schema.String,
@@ -73,7 +68,7 @@ export const RecordingResultSchema = bindingSchema<RecordingResult>()(
   }),
 );
 
-export const ModelRunSchema = bindingSchema<ModelRun>()(
+const ModelRunSchema = bindingSchema<ModelRun>()(
   Schema.Struct({
     model_file: Schema.String,
     uses_prompt: Schema.Boolean,

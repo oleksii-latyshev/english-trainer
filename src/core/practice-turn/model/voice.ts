@@ -10,7 +10,7 @@ import {
   voiceErrorAtom,
 } from './state';
 
-export const VOICE_FAILED_MESSAGE =
+const VOICE_FAILED_MESSAGE =
   'Eva’s voice could not play. The reply stays on screen; try Hear it or continue speaking.';
 
 export type ReplyVoice = {

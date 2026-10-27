@@ -24,7 +24,7 @@ export const PracticePhaseSchema = bindingSchema<PracticePhase>()(
   Schema.Literals(['writing', 'writing_review', 'speaking', 'speaking_review']),
 );
 
-export const TargetEvidenceSchema = bindingSchema<TargetEvidence>()(
+const TargetEvidenceSchema = bindingSchema<TargetEvidence>()(
   Schema.Literals([
     'already_present_in_both',
     'newly_observed_in_retry',
@@ -68,7 +68,7 @@ export const PracticeSessionSchema = bindingSchema<PracticeSession>()(
   }),
 );
 
-export const StoredTurnSchema = bindingSchema<StoredTurn>()(
+const StoredTurnSchema = bindingSchema<StoredTurn>()(
   Schema.Struct({
     learner: Schema.String,
     assistant_reply: Schema.String,
@@ -77,7 +77,7 @@ export const StoredTurnSchema = bindingSchema<StoredTurn>()(
   }),
 );
 
-export const FocusFeedbackSchema = bindingSchema<FocusFeedback>()(
+const FocusFeedbackSchema = bindingSchema<FocusFeedback>()(
   Schema.Struct({
     category: FocusCategorySchema,
     original: Schema.String,

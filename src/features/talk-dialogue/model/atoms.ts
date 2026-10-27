@@ -11,7 +11,7 @@ const NO_DIALOGUE: DialogueView = { dialogue: null, hasFailed: false };
 
 export const dialogueRefreshAtom = Atom.keepAlive(Atom.make(0));
 
-export const openSessionIdAtom = Atom.make((get) => get(sessionDetailsAtom)?.sessionId);
+const openSessionIdAtom = Atom.make((get) => get(sessionDetailsAtom)?.sessionId);
 
 const dialogueKeyAtom = Atom.make((get) => {
   const session = get(sessionDetailsAtom);

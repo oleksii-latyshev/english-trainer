@@ -7,7 +7,7 @@ export type AudioInputs = {
   readonly hasUnnamed: boolean;
 };
 
-export class AudioInputsUnavailable extends Data.TaggedError('AudioInputsUnavailable')<{
+class AudioInputsUnavailable extends Data.TaggedError('AudioInputsUnavailable')<{
   readonly message: string;
 }> {}
 

@@ -12,6 +12,6 @@ const Edges = Layer.mergeAll(
   SystemVoice.layer,
 );
 
-export const SpeechLive = Speech.layer.pipe(Layer.provide(Edges));
+const SpeechLive = Speech.layer.pipe(Layer.provide(Edges));
 
 export const runtime = Atom.runtime(SpeechLive);

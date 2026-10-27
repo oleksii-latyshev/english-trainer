@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-export type StreamEdgeState = {
+type StreamEdgeState = {
   spoken: string[];
   cancelled: number;
   providerFinished: boolean;
@@ -24,7 +24,7 @@ export type StreamingOptions = {
   holdProvider?: boolean;
 };
 
-export async function installStreaming(page: Page, options: StreamingOptions = {}) {
+async function installStreaming(page: Page, options: StreamingOptions = {}) {
   await page.addInitScript((seed: StreamingOptions) => {
     const edge: StreamEdgeState = {
       spoken: [],

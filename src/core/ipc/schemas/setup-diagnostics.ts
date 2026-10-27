@@ -4,11 +4,11 @@ import type { ComponentStatus } from '../bindings/ComponentStatus';
 import type { SetupDiagnostics } from '../bindings/SetupDiagnostics';
 import { bindingSchema } from './binding-schema';
 
-export const ComponentStatusSchema = bindingSchema<ComponentStatus>()(
+const ComponentStatusSchema = bindingSchema<ComponentStatus>()(
   Schema.Literals(['available', 'missing', 'unreadable']),
 );
 
-export const ComponentCheckSchema = bindingSchema<ComponentCheck>()(
+const ComponentCheckSchema = bindingSchema<ComponentCheck>()(
   Schema.Struct({
     status: ComponentStatusSchema,
     path: Schema.NullOr(Schema.String),

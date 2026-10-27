@@ -2,7 +2,7 @@ import type { SpeakingActivitySchema } from '@/core/ipc';
 
 type SpeakingDay = (typeof SpeakingActivitySchema.Type)['days'][number];
 
-export const WEEKS_SHOWN = 26;
+const WEEKS_SHOWN = 26;
 const DAYS_IN_WEEK = 7;
 const LEVEL_LIMITS = [0, 5, 10, 20] as const;
 const WEEKDAYS = [
@@ -21,7 +21,7 @@ const BAR_SCALE_MINUTES = 20;
 
 export type HeatLevel = 0 | 1 | 2 | 3 | 4;
 
-export type GridCell = {
+type GridCell = {
   readonly date: string;
   readonly minutes: number;
   readonly level: HeatLevel;
@@ -30,9 +30,9 @@ export type GridCell = {
   readonly label: string;
 };
 
-export type GridWeek = { readonly monthLabel: string; readonly cells: readonly GridCell[] };
+type GridWeek = { readonly monthLabel: string; readonly cells: readonly GridCell[] };
 
-export type WeekBar = {
+type WeekBar = {
   readonly id: string;
   readonly letter: string;
   readonly minutes: number;
@@ -53,7 +53,7 @@ function pad(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-export function dateKey(date: Date): string {
+function dateKey(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 

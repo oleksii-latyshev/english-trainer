@@ -28,15 +28,15 @@ export const TrendSchema = bindingSchema<Trend>()(
   ]),
 );
 
-export const SpeakingTimeSchema = bindingSchema<SpeakingTime>()(
+const SpeakingTimeSchema = bindingSchema<SpeakingTime>()(
   Schema.Struct({ duration_ms: Schema.NullOr(Count), trend: TrendSchema }),
 );
 
-export const WordsPerMinuteSchema = bindingSchema<WordsPerMinute>()(
+const WordsPerMinuteSchema = bindingSchema<WordsPerMinute>()(
   Schema.Struct({ value: Schema.NullOr(Count), trend: TrendSchema }),
 );
 
-export const AverageAnswerSchema = bindingSchema<AverageAnswer>()(
+const AverageAnswerSchema = bindingSchema<AverageAnswer>()(
   Schema.Struct({ words: Schema.NullOr(Count), trend: TrendSchema }),
 );
 
@@ -57,7 +57,7 @@ export const WrapupPhraseSchema = bindingSchema<WrapupPhrase>()(
   }),
 );
 
-export const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
+const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
   Schema.Struct({
     original: Schema.String,
     improved: Schema.String,
@@ -86,7 +86,7 @@ const ReplyStageSchema = bindingSchema<ReplyStage>()(
   Schema.Literals(['envelope', 'schema', 'content']),
 );
 
-export const ProviderErrorSchema = bindingSchema<ProviderError>()(
+const ProviderErrorSchema = bindingSchema<ProviderError>()(
   Schema.Struct({
     code: ProviderErrorCodeSchema,
     message: Schema.String,
@@ -94,7 +94,7 @@ export const ProviderErrorSchema = bindingSchema<ProviderError>()(
   }),
 );
 
-export const WrapupPreparationSchema = bindingSchema<WrapupPreparation>()(
+const WrapupPreparationSchema = bindingSchema<WrapupPreparation>()(
   Schema.Union([
     Schema.Struct({ state: Schema.Literal('legacy') }),
     Schema.Struct({ state: Schema.Literal('pending') }),

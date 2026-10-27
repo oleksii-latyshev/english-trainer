@@ -5,7 +5,7 @@ import type { ConversationTurn } from '../bindings/ConversationTurn';
 import type { ReplyStreamEvent } from '../bindings/ReplyStreamEvent';
 import { bindingSchema } from './binding-schema';
 
-export const AnswerProviderSchema = bindingSchema<AnswerProvider>()(
+const AnswerProviderSchema = bindingSchema<AnswerProvider>()(
   Schema.Literals(['gemini', 'apple', 'agy']),
 );
 

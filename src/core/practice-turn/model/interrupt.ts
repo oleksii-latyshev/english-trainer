@@ -24,7 +24,7 @@ export type InterruptRequest = {
 
 const SPEAKING_TAGS: readonly string[] = ['speaking', 'starting', 'paused'];
 
-export function resetTurnState(registry: AtomRegistry.AtomRegistry) {
+function resetTurnState(registry: AtomRegistry.AtomRegistry) {
   registry.set(pendingReplyAtom, null);
   registry.set(acceptedAnswerAtom, null);
   registry.set(outcomeRecordAtom, IDLE_OUTCOME);

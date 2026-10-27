@@ -4,4 +4,3 @@ export {
   prewarmConversationProviderAtom,
   updateAiSettingsAtom,
 } from './model/atoms';
-export type { AiSettingsFailure } from './types';

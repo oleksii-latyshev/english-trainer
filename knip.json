@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["e2e/**/*.e2e.ts", "scripts/*.ts", "src/**/*.test.{ts,tsx}"],
+  "project": ["src/**/*.css", "src/**/*.{ts,tsx}", "e2e/**/*.ts", "scripts/**/*.ts"],
+  "ignore": ["src/core/ipc/bindings/**"]
+}

@@ -1,6 +1,6 @@
 import { Deferred, Duration, Effect, Ref, Stream } from 'effect';
 import type { Atom, AtomRegistry } from 'effect/reactivity';
-import { MicrophoneError, type RecordedAudio } from '@/core/audio';
+import { MicrophoneError } from '@/core/audio';
 import { conversationFlowAtom } from '@/core/conversation-flow';
 import { createSpeechGate, liveTranscript } from '@/core/speech';
 import { preRollMsFor } from '../helpers/capture-state';
@@ -23,11 +23,6 @@ type Watch = {
   readonly stopped: Deferred.Deferred<Verdict>;
   readonly heard: Ref.Ref<boolean>;
   readonly startedAtMs: number;
-};
-
-export type RecordedTurn = {
-  readonly audio: RecordedAudio;
-  readonly speechStoppedAtMs: number;
 };
 
 function updateRecording(

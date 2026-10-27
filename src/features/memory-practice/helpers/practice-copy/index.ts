@@ -1,4 +1,4 @@
-export const PRACTICE_QUESTIONS = 5;
+const PRACTICE_QUESTIONS = 5;
 const SHOWN_SAMPLES = 2;
 
 export type PracticeBlock = {

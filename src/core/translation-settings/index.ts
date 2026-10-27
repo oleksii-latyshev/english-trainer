@@ -1,5 +1,4 @@
 export {
-  isTranslationLanguage,
   TRANSLATION_LANGUAGES,
   type TranslationLanguage,
 } from './helpers/translation-languages';
@@ -9,4 +8,3 @@ export {
   setNativeLanguageAtom,
   translationAvailabilityAtom,
 } from './model/atoms';
-export type { TranslationSettingsFailure } from './types';
