@@ -1,6 +1,6 @@
 import { Toast } from '@base-ui/react/toast';
 
-export type ToastTone = 'neutral' | 'success' | 'danger';
+type ToastTone = 'neutral' | 'success' | 'danger';
 
 type Options = { action?: { label: string; onClick: () => void } };
 

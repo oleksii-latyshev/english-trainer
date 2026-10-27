@@ -14,7 +14,7 @@ export type TrimSettings = {
   readonly fadeOutMs: number;
 };
 
-export type Clip = {
+type Clip = {
   readonly synthMs: number;
   readonly audioMs: number;
   readonly leadSilenceMs: number;
@@ -115,7 +115,7 @@ function describe(wav: Buffer, synthMs: number, trim: TrimSettings): Clip {
   };
 }
 
-export type RawClip = {
+type RawClip = {
   readonly synthMs: number;
   readonly measure: (trim: TrimSettings) => Clip;
 };

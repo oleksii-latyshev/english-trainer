@@ -1,10 +1,7 @@
 import { Schema } from 'effect';
 import type { AverageAnswer } from '../bindings/AverageAnswer';
 import type { FinishedPracticeSession } from '../bindings/FinishedPracticeSession';
-import type { ProviderError } from '../bindings/ProviderError';
-import type { ProviderErrorCode } from '../bindings/ProviderErrorCode';
 import type { RecurringMistake } from '../bindings/RecurringMistake';
-import type { ReplyStage } from '../bindings/ReplyStage';
 import type { SavedWrapupPhrases } from '../bindings/SavedWrapupPhrases';
 import type { SessionNumbers } from '../bindings/SessionNumbers';
 import type { SpeakingTime } from '../bindings/SpeakingTime';
@@ -13,6 +10,7 @@ import type { WordsPerMinute } from '../bindings/WordsPerMinute';
 import type { WrapupPhrase } from '../bindings/WrapupPhrase';
 import type { WrapupPreparation } from '../bindings/WrapupPreparation';
 import { bindingSchema } from './binding-schema';
+import { IPC_ERROR_FIELDS } from './ipc-error';
 import { PhraseCardRecordSchema } from './learning';
 import { PracticeModeSchema, PracticePhaseSchema } from './practice-session';
 
@@ -28,15 +26,15 @@ export const TrendSchema = bindingSchema<Trend>()(
   ]),
 );
 
-export const SpeakingTimeSchema = bindingSchema<SpeakingTime>()(
+const SpeakingTimeSchema = bindingSchema<SpeakingTime>()(
   Schema.Struct({ duration_ms: Schema.NullOr(Count), trend: TrendSchema }),
 );
 
-export const WordsPerMinuteSchema = bindingSchema<WordsPerMinute>()(
+const WordsPerMinuteSchema = bindingSchema<WordsPerMinute>()(
   Schema.Struct({ value: Schema.NullOr(Count), trend: TrendSchema }),
 );
 
-export const AverageAnswerSchema = bindingSchema<AverageAnswer>()(
+const AverageAnswerSchema = bindingSchema<AverageAnswer>()(
   Schema.Struct({ words: Schema.NullOr(Count), trend: TrendSchema }),
 );
 
@@ -57,7 +55,7 @@ export const WrapupPhraseSchema = bindingSchema<WrapupPhrase>()(
   }),
 );
 
-export const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
+const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
   Schema.Struct({
     original: Schema.String,
     improved: Schema.String,
@@ -66,40 +64,12 @@ export const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
   }),
 );
 
-const ProviderErrorCodeSchema = bindingSchema<ProviderErrorCode>()(
-  Schema.Literals([
-    'unavailable',
-    'unauthorized',
-    'rate_limited',
-    'timeout',
-    'cancelled',
-    'invalid_output',
-    'process_failed',
-    'invalid_request',
-    'busy',
-    'invalid_session',
-    'database_error',
-  ]),
-);
-
-const ReplyStageSchema = bindingSchema<ReplyStage>()(
-  Schema.Literals(['envelope', 'schema', 'content']),
-);
-
-export const ProviderErrorSchema = bindingSchema<ProviderError>()(
-  Schema.Struct({
-    code: ProviderErrorCodeSchema,
-    message: Schema.String,
-    reply_stage: Schema.optionalKey(ReplyStageSchema),
-  }),
-);
-
-export const WrapupPreparationSchema = bindingSchema<WrapupPreparation>()(
+const WrapupPreparationSchema = bindingSchema<WrapupPreparation>()(
   Schema.Union([
     Schema.Struct({ state: Schema.Literal('legacy') }),
     Schema.Struct({ state: Schema.Literal('pending') }),
     Schema.Struct({ state: Schema.Literal('ready') }),
-    Schema.Struct({ state: Schema.Literal('failed'), error: ProviderErrorSchema }),
+    Schema.Struct({ state: Schema.Literal('failed'), error: Schema.Struct(IPC_ERROR_FIELDS) }),
   ]),
 );
 

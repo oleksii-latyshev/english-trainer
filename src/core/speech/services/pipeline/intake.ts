@@ -7,7 +7,7 @@ import {
 import type { ReplyEvent } from '../../types';
 import type { Pipeline, TextState } from './pipeline';
 
-export function applyReplyEvent(
+function applyReplyEvent(
   state: TextState,
   event: ReplyEvent,
   splitsIntoSentences: boolean,

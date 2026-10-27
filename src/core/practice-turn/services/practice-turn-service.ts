@@ -9,7 +9,7 @@ import {
 import type { InputSource } from '@/core/practice-session';
 import type { TurnFailure } from '../types';
 
-export type SendRequest = {
+type SendRequest = {
   readonly sessionId: number;
   readonly transcript: string;
   readonly source: InputSource;

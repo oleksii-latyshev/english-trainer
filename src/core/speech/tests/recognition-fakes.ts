@@ -1,7 +1,7 @@
 import { type Duration, Effect, Layer } from 'effect';
 import { Ipc, IpcBinary, type IpcError } from '@/core/ipc';
 
-export type BinaryCall = {
+type BinaryCall = {
   readonly command: string;
   readonly bytes: Uint8Array;
   readonly headers: Readonly<Record<string, string>> | undefined;

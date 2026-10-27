@@ -92,10 +92,10 @@ export const EVA_MOTIONS = [
 ] as const;
 
 export type BodyId = (typeof BODY_COLOURS)[number]['id'];
-export type InkId = (typeof INK_COLOURS)[number]['id'];
-export type LeafId = (typeof LEAF_COLOURS)[number]['id'];
-export type PetalId = (typeof PETAL_COLOURS)[number]['id'];
-export type EvaMotion = (typeof EVA_MOTIONS)[number]['id'];
+type InkId = (typeof INK_COLOURS)[number]['id'];
+type LeafId = (typeof LEAF_COLOURS)[number]['id'];
+type PetalId = (typeof PETAL_COLOURS)[number]['id'];
+type EvaMotion = (typeof EVA_MOTIONS)[number]['id'];
 
 export type EvaLook = {
   body: BodyId;

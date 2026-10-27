@@ -1,4 +1,4 @@
-use crate::providers::ProviderError;
+use crate::core::IpcError;
 use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
@@ -26,7 +26,7 @@ pub enum WrapupPreparation {
     Legacy,
     Pending,
     Ready,
-    Failed { error: ProviderError },
+    Failed { error: IpcError },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, ts_rs::TS)]

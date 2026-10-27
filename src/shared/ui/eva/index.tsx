@@ -15,7 +15,7 @@ import {
 import { Plant } from './plant';
 import { DEFAULT_EVA_STAGE, type EvaFace, type EvaMood, type EvaStage, faceOfMood } from './types';
 
-export { DEFAULT_EVA_STAGE, type EvaMood, type EvaStage };
+export type { EvaMood, EvaStage };
 
 type Props = {
   mood: EvaMood;

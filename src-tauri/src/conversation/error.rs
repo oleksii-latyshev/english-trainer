@@ -1,5 +1,5 @@
 use crate::core::{IpcError, IpcErrorCode};
-use crate::providers::{ProviderError, ProviderErrorCode};
+use crate::providers::ProviderError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -40,6 +40,20 @@ pub enum ConversationError {
     MistakeTargetUnknown,
     #[error("a repeated mistake changed during preparation")]
     MistakeChanged,
+    #[error("answer could not be found")]
+    AnswerNotFound,
+    #[error("the question changed before help was recorded")]
+    HelpQuestionChanged,
+    #[error("the question changed before its plan was ready")]
+    PlanQuestionChanged,
+    #[error("the spoken question changed before rescue")]
+    RescueQuestionChanged,
+    #[error("rescue help is still being prepared")]
+    RescueBusy,
+    #[error("session phrases cannot be saved")]
+    WrapupSaveInvalid,
+    #[error("session phrases are already preparing or ready")]
+    WrapupNotRetryable,
     #[error("provider failed: {0:?}")]
     Provider(ProviderError),
     #[error("could not read or write practice sessions")]
@@ -125,6 +139,34 @@ impl From<ConversationError> for IpcError {
                 InvalidRequest,
                 "A repeated mistake changed while questions were being prepared. Please retry.",
             ),
+            ConversationError::AnswerNotFound => Self::new(
+                InvalidRequest,
+                "This answer could not be found. Refresh the conversation and try again.",
+            ),
+            ConversationError::HelpQuestionChanged => Self::new(
+                InvalidRequest,
+                "The question changed before help was recorded. Open help again for the current question.",
+            ),
+            ConversationError::PlanQuestionChanged => Self::new(
+                InvalidRequest,
+                "The question changed before its plan was ready. Open help for the current spoken question.",
+            ),
+            ConversationError::RescueQuestionChanged => Self::new(
+                InvalidRequest,
+                "The spoken question changed. Open Stuck during your current answer.",
+            ),
+            ConversationError::RescueBusy => Self::new(
+                Busy,
+                "Rescue help is still being prepared. Keep speaking or wait briefly before retrying.",
+            ),
+            ConversationError::WrapupSaveInvalid => Self::new(
+                InvalidRequest,
+                "Could not save these session phrases. Choose up to three phrases from the finished wrap-up and retry.",
+            ),
+            ConversationError::WrapupNotRetryable => Self::new(
+                InvalidRequest,
+                "Session phrases are already preparing or ready. Finish a session before preparing its phrases.",
+            ),
             ConversationError::Provider(error) => Self::from(error),
             ConversationError::Storage(_) => Self::new(
                 DatabaseError,
@@ -134,29 +176,10 @@ impl From<ConversationError> for IpcError {
     }
 }
 
-impl From<ConversationError> for ProviderError {
-    fn from(error: ConversationError) -> Self {
-        match error {
-            ConversationError::Provider(error) => error,
-            other => Self::from(IpcError::from(other)),
-        }
-    }
-}
-
-pub(crate) fn database_error(_: rusqlite::Error) -> ProviderError {
-    ProviderError::new(
-        ProviderErrorCode::DatabaseError,
-        "Could not save this practice session locally. Please retry.",
-    )
-}
-
-pub(crate) fn invalid_session_error() -> ProviderError {
-    ConversationError::InvalidSession.into()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::providers::ProviderErrorCode;
 
     #[test]
     fn storage_failures_hide_internal_details() {

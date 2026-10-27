@@ -3,7 +3,7 @@ export type VoiceEngineChoice = 'natural' | 'system';
 export const NATURAL_VOICE_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 export type NaturalVoiceId = (typeof NATURAL_VOICE_IDS)[number];
 
-export type NaturalVoiceGender = 'female' | 'male';
+type NaturalVoiceGender = 'female' | 'male';
 
 export type NaturalVoice = {
   readonly id: NaturalVoiceId;

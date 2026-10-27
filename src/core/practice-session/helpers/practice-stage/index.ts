@@ -2,11 +2,11 @@ import type { PracticeMode, PracticePhase, SessionDetails } from '../../types';
 
 export type InputSource = 'voice' | 'edited' | 'text';
 
-export function phaseAllowsAudio(mode: PracticeMode, phase: PracticePhase): boolean {
+function phaseAllowsAudio(mode: PracticeMode, phase: PracticePhase): boolean {
   return phase === 'speaking' && (mode === 'voice' || mode === 'write_then_speak');
 }
 
-export function phaseAllowsText(mode: PracticeMode, phase: PracticePhase): boolean {
+function phaseAllowsText(mode: PracticeMode, phase: PracticePhase): boolean {
   return phase === 'writing' && (mode === 'text_chat' || mode === 'write_then_speak');
 }
 

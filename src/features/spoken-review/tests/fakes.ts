@@ -44,10 +44,7 @@ export function aReviewRun(itemCount = 2, overrides: Partial<ReviewRun> = {}): R
   };
 }
 
-export function aRecallResult(
-  position: number,
-  overrides: Partial<RecallResult> = {},
-): RecallResult {
+function aRecallResult(position: number, overrides: Partial<RecallResult> = {}): RecallResult {
   return {
     run_id: 71,
     position,
@@ -65,7 +62,7 @@ export function aRecallResult(
   };
 }
 
-export function aMaterials(overrides: Partial<ReviewMaterials> = {}): ReviewMaterials {
+function aMaterials(overrides: Partial<ReviewMaterials> = {}): ReviewMaterials {
   return {
     run_id: 71,
     preparation: { state: 'ready' },
@@ -148,7 +145,7 @@ function answer(backend: Backend, command: string, args: Record<string, unknown>
   }
 }
 
-export function ipcLayer(backend: Backend) {
+function ipcLayer(backend: Backend) {
   return Layer.succeed(Ipc, {
     invoke: (command, args) =>
       Effect.suspend(() => {

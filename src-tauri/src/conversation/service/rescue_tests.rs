@@ -1,8 +1,9 @@
 use super::*;
 use crate::conversation::service::code_of;
+use crate::core::IpcErrorCode;
 use crate::{
     conversation::InputSource,
-    providers::{ConversationTurn, RescueKind},
+    providers::{ConversationTurn, ProviderError, ProviderErrorCode, RescueKind},
 };
 
 fn request(question: String) -> RescueRequest {
@@ -42,7 +43,7 @@ fn rescue_records_only_the_current_answer_before_generation_even_if_generation_f
             ))
         })
         .unwrap_err();
-    assert_eq!(code_of(error), ProviderErrorCode::Timeout);
+    assert_eq!(code_of(error), IpcErrorCode::Timeout);
     store
         .send_turn_with_source(
             session.session_id,
@@ -113,24 +114,25 @@ fn slow_rescue_does_not_block_a_turn_and_a_late_result_is_discarded() {
     });
     started.recv().unwrap();
     assert_eq!(
-        store
-            .rescue_answer(
-                id,
-                1,
-                &request(store.get_active().unwrap().unwrap().opening_question),
-                |_: &RescueRequest| panic!("duplicate rescue must not launch")
-            )
-            .unwrap_err()
-            .code,
-        ProviderErrorCode::Busy
+        code_of(
+            store
+                .rescue_answer(
+                    id,
+                    1,
+                    &request(store.get_active().unwrap().unwrap().opening_question),
+                    |_: &RescueRequest| panic!("duplicate rescue must not launch")
+                )
+                .unwrap_err()
+        ),
+        IpcErrorCode::Busy
     );
     store
         .send_turn(id, "I use a notebook.".into(), |_| Ok(reply()))
         .unwrap();
     release.send(()).unwrap();
     assert_eq!(
-        worker.join().unwrap().unwrap_err().code,
-        ProviderErrorCode::InvalidRequest
+        code_of(worker.join().unwrap().unwrap_err()),
+        IpcErrorCode::InvalidRequest
     );
     let current = store
         .lock()

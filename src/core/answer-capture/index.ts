@@ -1,4 +1,4 @@
-export { canChangeSession, isCapturing, PRE_ROLL_MS } from './helpers/capture-state';
+export { canChangeSession, isCapturing } from './helpers/capture-state';
 export {
   cancelListening,
   holdForRescue,
@@ -8,8 +8,8 @@ export {
   stopListening,
   transcribeAgain,
 } from './model/controls';
-export { listenAtom, transcribeAgainAtom } from './model/listen';
-export { type RescueRequest, rescueTranscriptAtom } from './model/rescue';
+
+export { rescueTranscriptAtom } from './model/rescue';
 export { AnswerCaptureLive, captureRuntime } from './model/runtime';
 export {
   type CaptureControl,
@@ -18,11 +18,7 @@ export {
   captureRequestIdAtom,
   captureStateAtom,
   captureTimingAtom,
-  recordedClipAtom,
   rescueHoldAtom,
 } from './model/state';
-export {
-  AnswerRecorder,
-  type OpenedAnswer,
-} from './services/answer-recorder-service';
-export type { CaptureState, Listening, ListenRequest, Recording, RecordingMode } from './types';
+
+export type { CaptureState, Listening, RecordingMode } from './types';

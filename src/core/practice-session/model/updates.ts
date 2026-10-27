@@ -1,12 +1,7 @@
 import type { AtomRegistry } from 'effect/reactivity';
 import type { ConversationTurn } from '@/core/ipc';
-import {
-  advancePractice,
-  recordRetryComparison,
-  setTurnPending,
-  updatePracticeClock,
-} from '../helpers/practice-state';
-import type { AttemptComparison, PracticeSession, PracticeState } from '../types';
+import { advancePractice, setTurnPending, updatePracticeClock } from '../helpers/practice-state';
+import type { PracticeSession, PracticeState } from '../types';
 import { practiceErrorAtom, practiceStateAtom } from './atoms';
 
 export function acceptTurn(
@@ -19,16 +14,6 @@ export function acceptTurn(
 
 export function markTurnPending(registry: AtomRegistry.AtomRegistry, isPending: boolean) {
   registry.update(practiceStateAtom, (state) => setTurnPending(state, isPending));
-}
-
-export function acceptRetryComparison(
-  registry: AtomRegistry.AtomRegistry,
-  sessionId: number,
-  comparison: AttemptComparison,
-) {
-  registry.update(practiceStateAtom, (state) =>
-    recordRetryComparison(state, sessionId, comparison),
-  );
 }
 
 export function dismissSummary(registry: AtomRegistry.AtomRegistry) {

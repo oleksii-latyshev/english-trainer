@@ -7,7 +7,7 @@ import { bindingSchema } from './binding-schema';
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 const Identifier = Schema.Int.check(Schema.isGreaterThan(0));
 
-export const DailyRecallItemSchema = bindingSchema<DailyRecallItem>()(
+const DailyRecallItemSchema = bindingSchema<DailyRecallItem>()(
   Schema.Struct({ phrase_id: Identifier, cue: Schema.String }),
 );
 

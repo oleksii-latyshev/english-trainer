@@ -16,11 +16,11 @@ export type MaterialsState = {
 
 const EMPTY_MATERIALS: MaterialsState = { materials: null, error: null, isBusy: false };
 
-export const PREPARE_FAILED_MESSAGE =
+const PREPARE_FAILED_MESSAGE =
   'Review situations could not be prepared. You can answer now or try again.';
-export const REFRESH_FAILED_MESSAGE =
+const REFRESH_FAILED_MESSAGE =
   'Review materials could not be refreshed. Your saved items are unchanged; you can retry.';
-export const REVEAL_FAILED_MESSAGE = 'Could not show the phrase. Please try again.';
+const REVEAL_FAILED_MESSAGE = 'Could not show the phrase. Please try again.';
 
 export const runIdAtom = Atom.make((get) => get(sessionAtom)?.run.run_id ?? null);
 
@@ -81,11 +81,7 @@ function markPending(registry: AtomRegistry.AtomRegistry, runId: number) {
   update(registry, runId, { materials: { ...materials, preparation: { state: 'pending' } } });
 }
 
-export function prepareEffect(
-  registry: AtomRegistry.AtomRegistry,
-  runId: number,
-  isRetry: boolean,
-) {
+function prepareEffect(registry: AtomRegistry.AtomRegistry, runId: number, isRetry: boolean) {
   return Effect.gen(function* () {
     const service = yield* ReviewRunService;
     if (isRetry) markPending(registry, runId);

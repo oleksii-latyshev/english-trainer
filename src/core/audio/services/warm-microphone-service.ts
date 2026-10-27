@@ -4,7 +4,7 @@ import { type MicrophoneError, microphoneDisconnected } from '../errors';
 import { DevicePreference } from './device-preference-service';
 import { Microphone, type MicrophoneSession } from './microphone-service';
 
-export type WarmSlot = {
+type WarmSlot = {
   readonly scope: Scope.Closeable;
   readonly session: Deferred.Deferred<MicrophoneSession, MicrophoneError>;
 };

@@ -1,4 +1,4 @@
-export type AudioSignalWindow = {
+type AudioSignalWindow = {
   offsetMs: number;
   durationMs: number;
   rms: number;

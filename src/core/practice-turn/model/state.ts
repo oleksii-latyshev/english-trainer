@@ -3,7 +3,7 @@ import { captureRequestIdAtom, captureTimingAtom } from '@/core/answer-capture';
 import type { SpeechTiming, StreamHandle } from '@/core/speech';
 import type { PendingReply, SendFailure, SentAnswer } from '../types';
 
-export type TurnOutcome =
+type TurnOutcome =
   | { readonly tag: 'idle' }
   | { readonly tag: 'failed'; readonly failure: SendFailure };
 
@@ -39,7 +39,7 @@ export const micLevelAtom = Atom.keepAlive(Atom.make(0));
 
 export const canVoiceInterruptAtom = Atom.keepAlive(Atom.make(false));
 
-export const turnOutcomeAtom = Atom.make((get): TurnOutcome => {
+const turnOutcomeAtom = Atom.make((get): TurnOutcome => {
   const record = get(outcomeRecordAtom);
   return record.requestId === get(captureRequestIdAtom) ? record.outcome : IDLE_OUTCOME.outcome;
 });

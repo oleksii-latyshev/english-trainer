@@ -3,7 +3,7 @@ import type { IpcError } from '../bindings/IpcError';
 import type { IpcErrorCode } from '../bindings/IpcErrorCode';
 import { bindingSchema } from './binding-schema';
 
-export const IpcErrorCodeSchema = bindingSchema<IpcErrorCode>()(
+const IpcErrorCodeSchema = bindingSchema<IpcErrorCode>()(
   Schema.Literals([
     'unavailable',
     'unauthorized',

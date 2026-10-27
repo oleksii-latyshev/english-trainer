@@ -8,4 +8,3 @@ export {
 } from './sections';
 export { SettingsEvaScreen } from './settings-eva-screen';
 export { SettingsScreen } from './settings-screen';
-export type { SettingsEvaScreenProps, SettingsScreenProps } from './types';

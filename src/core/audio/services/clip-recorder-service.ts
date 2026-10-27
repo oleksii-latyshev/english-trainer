@@ -20,7 +20,7 @@ export type ClipPhase =
 
 export type RecordedClip = RecordedAudio & { readonly input: ActualAudioInput };
 
-export type ClipOptions = {
+type ClipOptions = {
   readonly deviceId: string;
   readonly maxMs: number;
   readonly whileRecording?: (capture: Capture) => Effect.Effect<void>;

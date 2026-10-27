@@ -9,6 +9,8 @@ pre-commit:
       run: bun run check:effect
     conventions:
       run: bun run check:conventions
+    knip:
+      run: bun run check:knip
     frontend-tests:
       run: bun run test
     rust:

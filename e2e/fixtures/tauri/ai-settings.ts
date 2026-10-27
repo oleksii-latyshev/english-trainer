@@ -8,7 +8,7 @@ export type AiSettingsOptions = {
   usage?: boolean;
 };
 
-export const DEFAULT_AI_SETTINGS: AiSettings = {
+const DEFAULT_AI_SETTINGS: AiSettings = {
   provider: 'gemini',
   agy_model: 'default',
   eva_style: 'natural',

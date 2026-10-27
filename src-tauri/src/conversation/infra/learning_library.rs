@@ -35,10 +35,10 @@ impl SessionStore {
 #[cfg(test)]
 mod learning_facade {
     use super::SessionStore;
-    use crate::core::IpcError;
     use crate::learning::{
-        LearningItemType, LearningMemoryView, LearningService, MemoryReviewRun, PhraseCardRecord,
-        ReviewService, SessionLearningStore, TurnUsageAssessment, UsageReviewService,
+        LearningError, LearningItemType, LearningMemoryView, LearningService, MemoryReviewRun,
+        PhraseCardRecord, ReviewService, SessionLearningStore, TurnUsageAssessment,
+        UsageReviewService,
     };
     use crate::providers::{ProviderError, UsageReviewRequest, UsageReviewResponse};
 
@@ -47,10 +47,8 @@ mod learning_facade {
             LearningService::new(SessionLearningStore::new(self.clone()))
         }
 
-        pub fn start_memory_review(&self) -> Result<Option<MemoryReviewRun>, ProviderError> {
-            ReviewService::new(SessionLearningStore::new(self.clone()))
-                .start(false)
-                .map_err(failure)
+        pub fn start_memory_review(&self) -> Result<Option<MemoryReviewRun>, LearningError> {
+            ReviewService::new(SessionLearningStore::new(self.clone())).start(false)
         }
 
         pub fn review_memory_usage(
@@ -58,14 +56,13 @@ mod learning_facade {
             session_id: u64,
             sequence: usize,
             generate: impl FnOnce(&UsageReviewRequest) -> Result<UsageReviewResponse, ProviderError>,
-        ) -> Result<TurnUsageAssessment, ProviderError> {
+        ) -> Result<TurnUsageAssessment, LearningError> {
             UsageReviewService::new(SessionLearningStore::new(self.clone()))
                 .review(session_id, sequence, generate)
-                .map_err(failure)
         }
 
-        pub fn get_learning_memory(&self) -> Result<LearningMemoryView, ProviderError> {
-            self.learning().memory().map_err(failure)
+        pub fn get_learning_memory(&self) -> Result<LearningMemoryView, LearningError> {
+            self.learning().memory()
         }
 
         pub fn save_phrase(
@@ -74,30 +71,25 @@ mod learning_facade {
             meaning_or_note: String,
             session_id: Option<u64>,
             sequence: Option<usize>,
-        ) -> Result<PhraseCardRecord, ProviderError> {
+        ) -> Result<PhraseCardRecord, LearningError> {
             self.learning()
                 .save_phrase(&phrase, &meaning_or_note, session_id, sequence)
-                .map_err(failure)
         }
 
-        pub fn delete_phrase(&self, phrase_id: u64) -> Result<bool, ProviderError> {
-            self.learning().delete_phrase(phrase_id).map_err(failure)
+        pub fn delete_phrase(&self, phrase_id: u64) -> Result<bool, LearningError> {
+            self.learning().delete_phrase(phrase_id)
         }
 
-        pub fn delete_mistake(&self, mistake_id: u64) -> Result<bool, ProviderError> {
-            self.learning().delete_mistake(mistake_id).map_err(failure)
+        pub fn delete_mistake(&self, mistake_id: u64) -> Result<bool, LearningError> {
+            self.learning().delete_mistake(mistake_id)
         }
 
         pub fn archive_learning_item(
             &self,
             item_type: LearningItemType,
             item_id: u64,
-        ) -> Result<bool, ProviderError> {
-            self.learning().archive(item_type, item_id).map_err(failure)
+        ) -> Result<bool, LearningError> {
+            self.learning().archive(item_type, item_id)
         }
-    }
-
-    fn failure(error: crate::learning::LearningError) -> ProviderError {
-        ProviderError::from(IpcError::from(error))
     }
 }

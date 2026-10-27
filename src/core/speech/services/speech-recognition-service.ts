@@ -20,8 +20,7 @@ export type TranscribedAnswer = { readonly text: string; readonly sttMs: number 
 
 export type RescueTurn = { readonly sessionId: number; readonly sequence: number };
 
-export const NO_RESCUE_SPEECH_MESSAGE =
-  'No speech was recognized. Keep speaking and try Stuck again.';
+const NO_RESCUE_SPEECH_MESSAGE = 'No speech was recognized. Keep speaking and try Stuck again.';
 
 export type SpeechRecognitionShape = {
   readonly transcribe: (wav: Blob) => Effect.Effect<TranscribedAnswer, SpeechRecognitionFailure>;

@@ -51,19 +51,20 @@ fn warm_up_translation(
 }
 
 #[tauri::command]
-fn set_dock_icon(
-    app: tauri::AppHandle,
-    icon: dock_icon::DockIcon,
-) -> Result<(), providers::ProviderError> {
+fn set_dock_icon(app: tauri::AppHandle, icon: dock_icon::DockIcon) -> Result<(), core::IpcError> {
     dock_icon::apply(&app, icon).map_err(|_| {
-        providers::ProviderError::new(
-            providers::ProviderErrorCode::ProcessFailed,
+        core::IpcError::new(
+            core::IpcErrorCode::ProcessFailed,
             "Could not change the Dock icon. Please retry.",
         )
     })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[allow(
+    clippy::expect_used,
+    reason = "the app cannot start when the Tauri builder fails, so aborting is the only outcome"
+)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {

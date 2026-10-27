@@ -47,10 +47,6 @@ export function settle(session: Session): Session {
   return { ...session, pending: 'none' };
 }
 
-export function clearError(session: Session): Session {
-  return { ...session, actionError: null };
-}
-
 export function saved(session: Session, result: RecallResult): Session | null {
   const run = mergeRecallResult(session.run, result);
   if (run === null) return null;

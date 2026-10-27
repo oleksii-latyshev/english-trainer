@@ -1,3 +1,8 @@
+#![allow(
+    clippy::panic,
+    reason = "integration tests are not compiled under cfg(test), so clippy cannot exempt them"
+)]
+
 use english_trainer_lib::{
     ConversationContext, ConversationTurn, InputSource, PracticeMode, PracticePhase, ProviderError,
     ReplyEngine, SessionStore, StartPracticeOptions,

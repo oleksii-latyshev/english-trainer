@@ -5,17 +5,15 @@ import type { ConversationProvider } from '../bindings/ConversationProvider';
 import type { EvaStyle } from '../bindings/EvaStyle';
 import { bindingSchema } from './binding-schema';
 
-export const ConversationProviderSchema = bindingSchema<ConversationProvider>()(
+const ConversationProviderSchema = bindingSchema<ConversationProvider>()(
   Schema.Literals(['gemini', 'apple', 'agy']),
 );
 
-export const AgyModelSchema = bindingSchema<AgyModel>()(
+const AgyModelSchema = bindingSchema<AgyModel>()(
   Schema.Literals(['default', 'gemini-3.8-flash-low', 'gemini-3.8-flash-high']),
 );
 
-export const EvaStyleSchema = bindingSchema<EvaStyle>()(
-  Schema.Literals(['short_and_simple', 'natural']),
-);
+const EvaStyleSchema = bindingSchema<EvaStyle>()(Schema.Literals(['short_and_simple', 'natural']));
 
 export const AiSettingsSchema = bindingSchema<AiSettings>()(
   Schema.Struct({

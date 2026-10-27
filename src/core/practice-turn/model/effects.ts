@@ -53,7 +53,7 @@ const warmsSpeechEngineAtom = Atom.make((get) => {
 
 const lastSessionKeyAtom = Atom.make<string | null | undefined>(undefined);
 
-export function autoListenReady(registry: AtomRegistry.AtomRegistry): boolean {
+function autoListenReady(registry: AtomRegistry.AtomRegistry): boolean {
   const state = registry.get(practiceStateAtom);
   if (state.tag !== 'active') return false;
   return (

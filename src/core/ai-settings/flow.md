@@ -111,6 +111,6 @@ sequenceDiagram
     participant Provider as providers::generate_configured_turn
 
     Command->>Rust: get()
-    Rust-->>Command: AiSettings, or IpcError mapped to ProviderError
+    Rust-->>Command: AiSettings, or AiSettingsError mapped to IpcError
     Command->>Provider: generate with the saved provider
 ```

@@ -18,7 +18,7 @@ const SILENT_MICROPHONE: Microphone = {
   liveTexts: [],
 };
 
-export function openReview(backend: Backend, mode: ReviewMode = 'review') {
+function openReview(backend: Backend, mode: ReviewMode = 'review') {
   const registry = AtomRegistry.make({
     initialValues: [
       [learningMemoryRuntime.layer, learningLayer(backend)],

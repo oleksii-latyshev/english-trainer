@@ -14,8 +14,7 @@ export class MicrophoneError extends Data.TaggedError('MicrophoneError')<{
   readonly message: string;
 }> {}
 
-export const MIC_NOT_READY_MESSAGE =
-  'The microphone did not become ready. Reconnect it and try again.';
+const MIC_NOT_READY_MESSAGE = 'The microphone did not become ready. Reconnect it and try again.';
 export const MIC_DISCONNECTED_MESSAGE =
   'The microphone disconnected before recording. Reconnect it and try again.';
 const MIC_UNSUPPORTED_MESSAGE = 'Microphone recording is unavailable in this app environment.';

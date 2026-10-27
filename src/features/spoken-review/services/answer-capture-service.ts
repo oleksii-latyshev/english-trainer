@@ -14,10 +14,9 @@ import {
   type TranscribedAnswer,
 } from '@/core/speech';
 
-export const MAX_ANSWER_MS = 120_000;
-export const LEVEL_SAMPLE_INTERVAL = Duration.millis(100);
-export const DESKTOP_ONLY_MESSAGE =
-  'Open the desktop app with bun run dev to use local transcription.';
+const MAX_ANSWER_MS = 120_000;
+const LEVEL_SAMPLE_INTERVAL = Duration.millis(100);
+const DESKTOP_ONLY_MESSAGE = 'Open the desktop app with bun run dev to use local transcription.';
 
 type AnswerCaptureShape = {
   readonly record: (

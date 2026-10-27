@@ -16,7 +16,7 @@ export type TurnIssue = {
   fixes: TurnFix[];
 };
 
-export type SendFailure = { message: string; needsSetup: boolean; isUnresponsive: boolean };
+type SendFailure = { message: string; needsSetup: boolean; isUnresponsive: boolean };
 
 export type IssueSignals = {
   sendError?: SendFailure;

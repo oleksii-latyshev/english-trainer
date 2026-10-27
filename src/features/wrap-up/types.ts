@@ -7,7 +7,6 @@ import type {
   SessionNumbersSchema,
   TrendSchema,
   WrapupPhraseSchema,
-  WrapupPreparationSchema,
 } from '@/core/ipc';
 
 export type FinishedSession = typeof FinishedSessionSchema.Type;
@@ -18,15 +17,11 @@ export type Trend = typeof TrendSchema.Type;
 
 export type WrapupPhrase = typeof WrapupPhraseSchema.Type;
 
-export type WrapupPreparation = typeof WrapupPreparationSchema.Type;
-
 export type PhraseCard = typeof PhraseCardRecordSchema.Type;
 
 export type SavedPhrases = typeof SavedWrapupPhrasesSchema.Type;
 
 export type WrapUpFailure = IpcError | IpcDecodeError;
-
-export type SaveState = 'idle' | 'saving' | 'error';
 
 export type PhraseSelection = {
   readonly removed: ReadonlySet<string>;

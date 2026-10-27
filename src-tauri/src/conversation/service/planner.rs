@@ -1,8 +1,8 @@
 use super::SessionStore;
 use crate::conversation::domain::PracticePhase;
-use crate::conversation::error::invalid_session_error;
+use crate::conversation::error::ConversationError;
 use crate::conversation::ports::AnswerPlanner;
-use crate::providers::{AnswerPlan, ProviderError, ProviderErrorCode};
+use crate::providers::{AnswerPlan, ProviderError};
 
 #[derive(Clone, PartialEq, Eq)]
 struct PlanKey {
@@ -25,7 +25,7 @@ impl SessionStore {
         question: &str,
         retry: bool,
         planner: impl AnswerPlanner,
-    ) -> Result<AnswerPlan, ProviderError> {
+    ) -> Result<AnswerPlan, ConversationError> {
         let key = self.plan_key(session_id, sequence, question)?;
         let mut cache = self
             .answer_plan_cache
@@ -44,7 +44,7 @@ impl SessionStore {
             }
         };
         self.plan_key(session_id, sequence, question)?;
-        result
+        result.map_err(ConversationError::from)
     }
 
     fn plan_key(
@@ -52,21 +52,20 @@ impl SessionStore {
         session_id: u64,
         sequence: usize,
         question: &str,
-    ) -> Result<PlanKey, ProviderError> {
+    ) -> Result<PlanKey, ConversationError> {
         let state = self.lock();
         let active = state
             .active
             .as_ref()
             .filter(|active| active.id == session_id)
-            .ok_or_else(invalid_session_error)?;
+            .ok_or(ConversationError::InvalidSession)?;
         if active.in_flight
             || active.is_mistake_practice
             || !matches!(active.practice_phase, PracticePhase::Speaking)
             || sequence != active.turns.len() + 1
             || question != active.current_question()
         {
-            return Err(ProviderError::new(ProviderErrorCode::InvalidRequest,
-                "The question changed before its plan was ready. Open help for the current spoken question."));
+            return Err(ConversationError::PlanQuestionChanged);
         }
         Ok(PlanKey {
             session_id,

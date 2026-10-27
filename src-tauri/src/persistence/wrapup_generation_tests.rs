@@ -1,6 +1,7 @@
 use super::*;
 use crate::conversation::WrapupPhrase;
-use crate::providers::{GeneratedWrapupPhrase, ProviderErrorCode, WrapupRequest};
+use crate::core::{IpcError, IpcErrorCode};
+use crate::providers::{GeneratedWrapupPhrase, WrapupRequest};
 
 fn setup() -> (SessionDatabase, u64) {
     let mut db = SessionDatabase::open_in_memory().unwrap();
@@ -84,7 +85,7 @@ fn legacy_failed_and_ready_retry_rules_and_late_results_are_persisted() {
     db.finish_session(id).unwrap();
     assert!(db.retry_wrapup(id).unwrap());
     assert!(!db.retry_wrapup(id).unwrap());
-    let error = ProviderError::new(ProviderErrorCode::RateLimited, "Try later.");
+    let error = IpcError::new(IpcErrorCode::RateLimited, "Try later.");
     assert!(db.complete_wrapup(id, &Err(error.clone())).unwrap());
     assert!(
         matches!(db.wrapup_record(id).unwrap(), Some(PreparedWrapup::Failed(value)) if value == error)
@@ -172,4 +173,25 @@ fn long_sessions_send_only_bounded_recent_excerpts_without_changing_saved_answer
     }
     WrapupRequest { answers }.validate().unwrap();
     assert_eq!(db.turns(id).unwrap()[30].learner, long_answer);
+}
+
+#[test]
+fn failures_stored_with_the_old_provider_error_shape_still_load() {
+    let (mut db, id) = setup();
+    db.finish_session(id).unwrap();
+    assert!(db.retry_wrapup(id).unwrap());
+    db.connection
+        .execute(
+            "UPDATE session_wrapups SET state = 'failed', error_json = ?2 WHERE session_id = ?1",
+            params![
+                to_sql_id(id).unwrap(),
+                r#"{"code":"rate_limited","message":"Try later.","reply_stage":"content"}"#
+            ],
+        )
+        .unwrap();
+    assert!(matches!(
+        db.wrapup_record(id).unwrap(),
+        Some(PreparedWrapup::Failed(value))
+            if value == IpcError::new(IpcErrorCode::RateLimited, "Try later.")
+    ));
 }

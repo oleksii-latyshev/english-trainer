@@ -6,7 +6,7 @@ const STATUS_LABELS: Record<ComponentStatus, string> = {
   unreadable: 'Cannot read',
 };
 
-export const PATH_NOT_FOUND = 'Path not found';
+const PATH_NOT_FOUND = 'Path not found';
 export const SETUP_UNREADABLE =
   'Setup details could not be read. Check the app installation and try again.';
 

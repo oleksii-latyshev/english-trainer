@@ -5,8 +5,7 @@ use super::review_material::{ReviewMaterialRow, StoredReviewMaterial};
 use super::usage::{MemoryUsageEvidence, TurnUsageAssessment};
 use super::usage_rules::UsagePreparation;
 use crate::providers::{
-    ProviderError, ReviewMaterialRequest, ReviewMaterialResult, UsageReviewRequest,
-    UsageReviewResponse,
+    ReviewMaterialRequest, ReviewMaterialResult, UsageReviewRequest, UsageReviewResponse,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,7 +66,7 @@ pub trait ReviewMaterialStore: Send + Sync {
     fn complete_preparation(
         &self,
         run_id: u64,
-        result: &Result<ReviewMaterialResult, ProviderError>,
+        result: &Result<ReviewMaterialResult, crate::core::IpcError>,
     ) -> Result<(), LearningError>;
     fn reveal_phrase(&self, run_id: u64, position: usize) -> Result<(), LearningError>;
 }

@@ -1,4 +1,4 @@
-export { isNapping, loadedGrowth, toEvaStage } from './helpers/eva-stage';
+export { toEvaStage } from './helpers/eva-stage';
 export {
   evaGrowthAtom,
   evaNappingAtom,
@@ -6,6 +6,6 @@ export {
   growthPreferenceAtom,
   knownGrowthAtom,
 } from './model/atoms';
-export { DEFAULT_GROWTH, type GrowthPreference } from './preferences';
-export { STAGES, type StageInfo, stageInfo } from './stages';
-export type { EvaGrowthFailure, EvaGrowthSnapshot } from './types';
+export { DEFAULT_GROWTH } from './preferences';
+export { STAGES, stageInfo } from './stages';
+export type { EvaGrowthSnapshot } from './types';
