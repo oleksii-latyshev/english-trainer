@@ -9,7 +9,7 @@ type SettingsSectionsProps = {
 
 export function SettingsSections({ activeSection, disabled, onSelect }: SettingsSectionsProps) {
   return (
-    <div className="mt-4 flex flex-col pl-4.5 max-rail:hidden">
+    <div className="max-rail:hidden mt-4 flex flex-col pl-4.5">
       {SETTINGS_SECTIONS.map((section) => (
         <NavItem
           active={activeSection === section.id}

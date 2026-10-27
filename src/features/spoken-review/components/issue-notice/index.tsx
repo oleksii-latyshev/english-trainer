@@ -16,7 +16,7 @@ export function IssueNotice({ onOpenSettings }: Props) {
 
   return (
     <Notice
-      className="flex items-center justify-between gap-3 rounded-control border"
+      className="rounded-control flex items-center justify-between gap-3 border"
       role="alert"
       tone="warn"
     >

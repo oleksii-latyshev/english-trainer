@@ -22,9 +22,9 @@ export function GrowthCard({ disabled, onOpen }: Props) {
       disabled={disabled}
       onClick={onOpen}
     >
-      <span className="flex items-center justify-between font-semibold text-caption text-quiet-foreground">
+      <span className="text-caption text-quiet-foreground flex items-center justify-between font-semibold">
         <span>{progress.stageName}</span>
-        <span className="font-medium text-faint">{progress.counts}</span>
+        <span className="text-faint font-medium">{progress.counts}</span>
       </span>
       <ProgressBar
         label="Progress in this stage"

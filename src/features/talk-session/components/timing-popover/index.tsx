@@ -19,16 +19,16 @@ export function TimingPopover({ timing }: Props) {
       }
     >
       <div className="flex w-72 flex-col gap-2 p-3">
-        <h3 className="m-0 font-bold text-body">Speech pipeline latency</h3>
+        <h3 className="text-body m-0 font-bold">Speech pipeline latency</h3>
         <dl className="m-0 flex flex-col gap-1">
           {TIMING_STAGES.map((stage) => (
-            <div className="flex justify-between gap-3 text-caption" key={stage.key}>
+            <div className="text-caption flex justify-between gap-3" key={stage.key}>
               <dt className="text-muted">{stage.label}</dt>
-              <dd className="m-0 font-mono text-foreground">{formatTiming(timing[stage.key])}</dd>
+              <dd className="text-foreground m-0 font-mono">{formatTiming(timing[stage.key])}</dd>
             </div>
           ))}
         </dl>
-        <p className="m-0 text-faint text-xs leading-copy">
+        <p className="text-faint leading-copy m-0 text-xs">
           Measured locally on this device. Raw audio is discarded after transcription.
         </p>
       </div>

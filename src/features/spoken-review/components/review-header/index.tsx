@@ -28,7 +28,7 @@ export function ReviewHeader({ onBackToMemory }: Props) {
         <span aria-hidden="true" className="text-faint">
           ›
         </span>
-        <h1 className="m-0 font-semibold text-body">Spoken review</h1>
+        <h1 className="text-body m-0 font-semibold">Spoken review</h1>
       </div>
       <div className={pill}>
         <span aria-hidden="true" className="flex gap-1.25">

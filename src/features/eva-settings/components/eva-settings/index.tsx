@@ -5,7 +5,7 @@ import { EvaPreview } from '../eva-preview';
 export function EvaSettings() {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-3 max-narrow:flex-col">
+      <div className="max-narrow:flex-col flex gap-3">
         <EvaPreview />
         <EvaLookControls />
       </div>

@@ -14,11 +14,11 @@ export function RunTranscripts({ run }: Props) {
         {run.recordings.map((recording) => (
           <li key={recording.index}>
             <p>
-              <span className="inline-block min-w-11 text-faint text-xs">Read</span>{' '}
+              <span className="text-faint inline-block min-w-11 text-xs">Read</span>{' '}
               <span className="text-foreground">{recording.reference}</span>
             </p>
             <p>
-              <span className="inline-block min-w-11 text-faint text-xs">Heard</span>{' '}
+              <span className="text-faint inline-block min-w-11 text-xs">Heard</span>{' '}
               <span className="text-foreground">
                 {recording.transcript || '(nothing recognised)'}
               </span>

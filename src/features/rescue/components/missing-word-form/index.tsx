@@ -19,7 +19,7 @@ export function MissingWordForm({ description, onChange, onFind }: Props) {
         onFind();
       }}
     >
-      <label className="basis-full text-faint text-xs" htmlFor={DESCRIPTION_ID}>
+      <label className="text-faint basis-full text-xs" htmlFor={DESCRIPTION_ID}>
         Describe the word in English
       </label>
       <Input

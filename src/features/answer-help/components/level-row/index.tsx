@@ -11,7 +11,7 @@ type Props = {
 export function LevelRow({ level, isDisabled, onChoose }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="mr-1 text-caption text-faint">Need help?</span>
+      <span className="text-caption text-faint mr-1">Need help?</span>
       {HELP_LEVELS.map((item) => (
         <ChoiceChip
           disabled={isDisabled}
@@ -19,13 +19,13 @@ export function LevelRow({ level, isDisabled, onChoose }: Props) {
           key={item.id}
           onSelect={() => onChoose(level === item.id ? null : item.id)}
         >
-          <span aria-hidden="true" className="mr-1.5 font-medium font-mono text-faint text-xs">
+          <span aria-hidden="true" className="text-faint mr-1.5 font-mono text-xs font-medium">
             {item.keyNumber}
           </span>
           {item.label}
         </ChoiceChip>
       ))}
-      <span className="ml-auto inline-flex items-center gap-1.5 text-faint text-xs">
+      <span className="text-faint ml-auto inline-flex items-center gap-1.5 text-xs">
         <Kbd>H</Kbd>
         help
       </span>

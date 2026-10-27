@@ -14,7 +14,7 @@ export function StatusSummary() {
   return (
     <GlassPanel aria-label="Where they are" className="flex flex-col gap-2.5 px-4.5 py-4">
       <div className="flex justify-between">
-        <h2 className="font-bold text-body">Where they are</h2>
+        <h2 className="text-body font-bold">Where they are</h2>
         <span className="text-caption text-faint">{total === 1 ? '1 item' : `${total} items`}</span>
       </div>
       <div aria-hidden="true" className="flex h-2.5 gap-0.5 overflow-hidden rounded-full">
@@ -26,7 +26,7 @@ export function StatusSummary() {
           />
         ))}
       </div>
-      <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-caption text-quiet-foreground">
+      <ul className="text-caption text-quiet-foreground grid grid-cols-2 gap-x-3 gap-y-1">
         {ACTIVE_STATUSES.map((status) => (
           <li className="flex items-center gap-1.5" key={status}>
             <StatusDot status={status} />

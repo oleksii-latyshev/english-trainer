@@ -32,7 +32,7 @@ export function SettingsScreen({
   return (
     <div className="mx-auto flex max-w-205 flex-col gap-5">
       <header className="flex flex-col gap-1">
-        <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted">Everything stays on this Mac unless a section says otherwise.</p>
       </header>
       <MicrophoneSettings

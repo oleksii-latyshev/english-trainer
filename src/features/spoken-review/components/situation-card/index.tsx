@@ -14,12 +14,12 @@ export function SituationCard() {
   if (prompt === null) return null;
 
   return (
-    <div className="flex items-start gap-3.5 rounded-card border border-line bg-surface px-4.5 py-4 shadow-overlay backdrop-blur-glass backdrop-saturate-170">
+    <div className="rounded-card border-line bg-surface shadow-overlay backdrop-blur-glass flex items-start gap-3.5 border px-4.5 py-4 backdrop-saturate-170">
       <div className="flex flex-1 flex-col gap-1.5">
-        <span className="font-bold text-accent-text text-pip uppercase tracking-wide">
+        <span className="text-accent-text text-pip font-bold tracking-wide uppercase">
           {prompt.label}
         </span>
-        <p className="m-0 font-medium text-lg leading-copy">{prompt.text}</p>
+        <p className="leading-copy m-0 text-lg font-medium">{prompt.text}</p>
       </div>
       <Button
         disabled={!canReplay || phase !== 'prompt' || isBusy}

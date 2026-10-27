@@ -26,13 +26,13 @@ const QUIET_TEXT = 'm-0 text-caption text-muted leading-copy';
 
 function PhraseCard(props: { phrase: WrapupPhrase; canRemove: boolean; onRemove: () => void }) {
   return (
-    <div className="flex gap-3 rounded-card border border-line bg-surface px-4.5 py-4">
+    <div className="rounded-card border-line bg-surface flex gap-3 border px-4.5 py-4">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="wrap-anywhere font-semibold text-[17px]">{props.phrase.phrase}</div>
-        <div className="wrap-anywhere text-control text-muted leading-copy">
+        <div className="text-[17px] font-semibold wrap-anywhere">{props.phrase.phrase}</div>
+        <div className="text-control text-muted leading-copy wrap-anywhere">
           {props.phrase.note}
         </div>
-        <div className="wrap-anywhere text-caption text-muted leading-copy">
+        <div className="text-caption text-muted leading-copy wrap-anywhere">
           You said: “{props.phrase.you_said}”
         </div>
       </div>
@@ -155,7 +155,7 @@ export function PhraseSection({ summary }: Props) {
   return (
     <section aria-labelledby="wrapup-phrases" className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <h2 className="m-0 font-semibold text-body" id="wrapup-phrases">
+        <h2 className="text-body m-0 font-semibold" id="wrapup-phrases">
           Phrases worth learning
         </h2>
         <span className="text-caption text-faint">{phrases.length}</span>

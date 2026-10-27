@@ -20,15 +20,15 @@ function EvaLine({ reply, question }: { reply: string; question: string }) {
   return (
     <article
       aria-label="Eva says"
-      className="flex max-w-4/5 flex-col gap-1.5 rounded-2xl rounded-tl-md border border-line bg-surface-2 px-4.5 py-3.5"
+      className="border-line bg-surface-2 flex max-w-4/5 flex-col gap-1.5 rounded-2xl rounded-tl-md border px-4.5 py-3.5"
     >
       {reply && (
-        <p className="m-0 text-body text-eva-text leading-copy" data-word-lookup>
+        <p className="text-body text-eva-text leading-copy m-0" data-word-lookup>
           {reply}
         </p>
       )}
       {question && (
-        <p className="m-0 font-semibold text-body text-foreground leading-copy" data-word-lookup>
+        <p className="text-body text-foreground leading-copy m-0 font-semibold" data-word-lookup>
           {question}
         </p>
       )}
@@ -52,7 +52,7 @@ function LearnerAnswer({
     <div className="flex w-4/5 flex-col items-end gap-2 self-end">
       <article
         aria-label="You said"
-        className="wrap-anywhere rounded-2xl rounded-tr-md border border-accent-line bg-accent-soft px-4.5 py-3.5 text-body text-foreground leading-copy"
+        className="border-accent-line bg-accent-soft text-body text-foreground leading-copy rounded-2xl rounded-tr-md border px-4.5 py-3.5 wrap-anywhere"
         data-word-lookup
       >
         {text}
@@ -115,7 +115,7 @@ export function ConversationReview({ sessionId, renderAnswerActions }: Props) {
   if (AsyncResult.isFailure(result)) {
     return (
       <Notice
-        className="flex items-center justify-between gap-3 rounded-control border"
+        className="rounded-control flex items-center justify-between gap-3 border"
         role="alert"
         tone="warn"
       >
@@ -127,7 +127,7 @@ export function ConversationReview({ sessionId, renderAnswerActions }: Props) {
     );
   }
   return (
-    <p className="m-0 text-caption text-muted" role="status">
+    <p className="text-caption text-muted m-0" role="status">
       Loading your conversation…
     </p>
   );

@@ -14,7 +14,7 @@ export function TurnNotice(handlers: FixHandlers) {
   const { issue } = state;
   return (
     <Notice
-      className="flex flex-wrap items-center gap-3 rounded-control border border-warn-line"
+      className="rounded-control border-warn-line flex flex-wrap items-center gap-3 border"
       role="alert"
       tone="warn"
     >

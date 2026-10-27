@@ -44,7 +44,7 @@ export function TodayCard() {
 
   return (
     <GlassPanel aria-labelledby="today-heading" className="flex flex-col px-6 py-6">
-      <h2 className="font-semibold text-caption text-faint" id="today-heading">
+      <h2 className="text-caption text-faint font-semibold" id="today-heading">
         Today
       </h2>
       {growth !== null && <TodayBody growth={growth} />}
@@ -79,7 +79,7 @@ function TodayBody({ growth }: { growth: EvaGrowthSnapshot }) {
         />
       </div>
       <div className="mt-4 flex items-baseline justify-between gap-3">
-        <span className="font-bold text-xl tracking-tight">{progress.stageName}</span>
+        <span className="text-xl font-bold tracking-tight">{progress.stageName}</span>
         <span className="text-muted tabular-nums">{progress.summary}</span>
       </div>
       <ProgressBar
@@ -90,7 +90,7 @@ function TodayBody({ growth }: { growth: EvaGrowthSnapshot }) {
         value={progress.value}
       />
       {gains.length === 0 ? (
-        <p className="mt-5 mb-0 text-muted">{EMPTY_TODAY}</p>
+        <p className="text-muted mt-5 mb-0">{EMPTY_TODAY}</p>
       ) : (
         <ul className="m-0 mt-5 flex list-none flex-col gap-3 p-0">
           {gains.map((gain) => (

@@ -36,7 +36,7 @@ function Content({ initial, onLeave }: ContentProps) {
       <header className="flex flex-wrap items-end gap-4">
         <div className="flex flex-col gap-1.5">
           <div className="text-caption text-faint">{sessionLabel(summary)}</div>
-          <h1 className="m-0 font-semibold text-[30px] tracking-tight">
+          <h1 className="m-0 text-[30px] font-semibold tracking-tight">
             Nice session. Here’s what to keep.
           </h1>
         </div>
@@ -53,7 +53,7 @@ function Content({ initial, onLeave }: ContentProps) {
       {summary.turn_count > 0 && (
         <section aria-labelledby="wrapup-conversation" className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <h2 className="m-0 font-semibold text-body" id="wrapup-conversation">
+            <h2 className="text-body m-0 font-semibold" id="wrapup-conversation">
               Your conversation
             </h2>
             <span className="text-caption text-faint">{summary.turn_count}</span>

@@ -15,7 +15,7 @@ function CoachingMarker({ message }: Props) {
     return (
       <span
         aria-label="Being checked"
-        className="size-1.5 rounded-full bg-faint opacity-50"
+        className="bg-faint size-1.5 rounded-full opacity-50"
         role="img"
       />
     );
@@ -37,12 +37,12 @@ export function LearnerMessage({ message }: Props) {
   return (
     <article aria-label="You said" className="flex w-4/5 flex-col items-end gap-2 self-end">
       <div
-        className="wrap-anywhere rounded-2xl rounded-tr-md border border-accent-line bg-accent-soft px-4.5 py-3.5 text-body text-foreground leading-copy"
+        className="border-accent-line bg-accent-soft text-body text-foreground leading-copy rounded-2xl rounded-tr-md border px-4.5 py-3.5 wrap-anywhere"
         data-word-lookup
       >
         {message.text}
       </div>
-      <div className="flex h-5 items-center gap-2.5 pr-1 text-caption text-faint">
+      <div className="text-caption text-faint flex h-5 items-center gap-2.5 pr-1">
         {message.usedHelp && (
           <span className="inline-flex items-center gap-1">
             <CircleHelp aria-hidden="true" className="size-3" />

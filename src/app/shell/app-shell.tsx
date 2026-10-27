@@ -78,7 +78,7 @@ export function AppShell() {
   const isFocusedPage = currentPath === '/summary' || currentPath === FIRST_RUN_PATH;
 
   return (
-    <div className="flex h-dvh gap-3 overflow-hidden p-3 text-foreground">
+    <div className="text-foreground flex h-dvh gap-3 overflow-hidden p-3">
       {!isFocusedPage && (
         <Sidebar
           activeSection={activeSettingsSection(currentPath, currentHash)}
@@ -91,7 +91,7 @@ export function AppShell() {
           onSettingsSection={handleSettingsSection}
         />
       )}
-      <main className="fills-screen:flex min-h-0 min-w-0 flex-1 fills-screen:flex-col fills-screen:overflow-hidden overflow-y-auto overscroll-contain fills-screen:p-0 px-5 pt-8 pb-16 max-rail:px-4 max-rail:pt-6 max-rail:pb-12 sm:px-8 xl:px-12">
+      <main className="fills-screen:flex fills-screen:flex-col fills-screen:overflow-hidden fills-screen:p-0 max-rail:px-4 max-rail:pt-6 max-rail:pb-12 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-8 pb-16 sm:px-8 xl:px-12">
         <Outlet />
       </main>
       {isTranslatablePath(currentPath) && <TranslationLayer key={currentPath} />}

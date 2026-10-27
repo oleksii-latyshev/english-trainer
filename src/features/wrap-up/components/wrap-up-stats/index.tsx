@@ -14,9 +14,9 @@ function StatCard(props: { label: string; value: string; trend: Trend; emptyHint
       ? { text: props.emptyHint, tone: 'quiet' as const }
       : trendLine(props.trend);
   return (
-    <div className="flex flex-col gap-1.5 rounded-card border border-line bg-surface px-5 py-4.5">
+    <div className="rounded-card border-line bg-surface flex flex-col gap-1.5 border px-5 py-4.5">
       <div className="text-caption text-faint">{props.label}</div>
-      <div className="font-semibold text-[28px]">{props.value}</div>
+      <div className="text-[28px] font-semibold">{props.value}</div>
       <div
         className={line.tone === 'positive' ? 'text-caption text-me' : 'text-caption text-muted'}
       >

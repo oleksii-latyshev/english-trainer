@@ -13,7 +13,7 @@ function SavedKeyLine({ status }: { status: GeminiKeyStatus | null }) {
   if (!status?.configured || status.source === null) return <>No API key saved.</>;
   return (
     <span className="flex items-center gap-1.5">
-      <Check aria-hidden="true" className="flex-none text-ok" size={12} strokeWidth={2.4} />
+      <Check aria-hidden="true" className="text-ok flex-none" size={12} strokeWidth={2.4} />
       {keySourceLabel(status.source)}
     </span>
   );

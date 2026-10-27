@@ -23,14 +23,14 @@ export function AnswerCard({
   if (!turn?.learner.trim()) return null;
   const coaching = dialogue?.coaching?.[index];
   return (
-    <article className="flex min-w-0 flex-col gap-2 rounded-2xl border border-line bg-surface p-3.5">
-      <div className="font-semibold text-caption text-faint">{label}</div>
-      {question && <p className="m-0 text-caption text-muted leading-snug">{question}</p>}
-      <p className="wrap-anywhere m-0 leading-copy">{turn.learner}</p>
+    <article className="border-line bg-surface flex min-w-0 flex-col gap-2 rounded-2xl border p-3.5">
+      <div className="text-caption text-faint font-semibold">{label}</div>
+      {question && <p className="text-caption text-muted m-0 leading-snug">{question}</p>}
+      <p className="leading-copy m-0 wrap-anywhere">{turn.learner}</p>
       {coaching ? (
         renderAnswerReview({ sessionId, sequence, transcript: turn.learner, coaching })
       ) : (
-        <p className="m-0 text-caption text-muted leading-snug">
+        <p className="text-caption text-muted m-0 leading-snug">
           {coachingStatusMessage(coaching)}
         </p>
       )}

@@ -49,7 +49,7 @@ export function Composer({
       {helpSlot && <div className="max-h-44 overflow-y-auto">{helpSlot}</div>}
       <section
         aria-label="Answer composer"
-        className="flex flex-col gap-3 rounded-card border border-line bg-surface px-4 py-3 shadow-overlay backdrop-blur-glass backdrop-saturate-170 data-live:border-accent-line"
+        className="rounded-card border-line bg-surface shadow-overlay backdrop-blur-glass data-live:border-accent-line flex flex-col gap-3 border px-4 py-3 backdrop-saturate-170"
         data-live={state.tag === 'listening' || state.tag === 'auto-listen' || undefined}
       >
         <TurnNotice onChooseMicrophone={onChooseMicrophone} onOpenSettings={onOpenSettings} />
@@ -76,13 +76,13 @@ export function Composer({
           />
         </div>
         {isLocked && lockedReason && (
-          <p className="m-0 text-caption text-muted leading-copy" role="status">
+          <p className="text-caption text-muted leading-copy m-0" role="status">
             {lockedReason}
           </p>
         )}
       </section>
       {isAudioStage && !isEditing && (
-        <div className="flex justify-center gap-4 text-caption text-faint">
+        <div className="text-caption text-faint flex justify-center gap-4">
           <span className="inline-flex items-center gap-1.5">
             <Kbd>Space</Kbd>
             hold to talk

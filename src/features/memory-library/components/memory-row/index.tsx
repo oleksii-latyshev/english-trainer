@@ -24,7 +24,7 @@ type Props = {
 function EntryText({ entry }: { entry: MemoryEntry }) {
   if (entry.kind === 'phrase') {
     return (
-      <span className="font-semibold text-body" data-word-lookup>
+      <span className="text-body font-semibold" data-word-lookup>
         {entry.card.phrase}
       </span>
     );
@@ -33,7 +33,7 @@ function EntryText({ entry }: { entry: MemoryEntry }) {
     <span className="text-body" data-word-lookup>
       <s className="text-faint decoration-warn/80">{entry.mistake.original_example}</s>{' '}
       <span className="text-faint">→</span>{' '}
-      <span className="font-semibold text-ok-text">{entry.mistake.corrected_example}</span>
+      <span className="text-ok-text font-semibold">{entry.mistake.corrected_example}</span>
     </span>
   );
 }
@@ -71,27 +71,27 @@ export function MemoryRow({ entry, isOpen, now, onToggle }: Props) {
             {source}
           </span>
         </span>
-        <span className="flex items-center gap-1.5 text-caption text-quiet-foreground">
+        <span className="text-caption text-quiet-foreground flex items-center gap-1.5">
           <StatusDot status={item.status} />
           {statusLabel(item.status)}
         </span>
         <span
           className={
             isDue
-              ? 'font-semibold text-accent-text text-caption'
+              ? 'text-accent-text text-caption font-semibold'
               : 'text-caption text-quiet-foreground'
           }
         >
           {nextReviewLabel(item.next_review_at, item.status, now)}
         </span>
-        <span className="flex items-center gap-1.5 text-caption text-quiet-foreground">
+        <span className="text-caption text-quiet-foreground flex items-center gap-1.5">
           <Sun
             aria-hidden="true"
-            className={ownCount > 0 ? 'size-4 text-warn' : 'size-4 text-faint opacity-60'}
+            className={ownCount > 0 ? 'text-warn size-4' : 'text-faint size-4 opacity-60'}
           />
           {ownCount}
         </span>
-        <span className="flex justify-center text-faint">
+        <span className="text-faint flex justify-center">
           <ChevronDown aria-hidden="true" className={chevron()} />
         </span>
       </button>

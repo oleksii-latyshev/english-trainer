@@ -35,20 +35,20 @@ export function MistakePracticeCard({
       aria-labelledby="mistake-practice-title"
       className="flex flex-col gap-1.5 px-4.5 py-4"
     >
-      <h2 className="font-bold text-body" id="mistake-practice-title">
+      <h2 className="text-body font-bold" id="mistake-practice-title">
         Practice my usual mistakes
       </h2>
-      <p className="m-0 text-caption text-muted leading-copy">
+      <p className="text-caption text-muted leading-copy m-0">
         {practiceSummary(samples, practicableCount)}
       </p>
-      {reason && <p className="m-0 text-faint text-xs">{reason}</p>}
+      {reason && <p className="text-faint m-0 text-xs">{reason}</p>}
       {isStarting && (
-        <p aria-live="polite" className="m-0 text-faint text-xs">
+        <p aria-live="polite" className="text-faint m-0 text-xs">
           Preparing five questions…
         </p>
       )}
       {error && (
-        <p className="m-0 text-warn-text text-xs" role="alert">
+        <p className="text-warn-text m-0 text-xs" role="alert">
           {error}
         </p>
       )}

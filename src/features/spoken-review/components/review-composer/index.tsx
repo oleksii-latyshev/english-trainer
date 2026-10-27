@@ -30,7 +30,7 @@ export function ReviewComposer({ onOpenSettings }: Props) {
   return (
     <section
       aria-label="Your answer"
-      className="mx-auto flex w-full max-w-168 flex-col gap-2 rounded-card border border-line bg-surface px-3 py-2.5 shadow-overlay backdrop-blur-glass backdrop-saturate-170 data-live:border-accent-line"
+      className="rounded-card border-line bg-surface shadow-overlay backdrop-blur-glass data-live:border-accent-line mx-auto flex w-full max-w-168 flex-col gap-2 border px-3 py-2.5 backdrop-saturate-170"
       data-live={isLive || undefined}
     >
       <IssueNotice onOpenSettings={onOpenSettings} />

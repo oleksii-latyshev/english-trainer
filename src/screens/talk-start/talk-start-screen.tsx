@@ -46,8 +46,8 @@ export function TalkStartScreen({
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl gap-3 max-narrow:flex-col">
-      <section className="flex min-w-0 max-w-190 flex-1 flex-col gap-5">
+    <div className="max-narrow:flex-col mx-auto flex max-w-6xl gap-3">
+      <section className="flex max-w-190 min-w-0 flex-1 flex-col gap-5">
         <StartGreeting />
         {openSession ? (
           <ResumeCard
@@ -90,7 +90,7 @@ export function TalkStartScreen({
           />
         )}
       </section>
-      <aside className="flex w-85 flex-none flex-col gap-3 max-narrow:w-full">
+      <aside className="max-narrow:w-full flex w-85 flex-none flex-col gap-3">
         {review && (
           <WarmupCard
             dueCount={review.dueCount}

@@ -21,13 +21,13 @@ export function ReviewSummary({ onStartTalk, onBackToMemory }: Props) {
   const summary = summarizeReview(session.run.items);
 
   return (
-    <section className="flex flex-col gap-3.5 rounded-card border border-line bg-surface p-6 shadow-overlay backdrop-blur-glass backdrop-saturate-170">
-      <h2 className="m-0 font-bold text-2xl tracking-tight">Review done</h2>
-      <p className="m-0 text-muted">{summary.headline}</p>
-      <ul className="m-0 flex list-none flex-col border-line-soft border-t p-0">
+    <section className="rounded-card border-line bg-surface shadow-overlay backdrop-blur-glass flex flex-col gap-3.5 border p-6 backdrop-saturate-170">
+      <h2 className="m-0 text-2xl font-bold tracking-tight">Review done</h2>
+      <p className="text-muted m-0">{summary.headline}</p>
+      <ul className="border-line-soft m-0 flex list-none flex-col border-t p-0">
         {summary.entries.map((entry) => (
           <li
-            className="flex justify-between gap-3 border-line-soft border-b py-2.25"
+            className="border-line-soft flex justify-between gap-3 border-b py-2.25"
             data-outcome={entry.outcome}
             key={entry.key}
           >

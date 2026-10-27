@@ -59,7 +59,7 @@ function PhraseChips({ phrases }: { phrases: readonly string[] }) {
 function LevelContent(props: Props) {
   const { plan, level } = props;
   if (!isTauriRuntime()) {
-    return <p className="m-0 text-caption text-muted leading-normal">{DESKTOP_ONLY}</p>;
+    return <p className="text-caption text-muted m-0 leading-normal">{DESKTOP_ONLY}</p>;
   }
   if (plan.tag !== 'ready') return <PlanStatus onRetry={props.onRetry} plan={plan} />;
   if (level === 'frame') return <FrameSteps steps={plan.plan.frame} />;

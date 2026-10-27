@@ -96,7 +96,7 @@ export function MeasureModels({ models, check, modelInUse }: Props) {
       {check.results.runs.length > 0 && (
         <Notice>
           <ResultsTable modelInUse={modelInUse} runs={check.results.runs} />
-          <p className="my-2.5 text-faint text-xs">
+          <p className="text-faint my-2.5 text-xs">
             Time is the whole local Whisper run, including loading the model. Terms right counts
             glossary words found in the sentence you read.
           </p>

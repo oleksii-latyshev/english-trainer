@@ -51,7 +51,7 @@ export function AnswerResult() {
               {view.hint.move && (
                 <>
                   {view.hint.move.prefix}{' '}
-                  <strong className="font-bold text-status-improving">
+                  <strong className="text-status-improving font-bold">
                     {view.hint.move.status}
                   </strong>
                 </>

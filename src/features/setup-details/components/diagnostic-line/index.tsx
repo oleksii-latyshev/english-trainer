@@ -9,7 +9,7 @@ export function DiagnosticLine({ label, check }: Props) {
       <p>
         <strong className="text-foreground">{label}</strong> · {statusLabel(check.status)}
       </p>
-      <p className="font-mono text-foreground">{pathLabel(check.path)}</p>
+      <p className="text-foreground font-mono">{pathLabel(check.path)}</p>
       <p>{check.message}</p>
     </div>
   );

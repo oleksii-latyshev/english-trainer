@@ -26,8 +26,8 @@ export function EntryDetail({ entry, now }: Props) {
   const isArchived = entryStatus(entry) === 'archived';
 
   return (
-    <div className="grid grid-cols-[16rem_minmax(0,1fr)_auto] items-start gap-6 px-5 pb-4 max-narrow:grid-cols-1">
-      <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5 text-caption">
+    <div className="max-narrow:grid-cols-1 grid grid-cols-[16rem_minmax(0,1fr)_auto] items-start gap-6 px-5 pb-4">
+      <dl className="text-caption m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5">
         <Fact term="Next review">{nextReviewLabel(item.next_review_at, item.status, now)}</Fact>
         <Fact term="Gap between reviews">{gapLabel(item.interval_days)}</Fact>
         {entry.kind === 'mistake' && (
@@ -37,7 +37,7 @@ export function EntryDetail({ entry, now }: Props) {
       <div className="flex flex-col gap-2">
         <EvidenceList entryRef={entryRef(entry)} />
         {entry.kind === 'mistake' && entry.mistake.explanation && (
-          <p className="mt-0.5 mb-0 text-caption text-muted leading-copy" data-word-lookup>
+          <p className="text-caption text-muted leading-copy mt-0.5 mb-0" data-word-lookup>
             {entry.mistake.explanation}
           </p>
         )}

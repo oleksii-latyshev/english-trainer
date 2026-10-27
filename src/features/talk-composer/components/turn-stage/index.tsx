@@ -21,8 +21,8 @@ const ACTOR_TONE = {
 function WritingStage() {
   return (
     <aside aria-label="Writing practice" className="flex flex-col items-center gap-1 text-center">
-      <h2 className="m-0 font-bold text-title">Write your answer</h2>
-      <p className="m-0 text-caption text-muted">
+      <h2 className="text-title m-0 font-bold">Write your answer</h2>
+      <p className="text-caption text-muted m-0">
         Take your time. Eva’s replies will stay on screen.
       </p>
     </aside>
@@ -55,15 +55,15 @@ export function TurnStage({ mood, isWriting }: Props) {
       </div>
       <div className="flex flex-col items-center gap-1 text-center" role="status">
         <span
-          className={`font-bold text-pip uppercase tracking-wide ${ACTOR_TONE[presentation.actor]}`}
+          className={`text-pip font-bold tracking-wide uppercase ${ACTOR_TONE[presentation.actor]}`}
         >
           {presentation.stageLabel}
         </span>
-        <h2 className="m-0 font-bold text-title">{presentation.stageTitle}</h2>
-        {!isCompact && <p className="m-0 text-caption text-muted">{presentation.stageHint}</p>}
+        <h2 className="text-title m-0 font-bold">{presentation.stageTitle}</h2>
+        {!isCompact && <p className="text-caption text-muted m-0">{presentation.stageHint}</p>}
       </div>
       {!isCompact && actualInput && (
-        <p className="m-0 text-faint text-xs">Microphone: {actualInput.label}</p>
+        <p className="text-faint m-0 text-xs">Microphone: {actualInput.label}</p>
       )}
     </aside>
   );

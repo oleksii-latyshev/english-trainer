@@ -14,11 +14,11 @@ export function ResumeCard({ session, isDisabled, onContinue }: Props) {
   return (
     <GlassPanel
       aria-label="Open conversation"
-      className="flex items-center gap-4 p-5 max-rail:flex-wrap"
+      className="max-rail:flex-wrap flex items-center gap-4 p-5"
     >
-      <Clock aria-hidden="true" className="size-5 shrink-0 text-me" />
+      <Clock aria-hidden="true" className="text-me size-5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="font-bold text-body">Continue: {session.topicLabel}</div>
+        <div className="text-body font-bold">Continue: {session.topicLabel}</div>
         <div className="text-caption text-muted">{resumeDetail(session)}</div>
       </div>
       <Button disabled={isDisabled} onClick={onContinue} tone="secondary">

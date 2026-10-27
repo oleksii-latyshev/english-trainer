@@ -29,9 +29,9 @@ function EmptyList({ tab }: { tab: MemoryTab }) {
   const query = useAtomValue(searchQueryAtom);
   const copy = emptyCopy(tab, query);
   return (
-    <div className="flex flex-col items-center gap-1 px-5 py-10 text-center text-caption text-faint">
+    <div className="text-caption text-faint flex flex-col items-center gap-1 px-5 py-10 text-center">
       <Bookmark aria-hidden="true" size={24} />
-      <div className="font-semibold text-body text-foreground">{copy.title}</div>
+      <div className="text-body text-foreground font-semibold">{copy.title}</div>
       <div>{copy.hint}</div>
     </div>
   );
@@ -48,7 +48,7 @@ function TabList({ tab }: { tab: MemoryTab }) {
     <ul className="m-0 flex list-none flex-col p-0">
       <li
         aria-hidden="true"
-        className="grid grid-cols-[minmax(0,1fr)_8rem_7.5rem_7.5rem_2rem] items-center gap-3 border-line-soft border-b px-5 py-3 text-faint text-xs"
+        className="border-line-soft text-faint grid grid-cols-[minmax(0,1fr)_8rem_7.5rem_7.5rem_2rem] items-center gap-3 border-b px-5 py-3 text-xs"
       >
         <span>{COLUMN_TITLE[tab]}</span>
         <span>Status</span>
@@ -88,7 +88,7 @@ export function LibraryList() {
   }
   if (library.tag === 'unavailable') {
     return (
-      <Notice className="flex items-center gap-3 rounded-control border" role="alert" tone="quiet">
+      <Notice className="rounded-control flex items-center gap-3 border" role="alert" tone="quiet">
         <TriangleAlert aria-hidden="true" size={18} />
         <span className="flex-1">Could not load Memory from local storage.</span>
         <Button onClick={retry} size="sm" tone="secondary">
@@ -110,7 +110,7 @@ export function LibraryList() {
         <TabsList label="Memory lists">
           {TABS.map(({ id, label }) => (
             <TabsTab key={id} value={id}>
-              {label} <span className="ml-1 font-medium text-faint">{counts[id]}</span>
+              {label} <span className="text-faint ml-1 font-medium">{counts[id]}</span>
             </TabsTab>
           ))}
         </TabsList>

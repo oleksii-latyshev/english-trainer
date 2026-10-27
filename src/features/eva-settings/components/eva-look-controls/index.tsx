@@ -27,14 +27,14 @@ const MOTION_OPTIONS = EVA_MOTIONS.map((motion) => ({ value: motion.id, label: m
 function LookRow({ name, children }: { name: string; children: ReactNode }) {
   return (
     <div className="flex min-h-11 items-center gap-4">
-      <span className="w-24 flex-none font-semibold text-caption text-muted">{name}</span>
+      <span className="text-caption text-muted w-24 flex-none font-semibold">{name}</span>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2">{children}</div>
     </div>
   );
 }
 
 function ChosenName({ children }: { children: ReactNode }) {
-  return <span className="ml-2 text-faint">{children}</span>;
+  return <span className="text-faint ml-2">{children}</span>;
 }
 
 function Hint({ children }: { children: ReactNode }) {
@@ -112,7 +112,7 @@ export function EvaLookControls() {
         ))}
         <ChosenName>{petal.name}</ChosenName>
       </LookRow>
-      <hr className="my-2 border-line-soft" />
+      <hr className="border-line-soft my-2" />
       <LookRow name="Animation">
         <SegmentedControl
           label="Animation"

@@ -41,15 +41,15 @@ function ExplanationView({ explanation }: { explanation: Explanation }) {
   const registry = useContext(RegistryContext);
   if (explanation.tag === 'pending') {
     return (
-      <p className="m-0 text-caption text-muted" role="status">
+      <p className="text-caption text-muted m-0" role="status">
         Explaining in English…
       </p>
     );
   }
-  if (explanation.tag === 'ready') return <p className="m-0 text-body">{explanation.text}</p>;
+  if (explanation.tag === 'ready') return <p className="text-body m-0">{explanation.text}</p>;
   return (
     <div className="flex flex-col items-start gap-2" role="status">
-      <p className="m-0 text-caption text-warn-text">
+      <p className="text-caption text-warn-text m-0">
         {failureView(explanation.failure, EXPLANATION_FAILED).message}
       </p>
       <Button onClick={() => retryExplanation(registry)} size="sm" tone="secondary">
@@ -62,11 +62,11 @@ function ExplanationView({ explanation }: { explanation: Explanation }) {
 function ResultView({ lookup }: { lookup: Extract<Lookup, { tag: 'translated' }> }) {
   return (
     <section aria-live="polite" className="mt-3 flex flex-col gap-2.5">
-      <p className="m-0 text-caption text-muted">
+      <p className="text-caption text-muted m-0">
         <strong className="text-foreground">{lookup.translation.text}</strong> ·{' '}
         {languageName(lookup.translation.native_language)}
       </p>
-      <p className="m-0 font-semibold text-body text-foreground">
+      <p className="text-body text-foreground m-0 font-semibold">
         {lookup.translation.translation}
       </p>
       <div className="border-line border-t pt-2.5">
@@ -83,7 +83,7 @@ function FailureView({ lookup }: { lookup: Extract<Lookup, { tag: 'failed' }> })
   const isPreparing = AsyncResult.isWaiting(prepare);
   return (
     <div className="mt-3 flex flex-col items-start gap-2" role="alert">
-      <p className="m-0 text-caption text-warn-text leading-copy">{view.message}</p>
+      <p className="text-caption text-warn-text leading-copy m-0">{view.message}</p>
       {view.needsPreparation && (
         <Button
           disabled={isPreparing}
@@ -107,7 +107,7 @@ function PreparationNotice() {
   const prepare = useAtomValue(prepareTranslationLanguagesAtom);
   if (AsyncResult.isWaiting(prepare)) {
     return (
-      <p className="mt-3 mb-0 text-caption text-muted" role="status">
+      <p className="text-caption text-muted mt-3 mb-0" role="status">
         Preparing languages…
       </p>
     );
@@ -115,14 +115,14 @@ function PreparationNotice() {
   const failure = AsyncResult.error(prepare);
   if (Option.isSome(failure)) {
     return (
-      <p className="mt-3 mb-0 text-caption text-warn-text" role="alert">
+      <p className="text-caption text-warn-text mt-3 mb-0" role="alert">
         {ipcFailureMessage(failure.value, PREPARE_FAILED)}
       </p>
     );
   }
   const status = Option.getOrNull(AsyncResult.value(prepare));
   return status === null ? null : (
-    <p className="mt-3 mb-0 text-caption text-muted" role="status">
+    <p className="text-caption text-muted mt-3 mb-0" role="status">
       {status.message}
     </p>
   );
@@ -134,7 +134,7 @@ function LookupView({ lookup }: { lookup: Lookup }) {
       return null;
     case 'translating':
       return (
-        <p className="mt-3 mb-0 text-caption text-muted" role="status">
+        <p className="text-caption text-muted mt-3 mb-0" role="status">
           Translating {lookup.text}…
         </p>
       );
@@ -176,13 +176,13 @@ export function TranslationPanel() {
     <section
       aria-labelledby={TITLE_ID}
       aria-modal="false"
-      className="fixed right-6 bottom-16 z-81 box-border max-h-[calc(100dvh-88px)] w-[min(380px,calc(100vw-40px))] overflow-y-auto overscroll-contain rounded-card border border-line bg-panel p-4 text-caption text-foreground shadow-overlay"
+      className="rounded-card border-line bg-panel text-caption text-foreground shadow-overlay fixed right-6 bottom-16 z-81 box-border max-h-[calc(100dvh-88px)] w-[min(380px,calc(100vw-40px))] overflow-y-auto overscroll-contain border p-4"
       onKeyDownCapture={handleKeyDown}
       role="dialog"
       {...PANEL_ATTRIBUTE}
     >
       <div className="mb-3.5 flex items-center justify-between gap-2">
-        <h2 className="m-0 font-semibold text-body" id={TITLE_ID}>
+        <h2 className="text-body m-0 font-semibold" id={TITLE_ID}>
           Translate a phrase
         </h2>
         <Button aria-label="Close translation" onClick={() => closePanel(registry)} tone="ghost">
@@ -190,7 +190,7 @@ export function TranslationPanel() {
         </Button>
       </div>
       <form onSubmit={handleSubmit}>
-        <label className="mb-1.5 block text-muted" htmlFor={INPUT_ID}>
+        <label className="text-muted mb-1.5 block" htmlFor={INPUT_ID}>
           English word or phrase
         </label>
         <div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ export function TranslationPanel() {
       </form>
       <LookupView lookup={lookup} />
       <PreparationNotice />
-      <p className="mt-3 mb-0 text-faint text-pip leading-copy">
+      <p className="text-faint text-pip leading-copy mt-3 mb-0">
         Translation stays on this Mac. Conversation and practice remain in English.
       </p>
     </section>

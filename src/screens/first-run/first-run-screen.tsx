@@ -30,7 +30,7 @@ export function FirstRunScreen({
   return (
     <div className="first-run flex min-h-0 flex-1 flex-col">
       <header className="grid h-16 flex-none grid-cols-[1fr_auto_1fr] items-center px-6">
-        <span className="font-bold text-body">English Trainer</span>
+        <span className="text-body font-bold">English Trainer</span>
         <StepBars steps={stepProgress(step)} />
         <Button className="justify-self-end" onClick={onSkip} tone="ghost">
           Skip setup

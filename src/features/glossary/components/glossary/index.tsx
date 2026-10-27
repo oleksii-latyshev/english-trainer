@@ -61,7 +61,7 @@ function Terms({ terms }: { terms: readonly string[] }) {
               {term}
               <button
                 aria-label={`Remove ${term}`}
-                className="inline-flex size-4 items-center justify-center rounded-full text-muted hover:text-foreground"
+                className="text-muted hover:text-foreground inline-flex size-4 items-center justify-center rounded-full"
                 onClick={() => remove(term)}
                 type="button"
               >

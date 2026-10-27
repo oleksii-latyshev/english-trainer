@@ -127,7 +127,7 @@ function Plan(props: { sessionId: number; isStartBlocked: boolean }) {
 
   if (AsyncResult.isFailure(plan)) {
     return (
-      <Notice className="flex items-center gap-3 rounded-control border" role="alert" tone="warn">
+      <Notice className="rounded-control flex items-center gap-3 border" role="alert" tone="warn">
         <span>Could not load due phrases. Retry to continue.</span>
         <Button onClick={reload} size="sm" tone="secondary">
           Retry loading
@@ -183,9 +183,9 @@ export function SpokenRecall({ sessionId, isStartBlocked }: Props) {
       )}
       <section
         aria-label="Spoken phrase recall"
-        className="flex flex-col gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3.5"
+        className="border-line bg-surface flex flex-col gap-2.5 rounded-2xl border px-4 py-3.5"
       >
-        <div className="font-semibold text-accent text-xs tracking-wide">Spoken phrase recall</div>
+        <div className="text-accent text-xs font-semibold tracking-wide">Spoken phrase recall</div>
         <p className={TEXT}>
           Review a phrase from an earlier session. Recall is optional. Its result is saved as
           transcript evidence; it does not grant mastery automatically.

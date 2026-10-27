@@ -22,12 +22,12 @@ export function StageStrip() {
   return (
     <GlassPanel aria-labelledby="growth-heading" className="flex flex-col gap-6 px-7 py-6">
       <div className="flex flex-wrap items-baseline gap-3.5">
-        <h1 className="font-bold text-2xl tracking-tight" id="growth-heading">
+        <h1 className="text-2xl font-bold tracking-tight" id="growth-heading">
           Eva grows as you speak
         </h1>
         <span className="text-muted">One minute spoken = one drop. Nothing ever wilts.</span>
       </div>
-      <ol className="m-0 grid list-none grid-cols-6 gap-3 p-0 max-narrow:grid-cols-3">
+      <ol className="max-narrow:grid-cols-3 m-0 grid list-none grid-cols-6 gap-3 p-0">
         {entries.map((entry) => (
           <li
             aria-current={entry.state === 'here' ? 'step' : undefined}
@@ -44,9 +44,9 @@ export function StageStrip() {
                 className={`h-0.75 flex-1 rounded-full ${entry.stage === 5 ? 'bg-transparent' : lineTone(entry.state === 'reached')}`}
               />
             </span>
-            <span className="mt-3 font-bold text-body">{entry.name}</span>
+            <span className="text-body mt-3 font-bold">{entry.name}</span>
             <span className="text-caption text-faint">{entry.need}</span>
-            <span className="mt-1.5 min-h-4 font-bold text-accent-text text-xs">
+            <span className="text-accent-text mt-1.5 min-h-4 text-xs font-bold">
               {entry.marker}
             </span>
           </li>

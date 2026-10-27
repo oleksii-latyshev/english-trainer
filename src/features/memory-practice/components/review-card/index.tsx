@@ -21,12 +21,12 @@ export function ReviewCard({ isAudioBusy, onStart }: Props) {
   return (
     <GlassPanel
       aria-label="Spoken review"
-      className="flex items-center gap-4.5 border-accent-line bg-accent-soft px-4.5 py-4 shadow-sky"
+      className="border-accent-line bg-accent-soft shadow-sky flex items-center gap-4.5 px-4.5 py-4"
     >
       <Eva decorative mood={copy.state === 'calm' ? 'idle' : 'happy'} size={62} stage={stage} />
       <div className="min-w-0 flex-1">
-        <h2 className="font-bold text-lg tracking-tight">{copy.title}</h2>
-        <p className="mt-1 mb-0 text-muted leading-copy">{copy.hint}</p>
+        <h2 className="text-lg font-bold tracking-tight">{copy.title}</h2>
+        <p className="text-muted leading-copy mt-1 mb-0">{copy.hint}</p>
       </div>
       {copy.actionLabel && (
         <Button

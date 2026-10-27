@@ -9,11 +9,11 @@ type Props = {
 
 export function PlanStatus({ plan, onRetry }: Props) {
   if (plan.tag === 'loading') {
-    return <p className="m-0 text-caption text-muted leading-normal">{PREPARING}</p>;
+    return <p className="text-caption text-muted m-0 leading-normal">{PREPARING}</p>;
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="m-0 text-caption text-muted leading-normal" role="status">
+      <p className="text-caption text-muted m-0 leading-normal" role="status">
         {planFailureMessage(plan.failure)}
       </p>
       <div className="flex flex-wrap gap-2">
