@@ -30,7 +30,7 @@ export type { ModelRun } from './bindings/ModelRun';
 export type { NativeLanguageSettings } from './bindings/NativeLanguageSettings';
 export type { PersonalProfile } from './bindings/PersonalProfile';
 export type { PhraseCardRecord } from './bindings/PhraseCardRecord';
-
+export type { PhraseKind } from './bindings/PhraseKind';
 export type { RescueKind } from './bindings/RescueKind';
 export type { RescueRequest } from './bindings/RescueRequest';
 export type { RescueResponse } from './bindings/RescueResponse';

@@ -162,6 +162,13 @@ At the end of a session:
 - Status (`new → learning → improving → stable`, `archived`) changes only from real evidence:
   spoken recall and independent use in conversation. Cued or typed answers never count as
   independent use. The detailed rules are in TECHNICAL_REQUIREMENTS §9.
+- An opened phrase shows its **kind** (phrase, phrasal verb, linking phrase or pattern, worked out
+  on this Mac from the wording) and an opened mistake its category. The "In conversations" list
+  shows each use as **On your own**, **With help** (the answer used help, or Eva had cued the item
+  before the answer) or **Slipped back**. With help is shown but never counts as use on your own
+  and never changes the status. Uses the review could not judge are not listed.
+- **Say it now** on an opened, not archived phrase or mistake runs the spoken review with that
+  single item, even when it is not due yet. It is scored and scheduled like any review answer.
 
 ### 8.1 Practice my usual mistakes
 

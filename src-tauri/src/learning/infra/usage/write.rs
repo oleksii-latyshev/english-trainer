@@ -118,7 +118,12 @@ pub(crate) fn save_turn_usage_assessment(
             params![sql_sid, turn_time, item_type, item_id],
             |row| row.get(0),
         )?;
-        if !is_still_eligible || exposed > 0 {
+        let credits_own_use = events.iter().any(|event| {
+            event.item_type == candidate.item_type
+                && event.item_id == candidate.item_id
+                && event.outcome == UsageOutcome::Correct
+        });
+        if !is_still_eligible || (exposed > 0 && credits_own_use) {
             return Ok(None);
         }
     }
@@ -161,8 +166,10 @@ pub(crate) fn save_turn_usage_assessment(
             || event.exact_excerpt.is_empty()
             || event.exact_excerpt.chars().count() > MAX_EXCERPT_CHARS
             || !request.transcript.contains(&event.exact_excerpt)
-            || (event.outcome == UsageOutcome::Correct
-                && !contains_normalized_words(&event.exact_excerpt, &candidate.target))
+            || (matches!(
+                event.outcome,
+                UsageOutcome::Correct | UsageOutcome::WithHelp
+            ) && !contains_normalized_words(&event.exact_excerpt, &candidate.target))
             || (event.outcome == UsageOutcome::Incorrect
                 && !contains_normalized_words(&event.exact_excerpt, &candidate.target)
                 && !(event.item_type == LearningItemType::Mistake

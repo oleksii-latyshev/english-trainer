@@ -25,10 +25,10 @@ sequenceDiagram
     participant Screen as SpokenReviewScreen
 
     Learner->>Route: Start / Resume spoken review (or Start with warm-up)
-    Route->>Mode: begin(review | warmup), reset capture state
+    Route->>Mode: begin(review | warmup) or beginItem(item), reset capture state
     Route->>Screen: show
     Screen->>Opened: read
-    Opened->>Ipc: start_memory_review(warmup) and get_learning_memory (status chips)
+    Opened->>Ipc: start_memory_review(warmup), or start_item_review(item) after Say it now, and get_learning_memory (status chips)
     alt a run is saved or something is due
         Ipc->>Rust: start (returns the saved run when there is one, so this also resumes)
         Rust-->>Session: run, step answering
@@ -37,6 +37,7 @@ sequenceDiagram
     else the run cannot start
         Ipc-->>Screen: failure, "Could not start the review", Try again refreshes the atom
     end
+    Note over Rust: start_item_review makes a run of that one item even when it is not due, and returns an open run unchanged
     Note over Session: a run whose items are all answered or skipped opens as closing and is finished at once
 ```
 

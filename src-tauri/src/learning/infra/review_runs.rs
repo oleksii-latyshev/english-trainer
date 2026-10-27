@@ -1,4 +1,7 @@
+use super::ids::storage;
 use super::ids::{now_ms, to_safe_u64_id, to_sql_id, to_sql_sequence};
+use crate::learning::review_rules::ReviewRejection;
+use crate::learning::LearningError;
 use crate::learning::{
     is_safe_mistake_cue, is_safe_phrase_cue, LearningItemType, LearningStatus, MemoryReviewItem,
     MemoryReviewRun, ReviewResponse,
@@ -121,7 +124,30 @@ pub(crate) fn start_run(
     if candidates.is_empty() {
         return Ok(None);
     }
+    create_run(connection, candidates, now).map(Some)
+}
 
+pub(crate) fn start_item_run(
+    connection: &mut Connection,
+    item_type: LearningItemType,
+    item_id: u64,
+) -> Result<Option<MemoryReviewRun>, LearningError> {
+    if let Some(active) = active_run(connection).map_err(storage("read"))? {
+        return Ok(Some(active));
+    }
+    let now = now_ms();
+    let candidate = item_candidate(connection, item_type, item_id)
+        .map_err(storage("read"))?
+        .ok_or(LearningError::Review(ReviewRejection::NotReviewable))?;
+    let run = create_run(connection, vec![candidate], now).map_err(storage("update"))?;
+    Ok(Some(run))
+}
+
+fn create_run(
+    connection: &mut Connection,
+    candidates: Vec<Candidate>,
+    now: i64,
+) -> rusqlite::Result<MemoryReviewRun> {
     let transaction = connection.transaction()?;
     transaction.execute(
         "INSERT INTO memory_review_runs (started_at) VALUES (?1)",
@@ -131,9 +157,9 @@ pub(crate) fn start_run(
     let mut items = Vec::with_capacity(candidates.len());
     for (index, candidate) in candidates.into_iter().enumerate() {
         let position = index + 1;
-        let item_type = match candidate.item_type {
-            LearningItemType::Mistake => "mistake",
-            LearningItemType::Phrase => "phrase",
+        let (item_type, table) = match candidate.item_type {
+            LearningItemType::Mistake => ("mistake", "mistakes"),
+            LearningItemType::Phrase => ("phrase", "phrase_cards"),
         };
         transaction.execute(
             "INSERT INTO memory_review_items (run_id, position, item_type, item_id, cue, target)
@@ -147,6 +173,12 @@ pub(crate) fn start_run(
                 candidate.target
             ],
         )?;
+        if candidate.due_at > now {
+            transaction.execute(
+                &format!("UPDATE {table} SET next_review_at = ?1 WHERE id = ?2"),
+                params![now, to_sql_id(candidate.item_id)?],
+            )?;
+        }
         items.push(MemoryReviewItem {
             position,
             item_type: candidate.item_type,
@@ -163,10 +195,57 @@ pub(crate) fn start_run(
         });
     }
     transaction.commit()?;
-    Ok(Some(MemoryReviewRun {
+    Ok(MemoryReviewRun {
         run_id,
         items,
         completed: false,
+    })
+}
+
+fn item_candidate(
+    connection: &Connection,
+    item_type: LearningItemType,
+    item_id: u64,
+) -> rusqlite::Result<Option<Candidate>> {
+    let sql_id = to_sql_id(item_id)?;
+    let candidate = match item_type {
+        LearningItemType::Mistake => connection
+            .query_row(
+                "SELECT original_example, corrected_example, next_review_at FROM mistakes
+                 WHERE id = ?1 AND status != 'archived' AND times_seen >= 2",
+                [sql_id],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get(2)?,
+                    ))
+                },
+            )
+            .optional()?
+            .filter(|(cue, target, _)| is_safe_mistake_cue(target, cue)),
+        LearningItemType::Phrase => connection
+            .query_row(
+                "SELECT meaning_or_note, phrase, next_review_at FROM phrase_cards
+                 WHERE id = ?1 AND status != 'archived'",
+                [sql_id],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get(2)?,
+                    ))
+                },
+            )
+            .optional()?
+            .filter(|(cue, target, _)| is_safe_phrase_cue(target, cue)),
+    };
+    Ok(candidate.map(|(cue, target, due_at)| Candidate {
+        item_type,
+        item_id,
+        cue,
+        target,
+        due_at,
     }))
 }
 

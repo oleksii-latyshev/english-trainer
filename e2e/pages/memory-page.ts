@@ -15,6 +15,8 @@ export class MemoryPage {
   readonly confirmDeleteButton: Locator;
   readonly cancelDeleteButton: Locator;
   readonly statusSummary: Locator;
+  readonly heading: Locator;
+  readonly sayItNowButton: Locator;
 
   constructor(private readonly page: Page) {
     this.review = new ReviewPage(page);
@@ -30,6 +32,8 @@ export class MemoryPage {
     this.confirmDeleteButton = this.deleteDialog.getByRole('button', { name: 'Delete' });
     this.cancelDeleteButton = this.deleteDialog.getByRole('button', { name: 'Cancel' });
     this.statusSummary = page.getByRole('region', { name: 'Where they are' });
+    this.heading = page.getByRole('heading', { name: 'Memory', exact: true });
+    this.sayItNowButton = page.getByRole('button', { name: 'Say it now' });
   }
 
   correctedExample(text: string): Locator {
@@ -42,6 +46,10 @@ export class MemoryPage {
 
   evidenceFor(text: string): Locator {
     return this.page.getByRole('region', { name: 'Evidence from conversations' }).getByText(text);
+  }
+
+  kind(text: string): Locator {
+    return this.page.getByRole('definition').filter({ hasText: new RegExp(`^${text}$`) });
   }
 
   archiveButton(label: string): Locator {

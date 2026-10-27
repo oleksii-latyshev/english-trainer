@@ -17,6 +17,7 @@ pub const STABLE_REQUIRED_BUCKETS: usize = 3;
 #[ts(export)]
 pub enum UsageOutcome {
     Correct,
+    WithHelp,
     Incorrect,
     Uncertain,
 }
@@ -25,6 +26,7 @@ impl UsageOutcome {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Correct => "correct",
+            Self::WithHelp => "with_help",
             Self::Incorrect => "incorrect",
             Self::Uncertain => "uncertain",
         }
@@ -33,6 +35,7 @@ impl UsageOutcome {
     pub fn parse(value: &str) -> Option<Self> {
         match value {
             "correct" => Some(Self::Correct),
+            "with_help" => Some(Self::WithHelp),
             "incorrect" => Some(Self::Incorrect),
             "uncertain" => Some(Self::Uncertain),
             _ => None,

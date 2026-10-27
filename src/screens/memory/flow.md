@@ -38,3 +38,9 @@ sequenceDiagram
     Features->>Route: onStartReview
     Route->>Shell: begin the review, navigate /memory/review
 ```
+
+## Say it now
+
+An opened row's Say it now reaches the route as `onSayNow(item)` through `LibraryList`'s `sayNow`
+prop. The route begins a one-item review (`review.beginItem`) and navigates to `/memory/review`; the
+summary there returns to Memory.

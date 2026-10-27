@@ -8,7 +8,7 @@ MemorySearch            search field in the screen header (searchQueryAtom)
 StatusSummary           "Where they are": counts of New, Learning, Improving, Stable
 LibraryList             tabs Phrases / Mistakes, "Show archived", the list
   MemoryRow             wording, source, status, next review, "On your own" count
-    EntryDetail         next review, gap, kind, explanation, EvidenceList, Archive, Delete
+    EntryDetail         next review, gap, kind, explanation, EvidenceList, Say it now, Archive, Delete
 DeleteMemoryDialog      asks before a delete
 ```
 
@@ -44,6 +44,30 @@ sequenceDiagram
 Opening a row shows the details and loads the evidence for that one item from Rust
 (`memoryUsageEvidenceAtom`, see `core/learning-memory/flow.md`). Selecting text in a row does not
 toggle it, so a word can be translated (`data-word-lookup`).
+
+The kind comes from Rust: a phrase card carries `kind` (computed on read, never stored), a mistake
+shows its category. Each evidence event is tagged by its outcome: `correct` is "On your own",
+`with_help` is "With help" (the answer used help, or the item was cued first), `incorrect` is
+"Slipped back". `uncertain` events are not listed. Only "On your own" feeds the count in the row.
+
+## Say it now
+
+```mermaid
+sequenceDiagram
+    actor Learner
+    participant Detail as EntryDetail
+    participant Screen as MemoryScreen (sayNow prop)
+    participant Route as MemoryRoute
+    participant Review as spoken-review (beginItem)
+
+    Learner->>Detail: Say it now (not shown for archived items, disabled while the microphone is busy)
+    Detail->>Screen: onSay(item type, id)
+    Screen->>Route: onSayNow
+    Route->>Review: beginItem(item), navigate /memory/review
+    Review-->>Learner: a one-item spoken review, then "Back to Memory"
+```
+
+The feature never imports the review: the route composes the two.
 
 ## Archive and delete
 

@@ -17,6 +17,7 @@ pub mod memory_recall;
 pub(crate) mod mistake_practice;
 pub mod models;
 pub mod normalization;
+pub mod phrase_kind;
 pub mod scheduling;
 pub mod session_stats;
 pub mod usage;
@@ -37,6 +38,7 @@ pub use models::{
     ReviewResponse,
 };
 pub use normalization::{mistake_normalized_key, normalize_phrase};
+pub use phrase_kind::phrase_kind;
 pub use review_service::ReviewService;
 pub use scheduling::{calculate_next_review, MS_PER_DAY};
 pub use service::LearningService;

@@ -75,7 +75,7 @@ sequenceDiagram
         Rust-->>Ipc: IpcError invalid_request
         Ipc-->>Row: failure, Retry
     else read
-        Rust-->>Ipc: sessions with independent use, streak, last five events
+        Rust-->>Ipc: sessions with independent use, streak, last five events (correct, with_help, incorrect)
         Ipc-->>Row: decoded with MemoryUsageEvidenceSchema
     end
 ```
@@ -100,7 +100,10 @@ sequenceDiagram
     Rust-->>Card: run with answered and skipped items, or null (Start spoken review)
 ```
 
-`start`, `submit`, `skip` and `finish` carry the `LEARNING_MEMORY` key when `features/spoken-review`
+`startItem` (`start_item_review`) opens a run of one chosen item for "Say it now"; an open run is
+returned unchanged, like `start`.
+
+`start`, `startItem`, `submit`, `skip` and `finish` carry the `LEARNING_MEMORY` key when `features/spoken-review`
 runs them, so the card, the library and the badges reload after every answer.
 
 ## Refresh after a change

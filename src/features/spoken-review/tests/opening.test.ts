@@ -23,6 +23,18 @@ describe('opening the review', () => {
     });
   });
 
+  it('starts a review of one chosen item instead of the due queue', async () => {
+    const backend = makeBackend();
+    const registry = await opened(backend, 'review', { itemType: 'phrase', itemId: 51 });
+    expect(registry.get(reviewViewAtom)).toEqual({ tag: 'ready' });
+    expect(commands(backend)).toContain('start_item_review');
+    expect(commands(backend)).not.toContain('start_memory_review');
+    expect(backend.calls.find((call) => call.command === 'start_item_review')?.args).toEqual({
+      item_type: 'phrase',
+      item_id: 51,
+    });
+  });
+
   it('says there is nothing to review when no run starts', async () => {
     const registry = await opened(makeBackend({ run: null }));
     expect(registry.get(reviewViewAtom)).toEqual({ tag: 'nothing' });

@@ -577,3 +577,74 @@ fn saving_an_archived_phrase_again_brings_it_back_for_tomorrow() {
     assert_eq!(stored[0].status, LearningStatus::Learning);
     assert!(!stored[0].is_due);
 }
+
+#[test]
+fn saying_one_item_now_runs_a_single_item_review_even_when_it_is_not_due() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let other = phrase(&mut db, "turn out", "End up being");
+    let chosen = phrase(&mut db, "come across", "Find or seem to be");
+    let week_ahead = now_ms() + 7 * crate::learning::MS_PER_DAY;
+    db.connection()
+        .execute(
+            "UPDATE phrase_cards SET next_review_at = ?1 WHERE id = ?2",
+            params![week_ahead, chosen as i64],
+        )
+        .unwrap();
+
+    let run = review_runs::start_item_run(db.connection_mut(), LearningItemType::Phrase, chosen)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(run.items.len(), 1);
+    assert_eq!(run.items[0].item_id, chosen);
+    assert!(run.items[0].target.is_none());
+    assert_ne!(run.items[0].item_id, other);
+    let result = review_answers::record_recall(
+        db.connection_mut(),
+        run.run_id,
+        LearningItemType::Phrase,
+        chosen,
+        "I come across it.",
+    )
+    .unwrap();
+    assert_eq!(result.saved_response, ReviewResponse::Remembered);
+    assert!(result.next_review_at > now_ms());
+    assert!(finish(&mut db, run.run_id).unwrap());
+}
+
+#[test]
+fn an_archived_or_unknown_item_cannot_start_a_single_item_review() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let archived = phrase(&mut db, "carry on", "Continue despite difficulty");
+    db.connection()
+        .execute(
+            "UPDATE phrase_cards SET status='archived' WHERE id=?1",
+            [archived as i64],
+        )
+        .unwrap();
+
+    assert!(
+        review_runs::start_item_run(db.connection_mut(), LearningItemType::Phrase, archived)
+            .is_err()
+    );
+    assert!(
+        review_runs::start_item_run(db.connection_mut(), LearningItemType::Mistake, 999).is_err()
+    );
+}
+
+#[test]
+fn a_single_item_review_returns_the_review_that_is_already_open() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = phrase(&mut db, "turn out", "End up being");
+    let second = phrase(&mut db, "come across", "Find or seem to be");
+    let open = review_runs::start_run(db.connection_mut(), false)
+        .unwrap()
+        .unwrap();
+
+    let run = review_runs::start_item_run(db.connection_mut(), LearningItemType::Phrase, second)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(run, open);
+    assert!(open.items.iter().any(|item| item.item_id == first));
+}

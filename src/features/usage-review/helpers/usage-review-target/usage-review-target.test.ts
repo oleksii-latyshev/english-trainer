@@ -5,14 +5,14 @@ function anInput(overrides: Partial<UsageReviewInput> = {}): UsageReviewInput {
   return {
     answer: { sessionId: 7, sequence: 1 },
     session: { sessionId: 7, practiceMode: 'voice', isMistakePractice: false },
-    dialogue: { input_sources: ['voice'], help_used: [false] },
+    dialogue: { input_sources: ['voice'] },
     isBlocked: false,
     ...overrides,
   };
 }
 
 describe('usageReviewTarget', () => {
-  it('offers the review for a spoken answer given without help', () => {
+  it('offers the review for a spoken answer, even when it used help', () => {
     expect(usageReviewTarget(anInput())).toEqual({ sessionId: 7, sequence: 1 });
   });
 
@@ -20,7 +20,7 @@ describe('usageReviewTarget', () => {
     const afterReset = anInput({ answer: { sessionId: 7, sequence: 2 } });
     const withBoth = {
       ...afterReset,
-      dialogue: { input_sources: ['text', 'voice'], help_used: [] },
+      dialogue: { input_sources: ['text', 'voice'] },
     };
     expect(usageReviewTarget(withBoth)).toEqual({ sessionId: 7, sequence: 2 });
   });
@@ -36,17 +36,14 @@ describe('usageReviewTarget', () => {
   it('reviews only the first two answers', () => {
     const third = anInput({
       answer: { sessionId: 7, sequence: 3 },
-      dialogue: { input_sources: ['voice', 'voice', 'voice'], help_used: [] },
+      dialogue: { input_sources: ['voice', 'voice', 'voice'] },
     });
     expect(usageReviewTarget(third)).toBeNull();
   });
 
-  it('skips typed, edited and helped answers', () => {
+  it('skips typed and edited answers', () => {
     expect(usageReviewTarget(anInput({ dialogue: { input_sources: ['text'] } }))).toBeNull();
     expect(usageReviewTarget(anInput({ dialogue: { input_sources: ['edited'] } }))).toBeNull();
-    expect(
-      usageReviewTarget(anInput({ dialogue: { input_sources: ['voice'], help_used: [true] } })),
-    ).toBeNull();
   });
 
   it('skips mistake practice, other modes and a blocked screen', () => {

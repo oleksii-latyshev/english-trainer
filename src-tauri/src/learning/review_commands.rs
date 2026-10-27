@@ -16,6 +16,18 @@ pub async fn start_memory_review(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub async fn start_item_review(
+    service: tauri::State<'_, ReviewService>,
+    item_type: LearningItemType,
+    item_id: u64,
+) -> Result<Option<MemoryReviewRun>, IpcError> {
+    run_blocking(service, "Could not start the review.", move |service| {
+        service.start_item(item_type, item_id)
+    })
+    .await
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_memory_review(
     service: tauri::State<'_, ReviewService>,
 ) -> Result<Option<MemoryReviewRun>, IpcError> {

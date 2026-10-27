@@ -64,6 +64,18 @@ describe('review run service', () => {
     expect(calls).toEqual([{ command: 'start_memory_review', args: { warmup: true } }]);
   });
 
+  it('starts a review of one item and decodes the run', async () => {
+    const { calls, layer } = makeFakes(() => RUN);
+    const run = await use(
+      layer,
+      ReviewRunService.use((service) => service.startItem({ itemType: 'phrase', itemId: 51 })),
+    );
+    expect(run?.items).toHaveLength(1);
+    expect(calls).toEqual([
+      { command: 'start_item_review', args: { item_type: 'phrase', item_id: 51 } },
+    ]);
+  });
+
   it('knows there is nothing to start when Rust returns no run', async () => {
     const { layer } = makeFakes(() => null);
     expect(

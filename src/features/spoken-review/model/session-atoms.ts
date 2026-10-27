@@ -2,6 +2,7 @@ import { Effect, Option } from 'effect';
 import { AsyncResult, Atom } from 'effect/reactivity';
 import {
   isRunFinished,
+  type LearningItemRef,
   LearningMemoryService,
   learningMemoryRuntime,
   ReviewRunService,
@@ -12,16 +13,19 @@ import type { OpenedReview, ReviewMode, Session } from '../types';
 
 export const reviewModeAtom = Atom.keepAlive(Atom.make<ReviewMode>('review'));
 
+export const reviewTargetAtom = Atom.keepAlive(Atom.make<LearningItemRef | null>(null));
+
 export const summaryReachedAtom = Atom.keepAlive(Atom.make(false));
 
 export const openedReviewAtom = learningMemoryRuntime.atom((get) => {
   const isWarmup = get.once(reviewModeAtom) === 'warmup';
+  const target = get.once(reviewTargetAtom);
   return Effect.gen(function* () {
     const reviews = yield* ReviewRunService;
     const memory = yield* LearningMemoryService;
     const [run, statusBefore] = yield* Effect.all(
       [
-        reviews.start(isWarmup),
+        target === null ? reviews.start(isWarmup) : reviews.startItem(target),
         memory.read.pipe(
           Effect.map(statusBeforeOf),
           Effect.catch(() => Effect.succeed(NO_STATUS_BEFORE)),

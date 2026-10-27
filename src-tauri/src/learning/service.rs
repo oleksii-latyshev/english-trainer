@@ -120,6 +120,7 @@ mod tests {
             Ok(PhraseCardRecord {
                 id: 1,
                 phrase: phrase.into(),
+                kind: crate::learning::phrase_kind(phrase),
                 normalized_phrase: phrase.into(),
                 meaning_or_note: meaning_or_note.into(),
                 session_id: source.map(|source| source.session_id),

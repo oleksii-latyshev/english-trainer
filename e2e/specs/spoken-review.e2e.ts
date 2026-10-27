@@ -185,3 +185,28 @@ test('empty warmup can be skipped into the saved conversation options', async ({
   await expect(talk.openingQuestion).toBeVisible();
   expect(await tauri.calls('start_practice_session')).toHaveLength(1);
 });
+
+test('Say it now runs a one-item spoken review and finishing it returns to Memory', async ({
+  app,
+  memory,
+  review,
+  tauri,
+}) => {
+  tauri.review.withDuePhrase();
+  await app.open();
+  await app.sidebar.openMemory();
+  await memory.open('find a compromise');
+  await memory.sayItNowButton.click();
+
+  await expect(review.situation).toBeVisible();
+  expect(await tauri.review.calls()).toContain('start_item_review:phrase:51');
+  expect(await tauri.review.calls()).not.toContain('start_memory_review:false');
+  await review.recorder.start();
+  await review.recorder.finishAnswer();
+  await expect(review.modelAnswer).toBeVisible();
+  await review.finishButton.click();
+  await expect(review.doneHeading).toBeVisible();
+
+  await review.backToMemoryButton.click();
+  await expect(memory.heading).toBeVisible();
+});

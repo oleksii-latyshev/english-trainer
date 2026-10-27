@@ -11,17 +11,15 @@ export type UsageReviewInput = {
   };
   readonly dialogue: {
     readonly input_sources?: readonly string[];
-    readonly help_used?: readonly boolean[];
   } | null;
   readonly isBlocked: boolean;
 };
 
-function isOwnSpokenAnswer(input: UsageReviewInput, answer: UsageTarget): boolean {
+function isSpokenAnswer(input: UsageReviewInput, answer: UsageTarget): boolean {
   const index = answer.sequence - 1;
   return (
     answer.sessionId === input.session.sessionId &&
-    input.dialogue?.input_sources?.[index] === 'voice' &&
-    input.dialogue?.help_used?.[index] !== true
+    input.dialogue?.input_sources?.[index] === 'voice'
   );
 }
 
@@ -30,5 +28,5 @@ export function usageReviewTarget(input: UsageReviewInput): UsageTarget | null {
   if (answer === null || input.isBlocked) return null;
   if (session.isMistakePractice || session.practiceMode !== 'voice') return null;
   if (answer.sequence > REVIEWED_ANSWERS) return null;
-  return isOwnSpokenAnswer(input, answer) ? answer : null;
+  return isSpokenAnswer(input, answer) ? answer : null;
 }

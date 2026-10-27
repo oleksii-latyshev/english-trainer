@@ -15,6 +15,7 @@ import {
 } from '../model/atoms';
 
 const BASE_CARD = {
+  kind: 'phrase' as const,
   normalized_phrase: '',
   meaning_or_note: '',
   session_id: null,

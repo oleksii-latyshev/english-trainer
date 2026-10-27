@@ -1,11 +1,7 @@
 import type { Page } from '@playwright/test';
 import type { LearningMemoryView, ReviewMaterials } from '@/core/ipc';
-import {
-  installReview,
-  type ReviewOptions,
-  reviewMemory,
-  reviewMemoryWithDuePhrase,
-} from './review';
+import { reviewMemory, reviewMemoryWithDuePhrase } from '../../data/review-memory';
+import { installReview, type ReviewOptions } from './review';
 
 export class ReviewBackend {
   enabled = false;

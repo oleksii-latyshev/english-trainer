@@ -1,7 +1,7 @@
 use super::ids::{now_ms, to_sql_id, to_sql_sequence};
 use crate::learning::{
-    is_independent_success, normalize_phrase, LearningItemType, LearningMemoryView, LearningStatus,
-    MistakeRecord, PhraseCardRecord, UsageOutcome, MS_PER_DAY,
+    is_independent_success, normalize_phrase, phrase_kind, LearningItemType, LearningMemoryView,
+    LearningStatus, MistakeRecord, PhraseCardRecord, UsageOutcome, MS_PER_DAY,
 };
 use crate::providers::FocusCategory;
 use rusqlite::{params, Connection, OptionalExtension, Row};
@@ -43,9 +43,11 @@ fn mistake_from_row(row: &Row<'_>, now: i64) -> rusqlite::Result<MistakeRecord> 
 fn phrase_from_row(row: &Row<'_>, now: i64) -> rusqlite::Result<PhraseCardRecord> {
     let next_review: i64 = row.get(8)?;
     let status_text: String = row.get(11)?;
+    let phrase: String = row.get(1)?;
     Ok(PhraseCardRecord {
         id: row.get::<_, i64>(0)? as u64,
-        phrase: row.get(1)?,
+        kind: phrase_kind(&phrase),
+        phrase,
         normalized_phrase: row.get(2)?,
         meaning_or_note: row.get(3)?,
         session_id: row.get::<_, Option<i64>>(4)?.map(|id| id as u64),
@@ -225,6 +227,7 @@ pub(crate) fn save_phrase_card(
     Ok(PhraseCardRecord {
         id,
         phrase: phrase.to_string(),
+        kind: phrase_kind(phrase),
         normalized_phrase: normalized,
         meaning_or_note: meaning_or_note.to_string(),
         session_id,
@@ -419,6 +422,7 @@ mod tests {
         insert_usage(connection, used.id, 2, "correct", 0.95);
         insert_usage(connection, used.id, 3, "correct", 0.5);
         insert_usage(connection, used.id, 4, "incorrect", 0.99);
+        insert_usage(connection, used.id, 5, "with_help", 0.99);
 
         let memory = read_memory(connection, now_ms()).unwrap();
         let count_of = |id| {

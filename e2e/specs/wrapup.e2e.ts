@@ -110,6 +110,7 @@ test('save all is atomic, removed phrases stay out, duplicates are not undone', 
   const existing = {
     id: 321,
     phrase: phraseSet[0].phrase,
+    kind: 'phrase' as const,
     normalized_phrase: phraseSet[0].phrase.toLowerCase(),
     meaning_or_note: 'Already remembered.',
     session_id: null,

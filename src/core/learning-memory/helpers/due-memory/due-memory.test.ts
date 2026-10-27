@@ -7,6 +7,7 @@ function phrase(overrides: Partial<PhraseCardRecord> = {}): PhraseCardRecord {
   return {
     id: 1,
     phrase: 'figure out',
+    kind: 'phrasal_verb',
     normalized_phrase: 'figure out',
     meaning_or_note: '',
     session_id: null,

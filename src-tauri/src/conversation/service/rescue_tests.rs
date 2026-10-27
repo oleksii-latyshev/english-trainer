@@ -67,8 +67,8 @@ fn rescue_records_only_the_current_answer_before_generation_even_if_generation_f
         vec![true, false]
     );
     assert!(store
-        .review_memory_usage(session.session_id, 1, |_| panic!("cued answer"))
-        .is_err());
+        .review_memory_usage(session.session_id, 1, |_| panic!("no learning candidates"))
+        .is_ok());
 }
 #[test]
 fn malformed_and_stale_rescue_requests_never_record_a_cue_or_call_the_provider() {

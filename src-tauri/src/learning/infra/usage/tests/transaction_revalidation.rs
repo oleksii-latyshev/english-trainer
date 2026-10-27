@@ -181,7 +181,7 @@ fn reject_stale_request(mut turn: PreparedTurn, mutate: impl FnOnce(&mut Prepare
 }
 
 #[test]
-fn commit_rejects_changed_question_candidate_status_feedback_and_prior_exposure() {
+fn commit_rejects_changed_question_candidate_status_and_feedback() {
     reject_stale_request(prepared_turn(1), |turn| {
         turn.db
             .connection()
@@ -224,16 +224,6 @@ fn commit_rejects_changed_question_candidate_status_feedback_and_prior_exposure(
                 ],
             )
             .unwrap();
-    });
-    reject_stale_request(prepared_turn(1), |turn| {
-        exposure::record_cue_exposure(
-            turn.db.connection(),
-            turn.session_id,
-            Some("mistake"),
-            Some(turn.mistake_id),
-            turn.turn_time - 1,
-        )
-        .unwrap();
     });
 }
 

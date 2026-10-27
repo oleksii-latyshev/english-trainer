@@ -1,3 +1,4 @@
+use super::phrase_kind::PhraseKind;
 use crate::providers::FocusCategory;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -86,6 +87,7 @@ pub struct MistakeRecord {
 pub struct PhraseCardRecord {
     pub id: u64,
     pub phrase: String,
+    pub kind: PhraseKind,
     pub normalized_phrase: String,
     pub meaning_or_note: String,
     pub session_id: Option<u64>,

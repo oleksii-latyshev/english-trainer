@@ -1,4 +1,5 @@
 import type { AtomRegistry } from 'effect/reactivity';
+import type { LearningItemRef } from '@/core/learning-memory';
 import { createPlayback } from '@/core/speech';
 import type { ReviewFix } from '../helpers/review-issue';
 import { cancelPractice, startPractice } from '../helpers/review-session';
@@ -64,6 +65,7 @@ export function reviewCommands(registry: AtomRegistry.AtomRegistry) {
 
   return {
     begin: (mode: ReviewMode) => beginReview(registry, mode),
+    beginItem: (target: LearningItemRef) => beginReview(registry, 'review', target),
     pressMic: () => {
       if (registry.get(phaseAtom) === 'listening') finishAnswer(registry);
       else startAnswer(registry);

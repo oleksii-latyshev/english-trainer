@@ -36,6 +36,11 @@ pub trait LearningStore: Send + Sync {
 
 pub trait ReviewRunStore: Send + Sync {
     fn start(&self, is_warmup: bool) -> Result<Option<MemoryReviewRun>, LearningError>;
+    fn start_item(
+        &self,
+        item_type: LearningItemType,
+        item_id: u64,
+    ) -> Result<Option<MemoryReviewRun>, LearningError>;
     fn active(&self) -> Result<Option<MemoryReviewRun>, LearningError>;
     fn record_recall(
         &self,

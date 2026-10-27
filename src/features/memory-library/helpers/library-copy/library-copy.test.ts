@@ -3,6 +3,7 @@ import type { MistakeRecord, PhraseCardRecord } from '@/core/ipc';
 import {
   gapLabel,
   isDueToday,
+  kindLabel,
   mistakeSourceLine,
   nextReviewLabel,
   phraseSourceLine,
@@ -39,6 +40,7 @@ const mistake: MistakeRecord = {
 const phrase: PhraseCardRecord = {
   id: 1,
   phrase: 'bring them into one format',
+  kind: 'phrase',
   normalized_phrase: 'bring them into one format',
   meaning_or_note: 'we had to make all data same',
   session_id: 4,
@@ -107,5 +109,21 @@ describe('library copy', () => {
     expect(mistakeSourceLine({ ...mistake, category: 'vocabulary', times_seen: 2 })).toBe(
       'Vocabulary · seen 2×',
     );
+  });
+});
+
+describe('kindLabel', () => {
+  it('names the kind of each phrase', () => {
+    function entry(kind: PhraseCardRecord['kind']) {
+      return { kind: 'phrase' as const, card: { ...phrase, kind } };
+    }
+    expect(kindLabel(entry('phrase'))).toBe('Phrase');
+    expect(kindLabel(entry('phrasal_verb'))).toBe('Phrasal verb');
+    expect(kindLabel(entry('linking_phrase'))).toBe('Linking phrase');
+    expect(kindLabel(entry('pattern'))).toBe('Pattern');
+  });
+
+  it('shows the category of a mistake as its kind', () => {
+    expect(kindLabel({ kind: 'mistake', mistake })).toBe('Grammar');
   });
 });

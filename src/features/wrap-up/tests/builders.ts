@@ -42,6 +42,7 @@ export function aCard(overrides: Partial<PhraseCard> = {}): PhraseCard {
   return {
     id: 500,
     phrase: 'It saves me time.',
+    kind: 'phrase',
     normalized_phrase: 'it saves me time.',
     meaning_or_note: 'Use this to explain a practical benefit.',
     session_id: 41,

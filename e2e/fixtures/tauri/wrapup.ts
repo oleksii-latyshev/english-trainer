@@ -127,6 +127,7 @@ async function installWrapup(page: Page, options: WrapupOptions): Promise<void> 
         const card: PhraseCardRecord = {
           id,
           phrase,
+          kind: 'phrase',
           normalized_phrase: phrase.trim().toLocaleLowerCase(),
           meaning_or_note: source.note,
           session_id: sessionId,
@@ -160,6 +161,7 @@ async function installWrapup(page: Page, options: WrapupOptions): Promise<void> 
       const card: PhraseCardRecord = {
         id: fixture.nextId++,
         phrase,
+        kind: 'phrase',
         normalized_phrase: phrase.trim().toLocaleLowerCase(),
         meaning_or_note: typeof args?.meaning_or_note === 'string' ? args.meaning_or_note : '',
         session_id: sessionId,

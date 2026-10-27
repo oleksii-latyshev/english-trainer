@@ -17,6 +17,7 @@ pub enum ReviewRejection {
     ItemRemoved,
     ItemChanged,
     ItemNotDue,
+    NotReviewable,
     PreparationBusy,
     InvalidPosition,
 }
@@ -44,6 +45,7 @@ impl ReviewRejection {
                 "This item changed after the review started. End the review and start again."
             }
             Self::ItemNotDue => "This item is archived or no longer due and cannot be updated.",
+            Self::NotReviewable => "This item is archived or cannot be reviewed right now.",
             Self::PreparationBusy => {
                 "Review situations are still preparing. You can answer now or retry shortly."
             }

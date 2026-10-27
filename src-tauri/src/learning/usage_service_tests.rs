@@ -184,3 +184,114 @@ fn ended_saved_session_can_be_reviewed() {
     });
     assert!(assessment.is_ok());
 }
+
+fn turn(question: &str) -> ConversationTurn {
+    ConversationTurn {
+        spoken_reply: "Good.".into(),
+        question: Some(question.into()),
+        session_phase: "active".into(),
+        is_complete: false,
+        provider_latency_ms: None,
+        first_token_ms: None,
+        answered_by: None,
+    }
+}
+
+fn store_with_a_mistake_to_reuse() -> SessionStore {
+    let store = SessionStore::default();
+    let earlier = store.start().unwrap();
+    store
+        .send_turn(
+            earlier.session_id,
+            "I work in there yesterday.".into(),
+            |_| Ok(turn("Where was that?")),
+        )
+        .unwrap();
+    store
+        .save_feedback(
+            earlier.session_id,
+            1,
+            "I work in there yesterday.",
+            &TurnFeedback {
+                focus_feedback: vec![FocusFeedback {
+                    category: FocusCategory::Grammar,
+                    original: "work in there".into(),
+                    improved: "work there".into(),
+                    explanation: "Use the natural preposition.".into(),
+                }],
+                b2_rewrite: "I worked there yesterday.".into(),
+            },
+        )
+        .unwrap();
+    store.finish(earlier.session_id).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    store
+}
+
+fn correct_afterwards(store: &SessionStore) -> i64 {
+    store
+        .lock()
+        .database
+        .connection()
+        .query_row("SELECT times_correct_afterwards FROM mistakes", [], |row| {
+            row.get(0)
+        })
+        .unwrap()
+}
+
+fn correct_use(request: &crate::providers::UsageReviewRequest) -> UsageReviewResponse {
+    let candidate = &request.candidates[0];
+    UsageReviewResponse {
+        findings: vec![UsageFinding {
+            item_type: candidate.item_type,
+            item_id: candidate.item_id,
+            outcome: UsageOutcome::Correct,
+            confidence: 0.95,
+            exact_excerpt: "work there".into(),
+        }],
+    }
+}
+
+#[test]
+fn a_correct_use_in_a_helped_answer_is_with_help_and_earns_no_progress() {
+    let store = store_with_a_mistake_to_reuse();
+    let session = store.start().unwrap();
+    store
+        .record_answer_help_used(session.session_id, 1)
+        .unwrap();
+    store
+        .send_turn(session.session_id, "I work there now.".into(), |_| {
+            Ok(turn("Do you like it?"))
+        })
+        .unwrap();
+
+    let assessment = usage_service(&store)
+        .review(session.session_id, 1, |request| Ok(correct_use(request)))
+        .unwrap();
+
+    let finding = &assessment.findings[0];
+    assert_eq!(finding.outcome, crate::learning::UsageOutcome::WithHelp);
+    assert!(finding.credited);
+    assert_eq!(correct_afterwards(&store), 0);
+}
+
+#[test]
+fn a_correct_use_in_an_answer_without_help_still_earns_progress() {
+    let store = store_with_a_mistake_to_reuse();
+    let session = store.start().unwrap();
+    store
+        .send_turn(session.session_id, "I work there now.".into(), |_| {
+            Ok(turn("Do you like it?"))
+        })
+        .unwrap();
+
+    let assessment = usage_service(&store)
+        .review(session.session_id, 1, |request| Ok(correct_use(request)))
+        .unwrap();
+
+    assert_eq!(
+        assessment.findings[0].outcome,
+        crate::learning::UsageOutcome::Correct
+    );
+    assert_eq!(correct_afterwards(&store), 1);
+}

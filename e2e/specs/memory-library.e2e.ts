@@ -52,6 +52,52 @@ test('an opened phrase shows what the learner said on their own', async ({
   expect(await tauri.calls('get_memory_usage_evidence')).toHaveLength(1);
 });
 
+test('an opened phrase shows its kind and a mistake shows its category', async ({
+  app,
+  memory,
+  tauri,
+}) => {
+  tauri.memory.withLibrary(libraryMemory);
+  await app.open();
+  await app.sidebar.openMemory();
+  await memory.open('figure out');
+  await expect(memory.kind('Phrasal verb')).toBeVisible();
+
+  await memory.openMistakes();
+  await memory.open('the most part of');
+  await expect(memory.kind('Grammar')).toBeVisible();
+});
+
+test('evidence tells use on your own from use with help and hides uncertain ones', async ({
+  app,
+  memory,
+  tauri,
+}) => {
+  tauri.memory.withLibrary(libraryMemory, [figureOutEvidence]);
+  await app.open();
+  await app.sidebar.openMemory();
+  await memory.open('figure out');
+
+  await expect(memory.evidenceFor('On your own')).toHaveCount(1);
+  await expect(memory.evidenceFor('With help')).toHaveCount(1);
+  await expect(memory.evidenceFor('I will figure out it tomorrow')).toBeVisible();
+  await expect(memory.evidenceFor('maybe I can figure something')).toHaveCount(0);
+  await expect(memory.evidenceFor('Slipped back')).toHaveCount(0);
+  await expect(memory.row('figure out')).toContainText('1');
+});
+
+test('an archived item has no Say it now', async ({ app, memory, tauri }) => {
+  tauri.memory.withLibrary(libraryMemory);
+  await app.open();
+  await app.sidebar.openMemory();
+  await memory.open('stale data');
+  await expect(memory.sayItNowButton).toBeVisible();
+  await memory.archiveButton('stale data').click();
+  await memory.showArchived.click();
+  await memory.open('stale data');
+  await expect(memory.sayItNowButton).toHaveCount(0);
+});
+
 test('an opened mistake explains the correction and says when nothing was seen yet', async ({
   app,
   memory,
