@@ -1,6 +1,6 @@
 import type { RecallResult, ReviewItem, ReviewRun } from '../../types';
 
-export function isUnresolved(item: ReviewItem): boolean {
+function isUnresolved(item: ReviewItem): boolean {
   return item.saved_response === null && !item.is_skipped;
 }
 

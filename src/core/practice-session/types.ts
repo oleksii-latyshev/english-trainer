@@ -20,7 +20,7 @@ export type FinishedSession = typeof FinishedSessionSchema.Type;
 
 export type PracticeFailure = IpcError | IpcDecodeError;
 
-export type DurationGoalSeconds = 300 | 600 | 900;
+type DurationGoalSeconds = 300 | 600 | 900;
 
 export type StartOptions = {
   readonly topic_id: string;

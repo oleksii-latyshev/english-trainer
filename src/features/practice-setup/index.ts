@@ -7,7 +7,6 @@ export { TopicChoice } from './components/topic-choice';
 export { DEFAULT_SELECTION } from './constants';
 export { canStart, toPracticeOptions } from './helpers/practice-options';
 export type {
-  PracticeMode,
   PracticeOptions,
   PracticeSelection,
   StartStatus,

@@ -24,6 +24,7 @@
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "prepare": "lefthook install",
     "check:effect": "effect-language-service diagnostics --project tsconfig.json --strict",
+    "check:knip": "knip",
     "check:conventions": "bun run scripts/check-conventions.ts",
     "repo:taxonomy": "bun scripts/repo-taxonomy.ts"
   },
@@ -50,6 +51,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^6.1.2",
+    "knip": "6.43.0",
     "lefthook": "^2.2.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",

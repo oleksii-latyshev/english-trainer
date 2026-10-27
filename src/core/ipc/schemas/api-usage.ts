@@ -6,7 +6,7 @@ import type { LimitNote } from '../bindings/LimitNote';
 import type { ModelRequests } from '../bindings/ModelRequests';
 import { bindingSchema } from './binding-schema';
 
-export const LimitNoteSchema = bindingSchema<LimitNote>()(
+const LimitNoteSchema = bindingSchema<LimitNote>()(
   Schema.Struct({
     occurred_at_ms: Schema.Int,
     model: Schema.String,
@@ -15,14 +15,14 @@ export const LimitNoteSchema = bindingSchema<LimitNote>()(
   }),
 );
 
-export const ModelRequestsSchema = bindingSchema<ModelRequests>()(
+const ModelRequestsSchema = bindingSchema<ModelRequests>()(
   Schema.Struct({
     model: Schema.String,
     requests: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   }),
 );
 
-export const GeminiUsageSchema = bindingSchema<GeminiUsage>()(
+const GeminiUsageSchema = bindingSchema<GeminiUsage>()(
   Schema.Struct({
     models: Schema.Array(ModelRequestsSchema),
     last_limit: Schema.NullOr(LimitNoteSchema),
@@ -30,7 +30,7 @@ export const GeminiUsageSchema = bindingSchema<GeminiUsage>()(
   }),
 );
 
-export const AntigravityUsageSchema = bindingSchema<AntigravityUsage>()(
+const AntigravityUsageSchema = bindingSchema<AntigravityUsage>()(
   Schema.Struct({
     requests_today: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
     last_quota_error: Schema.NullOr(LimitNoteSchema),

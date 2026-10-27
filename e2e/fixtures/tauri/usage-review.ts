@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 export const USAGE_TARGET = 'It saves me time.';
 
-export async function installUsageReview(page: Page): Promise<void> {
+async function installUsageReview(page: Page): Promise<void> {
   await page.addInitScript((target: string) => {
     const harness = window.__ET_HARNESS__;
     const internals = window.__TAURI_INTERNALS__;

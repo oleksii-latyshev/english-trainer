@@ -4,7 +4,7 @@ export class SystemVoiceError extends Data.TaggedError('SystemVoiceError')<{
   readonly reason: 'unsupported' | 'playback-failed';
 }> {}
 
-export type SystemUtterance = {
+type SystemUtterance = {
   readonly text: string;
   readonly voiceURI: string | null;
   readonly rate: number;

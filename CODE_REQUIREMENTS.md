@@ -200,11 +200,13 @@ Patterns and examples: [`TESTING.md`](docs/engineering/TESTING.md).
 
 ## 8. Tooling
 
-- `bun run verify` runs everything CI runs. Lefthook runs Biome, typecheck, unit tests and Rust
-  checks before each commit.
+- `bun run verify` runs everything CI runs. Lefthook runs Biome, typecheck, Knip, unit tests and
+  Rust checks before each commit.
 - Biome is the only formatter and linter for TS/JSON/CSS; `rustfmt` and Clippy (`-D warnings`) for
   Rust. Do not disable a rule to make code pass; fix the code or, if the rule is wrong for a line,
   add a `biome-ignore` with the reason.
+- Knip (`bun run check:knip`) rejects unused files, exports and dependencies; delete the dead code or
+  drop the `export`, and keep `knip.json` ignores to generated code only.
 - Generated files (`src/core/ipc/bindings`, `src-tauri/gen`) are never edited by hand.
 - Third-party GitHub Actions are pinned to a commit SHA with the version as the trailing
   `# vX.Y.Z` marker Dependabot reads; never a moving tag.

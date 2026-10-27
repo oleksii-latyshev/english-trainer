@@ -39,6 +39,9 @@ jobs:
       - name: Conventions (no comments, feature flow diagrams)
         run: bun run check:conventions
 
+      - name: Dead code (Knip)
+        run: bun run check:knip
+
       - name: Run unit tests
         run: bun run test
 

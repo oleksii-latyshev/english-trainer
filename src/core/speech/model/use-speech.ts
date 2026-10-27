@@ -66,5 +66,3 @@ export function useSpeech() {
     naturalVoices: NATURAL_VOICES,
   };
 }
-
-export type SpeechControls = ReturnType<typeof useSpeech>;

@@ -1,15 +1,10 @@
 import { Atom, type AtomRegistry } from 'effect/reactivity';
-import {
-  cancelListening,
-  holdListening,
-  stopListening,
-  transcribeAgain,
-} from '@/core/answer-capture';
-import { interruptReply, pauseMicrophone, resumeMicrophone } from '@/core/practice-turn';
+import { stopListening, transcribeAgain } from '@/core/answer-capture';
+import { interruptReply, resumeMicrophone } from '@/core/practice-turn';
 import { resolveInputSource } from '../helpers/input-source';
 import type { TurnFix } from '../helpers/turn-issue';
 import type { TurnState } from '../helpers/turn-state';
-import { draftAtom, EMPTY_DRAFT } from './draft-atoms';
+import { draftAtom } from './draft-atoms';
 import { countdownAtom, submitAtom, switchToAppleAndRetryAtom } from './submit';
 import { turnStateAtom } from './view-atoms';
 
@@ -78,11 +73,3 @@ export function runFix(registry: AtomRegistry.AtomRegistry, fix: TurnFix, handle
       return;
   }
 }
-
-export const composerActions = {
-  cancelListening,
-  holdListening,
-  pauseMicrophone,
-  resumeMicrophone,
-  clearDraft: (registry: AtomRegistry.AtomRegistry) => registry.set(draftAtom, EMPTY_DRAFT),
-};

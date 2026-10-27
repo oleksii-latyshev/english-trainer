@@ -20,7 +20,7 @@ description: Review a finished English Trainer change before it is committed or 
    - core loop: nothing makes the conversation wait for coaching, help or wrap-up;
    - privacy: no raw audio kept, no key or transcript in logs;
    - tests: helpers unit-tested, feature behaviour test, e2e only for flows; bug fix has a failing test first.
-3. Run the narrowest complete set: `bun run typecheck`, `bun run check`, `bun test src`; add
+3. Run the narrowest complete set: `bun run typecheck`, `bun run check`, `bun run check:knip`, `bun test src`; add
    `sh ./scripts/check-rust.sh` for Rust and `bun run test:e2e` for flows. `bun run verify` before a
    roadmap feature commit.
 4. Report: what changed, checks run with results, and what still needs the physical Mac (microphone,

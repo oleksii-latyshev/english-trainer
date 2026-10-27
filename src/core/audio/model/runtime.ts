@@ -18,8 +18,6 @@ export const AudioLive = Layer.mergeAll(WarmMicrophone.layer, ClipRecorder.layer
 
 const memoMap = Layer.makeMemoMapUnsafe();
 
-export type AudioServices = Layer.Success<typeof AudioLive>;
-
 export const audioRuntime = ManagedRuntime.make(AudioLive, { memoMap });
 
 export const audioAtomContext = Atom.context({ memoMap });

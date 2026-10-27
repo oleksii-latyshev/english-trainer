@@ -11,13 +11,13 @@ const SYNTHESIS_PER_CHAR_MS = 11;
 const AUDIO_PER_CHAR_MS = 55;
 const SCHEDULE_LEAD_IN_MS = 30;
 
-export type RecordedClip = {
+type RecordedClip = {
   readonly startsAtMs: number;
   readonly endsAtMs: number;
   readonly pauseBeforeMs: number;
 };
 
-export type RecordedRequest = {
+type RecordedRequest = {
   readonly text: string;
   readonly atMs: number;
 };

@@ -1,6 +1,6 @@
-export const MAX_PHRASE_WORDS = 8;
+const MAX_PHRASE_WORDS = 8;
 export const MAX_PHRASE_CHARS = 120;
-export const MAX_CONTEXT_CHARS = 500;
+const MAX_CONTEXT_CHARS = 500;
 
 const SENTENCE_PUNCTUATION = new Set([',', '.', ';', ':', '!', '?', '"', '(', ')', '“', '”']);
 const FORBIDDEN_SEQUENCES = ['--', "''", "'-", "-'"];

@@ -10,7 +10,7 @@ export type SpeechSettingsOptions = {
 
 const MEBIBYTE = 1024 * 1024;
 
-export const SPEECH_FIXTURE: Required<Omit<SpeechSettingsOptions, 'failNextModelSave'>> = {
+const SPEECH_FIXTURE: Required<Omit<SpeechSettingsOptions, 'failNextModelSave'>> = {
   settings: { model_file: 'ggml-small.en.bin', keep_raw_audio: false, live_transcript: true },
   models: {
     models: [

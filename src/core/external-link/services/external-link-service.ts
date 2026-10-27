@@ -2,7 +2,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { Context, Data, Effect, Layer } from 'effect';
 import { isTauriRuntime } from '@/core/ipc';
 
-export class ExternalLinkError extends Data.TaggedError('ExternalLinkError')<{
+class ExternalLinkError extends Data.TaggedError('ExternalLinkError')<{
   readonly url: string;
   readonly cause: unknown;
 }> {}

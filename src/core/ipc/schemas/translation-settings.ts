@@ -8,7 +8,7 @@ export const NativeLanguageSettingsSchema = bindingSchema<NativeLanguageSettings
   Schema.Struct({ native_language: Schema.String }),
 );
 
-export const TranslationStatusKindSchema = bindingSchema<TranslationStatusKind>()(
+const TranslationStatusKindSchema = bindingSchema<TranslationStatusKind>()(
   Schema.Literals(['installed', 'download_required', 'unsupported', 'unavailable']),
 );
 
