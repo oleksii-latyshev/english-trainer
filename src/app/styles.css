@@ -44,6 +44,8 @@
   --color-accent-soft: color-mix(in srgb, var(--color-accent) 16%, transparent);
   --color-accent-line: color-mix(in srgb, var(--color-accent) 42%, transparent);
   --color-accent-glow: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  --color-glow-start: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  --color-glow-end: rgba(88, 86, 214, 0.26);
   --color-accent-hover: color-mix(in oklab, var(--color-accent) 90%, var(--color-foreground) 10%);
   --color-accent-text: var(--color-accent);
   --color-quiet: color-mix(in srgb, var(--color-foreground) 6%, transparent);
@@ -143,48 +145,60 @@
 }
 
 :root[data-theme="light"] {
-  --color-background: #f6f6f8;
-  --color-surface: #ffffff;
-  --color-surface-2: #f1f1f4;
-  --color-surface-3: #e5e5ea;
-  --color-sidebar: #fbfbfc;
-  --color-line: rgba(0, 0, 0, 0.09);
-  --color-line-soft: rgba(0, 0, 0, 0.07);
-  --color-foreground: #18181b;
-  --color-muted: #52525b;
-  --color-faint: #6b6b74;
-  --color-accent: #6e5ce6;
+  --color-background: #eef3f9;
+  --color-surface: rgba(255, 255, 255, 0.58);
+  --color-surface-2: rgba(255, 255, 255, 0.66);
+  --color-surface-3: #ffffff;
+  --color-sidebar: rgba(255, 255, 255, 0.58);
+  --color-line: rgba(14, 23, 38, 0.08);
+  --color-line-soft: rgba(14, 23, 38, 0.06);
+  --color-foreground: #0e1726;
+  --color-muted: #4a5568;
+  --color-faint: #5b6676;
+  --color-accent: #0b74de;
   --color-on-accent: #ffffff;
-  --color-me: #0b7f70;
+  --color-me: #0b74de;
   --color-on-me: #ffffff;
-  --color-ok: #1c7a43;
+  --color-ok: #16683a;
   --color-on-ok: #ffffff;
-  --color-ok-bg: rgba(28, 122, 67, 0.11);
+  --color-ok-bg: rgba(28, 122, 67, 0.12);
   --color-ok-line: rgba(28, 122, 67, 0.3);
   --color-warn: #a85f00;
   --color-on-warn: #ffffff;
   --color-warn-bg: rgba(242, 160, 60, 0.12);
   --color-warn-line: rgba(200, 120, 20, 0.35);
-  --color-eva-text: #3f3f46;
-  --color-live-text: #0b5f54;
-  --color-link: #5b47d6;
-  --color-link-hover: #3f2db5;
+  --color-eva-text: #2a3445;
+  --color-live-text: #0b5aa8;
+  --color-link: #0b6bcb;
+  --color-link-hover: #08549f;
   --color-orb-idle: #9c98b8;
   --color-orb-dim: #c4c4cc;
-  --color-accent-text: color-mix(in oklab, var(--color-accent) 70%, var(--color-foreground) 30%);
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 11%, transparent);
+  --color-accent-line: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  --color-accent-glow: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  --color-accent-text: var(--color-accent);
+  --color-glow-start: rgba(108, 196, 255, 0.42);
+  --color-glow-end: rgba(160, 140, 255, 0.3);
   --color-danger: oklch(0.6532 0.2328 25.74);
   --color-danger-text: color-mix(in oklab, var(--color-danger) 70%, var(--color-foreground) 40%);
-  --color-ok-soft: color-mix(in oklab, var(--color-ok) 15%, transparent);
-  --color-ok-text: color-mix(in oklab, var(--color-ok) 80%, var(--color-foreground) 60%);
-  --color-warn-soft: color-mix(in oklab, var(--color-warn) 15%, transparent);
-  --color-warn-text: color-mix(in oklab, var(--color-warn) 80%, var(--color-foreground) 70%);
-  --color-backdrop: rgba(0, 0, 0, 0.5);
-  --color-status-new: #8a8a94;
+  --color-ok-soft: color-mix(in oklab, var(--color-ok) 12%, transparent);
+  --color-ok-text: var(--color-ok);
+  --color-warn-soft: color-mix(in oklab, var(--color-warn) 12%, transparent);
+  --color-warn-text: var(--color-warn);
+  --color-backdrop: rgba(14, 23, 38, 0.35);
+  --color-status-new: #6b7689;
   --color-status-improving: #7b5fd6;
+  --color-eva-ground: rgba(30, 60, 110, 0.18);
   --shadow-overlay:
-    0 2px 8px 0 rgba(0, 0, 0, 0.06), 0 -6px 12px 0 rgba(0, 0, 0, 0.03),
-    0 14px 28px 0 rgba(0, 0, 0, 0.08);
-  --color-overlay: #f1f1f4;
+    inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 20px 50px -24px rgba(30, 60, 110, 0.28);
+  --shadow-control: inset 0 1px 0 #ffffff, 0 6px 16px -10px rgba(30, 60, 110, 0.3);
+  --shadow-primary: 0 14px 32px -12px rgba(11, 116, 222, 0.8);
+  --shadow-sky: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 20px 50px -20px var(--color-accent-glow);
+  --shadow-knob: 0 2px 6px rgba(14, 23, 38, 0.2);
+  --shadow-key: inset 0 -1px 0 rgba(14, 23, 38, 0.12);
+  --shadow-nav-active: inset 0 0 0 1px var(--color-accent-line);
+  --color-overlay: rgba(255, 255, 255, 0.82);
   --color-panel: #ffffff;
 }
 
@@ -198,53 +212,18 @@
   --eva-leaf-dark: #6fc08c;
   --eva-petal: #ff9ec0;
   --eva-petal-centre: #ffd66b;
-  --et-bg: var(--color-background);
-  --et-surface: var(--color-surface);
-  --et-surface2: var(--color-surface-2);
-  --et-surface3: var(--color-surface-3);
-  --et-sidebar: var(--color-sidebar);
-  --et-line: var(--color-line);
-  --et-line2: var(--color-line-soft);
-  --et-fg: var(--color-foreground);
-  --et-muted: var(--color-muted);
-  --et-faint: var(--color-faint);
-  --et-accent: var(--color-accent);
-  --et-on-accent: var(--color-on-accent);
-  --et-me: var(--color-me);
-  --et-on-me: var(--color-on-me);
-  --et-ok: var(--color-ok);
-  --et-on-ok: var(--color-on-ok);
-  --et-ok-bg: var(--color-ok-bg);
-  --et-ok-line: var(--color-ok-line);
-  --et-warn: var(--color-warn);
-  --et-on-warn: var(--color-on-warn);
-  --et-warn-bg: var(--color-warn-bg);
-  --et-warn-line: var(--color-warn-line);
-  --et-eva-text: var(--color-eva-text);
-  --et-live-text: var(--color-live-text);
-  --et-link: var(--color-link);
-  --et-link-hover: var(--color-link-hover);
-  --et-knob: var(--color-knob);
-  --et-orb-idle: var(--color-orb-idle);
-  --et-orb-dim: var(--color-orb-dim);
-  --et-radius-card: var(--radius-card);
-  --et-radius-nav: var(--radius-nav);
 }
 
 html,
 body {
   margin: 0;
   min-width: 320px;
-  background-color: var(--et-bg);
+  background-color: var(--color-background);
   background-image:
-    radial-gradient(
-      circle at 0% 0%,
-      color-mix(in srgb, var(--et-accent) 30%, transparent) 0%,
-      transparent 38%
-    ),
-    radial-gradient(circle at 100% 100%, rgba(88, 86, 214, 0.26) 0%, transparent 42%);
+    radial-gradient(circle at 0% 0%, var(--color-glow-start) 0%, transparent 38%),
+    radial-gradient(circle at 100% 100%, var(--color-glow-end) 0%, transparent 42%);
   background-attachment: fixed;
-  color: var(--et-fg);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -257,7 +236,7 @@ body {
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--et-line);
+    border-color: var(--color-line);
   }
 
   button,
@@ -276,7 +255,10 @@ input[type="search"]::-webkit-search-decoration {
 
 :root[data-theme="light"],
 :root[data-theme="light"] body {
-  background-image: none;
+  background-image:
+    radial-gradient(circle at 0% 0%, var(--color-glow-start) 0%, transparent 38%),
+    radial-gradient(circle at 100% 100%, var(--color-glow-end) 0%, transparent 42%),
+    linear-gradient(170deg, #f4f8fc 0%, #eaf1f9 55%, #eeeaf8 100%);
 }
 
 h1,
@@ -291,9 +273,9 @@ h4 {
   height: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklab, var(--et-fg) 14%, transparent);
+  background: color-mix(in oklab, var(--color-foreground) 14%, transparent);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklab, var(--et-fg) 26%, transparent);
+  background: color-mix(in oklab, var(--color-foreground) 26%, transparent);
 }
