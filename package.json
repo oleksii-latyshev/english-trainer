@@ -30,14 +30,14 @@
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
-    "@effect/atom-react": "4.0.2",
-    "@tanstack/react-router": "^1.170.41",
+    "@effect/atom-react": "4.0.6",
+    "@tanstack/react-router": "^1.170.46",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
-    "effect": "4.0.2",
-    "lucide-react": "^1.53.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "effect": "4.0.6",
+    "lucide-react": "^1.61.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "tailwind-variants": "3.3.1"
   },
   "devDependencies": {
