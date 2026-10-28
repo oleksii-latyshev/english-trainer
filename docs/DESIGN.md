@@ -42,7 +42,7 @@ silently. Light boards exist for Talk and Start; the other screens follow their 
 | "More natural" | green `#8BE3A9` |
 | Attention | amber `#F5C26B` (no red) |
 | Text | `#F2F5FA`, secondary `#A9B3C4`, tertiary `#8E99AC` |
-| Buttons | primary: accent fill, 48 px pill, 15/700, glow; secondary: white 8.5 % + line 14 %, 40 px, 600; quiet: white 6 % + line 10 %; round mic 56 px |
+| Buttons | primary: accent fill, pill, 700, glow; secondary: white 8.5 % + line 14 %, 600; every tone shares the height of its size (md 40 px, sm 32 px); quiet: white 6 % + line 10 %; round mic 56 px |
 | Controls | switch 42×26 (on: accent + glow, off: white 16 %); segmented control: white 8.5 % track, selected white 16 %; chip selected = sky glass, default = quiet |
 
 Light theme (TalkLight, StartLight; `:root[data-theme="light"]` in `src/app/styles.css`):

@@ -8,7 +8,7 @@ export const segmentedControl = tv({
   variants: {
     size: {
       sm: { item: 'h-7 px-2.75 text-xs' },
-      md: { item: 'text-caption h-7.5 px-3.5' },
+      md: { item: 'text-caption h-8 px-3.5' },
     },
     disabled: {
       true: { root: 'opacity-50' },
