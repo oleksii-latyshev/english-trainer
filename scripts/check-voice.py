@@ -55,7 +55,7 @@ def main():
                     args.sample.write_bytes(wav)
         ordered = sorted(measurements)
         p95 = ordered[min(len(ordered) - 1, int(len(ordered) * .95))]
-        print(json.dumps({'model': 'supertonic-3-int8', 'steps': 5, 'threads': 2, 'load_ms': round(load_ms, 1), 'warm_samples': len(ordered), 'median_ms': round(ordered[len(ordered)//2], 1), 'p95_ms': round(p95, 1), 'max_ms': round(max(ordered), 1), 'metric': 'generation_to_complete_wav_not_speaker_onset'}))
+        print(json.dumps({'model': 'supertonic-3-int8', 'steps': int(os.environ.get('ENGLISH_TRAINER_VOICE_STEPS', 8)), 'threads': 2, 'load_ms': round(load_ms, 1), 'warm_samples': len(ordered), 'median_ms': round(ordered[len(ordered)//2], 1), 'p95_ms': round(p95, 1), 'max_ms': round(max(ordered), 1), 'metric': 'generation_to_complete_wav_not_speaker_onset'}))
         if p95 > args.max_p95_ms:
             raise SystemExit('Speech generation regressed beyond the configured latency budget')
     finally:
