@@ -11,6 +11,7 @@ if [ -z "${DEVELOPER_DIR:-}" ] && [ -d /Library/Developer/CommandLineTools ]; th
 fi
 
 # Ad-hoc signing is configured for personal use; Apple notarization needs credentials.
-# Skip Finder automation so local and CI packaging need no Automation permission.
+# The DMG is built by build-dmg.sh (dmgbuild), which needs no Finder Automation either.
 export CI=true
-bunx tauri build --bundles app,dmg --ci -- --locked
+bunx tauri build --bundles app --ci -- --locked
+sh "$(dirname "$0")/build-dmg.sh"
