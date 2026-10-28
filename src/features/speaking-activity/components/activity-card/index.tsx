@@ -1,6 +1,7 @@
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react';
 import { Option } from 'effect';
 import { AsyncResult } from 'effect/reactivity';
+import type { Ref } from 'react';
 import { Button } from '@/shared/ui/button';
 import { GlassPanel } from '@/shared/ui/glass-panel';
 import { HeatCell } from '@/shared/ui/heat-cell';
@@ -10,15 +11,17 @@ import {
   activitySummary,
   buildActivityGrid,
   WEEKDAY_ROWS,
+  weeksThatFit,
 } from '../../helpers/activity-grid';
 import { speakingActivityAtom } from '../../model/atoms';
+import { useElementWidth } from '../../model/use-element-width';
 import type { SpeakingActivitySnapshot } from '../../types';
 
 const LEGEND_LEVELS = [0, 1, 2, 3, 4] as const;
 
-function Grid({ grid }: { grid: ActivityGrid }) {
+function Grid({ grid, weeksRef }: { grid: ActivityGrid; weeksRef: Ref<HTMLDivElement> }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex gap-2 pb-1">
       <div aria-hidden="true" className="flex flex-col gap-1 pr-0.5">
         <span className="h-3.5" />
         {WEEKDAY_ROWS.map((row) => (
@@ -27,10 +30,12 @@ function Grid({ grid }: { grid: ActivityGrid }) {
           </span>
         ))}
       </div>
-      <div className="flex gap-1">
-        {grid.weeks.map((week) => (
+      <div className="flex min-w-0 flex-1 gap-1" ref={weeksRef}>
+        {grid.weeks.map((week, index) => (
           <div aria-hidden="true" className="flex flex-col gap-1" key={week.cells[0]?.date}>
-            <span className="text-faint text-pip h-3.5 leading-3.5 whitespace-nowrap">
+            <span
+              className={`text-faint text-pip flex h-3.5 w-4.5 leading-3.5 whitespace-nowrap ${index === grid.weeks.length - 1 ? 'justify-end' : ''}`}
+            >
               {week.monthLabel}
             </span>
             {week.cells.map((cell) => (
@@ -50,7 +55,8 @@ function Grid({ grid }: { grid: ActivityGrid }) {
 }
 
 function ActivityBody({ days }: { days: SpeakingActivitySnapshot['days'] }) {
-  const grid = buildActivityGrid(days, new Date());
+  const { elementRef, width } = useElementWidth();
+  const grid = buildActivityGrid(days, new Date(), weeksThatFit(width));
   return (
     <>
       <div className="flex flex-wrap items-baseline gap-3">
@@ -60,7 +66,7 @@ function ActivityBody({ days }: { days: SpeakingActivitySnapshot['days'] }) {
           This week <b className="text-accent-text">{grid.thisWeekSpokenDays} of 7 days</b>
         </span>
       </div>
-      <Grid grid={grid} />
+      <Grid grid={grid} weeksRef={elementRef} />
       <div className="text-faint flex items-center gap-1.5 text-xs">
         <span>Less</span>
         {LEGEND_LEVELS.map((level) => (

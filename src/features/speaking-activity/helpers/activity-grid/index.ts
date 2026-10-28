@@ -2,7 +2,10 @@ import type { SpeakingActivitySchema } from '@/core/ipc';
 
 type SpeakingDay = (typeof SpeakingActivitySchema.Type)['days'][number];
 
-const WEEKS_SHOWN = 26;
+const MAX_WEEKS = 26;
+const MIN_WEEKS = 8;
+const CELL_PX = 18;
+const CELL_GAP_PX = 4;
 const DAYS_IN_WEEK = 7;
 const LEVEL_LIMITS = [0, 5, 10, 20] as const;
 const WEEKDAYS = [
@@ -41,6 +44,7 @@ type WeekBar = {
 };
 
 export type ActivityGrid = {
+  readonly weekCount: number;
   readonly weeks: readonly GridWeek[];
   readonly totalMinutes: number;
   readonly spokenDays: number;
@@ -113,12 +117,21 @@ function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
 
-export function buildActivityGrid(days: readonly SpeakingDay[], now: Date): ActivityGrid {
+export function weeksThatFit(widthPx: number): number {
+  const fitting = Math.floor((widthPx + CELL_GAP_PX) / (CELL_PX + CELL_GAP_PX));
+  return Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, fitting));
+}
+
+export function buildActivityGrid(
+  days: readonly SpeakingDay[],
+  now: Date,
+  weekCount: number = MAX_WEEKS,
+): ActivityGrid {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const minutesByDate = new Map(days.map((day) => [day.date, day.minutes]));
-  const firstMonday = addDays(mondayOf(today), -(WEEKS_SHOWN - 1) * DAYS_IN_WEEK);
+  const firstMonday = addDays(mondayOf(today), -(weekCount - 1) * DAYS_IN_WEEK);
   let previousMonth = -1;
-  const weeks: GridWeek[] = Array.from({ length: WEEKS_SHOWN }, (_, weekIndex) => {
+  const weeks: GridWeek[] = Array.from({ length: weekCount }, (_, weekIndex) => {
     const monday = addDays(firstMonday, weekIndex * DAYS_IN_WEEK);
     const monthLabel =
       monday.getMonth() === previousMonth
@@ -131,8 +144,9 @@ export function buildActivityGrid(days: readonly SpeakingDay[], now: Date): Acti
     return { monthLabel, cells };
   });
   const allCells = weeks.flatMap((week) => week.cells);
-  const currentWeek = weeks[WEEKS_SHOWN - 1]?.cells ?? [];
+  const currentWeek = weeks[weekCount - 1]?.cells ?? [];
   return {
+    weekCount,
     weeks,
     totalMinutes: sum(allCells.map((cell) => cell.minutes)),
     spokenDays: allCells.filter((cell) => cell.minutes > 0).length,
@@ -147,5 +161,5 @@ export function activitySummary(grid: ActivityGrid): string {
     return 'Your speaking days will appear here after your first conversation.';
   }
   const days = grid.spokenDays === 1 ? 'day' : 'days';
-  return `${grid.totalMinutes} min in 6 months · ${grid.spokenDays} ${days} you spoke`;
+  return `${grid.totalMinutes} min in the last ${grid.weekCount} weeks · ${grid.spokenDays} ${days} you spoke`;
 }

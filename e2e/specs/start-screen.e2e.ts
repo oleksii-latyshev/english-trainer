@@ -2,7 +2,7 @@ import { daysAgo, spokenToday } from '../data/activity';
 import { initialSession } from '../data/sessions';
 import { expect, test } from '../fixtures';
 
-test('the speaking activity grid shows 26 weeks and what was spoken, read from local data', async ({
+test('the speaking activity grid shows what was spoken, read from local data', async ({
   app,
   start,
   tauri,
@@ -10,7 +10,7 @@ test('the speaking activity grid shows 26 weeks and what was spoken, read from l
   tauri.activity.with([spokenToday, daysAgo(40, 9)]);
   await app.open();
 
-  await expect(start.activity).toContainText('21 min in 6 months · 2 days you spoke');
+  await expect(start.activity).toContainText(/21 min in the last \d+ weeks · 2 days you spoke/);
   await expect(start.activity.getByTitle(/ · 12 min$/)).toHaveCount(1);
   await expect(start.activity.getByTitle(/ · 9 min$/)).toHaveCount(1);
   await expect(start.thisWeek).toContainText('12');
@@ -171,3 +171,29 @@ test('a session with a goal resumes with the minutes left', async ({ app, start,
 
   await expect(start.openConversation).toContainText('3 min left');
 });
+
+for (const width of [900, 1600]) {
+  test(`the speaking activity ends with this week inside the card at ${width}px, without scrolling`, async ({
+    app,
+    page,
+    start,
+    tauri,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    tauri.activity.with([spokenToday]);
+    await app.open();
+
+    const today = start.activity.getByTitle(/ · 12 min$/);
+    await expect(today).toBeVisible();
+    const card = await start.activity.boundingBox();
+    const cell = await start.activity.locator('span[title]').last().boundingBox();
+    expect(cell && card && cell.x + cell.width <= card.x + card.width).toBe(true);
+    const scrolls = await start.activity.evaluate((element) =>
+      [element, ...element.querySelectorAll('*')].some(
+        (node) =>
+          node.scrollWidth > node.clientWidth && getComputedStyle(node).overflowX !== 'visible',
+      ),
+    );
+    expect(scrolls).toBe(false);
+  });
+}
