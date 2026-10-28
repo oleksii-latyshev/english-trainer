@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { createNoiseFloorTracker, createTurnDetector } from '.';
+import { createNoiseFloorTracker, createTurnDetector, type TurnDetector } from '.';
 
 const FRAME_MS = 20;
 const SPEECH = 0.08;
@@ -19,6 +19,102 @@ function feed(
   }
   return { started, ended };
 }
+
+type Segment = { readonly rms: number; readonly forMs: number };
+
+function longAnswer(): Segment[] {
+  const segments: Segment[] = [];
+  for (let spokenMs = 0; spokenMs < 60_000; spokenMs += 5000) {
+    for (let word = 0; word < 10; word += 1) {
+      segments.push({ rms: SPEECH, forMs: 360 }, { rms: 0.005, forMs: 100 });
+    }
+    segments.push({ rms: 0.005, forMs: 300 }, { rms: QUIET, forMs: 700 + (spokenMs % 3) * 200 });
+    segments.push({ rms: 0.005, forMs: 500 }, { rms: SPEECH, forMs: 200 });
+  }
+  return segments;
+}
+
+function endedAt(
+  detector: Pick<TurnDetector, 'push'>,
+  segments: readonly Segment[],
+): number | null {
+  let clock = 0;
+  for (const segment of segments) {
+    for (let t = 0; t < segment.forMs; t += FRAME_MS) {
+      clock += FRAME_MS;
+      if (detector.push(segment.rms, FRAME_MS).turnEnded) return clock;
+    }
+  }
+  return null;
+}
+
+function createLegacyDetector(endPauseMs: number): Pick<TurnDetector, 'push'> {
+  const noise = createNoiseFloorTracker(QUIET);
+  let burstMs = 0;
+  let silenceMs = 0;
+  let confirmed = false;
+  return {
+    push(rms, durationMs) {
+      const isSpeech = rms > noise.threshold();
+      if (!(isSpeech && confirmed)) noise.update(rms, durationMs);
+      if (!isSpeech) {
+        silenceMs += durationMs;
+        return { speechStarted: false, turnEnded: confirmed && silenceMs >= endPauseMs };
+      }
+      burstMs += durationMs;
+      silenceMs = 0;
+      const speechStarted = !confirmed && burstMs >= 300;
+      confirmed = confirmed || speechStarted;
+      return { speechStarted, turnEnded: false };
+    },
+  };
+}
+
+describe('turn detector on a long answer', () => {
+  it('the previous logic ends the same recording mid-sentence', () => {
+    expect(endedAt(createLegacyDetector(1500), longAnswer())).not.toBeNull();
+  });
+
+  it('keeps the turn open through syllable dips, soft endings and thinking pauses', () => {
+    const detector = createTurnDetector({ endPauseMs: 1500, initialNoiseFloor: QUIET });
+    expect(endedAt(detector, longAnswer())).toBeNull();
+  });
+
+  it('still ends within the end pause plus one frame after the answer', () => {
+    const detector = createTurnDetector({ endPauseMs: 1500, initialNoiseFloor: QUIET });
+    const answer = longAnswer();
+    const answerMs = answer.reduce((sum, segment) => sum + segment.forMs, 0);
+    const ended = endedAt(detector, [...answer, { rms: QUIET, forMs: 3000 }]);
+    expect(ended).not.toBeNull();
+    expect(ended ?? 0).toBeLessThanOrEqual(answerMs + 1500 + FRAME_MS);
+    expect(ended ?? 0).toBeGreaterThan(answerMs + 1500 - FRAME_MS * 2);
+  });
+
+  it('waits the extra pause after an unfinished clause and drops it when cleared', () => {
+    const detector = createTurnDetector({ endPauseMs: 1000, initialNoiseFloor: QUIET });
+    feed(detector, SPEECH, 600);
+    detector.setExtraPauseMs(1200);
+    expect(feed(detector, QUIET, 2100).ended).toBe(0);
+    expect(feed(detector, QUIET, 200).ended).toBe(1);
+  });
+
+  it('ends at the plain pause once the extra pause is cleared', () => {
+    const detector = createTurnDetector({ endPauseMs: 1000, initialNoiseFloor: QUIET });
+    feed(detector, SPEECH, 600);
+    detector.setExtraPauseMs(1200);
+    feed(detector, QUIET, 1100);
+    detector.setExtraPauseMs(0);
+    expect(feed(detector, QUIET, 20).ended).toBe(1);
+  });
+
+  it('never lets the floor rise during a confirmed answer', () => {
+    const detector = createTurnDetector({ endPauseMs: 1500, initialNoiseFloor: QUIET });
+    feed(detector, SPEECH, 600);
+    feed(detector, 0.005, 20_000);
+    expect(feed(detector, QUIET, 1400).ended).toBe(0);
+    expect(feed(detector, QUIET, 200).ended).toBe(1);
+  });
+});
 
 describe('turn detector', () => {
   it('ends the turn after the pause that follows speech', () => {
