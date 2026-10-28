@@ -44,6 +44,7 @@ only F1–F10 and reports that answers are easier to structure than in the first
 | F11 | Write, then speak | `[~]` | full write → review → speak → review run with real audio |
 | F12 | Practice my usual mistakes | `[~]` | five relevant questions, real audio, resume (runs as a Talk conversation, #80; Mac check pending) |
 | F13 | Translate a word or phrase | `[~]` | selection of a word or phrase (up to 8 words) in Talk/notes/Memory; visible trigger; readable panel; translation under 1 s warm; model download consent |
+| M1 | Mistakes section: lessons by rule, four-step exercises, back-again by rule ([spec](PRODUCT_SPEC.md#9-mistakes)) | `[ ]` | a week of real sessions: every mistake gets a lesson; a practice run of six steps in about five minutes; a broken rule comes back as due |
 | V1 | Natural local voice (Supertonic 3, four voices, system fallback) — taken ahead of the avatar | `[~]` | sounds natural; first audio quick; busy or slow engine falls back without a gap |
 
 The learner chose to batch the physical-Mac checks for F3–F13 and V1 into one later pass.
