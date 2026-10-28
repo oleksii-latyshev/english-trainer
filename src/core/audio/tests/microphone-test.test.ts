@@ -53,6 +53,7 @@ function makeRegistry() {
               Effect.succeed({
                 level: Effect.succeed(0.4),
                 snapshot: () => Effect.succeed(null),
+                window: () => Effect.succeed(null),
                 stop: Effect.succeed(AUDIO),
               }),
             turns: () => Stream.empty,

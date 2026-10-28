@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { audioTail, snapshotAudioChunks } from '.';
+import { audioFrom, audioTail, snapshotAudioChunks } from '.';
 
 describe('rescue audio snapshot', () => {
   it('keeps recent samples in order without consuming the complete answer', () => {
@@ -21,5 +21,14 @@ describe('rescue audio snapshot', () => {
     expect(snapshotAudioChunks(chunks, 1000, 60_000)[0]?.length).toBe(30_000);
     expect(snapshotAudioChunks(chunks, 1000)[0]?.length).toBe(40_000);
     expect(snapshotAudioChunks(chunks, 1000, -1)).toEqual([]);
+  });
+  it('reads from an absolute sample offset without touching the capture', () => {
+    const chunks = [new Float32Array([1, 2, 3]), new Float32Array([4, 5])];
+    expect(audioFrom(chunks, 0).flatMap((chunk) => Array.from(chunk))).toEqual([1, 2, 3, 4, 5]);
+    expect(audioFrom(chunks, 2).flatMap((chunk) => Array.from(chunk))).toEqual([3, 4, 5]);
+    expect(audioFrom(chunks, 3).flatMap((chunk) => Array.from(chunk))).toEqual([4, 5]);
+    expect(audioFrom(chunks, 5)).toEqual([]);
+    expect(audioFrom(chunks, -4).flatMap((chunk) => Array.from(chunk))).toEqual([1, 2, 3, 4, 5]);
+    expect(chunks[0]?.length).toBe(3);
   });
 });

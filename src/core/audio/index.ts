@@ -24,7 +24,7 @@ export { useAudioInputOptions } from './model/use-audio-input-options';
 export { useMicrophoneTest } from './model/use-microphone-test';
 export { usePreferredMicrophone } from './model/use-preferred-microphone';
 
-export type { Capture } from './services/capture-engine';
+export type { Capture, CaptureWindow } from './services/capture-engine';
 export {
   type ClipPhase,
   ClipRecorder,

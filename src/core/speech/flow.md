@@ -158,23 +158,26 @@ sequenceDiagram
 sequenceDiagram
     participant Live as liveTranscript (Stream)
     participant Status as engineStatus
-    participant Cap as Capture.snapshot
+    participant Cap as Capture.window
+    participant Win as live-window (pure)
     participant Rec as SpeechRecognition.transcribePartial
     participant UI as Talk bubble
 
-    Live->>Status: model ready and live transcript available?
-    alt not available
-        Status-->>Live: no, the stream ends empty
-    else available
-        loop every 1.5 s, one at a time
-            Live->>Live: speech heard yet? (otherwise skip)
-            Live->>Cap: audio so far
-            Live->>Rec: WAV
-            Rec-->>Live: words so far, or nothing
-            Live-->>UI: text
+    loop every 1.5 s, one at a time
+        opt availability still unknown
+            Live->>Status: model ready and live transcript available?
+            Status-->>Live: loading or failed (ask again next tick), ready, or off (stop for good)
         end
+        Live->>Live: ready and speech heard yet? (otherwise skip)
+        Live->>Cap: audio from the committed point (offset, up to 30 s)
+        Cap-->>Live: WAV and where it ended
+        Live->>Rec: WAV (short, so the call stays fast)
+        Rec-->>Live: words of this window, or nothing
+        Live->>Win: committed text, window text, end position
+        Win-->>Live: text to show, and the next committed text and offset
+        Live-->>UI: committed text + window text
     end
-    Note over Live: a tick that finds the previous update running is skipped, a failed update is dropped, interrupting the stream stops it
+    Note over Live: once the window passes 18 s its text is committed and the offset moves to where it ended, so a 60 to 80 s answer keeps showing words. The cut is plain, the final transcript still comes from the whole clip. A tick that finds the previous update running is skipped, a failed update is dropped, interrupting the stream stops it
 ```
 
 ## Stuck (rescue) snapshot

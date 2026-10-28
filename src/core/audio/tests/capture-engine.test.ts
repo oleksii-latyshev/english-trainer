@@ -99,6 +99,22 @@ describe('capture engine captures', () => {
       }),
     ));
 
+  it('keeps producing windows from an absolute offset after the capture passes 30 s', () =>
+    withEngine((engine) =>
+      Effect.gen(function* () {
+        const capture = yield* engine.capture();
+        expect(yield* capture.window(0)).toBeNull();
+        engine.ingest(tone(40_000));
+        expect(yield* capture.snapshot()).toBeNull();
+        const tail = yield* capture.window(25_000);
+        expect(tail?.wav.size).toBe(44 + 15_000 * 2);
+        expect(tail?.endMs).toBe(40_000);
+        const capped = yield* capture.window(0);
+        expect(capped?.wav.size).toBe(44 + 30_000 * 2);
+        expect(yield* capture.window(40_000)).toBeNull();
+      }),
+    ));
+
   it('snapshots the audio so far and limits it to a tail', () =>
     withEngine((engine) =>
       Effect.gen(function* () {

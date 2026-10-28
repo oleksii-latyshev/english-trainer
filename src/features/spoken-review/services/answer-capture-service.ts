@@ -47,7 +47,7 @@ export class AnswerCapture extends Context.Service<AnswerCapture, AnswerCaptureS
                 ),
               );
               const liveText = liveTranscript({
-                snapshot: capture.snapshot(),
+                window: capture.window,
                 hasHeardSpeech: Effect.sync(gate.hasHeardSpeech),
               }).pipe(
                 Stream.runForEach((text) => Effect.sync(() => onLiveText(text))),

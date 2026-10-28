@@ -105,3 +105,19 @@ sequenceDiagram
     Warm->>Warm: reopen on the new device if a session is open
     Note over Store: ids saved by earlier versions are plain strings and are read as such
 ```
+
+## Reading a capture while it records
+
+```mermaid
+sequenceDiagram
+    participant Caller as live transcript, rescue
+    participant Cap as Capture
+    participant Buf as active chunks (memory only)
+
+    Caller->>Cap: window(fromMs)
+    Cap->>Buf: samples after fromMs, at most the last 30 s
+    Cap-->>Caller: WAV (16 kHz) and endMs, or null when nothing is there yet
+    Caller->>Cap: snapshot({ tailMs })
+    Cap-->>Caller: WAV of the last tailMs (rescue uses 15 s)
+    Note over Cap,Buf: snapshot() without options returns null once the capture is over 30 s, the live transcript uses window instead. Nothing is stored, stop returns the full clip
+```
