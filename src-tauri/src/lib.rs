@@ -6,6 +6,7 @@ mod dock_icon;
 mod eva_growth;
 mod gemini_key;
 mod learning;
+mod mistakes;
 mod persistence;
 mod personal_profile;
 mod providers;
@@ -86,14 +87,40 @@ pub fn run() {
                     database_path.display()
                 ))
             })?;
+            let lesson_store =
+                std::sync::Arc::new(mistakes::SessionMistakeStore::new(sessions.clone()));
+            let lessons = mistakes::LessonQueue::start(
+                mistakes::LessonWorker::new(
+                    lesson_store.clone(),
+                    std::sync::Arc::new(mistakes::AgyLessonProvider),
+                    std::sync::Arc::new(mistakes::TauriMistakesNotifier::new(app.handle().clone())),
+                    std::sync::Arc::new(mistakes::SystemClock),
+                ),
+                mistakes::QUOTA_PAUSE,
+            )
+            .map_err(|error| {
+                eprintln!("Could not start the lesson worker thread: {error}");
+                std::io::Error::other("Could not start mistake lessons. Restart the app.")
+            })?;
+            app.manage(mistakes::MistakesService::new(
+                lesson_store,
+                lessons.kicker(),
+                std::sync::Arc::new(mistakes::SystemClock),
+            ));
+            let lesson_kick = lessons.kicker();
+            app.manage(lessons);
             let handle = app.handle().clone();
+            let coaching_events = conversation::infra::events::coaching_notifier(handle);
             app.manage(
                 conversation::CoachingQueue::start(
                     sessions.clone(),
                     providers::coach_answers,
                     conversation::IDLE_FLUSH,
                     conversation::QUOTA_PAUSE,
-                    conversation::infra::events::coaching_notifier(handle),
+                    move |event| {
+                        coaching_events(event);
+                        lesson_kick.kick();
+                    },
                 )
                 .map_err(|error| {
                     eprintln!("Could not start the coaching worker thread: {error}");
@@ -217,6 +244,11 @@ pub fn run() {
             api_usage::commands::get_api_usage,
             speaking_activity::commands::get_speaking_activity,
             eva_growth::commands::get_eva_growth,
+            mistakes::commands::list_mistake_groups,
+            mistakes::commands::get_mistake,
+            mistakes::commands::get_rule_card,
+            mistakes::commands::archive_mistake,
+            mistakes::commands::retry_mistake_lesson,
             ai_settings::commands::save_ai_settings,
             ai_settings::commands::prewarm_conversation_provider,
             gemini_key::commands::get_gemini_key_status,

@@ -614,6 +614,10 @@ title and a one-line summary: `past_simple_vs_present_perfect`, `past_perfect`, 
 
 Existing `mistakes.times_seen` and the dedupe by `normalized_key` stay; the Memory eligibility rule
 (`times_seen >= 2`, §9.1) no longer applies to Mistakes, which lists every non-archived mistake.
+Spoken Memory review no longer selects mistakes (one scheduler per item): `mistakes.next_review_at`
+is the due time of the Mistakes ladder. Phrases are unchanged. Lessons are prepared by
+`providers::run_background_json` (one pinned `agy` call per batch); relapses are found when a
+lesson is saved, from the rule, for every mistake that has an earlier mistake with the same rule.
 
 **Lesson preparation.** After each coaching batch saves feedback (§6.1), the new mistakes join a
 lesson queue derived from SQLite (`mistake_lessons.state = pending` or missing, fewer than 2

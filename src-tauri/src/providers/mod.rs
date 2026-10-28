@@ -15,6 +15,7 @@ pub(crate) mod spoken_review;
 pub use crate::ai_settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
 pub use agy::session_wrapup::generate_session_wrapup;
 pub use agy::spoken_review::generate_review_material;
+pub use agy::structured::run_background_json;
 pub use answer_plan::{parse_answer_plan, AnswerPlan};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;

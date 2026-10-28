@@ -1,12 +1,8 @@
-use super::{review_answers, review_runs};
+use super::review_runs;
 use crate::conversation::StoredTurn;
-use crate::learning::{LearningError, LearningStatus};
+use crate::learning::LearningStatus;
 use crate::persistence::SessionDatabase;
 use crate::providers::{FocusCategory, FocusFeedback, TurnFeedback};
-
-fn finish(db: &mut SessionDatabase, run_id: u64) -> Result<bool, LearningError> {
-    review_answers::finish_run(db.connection_mut(), run_id).map(|()| true)
-}
 
 fn sample_turn_feedback(category: FocusCategory, improved: &str) -> TurnFeedback {
     TurnFeedback {
@@ -106,12 +102,9 @@ fn mistake_needs_two_observations_for_learning_surfaces_and_replacement_removes_
     let targets = db.due_learning_targets(second).unwrap();
     assert_eq!(targets.len(), 1);
     assert_eq!(targets[0].kind, "mistake");
-    let run = review_runs::start_run(db.connection_mut(), false)
+    assert!(review_runs::start_run(db.connection_mut(), false)
         .unwrap()
-        .unwrap();
-    assert_eq!(run.items.len(), 1);
-    assert_eq!(run.items[0].item_id, repeated.id);
-    finish(&mut db, run.run_id).unwrap();
+        .is_none());
 
     let replacement = sample_turn_feedback(FocusCategory::Grammar, "I work at that location");
     db.save_turn_feedback(second, 1, &replacement).unwrap();

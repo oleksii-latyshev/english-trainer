@@ -27,11 +27,17 @@ fn normal_review_has_six_items_and_warmup_has_three_phrases_without_replacing_an
     due_phrases(&mut db);
     db.seed_recurring_mistake("I work in there", "I work there", 2, 20)
         .unwrap();
+    db.connection()
+        .execute("UPDATE mistakes SET next_review_at = 0", [])
+        .unwrap();
     let normal = review_runs::start_run(db.connection_mut(), false)
         .unwrap()
         .unwrap();
     assert_eq!(normal.items.len(), 6);
-    assert_eq!(normal.items[0].item_type, LearningItemType::Mistake);
+    assert!(normal
+        .items
+        .iter()
+        .all(|item| item.item_type == LearningItemType::Phrase));
     assert_eq!(
         review_runs::start_run(db.connection_mut(), true)
             .unwrap()

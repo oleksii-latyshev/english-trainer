@@ -31,7 +31,7 @@ pub(crate) use infra::{
     daily_plan, record_cue_exposure, record_daily_recall, recurring_mistakes, save_turn_feedback,
 };
 pub use memory_recall::{
-    is_safe_mistake_cue, is_safe_phrase_cue, MemoryRecallResult, MemoryReviewItem, MemoryReviewRun,
+    is_safe_phrase_cue, MemoryRecallResult, MemoryReviewItem, MemoryReviewRun,
 };
 pub use models::{
     LearningItemType, LearningMemoryView, LearningStatus, MistakeRecord, PhraseCardRecord,
