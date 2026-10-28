@@ -475,6 +475,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Tables:
 | Group | Tables |
 | :--- | :--- |
 | Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions`, `session_wrapups`, `coaching_failures` |
+| Mistakes | `mistake_lessons`, `rule_cards`, `mistake_attempts`, `mistake_runs`, `rule_relapses` (§9.4) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` (with `is_cued`), `review_material_preparations` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
 | Settings | `ai_settings`; `speech_settings` (`model_file`, empty until chosen; `keep_raw_audio`, default off; `live_transcript`, default on); `glossary_terms` (ordered, seeded once with 27 words); `personal_profile`; `translation_settings` |
@@ -587,6 +588,71 @@ path. Rust owns every rule (context `eva_growth`).
   row per phrase today. Progress is kept while Show growth is off; the switch only hides it
   (`english_trainer_eva_growth` in `localStorage`).
 - The UI reads it again when a session completes and when the learning memory changes.
+
+### 9.4 Mistakes (M1)
+
+Behaviour: [PRODUCT_SPEC §9](PRODUCT_SPEC.md#9-mistakes). Rust owns every rule; the frontend shows
+state and collects answers.
+
+**Rules.** A fixed list of rule keys, versioned in Rust (`mistakes/domain/rules.rs`), each with a
+title and a one-line summary: `past_simple_vs_present_perfect`, `past_perfect`, `present_simple_vs_continuous`,
+`future_forms`, `conditionals`, `subject_verb_agreement`, `articles`, `prepositions`,
+`question_word_order`, `embedded_question_order`, `word_order`, `plural_and_countable`,
+`comparatives`, `gerund_vs_infinitive`, `modal_verbs`, `word_choice`, `collocation`, `other`.
+`other` never counts as "back again" and is not grouped with itself across mistakes.
+
+**Data** (additive migration):
+
+| Table | Holds |
+| :--- | :--- |
+| `mistakes` + columns | `rule_key` (null until the lesson is ready), `ladder_step` 1–4 (default 1), `fixed_at`, `step4_pass_days` |
+| `mistake_lessons` | `mistake_id` PK, `state` `pending · ready · failed`, `explanation`, `contrast_json`, `examples_json`, `word_json` (nullable), `gaps_json` (word ranges of the corrected sentence), `accepted_json` (up to 4 accepted rewrites), `situations_json` (2 new questions for step 4), `failures`, `updated_at` |
+| `rule_cards` | `rule_key` PK, `title`, `summary`, `body`, `examples_json`; prepared once per rule, reused |
+| `mistake_attempts` | `id`, `mistake_id`, `run_id`, `step`, `input` `typed · spoken`, `answer`, `outcome` `pass · miss · checking · retry`, `checked_by` `local · ai`, `created_at` |
+| `mistake_runs` | practice runs: `id`, `kind` `due · one · rule`, `rule_key`, items snapshot, `finished_at`; an open run resumes intact |
+| `rule_relapses` | `rule_key`, `session_id`, `sequence`, `created_at` |
+
+Existing `mistakes.times_seen` and the dedupe by `normalized_key` stay; the Memory eligibility rule
+(`times_seen >= 2`, §9.1) no longer applies to Mistakes, which lists every non-archived mistake.
+
+**Lesson preparation.** After each coaching batch saves feedback (§6.1), the new mistakes join a
+lesson queue derived from SQLite (`mistake_lessons.state = pending` or missing, fewer than 2
+failures). One worker, batches of at most 5 mistakes, one `agy` call per batch (background tier,
+pinned Gemini Flash model, "do not use any tools or commands", schema in the prompt). Input per
+mistake: Eva's question, the learner's sentence, the corrected sentence, the review's explanation
+and the rule list. Output per mistake: `rule_key` from the list, explanation (≤ 300 characters),
+contrast (two labelled sentences), two examples (≤ 120 characters each), optional word
+`{ word, meaning }`, gap ranges that cover exactly the changed words, up to 4 accepted rewrites,
+two step-4 questions that need the rule and do not contain the corrected wording. Each mistake is
+validated alone; a bad entry costs only its own lesson. Missing `rule_cards` rows for returned keys
+are prepared in the same call. Quota pause and retry follow coaching (§6.1). Lessons never block
+Talk, the wrap-up or a practice run.
+
+**Checking.**
+
+- Step 1 and 2 locally: lowercase, strip punctuation, expand common contractions, collapse spaces;
+  pass when equal to the corrected sentence (step 2: or to an accepted rewrite).
+- Step 2 "Check it" and step 4: one background `agy` call per answer (same tier), result `pass ·
+  miss` plus one sentence, saved to `mistake_attempts`; the run moves on while `checking`. A failed
+  check stays `checking` with Retry and changes no schedule.
+- Step 3 locally: the corrected wording as whole words in order (the recall matcher of §9.1).
+- A retry after a miss is saved with `outcome = retry` and changes nothing.
+
+**Schedule.** Pass at step n → step min(n+1, 4), due in 1, 3, 7 or 14 days for n = 1…4; miss →
+same step, due next local day. Step 4 pass on a new local day increments `step4_pass_days`; at 2
+the mistake is fixed (`fixed_at`), leaves the due queue and stays listed. A run takes up to six due
+mistakes, the most frequent rule first, one exercise each; steps without their lesson data (lesson
+not ready) fall back to step 3 when a corrected sentence exists.
+
+**Back again.** When saved feedback yields a mistake whose `rule_key` (once its lesson is ready) is
+not `other` and already has another mistake, a `rule_relapses` row is written and every open
+mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempotent per answer.
+
+**Commands** (all through `IpcError`): `list_mistake_groups`, `get_mistake(id)`,
+`get_rule_card(rule_key)`, `start_mistake_run(kind, id?)`, `get_mistake_run(run_id)`,
+`answer_mistake_step(run_id, position, answer, input)`, `retry_mistake_check(attempt_id)`,
+`finish_mistake_run(run_id)`, `archive_mistake(id)`, `retry_mistake_lesson(id)`. Rust emits
+`mistakes-updated` after a lesson batch or a background check.
 
 ## 10. IPC
 

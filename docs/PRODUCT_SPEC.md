@@ -139,7 +139,7 @@ memory evidence. Planning expiry never starts recording; the learner chooses whe
 At the end of a session:
 
 - up to three phrases worth learning, each with an example from the learner's own answers, saved
-  to Learning Memory in one action; recurring mistakes live in Memory and in the answer reviews;
+  to Learning Memory in one action; mistakes go to the Mistakes section (§9);
 - local numbers for the session: speaking time, words per minute, average answer length;
 - **Your conversation:** every turn in order, Eva's question and reply, then the learner's answer
   with its review: what was said, a more natural version with the changed words marked, one short
@@ -150,7 +150,9 @@ At the end of a session:
 
 ## 8. Learning Memory
 
-- **Phrases** and **mistakes** (original → corrected) are stored locally with their source answer.
+- **Phrases** are stored locally with their source answer. Memory is the learner's reference
+  (phrases now; rules worth knowing, such as the English tenses, later). Mistakes have their own
+  section (§9).
 - Due items return as short spoken tasks ("Here is a situation — answer using …") and are woven
   into later conversation questions.
 - Optional shadowing: listen to an AI sentence and repeat it.
@@ -173,23 +175,83 @@ At the end of a session:
 
 ### 8.1 Practice my usual mistakes
 
-Memory offers a short spoken practice on mistakes seen at least twice: five questions, about
+Mistakes (§9) offers a short spoken practice on mistakes seen at least twice: five questions, about
 two minutes, even when those mistakes are not due for scheduled review. Eva prepares varied
 questions that invite the corrected forms, then asks them without waiting for feedback. The
 learner can finish early or resume an unfinished practice. Normal coaching runs in
 the background; the drill is cued practice and does not establish independent mastery.
 
-## 9. Settings
+## 9. Mistakes
+
+A sidebar section of its own (Talk · Mistakes · Memory · Settings) that turns the mistakes found in
+answer reviews into short lessons, so the same mistake stops coming back. Everything stays in plain
+English (principle 5); a word in an explanation can be translated on demand (§4.2).
+
+### 9.1 What is kept
+
+- Every mistake from an answer review, from its first occurrence: Eva's question, what the learner
+  said, the corrected version with the changed words marked, and when it happened.
+- **Rule.** Each mistake belongs to one rule from a fixed list (for example *Past Simple vs Present
+  Perfect*, *subject–verb agreement*, *word order in questions*, *articles*, *word choice*). A
+  mistake is "back again" when the same **rule** is broken again, not only the same words: the
+  wording of real mistakes rarely repeats, the rule does.
+- **Lesson**, prepared in the background after the review: why it was wrong in two or three short
+  sentences, the rule with a contrast ("*I worked there* — finished time / *I have worked there* —
+  up to now"), two short examples, and, for a word-choice mistake, the word to learn with its
+  meaning. The lesson never blocks anything; until it is ready the mistake shows what was said and
+  the correction.
+
+### 9.2 The Mistakes screen
+
+- **Practise** (primary): a session of up to six exercises from the mistakes that are due, about
+  five minutes, one exercise per mistake. **Talk it through**: the spoken five-question practice
+  (§8.1).
+- The list is grouped by rule, the rule that comes back most often first. A group shows its name,
+  how many mistakes it holds, how many are fixed, and a short rule card that opens the full rule.
+- A mistake opens as a card: the question, what was said, the corrected version, the lesson,
+  **Hear it**, **Practise this** (that mistake only, even when it is not due), **Archive**.
+- A practice session can also be started for one rule group.
+
+### 9.3 Exercises
+
+Each mistake climbs a ladder; one exercise per mistake per session:
+
+| Step | Exercise | Checked by |
+| :--- | :--- | :--- |
+| 1 | **Fill the gaps**: the corrected sentence with the changed words hidden; type them | this Mac, exact after normalising case, punctuation and contractions |
+| 2 | **Fix it**: the learner's original sentence; rewrite it correctly | this Mac against the corrected version and prepared accepted variants; otherwise "Check it" asks the AI in the background |
+| 3 | **Say it**: hear the situation, say the corrected sentence aloud | local transcript, the corrected wording in order |
+| 4 | **Use it**: a new question that needs the same rule; answer aloud in your own words | the AI in the background; the result appears when ready |
+
+- A pass moves the mistake one step up and schedules it later; a miss keeps the step, shows the
+  correct answer with the lesson, and brings it back the next day.
+- After a miss the learner can try once more at once; the retry is practice and does not move the
+  step.
+- A mistake is **fixed** after passing step 4 on two different days. A fixed mistake leaves the
+  due queue but stays in its group.
+- **Back again:** when an answer review finds the same rule broken again, the new mistake joins the
+  group, and the rule's open mistakes return to step 1 and are due at once. The group shows "Came
+  back in a conversation" with the date.
+- The wording is calm: "Not quite — here is the version to keep", never "Wrong".
+
+### 9.4 Elsewhere in the app
+
+- The Start screen card "Your usual mistakes" shows the rules that come back most often and opens
+  Mistakes.
+- The wrap-up review stays as it is; each reviewed answer links to its mistake card.
+- The sidebar shows how many mistakes are due, like Memory.
+
+## 10. Settings
 
 Microphone choice with a short record/playback check; conversation provider and API key; voice
 (natural local voice or a system voice) and rate; personal glossary and profile; hands-free pause
 length; local data and privacy notes; native language for on-demand word translation.
 
-## 10. Later
+## 11. Later
 
 Post-MVP ideas and their order are in [ROADMAP](ROADMAP.md#after-the-mvp).
 
-## 11. Success signals
+## 12. Success signals
 
 - The learner practises at least 10 minutes on most days.
 - The time between the AI question and the start of the answer shrinks.
