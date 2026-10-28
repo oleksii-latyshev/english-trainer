@@ -27,7 +27,7 @@ static float limited(float sample) {
 static int denoising_steps() {
   const char* value = std::getenv("ENGLISH_TRAINER_VOICE_STEPS");
   int steps = value ? std::atoi(value) : 0;
-  return steps >= 2 && steps <= 20 ? steps : 8;
+  return steps >= 2 && steps <= 20 ? steps : 5;
 }
 static std::vector<uint8_t> wave(const SherpaOnnxGeneratedAudio& audio) {
   std::vector<uint8_t> out;
