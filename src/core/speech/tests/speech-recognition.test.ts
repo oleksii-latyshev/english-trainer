@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Duration, Effect, Fiber, Layer, Option, Stream } from 'effect';
 import { TestClock } from 'effect/testing';
+import type { CaptureWindow } from '@/core/audio';
 import { IpcError } from '@/core/ipc';
 import { LIVE_INTERVAL, liveTranscript } from '../services/live-transcript';
 import { rescueTranscript } from '../services/rescue-transcript';
@@ -84,29 +85,36 @@ describe('asking for help while speaking', () => {
   });
 });
 
-describe('the live transcript', () => {
-  function collect(rust: FakeRust, options: { heard: () => boolean; seconds: number }) {
-    const { layer, binaryCalls } = scene(rust);
-    const texts: string[] = [];
-    const program = Effect.gen(function* () {
-      const fiber = yield* liveTranscript({
-        snapshot: Effect.succeed(wavOf('audio')),
-        hasHeardSpeech: Effect.sync(options.heard),
-      }).pipe(
-        Stream.runForEach((text) => Effect.sync(() => texts.push(text))),
-        Effect.forkChild,
-      );
-      for (let step = 0; step < options.seconds * 10; step += 1) {
-        yield* TestClock.adjust(Duration.millis(100));
-      }
-      yield* Fiber.interrupt(fiber);
-    });
-    return Effect.runPromise(program.pipe(Effect.provide(layer))).then(() => ({
-      texts,
-      binaryCalls,
-    }));
-  }
+function collect(
+  rust: FakeRust,
+  options: {
+    heard: () => boolean;
+    seconds: number;
+    window?: (fromMs: number) => Effect.Effect<CaptureWindow | null>;
+  },
+) {
+  const { layer, binaryCalls } = scene(rust);
+  const texts: string[] = [];
+  const program = Effect.gen(function* () {
+    const fiber = yield* liveTranscript({
+      window: options.window ?? (() => Effect.succeed({ wav: wavOf('audio'), endMs: 1000 })),
+      hasHeardSpeech: Effect.sync(options.heard),
+    }).pipe(
+      Stream.runForEach((text) => Effect.sync(() => texts.push(text))),
+      Effect.forkChild,
+    );
+    for (let step = 0; step < options.seconds * 10; step += 1) {
+      yield* TestClock.adjust(Duration.millis(100));
+    }
+    yield* Fiber.interrupt(fiber);
+  });
+  return Effect.runPromise(program.pipe(Effect.provide(layer))).then(() => ({
+    texts,
+    binaryCalls,
+  }));
+}
 
+describe('the live transcript', () => {
   it('shows the words heard so far every interval once speech started', async () => {
     const { texts, binaryCalls } = await collect(
       { binaryResults: { transcribe_partial: 'I think' } },
@@ -126,7 +134,7 @@ describe('the live transcript', () => {
     expect(binaryCalls).toEqual([]);
   });
 
-  it('does nothing when the model is not loaded', async () => {
+  it('does nothing while the model stays unloaded', async () => {
     const { texts, binaryCalls } = await collect(
       {
         status: { server: 'loading', failure: null, is_live_transcript_available: true },
@@ -171,5 +179,56 @@ describe('the live transcript', () => {
       { heard: () => true, seconds: 5 },
     );
     expect(Option.fromNullishOr(texts[0]).pipe(Option.isNone)).toBe(true);
+  });
+});
+
+describe('the live transcript over a long answer', () => {
+  it('keeps updating past 30 s by transcribing only the audio after the committed point', async () => {
+    const asked: number[] = [];
+    let tick = 0;
+    const words = ['one', 'two', 'three', 'four', 'five', 'six'];
+    const { layer, binaryCalls } = scene({ binaryResults: { transcribe_partial: 'x' } });
+    const texts: string[] = [];
+    const program = Effect.gen(function* () {
+      const fiber = yield* liveTranscript({
+        window: (fromMs) =>
+          Effect.sync(() => {
+            asked.push(fromMs);
+            tick += 1;
+            return { wav: wavOf(words[tick - 1] ?? 'more'), endMs: tick * 10_000 };
+          }),
+        hasHeardSpeech: Effect.succeed(true),
+      }).pipe(
+        Stream.runForEach((text) => Effect.sync(() => texts.push(text))),
+        Effect.forkChild,
+      );
+      for (let step = 0; step < 100; step += 1) yield* TestClock.adjust(Duration.millis(100));
+      yield* Fiber.interrupt(fiber);
+    });
+    await Effect.runPromise(program.pipe(Effect.provide(layer)));
+    expect(texts.length).toBe(6);
+    expect(texts[texts.length - 1]).toBe('x x x');
+    expect(asked).toEqual([0, 0, 20_000, 20_000, 40_000, 40_000]);
+    expect(binaryCalls.length).toBe(6);
+  });
+
+  it('starts when the model becomes ready in the middle of the answer', async () => {
+    let calls = 0;
+    const { texts } = await collect(
+      {
+        statusNow: () => {
+          calls += 1;
+          return {
+            server: calls < 3 ? 'loading' : 'ready',
+            failure: null,
+            is_live_transcript_available: true,
+          };
+        },
+        binaryResults: { transcribe_partial: 'I think' },
+      },
+      { heard: () => true, seconds: 9 },
+    );
+    expect(calls).toBe(3);
+    expect(texts).toEqual(['I think', 'I think', 'I think', 'I think']);
   });
 });

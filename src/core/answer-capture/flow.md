@@ -24,7 +24,7 @@ sequenceDiagram
     Warm-->>Recorder: session, capture with pre-roll
     Listen->>State: recording (level and elapsed time every 100 ms)
     par while recording
-        Listen->>Whisper: live transcript every 1.5 s once speech was heard
+        Listen->>Whisper: live transcript every 1.5 s once speech was heard (only the audio after the last committed point, so each call stays short)
     and hands-free turn detection
         Warm-->>Listen: SpeechStarted, TurnEnded after the pause
         Listen->>Listen: TurnEnded stops the recording when hands-free is on

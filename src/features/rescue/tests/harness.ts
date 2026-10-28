@@ -64,6 +64,7 @@ function fakeControl(): CaptureControl {
     capture: {
       level: Effect.succeed(0.2),
       snapshot: () => Effect.succeed(new Blob(['wav'])),
+      window: () => Effect.succeed(null),
       stop: Effect.never,
     },
   };

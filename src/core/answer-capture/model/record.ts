@@ -40,11 +40,13 @@ function trackLevel(watch: Watch, gate: ReturnType<typeof createSpeechGate>) {
       Effect.flatMap((level) =>
         Effect.gen(function* () {
           gate.sample(level);
-          if (opened.turns === null && gate.hasHeardSpeech()) yield* Ref.set(watch.heard, true);
+          const heardWithoutDetector = opened.turns === null && gate.hasHeardSpeech();
+          if (heardWithoutDetector) yield* Ref.set(watch.heard, true);
           updateRecording(registry, (state) => ({
             ...state,
             elapsedMs: performance.now() - watch.startedAtMs,
             level,
+            heardSpeech: state.heardSpeech || heardWithoutDetector,
           }));
         }),
       ),
@@ -55,7 +57,7 @@ function trackLevel(watch: Watch, gate: ReturnType<typeof createSpeechGate>) {
 function trackLiveText(watch: Watch) {
   const { registry, opened } = watch;
   return liveTranscript({
-    snapshot: opened.capture.snapshot(),
+    window: opened.capture.window,
     hasHeardSpeech: Ref.get(watch.heard),
   }).pipe(
     Stream.runForEach((liveText) =>
