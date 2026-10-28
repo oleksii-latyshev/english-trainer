@@ -149,17 +149,55 @@ fn missing_unknown_duplicate_and_unreadable_entries_are_handled() {
 }
 
 #[test]
-fn gaps_must_cover_exactly_the_changed_words() {
+fn gaps_the_model_got_wrong_fall_back_to_the_changed_words() {
     for (name, gaps) in [
         ("the wrong word", json!([{"start": 2, "end": 3}])),
-        ("too many words", json!([{"start": 1, "end": 3}])),
+        ("far too many words", json!([{"start": 0, "end": 6}])),
         ("outside the sentence", json!([{"start": 1, "end": 20}])),
         ("empty range", json!([{"start": 1, "end": 1}])),
         ("no ranges", json!([])),
         ("negative", json!([{"start": -1, "end": 2}])),
     ] {
-        assert_eq!(validated(changed("gaps", gaps)).rejected, [4], "{name}");
+        let result = validated(changed("gaps", gaps));
+        assert_eq!(
+            result.lessons[0].1.gaps,
+            [WordRange { start: 1, end: 2 }],
+            "{name}"
+        );
     }
+}
+
+#[test]
+fn gaps_may_take_a_few_words_around_a_change() {
+    let order = LessonRequest {
+        said: "how exactly work this function".into(),
+        corrected: "how exactly this function works".into(),
+        ..mistake()
+    };
+    let result = validate_batch(
+        &batch(vec![order]),
+        RawLessonBatch {
+            lessons: vec![changed("gaps", json!([{"start": 2, "end": 5}]))],
+            rule_cards: vec![],
+        },
+    );
+    assert_eq!(result.lessons[0].1.gaps, [WordRange { start: 2, end: 5 }]);
+}
+
+#[test]
+fn a_lesson_without_any_usable_gap_is_rejected() {
+    let same = LessonRequest {
+        said: "I have worked there since 2020".into(),
+        ..mistake()
+    };
+    let result = validate_batch(
+        &batch(vec![same]),
+        RawLessonBatch {
+            lessons: vec![changed("gaps", json!([{"start": 0, "end": 6}]))],
+            rule_cards: vec![],
+        },
+    );
+    assert_eq!(result.rejected, [4]);
 }
 
 #[test]
@@ -183,7 +221,14 @@ fn gaps_for_two_separate_changes_must_be_ordered_and_apart() {
     assert_eq!(ok.lessons.len(), 1);
     let unordered =
         lesson(json!([{"start": 3, "end": 4}, {"start": 1, "end": 2}, {"start": 5, "end": 6}]));
-    assert_eq!(unordered.rejected, [4]);
+    assert_eq!(
+        unordered.lessons[0].1.gaps,
+        [
+            WordRange { start: 1, end: 2 },
+            WordRange { start: 3, end: 4 },
+            WordRange { start: 5, end: 6 }
+        ]
+    );
 }
 
 #[test]

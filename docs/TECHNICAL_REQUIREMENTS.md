@@ -626,7 +626,8 @@ pinned Gemini Flash model, "do not use any tools or commands", schema in the pro
 mistake: Eva's question, the learner's sentence, the corrected sentence, the review's explanation
 and the rule list. Output per mistake: `rule_key` from the list, explanation (≤ 300 characters),
 contrast (two labelled sentences), two examples (≤ 120 characters each), optional word
-`{ word, meaning }`, gap ranges that cover exactly the changed words, up to 4 accepted rewrites,
+`{ word, meaning }`, gap ranges that cover the changed words (kept when they add at most 3 other words; otherwise the
+gaps are the changed words found by a local word diff), up to 4 accepted rewrites,
 two step-4 questions that need the rule and do not contain the corrected wording. Each mistake is
 validated alone; a bad entry costs only its own lesson. Missing `rule_cards` rows for returned keys
 are prepared in the same call. Quota pause and retry follow coaching (§6.1). Lessons never block

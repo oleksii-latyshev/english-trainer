@@ -13,6 +13,8 @@ pub const MAX_REWRITE_CHARS: usize = 300;
 pub const MAX_CARD_BODY_CHARS: usize = 600;
 pub const MAX_ACCEPTED: usize = 4;
 pub const MAX_GAPS: usize = 4;
+const MAX_EXTRA_GAP_WORDS: usize = 3;
+const MAX_DELETION_GAP_WORDS: usize = 2;
 pub const MAX_FAILURES: u32 = 2;
 pub const BATCH_SIZE: usize = 5;
 
@@ -242,33 +244,57 @@ fn validate_gaps(
     mistake: &LessonRequest,
 ) -> Result<Vec<WordRange>, LessonRejection> {
     let word_count = sentence_words(&mistake.corrected).len();
+    let changed = changed_word_indexes(&mistake.said, &mistake.corrected);
+    if let Some(gaps) = model_gaps(ranges, word_count, &changed) {
+        return Ok(gaps);
+    }
+    gaps_of(&changed, word_count).ok_or(LessonRejection::Gaps)
+}
+
+fn model_gaps(
+    ranges: &[RawRange],
+    word_count: usize,
+    changed: &BTreeSet<usize>,
+) -> Option<Vec<WordRange>> {
     if ranges.is_empty() || ranges.len() > MAX_GAPS {
-        return Err(LessonRejection::Gaps);
+        return None;
     }
     let mut gaps: Vec<WordRange> = Vec::with_capacity(ranges.len());
     let mut covered = BTreeSet::new();
     for range in ranges {
-        let (Ok(start), Ok(end)) = (usize::try_from(range.start), usize::try_from(range.end))
-        else {
-            return Err(LessonRejection::Gaps);
-        };
+        let start = usize::try_from(range.start).ok()?;
+        let end = usize::try_from(range.end).ok()?;
         let follows_previous = gaps.last().is_none_or(|previous| start >= previous.end);
         if start >= end || end > word_count || !follows_previous {
-            return Err(LessonRejection::Gaps);
+            return None;
         }
         covered.extend(start..end);
         gaps.push(WordRange { start, end });
     }
-    let changed = changed_word_indexes(&mistake.said, &mistake.corrected);
-    let matches_changes = if changed.is_empty() {
-        covered.len() <= 2
+    let allowed = if changed.is_empty() {
+        MAX_DELETION_GAP_WORDS
     } else {
-        covered == changed
+        changed.len() + MAX_EXTRA_GAP_WORDS
     };
-    if !matches_changes || covered.len() >= word_count {
-        return Err(LessonRejection::Gaps);
+    let fits = covered.is_superset(changed) && covered.len() <= allowed;
+    (fits && covered.len() < word_count).then_some(gaps)
+}
+
+fn gaps_of(changed: &BTreeSet<usize>, word_count: usize) -> Option<Vec<WordRange>> {
+    if changed.is_empty() || changed.len() >= word_count {
+        return None;
     }
-    Ok(gaps)
+    let mut gaps: Vec<WordRange> = Vec::new();
+    for &index in changed {
+        match gaps.last_mut() {
+            Some(last) if last.end == index => last.end = index + 1,
+            _ => gaps.push(WordRange {
+                start: index,
+                end: index + 1,
+            }),
+        }
+    }
+    (gaps.len() <= MAX_GAPS).then_some(gaps)
 }
 
 fn validate_accepted(rewrites: &[String], mistake: &LessonRequest) -> Vec<String> {
