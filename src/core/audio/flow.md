@@ -36,6 +36,11 @@ sequenceDiagram
     Note over Warm: the session stays open for the next turn
 ```
 
+The end pause is `endPauseMs` plus an extra pause the caller sets while the live text ends in an
+unfinished clause. Once speech is confirmed the noise floor can only fall, and a frame counts as
+silence only below a lower keep threshold (floor x 2, at least 0.004) than the start threshold
+(floor x 3, at least 0.006), so soft word endings and breaths do not accumulate into a pause.
+
 ## Pause, device change, failure
 
 ```mermaid

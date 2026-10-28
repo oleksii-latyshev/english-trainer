@@ -27,6 +27,7 @@ sequenceDiagram
         Listen->>Whisper: live transcript every 1.5 s once speech was heard (only the audio after the last committed point, so each call stays short)
     and hands-free turn detection
         Warm-->>Listen: SpeechStarted, TurnEnded after the pause
+        Listen->>Listen: live text ending in a comma or an open word (and, the, to, is...) adds 1.2 s to the end pause
         Listen->>Listen: TurnEnded stops the recording when hands-free is on
     and silence in auto-listen
         Listen->>Listen: 20 s without speech and without a hold cancels
