@@ -32,7 +32,8 @@ function liveUpdate(
     const current = yield* Ref.get(state);
     const captured = yield* source.window(current.offsetMs);
     if (!captured) return Option.none<string>();
-    const text = (yield* recognition.transcribePartial(captured.wav)) ?? '';
+    const text = yield* recognition.transcribePartial(captured.wav);
+    if (text === null) return Option.none<string>();
     const step = advanceLiveWindow(current, text, captured.endMs);
     yield* Ref.set(state, step.window);
     return Option.some(step.text).pipe(Option.filter((value) => value.length > 0));

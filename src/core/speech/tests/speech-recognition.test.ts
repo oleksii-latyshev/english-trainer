@@ -212,6 +212,24 @@ describe('the live transcript over a long answer', () => {
     expect(binaryCalls.length).toBe(6);
   });
 
+  it('keeps the window open while the recognizer is busy', async () => {
+    const asked: number[] = [];
+    const { texts } = await collect(
+      { binaryResults: { transcribe_partial: null } },
+      {
+        heard: () => true,
+        seconds: 5,
+        window: (fromMs) =>
+          Effect.sync(() => {
+            asked.push(fromMs);
+            return { wav: wavOf('audio'), endMs: 30_000 };
+          }),
+      },
+    );
+    expect(texts).toEqual([]);
+    expect(asked.every((fromMs) => fromMs === 0)).toBe(true);
+  });
+
   it('starts when the model becomes ready in the middle of the answer', async () => {
     let calls = 0;
     const { texts } = await collect(
