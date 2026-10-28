@@ -1,6 +1,7 @@
 # Speaking activity flow
 
-The 26-week grid and the "This week" card on the Talk start screen. Minutes come from the sessions
+The activity grid (as many whole weeks as fit the card, 8 to 26, always ending with the current
+week) and the "This week" card on the Talk start screen. Minutes come from the sessions
 saved on this Mac (`active_duration_ms` per session, text-chat sessions left out); nothing leaves the
 device. The copy is neutral: no streaks, no "you missed" wording, and an empty history shows an
 invitation instead of zeros.
@@ -36,7 +37,7 @@ sequenceDiagram
         Command-->>Ipc: SpeakingActivity
         Ipc-->>Service: decoded with SpeakingActivitySchema
         Service-->>Atom: AsyncResult.Success
-        Atom-->>Screen: buildActivityGrid(days, today) draws weeks, totals and the week bars
+        Atom-->>Screen: buildActivityGrid(days, today) draws the weeks that fit the measured card width, their totals and the week bars
     end
 ```
 

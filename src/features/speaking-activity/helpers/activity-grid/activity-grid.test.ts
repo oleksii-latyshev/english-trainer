@@ -1,5 +1,5 @@
 import { expect, it } from 'bun:test';
-import { activitySummary, buildActivityGrid, heatLevel } from './index';
+import { activitySummary, buildActivityGrid, heatLevel, weeksThatFit } from './index';
 
 const SATURDAY = new Date(2026, 9, 10, 15, 30);
 
@@ -97,7 +97,7 @@ it('summarises the months without pressure and without zero counts', () => {
     'Your speaking days will appear here after your first conversation.',
   );
   expect(activitySummary(buildActivityGrid([{ date: '2026-10-10', minutes: 12 }], SATURDAY))).toBe(
-    '12 min in 6 months · 1 day you spoke',
+    '12 min in the last 26 weeks · 1 day you spoke',
   );
   expect(
     activitySummary(
@@ -109,5 +109,30 @@ it('summarises the months without pressure and without zero counts', () => {
         SATURDAY,
       ),
     ),
-  ).toBe('21 min in 6 months · 2 days you spoke');
+  ).toBe('21 min in the last 26 weeks · 2 days you spoke');
+});
+
+it('fits whole weeks into the width, between the minimum and the full range', () => {
+  expect(weeksThatFit(0)).toBe(8);
+  expect(weeksThatFit(100)).toBe(8);
+  expect(weeksThatFit(21)).toBe(8);
+  expect(weeksThatFit(18 * 12 + 4 * 11)).toBe(12);
+  expect(weeksThatFit(18 * 12 + 4 * 11 + 21)).toBe(12);
+  expect(weeksThatFit(18 * 13 + 4 * 12)).toBe(13);
+  expect(weeksThatFit(5000)).toBe(26);
+});
+
+it('shows the last N weeks ending with the current one and counts only those', () => {
+  const days = [
+    { date: '2026-10-10', minutes: 12 },
+    { date: '2026-08-20', minutes: 30 },
+    { date: '2026-06-01', minutes: 50 },
+  ];
+  const grid = buildActivityGrid(days, SATURDAY, 10);
+  expect(grid.weeks).toHaveLength(10);
+  expect(grid.weeks[0]?.cells[0]?.date).toBe('2026-08-03');
+  expect(grid.weeks[9]?.cells[0]?.date).toBe('2026-10-05');
+  expect(grid.totalMinutes).toBe(42);
+  expect(grid.spokenDays).toBe(2);
+  expect(activitySummary(grid)).toBe('42 min in the last 10 weeks · 2 days you spoke');
 });
