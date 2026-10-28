@@ -84,7 +84,12 @@ Development overrides (only when the app inherits the shell environment, not fro
 bun run build:desktop
 ```
 
-Produces `src-tauri/target/release/bundle/macos/English Trainer.app` and a DMG. Builds are ad-hoc
+Produces `src-tauri/target/release/bundle/macos/English Trainer.app` and a DMG. Tauri builds only the
+app; `scripts/build-dmg.sh` then packs the DMG with `dmgbuild` (pinned, installed into a venv under
+`src-tauri/target`). Tauri's own DMG bundler skips the window layout when `CI=true`, and `dmgbuild`
+writes it without Finder, so the installer window (background, icon positions) works locally and in
+CI. The layout lives in `src-tauri/dmg/settings.py`; after editing `assets/dmg/background.html`, run
+`bun run build:dmg-background` and commit the regenerated files in `src-tauri/dmg`. Builds are ad-hoc
 signed, not notarised: a downloaded build may need System Settings › Privacy & Security › Open Anyway.
 The bundle identifier stays `com.user.english-trainer`, so data survives updates.
 
