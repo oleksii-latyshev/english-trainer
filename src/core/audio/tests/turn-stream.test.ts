@@ -29,13 +29,16 @@ function sourceOf(steps: readonly Step[], hold: Ref.Ref<boolean>) {
 
 function eventsOf(
   steps: readonly Step[],
-  options: { endPauseMs: number; settleMs?: number },
+  options: { endPauseMs: number; settleMs?: number; extraPauseMs?: number },
 ): Promise<string[]> {
   return Effect.gen(function* () {
     const hold = yield* Ref.make(false);
-    const events = yield* turnEvents(sourceOf(steps, hold), { ...options, hold }).pipe(
-      Stream.runCollect,
-    );
+    const extraPauseMs = yield* Ref.make(options.extraPauseMs ?? 0);
+    const events = yield* turnEvents(sourceOf(steps, hold), {
+      ...options,
+      hold,
+      extraPauseMs,
+    }).pipe(Stream.runCollect);
     return events.map((event: TurnEvent) => event._tag);
   }).pipe(Effect.runPromise);
 }
@@ -50,6 +53,17 @@ describe('turn events', () => {
       { endPauseMs: 1000 },
     );
     expect(events).toEqual(['SpeechStarted', 'TurnEnded']);
+  });
+
+  it('waits longer after an unfinished clause', async () => {
+    const steps = [
+      { rms: 0.08, forMs: 600 },
+      { rms: 0.002, forMs: 1600 },
+    ];
+    expect(await eventsOf(steps, { endPauseMs: 1000, extraPauseMs: 1200 })).toEqual([
+      'SpeechStarted',
+    ]);
+    expect(await eventsOf(steps, { endPauseMs: 1000 })).toEqual(['SpeechStarted', 'TurnEnded']);
   });
 
   it('ignores the settle span so the assistant voice tail is not heard as speech', async () => {

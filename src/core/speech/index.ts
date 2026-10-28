@@ -1,12 +1,12 @@
 export { naturalAvailability } from './helpers/natural-availability';
 
 export { createSpeechGate } from './helpers/speech-gate';
-
 export {
   transcriptionFailureOutcome,
   transcriptOutcome,
 } from './helpers/transcript-outcome';
 export type { TranscriptionRecovery } from './helpers/transcription-recovery';
+export { unfinishedClausePauseMs } from './helpers/unfinished-clause';
 export {
   naturalAvailabilityAtom,
   previewingNaturalVoiceAtom,

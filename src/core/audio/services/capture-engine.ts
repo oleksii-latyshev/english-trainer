@@ -14,7 +14,7 @@ import {
   microphoneNotReady,
 } from '../errors';
 import { measureAudioLevel, signalMeterValue, summarizeAudioSignal } from '../helpers/audio-signal';
-import { snapshotAudioChunks } from '../helpers/audio-tail';
+import { audioFrom, snapshotAudioChunks } from '../helpers/audio-tail';
 import { createCaptureStartup } from '../helpers/capture-startup';
 import { encodeWav } from '../helpers/pcm-encoding';
 import { createPreRollBuffer } from '../helpers/pre-roll-buffer';
@@ -28,11 +28,17 @@ export type CaptureOptions = {
   readonly preRollMs?: number;
 };
 
+export type CaptureWindow = {
+  readonly wav: Blob;
+  readonly endMs: number;
+};
+
 export type Capture = {
   readonly level: Effect.Effect<number>;
   readonly snapshot: (options?: {
     readonly tailMs: number;
   }) => Effect.Effect<Blob | null, MicrophoneError>;
+  readonly window: (fromMs: number) => Effect.Effect<CaptureWindow | null, MicrophoneError>;
   readonly stop: Effect.Effect<RecordedAudio, MicrophoneError>;
 };
 
@@ -139,6 +145,26 @@ function snapshotOf(
   });
 }
 
+function windowOf(context: EngineContext, active: ActiveCapture, fromMs: number) {
+  const { sampleRateHz } = context;
+  return Effect.gen(function* () {
+    if (context.state.active !== active) return null;
+    const fromSample = Math.floor((sampleRateHz * Math.max(0, fromMs)) / MS_PER_SECOND);
+    if (fromSample >= active.sampleCount) return null;
+    const endMs = (active.sampleCount / sampleRateHz) * MS_PER_SECOND;
+    const chunks = snapshotAudioChunks(
+      audioFrom(active.chunks, fromSample),
+      sampleRateHz,
+      MAX_SNAPSHOT_MS,
+    );
+    const resampled = yield* context.resample(chunks, sampleTotal(chunks), sampleRateHz);
+    return {
+      wav: encodeWav([resampled], resampled.length, WHISPER_SAMPLE_RATE_HZ),
+      endMs,
+    };
+  });
+}
+
 function stopOf(context: EngineContext, active: ActiveCapture) {
   const { sampleRateHz } = context;
   return Effect.gen(function* () {
@@ -161,6 +187,7 @@ function captureOf(context: EngineContext, active: ActiveCapture): Capture {
   return {
     level: Effect.sync(() => context.state.level),
     snapshot: (options) => snapshotOf(context, active, options),
+    window: (fromMs) => windowOf(context, active, fromMs),
     stop: stopOf(context, active),
   };
 }

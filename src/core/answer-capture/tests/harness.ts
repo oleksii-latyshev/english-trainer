@@ -49,6 +49,7 @@ function recorderLayer(microphone: Microphone) {
           capture: {
             level: Effect.succeed(0.2),
             snapshot: () => Effect.succeed(null),
+            window: () => Effect.succeed(null),
             stop: Effect.sync(() => {
               microphone.stopRequested += 1;
               return A_RECORDING;

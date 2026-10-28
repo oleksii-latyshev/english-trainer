@@ -2,7 +2,7 @@ import { Deferred, Duration, Effect, Ref, Stream } from 'effect';
 import type { Atom, AtomRegistry } from 'effect/reactivity';
 import { MicrophoneError } from '@/core/audio';
 import { conversationFlowAtom } from '@/core/conversation-flow';
-import { createSpeechGate, liveTranscript } from '@/core/speech';
+import { createSpeechGate, liveTranscript, unfinishedClausePauseMs } from '@/core/speech';
 import { preRollMsFor } from '../helpers/capture-state';
 import { AnswerRecorder, type OpenedAnswer } from '../services/answer-recorder-service';
 import type { CaptureState, ListenRequest } from '../types';
@@ -40,11 +40,13 @@ function trackLevel(watch: Watch, gate: ReturnType<typeof createSpeechGate>) {
       Effect.flatMap((level) =>
         Effect.gen(function* () {
           gate.sample(level);
-          if (opened.turns === null && gate.hasHeardSpeech()) yield* Ref.set(watch.heard, true);
+          const heardWithoutDetector = opened.turns === null && gate.hasHeardSpeech();
+          if (heardWithoutDetector) yield* Ref.set(watch.heard, true);
           updateRecording(registry, (state) => ({
             ...state,
             elapsedMs: performance.now() - watch.startedAtMs,
             level,
+            heardSpeech: state.heardSpeech || heardWithoutDetector,
           }));
         }),
       ),
@@ -52,19 +54,23 @@ function trackLevel(watch: Watch, gate: ReturnType<typeof createSpeechGate>) {
   );
 }
 
-function trackLiveText(watch: Watch) {
+function trackLiveText(watch: Watch, extraPauseMs: Ref.Ref<number>) {
   const { registry, opened } = watch;
   return liveTranscript({
-    snapshot: opened.capture.snapshot(),
+    window: opened.capture.window,
     hasHeardSpeech: Ref.get(watch.heard),
   }).pipe(
     Stream.runForEach((liveText) =>
-      Effect.sync(() => updateRecording(registry, (state) => ({ ...state, liveText }))),
+      Ref.set(extraPauseMs, unfinishedClausePauseMs(liveText)).pipe(
+        Effect.andThen(
+          Effect.sync(() => updateRecording(registry, (state) => ({ ...state, liveText }))),
+        ),
+      ),
     ),
   );
 }
 
-function watchTurns(watch: Watch, hold: Ref.Ref<boolean>) {
+function watchTurns(watch: Watch, hold: Ref.Ref<boolean>, extraPauseMs: Ref.Ref<number>) {
   const { registry, opened } = watch;
   const flow = registry.get(conversationFlowAtom);
   const turns = opened.turns;
@@ -73,6 +79,7 @@ function watchTurns(watch: Watch, hold: Ref.Ref<boolean>) {
     endPauseMs: flow.endPauseMs,
     settleMs: watch.request.mode === 'auto' ? AUTO_SETTLE_MS : 0,
     hold,
+    extraPauseMs,
   }).pipe(
     Stream.runForEach((event) =>
       event._tag === 'SpeechStarted'
@@ -141,6 +148,7 @@ export function recordTurn(get: Atom.FnContext, request: ListenRequest, requeste
       const stopped = yield* Deferred.make<Verdict>();
       const heard = yield* Ref.make(false);
       const hold = yield* Ref.make(false);
+      const extraPauseMs = yield* Ref.make(0);
       const watch: Watch = { registry, request, opened, stopped, heard, startedAtMs };
       registry.set(captureControlAtom, {
         stopped,
@@ -160,11 +168,11 @@ export function recordTurn(get: Atom.FnContext, request: ListenRequest, requeste
         actualInput: opened.input,
       });
       yield* Effect.forkScoped(trackLevel(watch, createSpeechGate()));
-      yield* Effect.forkScoped(trackLiveText(watch));
+      yield* Effect.forkScoped(trackLiveText(watch, extraPauseMs));
       yield* Effect.forkScoped(
         Stream.runForEach(get.stream(turnHeldOpenAtom), (held) => Ref.set(hold, held)),
       );
-      if (opened.turns !== null) yield* Effect.forkScoped(watchTurns(watch, hold));
+      if (opened.turns !== null) yield* Effect.forkScoped(watchTurns(watch, hold, extraPauseMs));
       if (request.mode === 'auto' && opened.turns !== null) {
         yield* Effect.forkScoped(abandonWhenIdle(get, watch));
       }

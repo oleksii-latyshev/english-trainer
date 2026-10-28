@@ -52,6 +52,7 @@ function fakeMicrophone(options: { stopFails?: boolean } = {}): Fake {
                   Effect.succeed({
                     level: Effect.succeed(0.5),
                     snapshot: () => Effect.succeed(null),
+                    window: () => Effect.succeed(null),
                     stop: options.stopFails
                       ? Effect.fail(microphoneNoAudio)
                       : Effect.succeed(AUDIO),

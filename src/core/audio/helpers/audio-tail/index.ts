@@ -11,6 +11,20 @@ export function audioTail(chunks: Float32Array[], maxSamples: number): Float32Ar
   return result;
 }
 
+export function audioFrom(chunks: Float32Array[], fromSample: number): Float32Array[] {
+  let skip = Math.max(0, Math.floor(fromSample));
+  const result: Float32Array[] = [];
+  for (const chunk of chunks) {
+    if (skip >= chunk.length) {
+      skip -= chunk.length;
+      continue;
+    }
+    result.push(skip === 0 ? chunk.slice() : chunk.slice(skip));
+    skip = 0;
+  }
+  return result;
+}
+
 export function snapshotAudioChunks(chunks: Float32Array[], sampleRateHz: number, tailMs?: number) {
   if (tailMs === undefined) return [...chunks];
   const durationMs = Math.max(0, Math.min(tailMs, 30_000));

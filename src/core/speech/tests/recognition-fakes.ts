@@ -9,6 +9,7 @@ type BinaryCall = {
 
 export type FakeRust = {
   readonly status?: unknown;
+  readonly statusNow?: () => unknown;
   readonly binaryResults?: Readonly<Record<string, unknown>>;
   readonly failBinaryWith?: IpcError;
   readonly binaryDelay?: Duration.Input;
@@ -23,11 +24,12 @@ export function fakeRecognitionRust(rust: FakeRust = {}) {
         calls.push(command);
         if (command === 'get_speech_engine_status') {
           return Effect.succeed(
-            rust.status ?? {
-              server: 'ready',
-              failure: null,
-              is_live_transcript_available: true,
-            },
+            rust.statusNow?.() ??
+              rust.status ?? {
+                server: 'ready',
+                failure: null,
+                is_live_transcript_available: true,
+              },
           );
         }
         return Effect.succeed(null);

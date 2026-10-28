@@ -13,6 +13,7 @@ export type TurnOptions = {
   readonly endPauseMs: number;
   readonly settleMs?: number;
   readonly hold?: Ref.Ref<boolean>;
+  readonly extraPauseMs?: Ref.Ref<number>;
 };
 
 const SPEECH_STARTED: TurnEvent = { _tag: 'SpeechStarted' };
@@ -42,6 +43,7 @@ export function turnEvents(source: FrameSource, options: TurnOptions): Stream.St
         return Effect.gen(function* () {
           if (isSettling(frame)) return [];
           if (options.hold) detector.setHold(yield* Ref.get(options.hold));
+          if (options.extraPauseMs) detector.setExtraPauseMs(yield* Ref.get(options.extraPauseMs));
           return eventsOf(detector.push(frame.rms, frame.durationMs));
         });
       }
