@@ -3,8 +3,8 @@ use super::ids::{now_ms, to_safe_u64_id, to_sql_id, to_sql_sequence};
 use crate::learning::review_rules::ReviewRejection;
 use crate::learning::LearningError;
 use crate::learning::{
-    is_safe_mistake_cue, is_safe_phrase_cue, LearningItemType, LearningStatus, MemoryReviewItem,
-    MemoryReviewRun, ReviewResponse,
+    is_safe_phrase_cue, LearningItemType, LearningStatus, MemoryReviewItem, MemoryReviewRun,
+    ReviewResponse,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 
@@ -204,21 +204,7 @@ fn item_candidate(
 ) -> rusqlite::Result<Option<Candidate>> {
     let sql_id = to_sql_id(item_id)?;
     let candidate = match item_type {
-        LearningItemType::Mistake => connection
-            .query_row(
-                "SELECT original_example, corrected_example, next_review_at FROM mistakes
-                 WHERE id = ?1 AND status != 'archived' AND times_seen >= 2",
-                [sql_id],
-                |row| {
-                    Ok((
-                        row.get::<_, String>(0)?,
-                        row.get::<_, String>(1)?,
-                        row.get(2)?,
-                    ))
-                },
-            )
-            .optional()?
-            .filter(|(cue, target, _)| is_safe_mistake_cue(target, cue)),
+        LearningItemType::Mistake => None,
         LearningItemType::Phrase => connection
             .query_row(
                 "SELECT meaning_or_note, phrase, next_review_at FROM phrase_cards
@@ -246,32 +232,6 @@ fn item_candidate(
 
 fn due_candidates(connection: &Connection, now: i64) -> rusqlite::Result<Vec<Candidate>> {
     let mut candidates = Vec::new();
-    {
-        let mut statement = connection.prepare(
-            "SELECT id, original_example, corrected_example, next_review_at FROM mistakes
-             WHERE status != 'archived' AND times_seen >= 2 AND next_review_at <= ?1",
-        )?;
-        let rows = statement.query_map([now], |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, i64>(3)?,
-            ))
-        })?;
-        for row in rows {
-            let (raw_id, cue, target, due_at) = row?;
-            if is_safe_mistake_cue(&target, &cue) {
-                candidates.push(Candidate {
-                    item_type: LearningItemType::Mistake,
-                    item_id: to_safe_u64_id(raw_id)?,
-                    cue,
-                    target,
-                    due_at,
-                });
-            }
-        }
-    }
     {
         let mut statement = connection.prepare(
             "SELECT id, phrase, meaning_or_note, next_review_at FROM phrase_cards

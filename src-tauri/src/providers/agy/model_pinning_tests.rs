@@ -2,7 +2,7 @@
 //! which is a Claude model and spends the learner's Claude quota.
 
 use super::test_support::{recorded_calls, recording_cli, TestDirectory};
-use super::{coaching, AgyEngine};
+use super::{coaching, structured, AgyEngine};
 use crate::learning::LearningItemType;
 use crate::providers::{
     AgyModel, CoachingAnswer, ConversationContext, ConversationEngine, UsageCandidate,
@@ -48,7 +48,9 @@ fn every_agy_entry_point_passes_a_gemini_model() {
     );
     assert_every_call_is_gemini(&dir, 1);
 
-    let engine = AgyEngine { binary: cli };
+    let engine = AgyEngine {
+        binary: cli.clone(),
+    };
     let _ = engine.review_usage(&UsageReviewRequest {
         answered_question: "What happened?".into(),
         transcript: "I work there now.".into(),
@@ -66,6 +68,9 @@ fn every_agy_entry_point_passes_a_gemini_model() {
         ..Default::default()
     });
     assert_every_call_is_gemini(&dir, 4);
+
+    let _ = structured::run_background_json_with(&cli, "Prepare lessons", "{}");
+    assert_every_call_is_gemini(&dir, 5);
 }
 
 #[test]
@@ -75,4 +80,5 @@ fn every_conversation_model_choice_resolves_to_a_gemini_model() {
     }
     assert_eq!(AgyModel::Default.cli_id(), "gemini-3.8-flash-medium");
     assert_eq!(coaching::COACHING_MODEL, "gemini-3.8-flash-medium");
+    assert_eq!(structured::STRUCTURED_MODEL, "gemini-3.8-flash-medium");
 }

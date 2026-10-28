@@ -67,23 +67,6 @@ pub fn is_safe_phrase_cue(target: &str, cue: &str) -> bool {
     !wording_observed(trimmed_target, trimmed_cue)
 }
 
-pub fn is_safe_mistake_cue(target: &str, cue: &str) -> bool {
-    let trimmed_cue = cue.trim();
-    let trimmed_target = target.trim();
-    if trimmed_cue.is_empty() || trimmed_target.is_empty() {
-        return false;
-    }
-    if normalize_phrase(trimmed_cue).is_empty() || normalize_phrase(trimmed_target).is_empty() {
-        return false;
-    }
-    if trimmed_cue.chars().count() > MAX_CUE_CHARS
-        || trimmed_target.chars().count() > MAX_TARGET_CHARS
-    {
-        return false;
-    }
-    !wording_observed(trimmed_target, trimmed_cue)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,25 +106,5 @@ mod tests {
             "x".repeat(501).as_str()
         ));
         assert!(!is_safe_phrase_cue("... !!!", "???"));
-    }
-
-    #[test]
-    fn accepts_safe_mistake_cue_when_original_does_not_contain_correction() {
-        assert!(is_safe_mistake_cue(
-            "I work there",
-            "I work in there yesterday."
-        ));
-        assert!(is_safe_mistake_cue(
-            "the main drawback",
-            "the minus was that we lacked time."
-        ));
-    }
-
-    #[test]
-    fn rejects_mistake_cue_when_original_already_contains_corrected_wording() {
-        assert!(!is_safe_mistake_cue(
-            "I work there",
-            "I work there and everywhere."
-        ));
     }
 }

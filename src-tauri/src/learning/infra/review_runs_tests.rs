@@ -41,24 +41,23 @@ fn insert_mistake(db: &mut SessionDatabase, original: &str, corrected: &str, due
 fn snapshots_only_safe_due_items_in_deterministic_order_and_hides_targets() {
     let mut db = SessionDatabase::open_in_memory().unwrap();
     let unsafe_item = insert_mistake(&mut db, "the drawback was clear", "the drawback", 0);
-    let first = insert_mistake(&mut db, "the minus was clear", "the main drawback", 0);
+    let due_mistake = insert_mistake(&mut db, "the minus was clear", "the main drawback", 0);
     let _later = phrase(&mut db, "turn out", "End up being");
     let _second = phrase(&mut db, "trade-off", "A compromise between choices");
     let overflow = phrase(&mut db, "come across", "Find or seem to be");
     let run = review_runs::start_run(db.connection_mut(), false)
         .unwrap()
         .unwrap();
-    assert_eq!(run.items.len(), 4);
+    assert_eq!(run.items.len(), 3);
     assert!(run.items.iter().all(|item| item.target.is_none()));
-    assert_eq!(run.items[0].item_id, first);
-    assert_eq!(run.items[0].cue, "the minus was clear");
-    assert_eq!(run.items[1].cue, "End up being");
-    assert_eq!(run.items[2].cue, "A compromise between choices");
+    assert_eq!(run.items[0].cue, "End up being");
+    assert_eq!(run.items[1].cue, "A compromise between choices");
     assert!(!run
         .items
         .iter()
-        .any(|item| item.item_type == LearningItemType::Mistake && item.item_id == unsafe_item));
-    assert_eq!(run.items[3].item_id, overflow);
+        .any(|item| item.item_type == LearningItemType::Mistake
+            && (item.item_id == unsafe_item || item.item_id == due_mistake)));
+    assert_eq!(run.items[2].item_id, overflow);
     assert_eq!(
         review_runs::start_run(db.connection_mut(), false)
             .unwrap()
@@ -164,12 +163,23 @@ fn a_cued_mistake_does_not_change_spontaneous_usage_count_or_promote_to_stable()
             [mistake as i64],
         )
         .unwrap();
-    let run = review_runs::start_run(db.connection_mut(), false)
+    assert!(review_runs::start_run(db.connection_mut(), false)
         .unwrap()
+        .is_none());
+    db.connection()
+        .execute_batch("INSERT INTO memory_review_runs (started_at, is_on_demand) VALUES (1, 0);")
+        .unwrap();
+    let run_id = db.connection().last_insert_rowid() as u64;
+    db.connection()
+        .execute(
+            "INSERT INTO memory_review_items (run_id, position, item_type, item_id, cue, target)
+             VALUES (?1, 1, 'mistake', ?2, 'the minus was visible', 'the main drawback')",
+            params![run_id as i64, mistake as i64],
+        )
         .unwrap();
     let saved = review_answers::record_recall(
         db.connection_mut(),
-        run.run_id,
+        run_id,
         LearningItemType::Mistake,
         mistake,
         "The main drawback was cost.",

@@ -510,3 +510,117 @@ fn the_profile_name_survives_a_save_and_old_profiles_get_an_empty_name() {
     drop(db);
     let _ = std::fs::remove_file(path);
 }
+
+fn mistake_columns(db: &SessionDatabase) -> Vec<String> {
+    db.connection
+        .prepare("PRAGMA table_info(mistakes)")
+        .unwrap()
+        .query_map([], |row| row.get::<_, String>(1))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+}
+
+#[test]
+fn migrates_a_version_twenty_two_database_to_the_mistakes_lessons_schema() {
+    let path = test_database_path();
+    let db = SessionDatabase::open(&path).unwrap();
+    db.connection
+        .execute_batch(
+            "DROP INDEX idx_mistakes_rule_key;
+             DROP TABLE mistake_lessons; DROP TABLE rule_cards; DROP TABLE rule_relapses;
+             ALTER TABLE mistakes DROP COLUMN rule_key;
+             ALTER TABLE mistakes DROP COLUMN ladder_step;
+             ALTER TABLE mistakes DROP COLUMN fixed_at;
+             ALTER TABLE mistakes DROP COLUMN step4_pass_days;
+             INSERT INTO mistakes (normalized_key, category, original_example, corrected_example, explanation, times_seen, last_seen_at, next_review_at)
+             VALUES ('grammar:i have a job', 'grammar', 'I have job', 'I have a job', 'Add a.', 1, 5, 6);
+             PRAGMA user_version = 22;",
+        )
+        .unwrap();
+    assert!(!mistake_columns(&db).contains(&"rule_key".to_string()));
+    drop(db);
+
+    let db = SessionDatabase::open(&path).unwrap();
+    let version: i64 = db
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    let columns = mistake_columns(&db);
+    for column in ["rule_key", "ladder_step", "fixed_at", "step4_pass_days"] {
+        assert!(columns.contains(&column.to_string()), "{column}");
+    }
+    let (rule, step, fixed, pass_days, said): (Option<String>, i64, Option<i64>, i64, String) = db
+        .connection
+        .query_row(
+            "SELECT rule_key, ladder_step, fixed_at, step4_pass_days, original_example FROM mistakes",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+        )
+        .unwrap();
+    assert_eq!((rule, step, fixed, pass_days), (None, 1, None, 0));
+    assert_eq!(said, "I have job");
+    for table in ["mistake_lessons", "rule_cards", "rule_relapses"] {
+        let count: i64 = db
+            .connection
+            .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(count, 0, "{table}");
+    }
+    drop(db);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn the_mistakes_migration_is_idempotent_when_columns_already_exist() {
+    let path = test_database_path();
+    let db = SessionDatabase::open(&path).unwrap();
+    db.connection
+        .execute_batch("PRAGMA user_version = 22;")
+        .unwrap();
+    drop(db);
+    let db = SessionDatabase::open(&path).unwrap();
+    let version: i64 = db
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    drop(db);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn a_lesson_needs_a_valid_state_and_goes_away_with_its_mistake() {
+    let db = SessionDatabase::open_in_memory().unwrap();
+    db.connection
+        .execute_batch(
+            "INSERT INTO mistakes (id, normalized_key, category, original_example, corrected_example, explanation, last_seen_at, next_review_at)
+             VALUES (1, 'k', 'grammar', 'a', 'b', 'c', 1, 1);",
+        )
+        .unwrap();
+    assert!(db
+        .connection
+        .execute(
+            "INSERT INTO mistake_lessons (mistake_id, state, updated_at) VALUES (1, 'weird', 1)",
+            []
+        )
+        .is_err());
+    db.connection
+        .execute(
+            "INSERT INTO mistake_lessons (mistake_id, state, updated_at) VALUES (1, 'pending', 1)",
+            [],
+        )
+        .unwrap();
+    db.connection.execute("PRAGMA foreign_keys = ON", []).ok();
+    db.connection
+        .execute("DELETE FROM mistakes WHERE id = 1", [])
+        .unwrap();
+    let left: i64 = db
+        .connection
+        .query_row("SELECT COUNT(*) FROM mistake_lessons", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(left, 0);
+}

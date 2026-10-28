@@ -506,12 +506,7 @@ fn coached_conversation_mistakes_become_memory_become_due_and_come_back_in_later
             Ok(eva("Thanks."))
         })
         .unwrap();
-    let review = later.start_memory_review().unwrap().expect("a due review");
-    assert_eq!(review.items.len(), 1);
-    assert_eq!(
-        review.items[0].item_type,
-        crate::learning::LearningItemType::Mistake
-    );
+    assert!(later.start_memory_review().unwrap().is_none());
     std::fs::remove_file(path).unwrap();
 }
 

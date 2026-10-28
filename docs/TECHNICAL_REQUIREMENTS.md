@@ -615,6 +615,10 @@ title and a one-line summary: `past_simple_vs_present_perfect`, `past_perfect`, 
 
 Existing `mistakes.times_seen` and the dedupe by `normalized_key` stay; the Memory eligibility rule
 (`times_seen >= 2`, §9.1) no longer applies to Mistakes, which lists every non-archived mistake.
+Spoken Memory review no longer selects mistakes (one scheduler per item): `mistakes.next_review_at`
+is the due time of the Mistakes ladder. Phrases are unchanged. Lessons are prepared by
+`providers::run_background_json` (one pinned `agy` call per batch); relapses are found when a
+lesson is saved, from the rule, for every mistake that has an earlier mistake with the same rule.
 
 **Lesson preparation.** After each coaching batch saves feedback (§6.1), the new mistakes join a
 lesson queue derived from SQLite (`mistake_lessons.state = pending` or missing, fewer than 2
@@ -623,7 +627,8 @@ pinned Gemini Flash model, "do not use any tools or commands", schema in the pro
 mistake: Eva's question, the learner's sentence, the corrected sentence, the review's explanation
 and the rule list. Output per mistake: `rule_key` from the list, explanation (≤ 300 characters),
 contrast (two labelled sentences), two examples (≤ 120 characters each), optional word
-`{ word, meaning }`, gap ranges that cover exactly the changed words, up to 4 accepted rewrites,
+`{ word, meaning }`, gap ranges that cover the changed words (kept when they add at most 3 other words; otherwise the
+gaps are the changed words found by a local word diff), up to 4 accepted rewrites,
 two step-4 questions that need the rule and do not contain the corrected wording. Each mistake is
 validated alone; a bad entry costs only its own lesson. Missing `rule_cards` rows for returned keys
 are prepared in the same call. Quota pause and retry follow coaching (§6.1). Lessons never block

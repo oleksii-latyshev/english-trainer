@@ -6,6 +6,7 @@ pub(crate) mod rescue;
 pub(crate) mod runner;
 pub(crate) mod session_wrapup;
 pub(crate) mod spoken_review;
+pub(crate) mod structured;
 #[cfg(test)]
 mod test_support;
 mod usage;

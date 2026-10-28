@@ -13,7 +13,11 @@ fn service(store: &SessionStore) -> ReviewService {
 fn seed(store: &SessionStore) -> (ReviewService, MemoryReviewRun) {
     store
         .with_database(|database, _| {
-            database.seed_recurring_mistake("I work in there", "I work there", 2, 20)
+            let card = database.save_phrase_card("I work there", "Where you work", None, None)?;
+            database
+                .connection()
+                .execute("UPDATE phrase_cards SET next_review_at = 0", [])?;
+            Ok::<_, rusqlite::Error>(card)
         })
         .unwrap();
     let service = service(store);
@@ -135,13 +139,13 @@ fn cue_and_cached_material_survive_reopen_without_granting_independent_use() {
     service
         .submit_recall(
             run.run_id,
-            LearningItemType::Mistake,
+            LearningItemType::Phrase,
             item.item_id,
             "I work there as a developer.",
         )
         .unwrap();
     let memory = reopened.get_learning_memory().unwrap();
-    assert_eq!(memory.mistakes[0].times_correct_afterwards, 0);
+    assert_eq!(memory.phrase_cards[0].times_used_on_own, 0);
     drop(service);
     drop(reopened);
     std::fs::remove_file(path).unwrap();

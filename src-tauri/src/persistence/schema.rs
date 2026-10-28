@@ -510,6 +510,54 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 "ALTER TABLE memory_review_runs ADD COLUMN is_on_demand INTEGER NOT NULL DEFAULT 0;",
             )?;
         }
+        transaction.pragma_update(None, "user_version", 22)?;
+        transaction.commit()?;
+        version = 22;
+    }
+    if version < 23 {
+        let transaction = connection.unchecked_transaction()?;
+        for (column, definition) in [
+            ("rule_key", "TEXT"),
+            ("ladder_step", "INTEGER NOT NULL DEFAULT 1"),
+            ("fixed_at", "INTEGER"),
+            ("step4_pass_days", "INTEGER NOT NULL DEFAULT 0"),
+        ] {
+            if !has_column(&transaction, "mistakes", column)? {
+                transaction.execute_batch(&format!(
+                    "ALTER TABLE mistakes ADD COLUMN {column} {definition};"
+                ))?;
+            }
+        }
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS mistake_lessons (
+                mistake_id INTEGER PRIMARY KEY REFERENCES mistakes(id) ON DELETE CASCADE,
+                state TEXT NOT NULL CHECK(state IN ('pending', 'ready', 'failed')),
+                explanation TEXT NOT NULL DEFAULT '',
+                contrast_json TEXT NOT NULL DEFAULT '[]',
+                examples_json TEXT NOT NULL DEFAULT '[]',
+                word_json TEXT,
+                gaps_json TEXT NOT NULL DEFAULT '[]',
+                accepted_json TEXT NOT NULL DEFAULT '[]',
+                situations_json TEXT NOT NULL DEFAULT '[]',
+                failures INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS rule_cards (
+                rule_key TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                body TEXT NOT NULL,
+                examples_json TEXT NOT NULL DEFAULT '[]'
+            );
+            CREATE TABLE IF NOT EXISTS rule_relapses (
+                rule_key TEXT NOT NULL,
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                PRIMARY KEY(rule_key, session_id, sequence)
+            );
+            CREATE INDEX IF NOT EXISTS idx_mistakes_rule_key ON mistakes(rule_key);",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }
