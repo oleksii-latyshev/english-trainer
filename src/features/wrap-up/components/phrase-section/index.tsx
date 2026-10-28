@@ -120,7 +120,7 @@ function SaveButton(props: {
   return (
     <>
       <Button
-        className="mt-1 h-11"
+        className="mt-1"
         disabled={props.isSaving || props.isSaved}
         onClick={props.onSave}
         tone="primary"

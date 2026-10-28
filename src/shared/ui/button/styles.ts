@@ -9,7 +9,7 @@ const pill =
 type PillTone = 'primary' | 'secondary' | 'quiet' | 'outline' | 'danger';
 
 const quietTones: PillTone[] = ['quiet', 'outline'];
-const calmTones: PillTone[] = ['secondary', 'quiet', 'outline', 'danger'];
+const pillTones: PillTone[] = ['primary', 'secondary', 'quiet', 'outline', 'danger'];
 
 export const button = tv({
   base: 'cursor-pointer whitespace-nowrap',
@@ -27,13 +27,11 @@ export const button = tv({
     iconOnly: { true: '', false: '' },
   },
   compoundVariants: [
-    { tone: 'primary', size: 'md', class: 'text-body h-12 px-6' },
-    { tone: 'primary', size: 'sm', class: 'text-control h-9 px-4' },
-    { tone: calmTones, size: 'md', class: 'text-control h-10 px-4' },
+    { tone: pillTones, size: 'md', class: 'text-control h-10 px-4' },
     { tone: quietTones, size: 'md', class: 'px-3.5' },
-    { tone: calmTones, size: 'sm', class: 'text-caption h-8 px-3' },
-    { tone: ['primary', ...calmTones], size: 'md', iconOnly: true, class: 'w-10 p-0' },
-    { tone: ['primary', ...calmTones], size: 'sm', iconOnly: true, class: 'w-8 p-0' },
+    { tone: pillTones, size: 'sm', class: 'text-caption h-8 px-3' },
+    { tone: pillTones, size: 'md', iconOnly: true, class: 'w-10 p-0' },
+    { tone: pillTones, size: 'sm', iconOnly: true, class: 'w-8 p-0' },
   ],
   defaultVariants: { tone: 'neutral', size: 'md', iconOnly: false },
 });
