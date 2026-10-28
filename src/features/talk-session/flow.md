@@ -24,8 +24,10 @@ sequenceDiagram
     end
     alt the stage ends, the mic is paused or the screen closes
         Atom->>Service: setClock(sessionId, false)
-    else IpcError
+    else IpcError while the session is still open
         Service-->>State: a message that clears on the next saved checkpoint
+    else IpcError after the session finished
+        Service-->>Atom: ignored, finishing already stopped the clock
     end
 ```
 

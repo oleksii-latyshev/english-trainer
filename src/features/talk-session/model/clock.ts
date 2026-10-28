@@ -32,6 +32,11 @@ const isMicrophonePausedAtom = Atom.make((get) => {
   return isSpoken && snapshot?.status === 'paused';
 });
 
+function isStillOpen(registry: AtomRegistry.AtomRegistry, sessionId: number) {
+  const state = registry.get(practiceStateAtom);
+  return (state.tag === 'active' || state.tag === 'waiting') && state.sessionId === sessionId;
+}
+
 function checkpoint(
   registry: AtomRegistry.AtomRegistry,
   sessions: PracticeSessions['Service'],
@@ -49,6 +54,7 @@ function checkpoint(
     ),
     Effect.catch((failure) =>
       Effect.sync(() => {
+        if (!isStillOpen(registry, sessionId)) return;
         registry.set(clockErrorAtom, true);
         reportPracticeError(registry, ipcFailureMessage(failure, CLOCK_FAILED));
       }),

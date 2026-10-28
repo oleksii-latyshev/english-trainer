@@ -110,4 +110,16 @@ describe('the session clock', () => {
     await until(() => registry.get(practiceErrorAtom) !== '');
     expect(registry.get(practiceErrorAtom)).toBe('Not saved.');
   });
+
+  it('stays quiet when the session was already finished', async () => {
+    const backend: Backend = { clock: [], fails: false };
+    const details = aSessionDetails();
+    const registry = opened(backend, { tag: 'active', ...details });
+    await until(() => backend.clock.length >= 1);
+    backend.fails = true;
+    registry.set(practiceStateAtom, { tag: 'finishing', ...details });
+    await until(() => backend.clock[backend.clock.length - 1] === false);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(registry.get(practiceErrorAtom)).toBe('');
+  });
 });
