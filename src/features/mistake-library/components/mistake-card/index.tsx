@@ -84,7 +84,7 @@ export function MistakeCard({ id, onBack, onArchived }: Props) {
           </Button>
           {value.rule && <span>{value.rule.title}</span>}
         </div>
-        <div className="max-narrow:grid-cols-1 grid grid-cols-[1.25fr_1fr] items-start gap-4">
+        <div className="max-narrow:grid-cols-1 grid grid-cols-[1.25fr_1fr] items-stretch gap-4">
           <GlassPanel aria-label="Mistake" className="flex flex-col gap-4 p-6">
             <Sentences mistake={value} />
             <Actions mistake={value} onArchived={onArchived} />
