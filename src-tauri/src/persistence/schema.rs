@@ -558,6 +558,40 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             );
             CREATE INDEX IF NOT EXISTS idx_mistakes_rule_key ON mistakes(rule_key);",
         )?;
+        transaction.pragma_update(None, "user_version", 23)?;
+        transaction.commit()?;
+        version = 23;
+    }
+    if version < 24 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS mistake_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kind TEXT NOT NULL CHECK(kind IN ('due', 'one', 'rule')),
+                rule_key TEXT,
+                items_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                finished_at INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS mistake_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mistake_id INTEGER NOT NULL REFERENCES mistakes(id) ON DELETE CASCADE,
+                run_id INTEGER NOT NULL REFERENCES mistake_runs(id) ON DELETE CASCADE,
+                step INTEGER NOT NULL CHECK(step BETWEEN 1 AND 4),
+                input TEXT NOT NULL CHECK(input IN ('typed', 'spoken')),
+                answer TEXT NOT NULL,
+                outcome TEXT NOT NULL CHECK(outcome IN ('pass', 'miss', 'checking', 'retry')),
+                checked_by TEXT NOT NULL CHECK(checked_by IN ('local', 'ai')),
+                note TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_mistake_attempts_run ON mistake_attempts(run_id);
+            CREATE INDEX IF NOT EXISTS idx_mistake_attempts_mistake ON mistake_attempts(mistake_id, step);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_mistake_attempts_one_answer
+                ON mistake_attempts(run_id, mistake_id) WHERE outcome != 'retry';
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_mistake_attempts_one_retry
+                ON mistake_attempts(run_id, mistake_id) WHERE outcome = 'retry';",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

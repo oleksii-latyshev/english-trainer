@@ -71,6 +71,9 @@ fn every_agy_entry_point_passes_a_gemini_model() {
 
     let _ = structured::run_background_json_with(&cli, "Prepare lessons", "{}");
     assert_every_call_is_gemini(&dir, 5);
+
+    let _ = structured::run_background_json_with(&cli, "Check one answer", "{}");
+    assert_every_call_is_gemini(&dir, 6);
 }
 
 #[test]

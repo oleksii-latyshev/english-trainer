@@ -22,7 +22,7 @@ impl SessionMistakeStore {
         Self { sessions }
     }
 
-    fn run<T>(
+    pub(super) fn run<T>(
         &self,
         operation: &'static str,
         work: impl FnOnce(&mut Connection) -> rusqlite::Result<T>,
@@ -33,29 +33,29 @@ impl SessionMistakeStore {
     }
 }
 
-fn sql_id(id: u64) -> i64 {
+pub(super) fn sql_id(id: u64) -> i64 {
     i64::try_from(id).unwrap_or(i64::MAX)
 }
 
-fn to_id(value: i64) -> u64 {
+pub(super) fn to_id(value: i64) -> u64 {
     u64::try_from(value).unwrap_or(0)
 }
 
-fn json<T: serde::Serialize>(value: &T) -> rusqlite::Result<String> {
+pub(super) fn json<T: serde::Serialize>(value: &T) -> rusqlite::Result<String> {
     serde_json::to_string(value)
         .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))
 }
 
-fn from_json<T: serde::de::DeserializeOwned + Default>(text: &str) -> T {
+pub(super) fn from_json<T: serde::de::DeserializeOwned + Default>(text: &str) -> T {
     serde_json::from_str(text).unwrap_or_default()
 }
 
-struct Occurrence {
-    session_id: i64,
-    sequence: i64,
+pub(super) struct Occurrence {
+    pub(super) session_id: i64,
+    pub(super) sequence: i64,
 }
 
-fn latest_occurrence(
+pub(super) fn latest_occurrence(
     connection: &Connection,
     mistake_id: i64,
 ) -> rusqlite::Result<Option<Occurrence>> {
@@ -74,7 +74,10 @@ fn latest_occurrence(
         .optional()
 }
 
-fn question_for(connection: &Connection, occurrence: &Occurrence) -> rusqlite::Result<String> {
+pub(super) fn question_for(
+    connection: &Connection,
+    occurrence: &Occurrence,
+) -> rusqlite::Result<String> {
     let Some((opening, mode, written)) = connection
         .query_row(
             "SELECT opening_question, COALESCE(practice_mode, 'voice'), COALESCE(written_turn_count, 0)

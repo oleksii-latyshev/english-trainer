@@ -102,6 +102,12 @@ pub fn run() {
                 eprintln!("Could not start the lesson worker thread: {error}");
                 std::io::Error::other("Could not start mistake lessons. Restart the app.")
             })?;
+            app.manage(mistakes::PracticeService::new(
+                lesson_store.clone(),
+                std::sync::Arc::new(mistakes::AgyAnswerChecker),
+                std::sync::Arc::new(mistakes::TauriMistakesNotifier::new(app.handle().clone())),
+                std::sync::Arc::new(mistakes::SystemClock),
+            ));
             app.manage(mistakes::MistakesService::new(
                 lesson_store,
                 lessons.kicker(),
@@ -249,6 +255,12 @@ pub fn run() {
             mistakes::commands::get_rule_card,
             mistakes::commands::archive_mistake,
             mistakes::commands::retry_mistake_lesson,
+            mistakes::commands::start_mistake_run,
+            mistakes::commands::get_mistake_run,
+            mistakes::commands::answer_mistake_step,
+            mistakes::commands::check_mistake_answer,
+            mistakes::commands::retry_mistake_check,
+            mistakes::commands::finish_mistake_run,
             ai_settings::commands::save_ai_settings,
             ai_settings::commands::prewarm_conversation_provider,
             gemini_key::commands::get_gemini_key_status,
