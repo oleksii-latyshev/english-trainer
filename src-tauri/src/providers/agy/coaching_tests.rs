@@ -50,6 +50,32 @@ fn valid_entries_become_feedback_and_a_bad_quote_drops_only_its_focus_point() {
 }
 
 #[test]
+fn a_long_answer_gets_its_whole_rewrite_while_a_runaway_one_is_dropped() {
+    let long_answer =
+        "We cache the catalog page for one hour so the next user gets it fast. ".repeat(14);
+    let rewrite =
+        "We cache the catalog page for an hour, so the next user gets it quickly. ".repeat(14);
+    let runaway = "Caching helps. ".repeat(200);
+    let dir = TestDirectory::new();
+    let cli = recording_cli(
+        &dir,
+        &reply(&format!(
+            r#"{{"answers":[{{"n":1,"mistakes":[],"rewrite":"{}"}},{{"n":2,"mistakes":[],"rewrite":"{}"}}]}}"#,
+            rewrite.trim(),
+            runaway.trim()
+        )),
+    );
+
+    let coached =
+        coach_answers_with(&cli, &[answer(1, &long_answer), answer(2, &long_answer)]).unwrap();
+
+    assert!(long_answer.chars().count() > 900);
+    assert_eq!(coached.len(), 1);
+    assert_eq!(coached[0].sequence, 1);
+    assert_eq!(coached[0].feedback.b2_rewrite, rewrite.trim());
+}
+
+#[test]
 fn only_the_first_valid_mistake_is_kept_and_missing_category_means_grammar() {
     let dir = TestDirectory::new();
     let cli = recording_cli(

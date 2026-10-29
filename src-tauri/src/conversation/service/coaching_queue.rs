@@ -251,20 +251,25 @@ impl Shared {
             Ok(coached) => {
                 let mut failed = Vec::new();
                 for answer in &answers {
-                    let saved = coached
-                        .iter()
-                        .find(|item| item.sequence == answer.sequence)
-                        .is_some_and(|item| {
-                            self.store
-                                .save_feedback(
-                                    session_id,
-                                    answer.sequence,
-                                    &answer.transcript,
-                                    &item.feedback,
-                                )
-                                .is_ok()
-                        });
-                    if !saved {
+                    let Some(item) = coached.iter().find(|item| item.sequence == answer.sequence)
+                    else {
+                        eprintln!(
+                            "Coaching for answer {} of session {session_id} is missing from the reply.",
+                            answer.sequence
+                        );
+                        failed.push(answer.sequence);
+                        continue;
+                    };
+                    if let Err(error) = self.store.save_feedback(
+                        session_id,
+                        answer.sequence,
+                        &answer.transcript,
+                        &item.feedback,
+                    ) {
+                        eprintln!(
+                            "Coaching for answer {} of session {session_id} was not saved: {error}",
+                            answer.sequence
+                        );
                         failed.push(answer.sequence);
                     }
                 }
@@ -275,7 +280,11 @@ impl Shared {
                     .coaching_status()
                     .pause_until(Instant::now() + self.quota_pause);
             }
-            Err(_) => {
+            Err(error) => {
+                eprintln!(
+                    "Coaching for session {session_id} failed ({:?}): {}",
+                    error.code, error.message
+                );
                 let sequences: Vec<usize> = answers.iter().map(|answer| answer.sequence).collect();
                 self.count_failures(session_id, &sequences);
             }

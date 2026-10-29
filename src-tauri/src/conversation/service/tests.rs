@@ -297,6 +297,34 @@ fn the_answer_context_follows_the_conversation() {
 }
 
 #[test]
+fn a_long_answer_keeps_a_rewrite_of_similar_length_but_not_a_runaway_one() {
+    let path = temporary_database_path();
+    let store = SessionStore::open(&path).unwrap();
+    let session = store.start().unwrap();
+    let long_answer = "I fixed a caching bug in our catalog last week. ".repeat(20);
+    store
+        .send_turn(session.session_id, long_answer.clone(), |_| {
+            Ok(turn("Next?", "Follow up?"))
+        })
+        .unwrap();
+    let rewrite = |text: String| TurnFeedback {
+        focus_feedback: Vec::new(),
+        b2_rewrite: text,
+    };
+
+    let runaway = rewrite("Last week I fixed a caching bug. ".repeat(100));
+    assert!(store
+        .save_feedback(session.session_id, 1, &long_answer, &runaway)
+        .is_err());
+
+    let similar = rewrite("Last week I fixed a caching bug in our catalog. ".repeat(20));
+    assert!(similar.b2_rewrite.chars().count() > 900);
+    store
+        .save_feedback(session.session_id, 1, &long_answer, &similar)
+        .unwrap();
+}
+
+#[test]
 fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
     let path = temporary_database_path();
     let store = SessionStore::open(&path).unwrap();
