@@ -20,6 +20,13 @@ export class Chat {
     return history.y + history.height - (message.y + message.height);
   }
 
+  async isFullyInView(target: Locator): Promise<boolean> {
+    const box = await target.boundingBox();
+    const history = await this.history.boundingBox();
+    if (box === null || history === null) return false;
+    return box.y >= history.y && box.y + box.height <= history.y + history.height;
+  }
+
   height(): Promise<number> {
     return this.history.evaluate((node) => node.clientHeight);
   }

@@ -14,10 +14,11 @@ export const HISTORY_FAILED_MESSAGE = 'Could not refresh dialogue history.';
 type Props = {
   currentQuestion: string | undefined;
   canReplay: boolean;
+  hasStageAbove?: boolean;
   children?: ReactNode;
 };
 
-export function Dialogue({ currentQuestion, canReplay, children }: Props) {
+export function Dialogue({ currentQuestion, canReplay, hasStageAbove = true, children }: Props) {
   const { dialogue, hasFailed, pendingReply, retry } = useDialogue();
   const replay = useReplay();
   const messages = buildDialogueMessages(dialogue, currentQuestion);
@@ -27,7 +28,7 @@ export function Dialogue({ currentQuestion, canReplay, children }: Props) {
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         aria-label="Conversation message history"
-        className="data-[overflowing=true]:mask-fade-top flex min-h-0 flex-1 flex-col overflow-y-auto px-10 pt-24 pb-3"
+        className={`${hasStageAbove ? 'data-[overflowing=true]:mask-fade-top pt-24' : 'data-[overflowing=true]:mask-fade-top-sm pt-6'} flex min-h-0 flex-1 flex-col overflow-y-auto px-10 pb-3`}
         onScroll={follow.onScroll}
         ref={follow.viewportRef}
         role="log"

@@ -2,7 +2,7 @@ export { EvaLookApplier } from './components/eva-look-applier';
 
 export { bodySwatch, leafSwatch, petalSwatch } from './helpers/swatch';
 export { withBody } from './helpers/with-body';
-export { evaLookAtom } from './model/atoms';
+export { evaFoldedAtom, evaLookAtom } from './model/atoms';
 export {
   BODY_COLOURS,
   DEFAULT_EVA_LOOK,

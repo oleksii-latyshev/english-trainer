@@ -48,6 +48,10 @@ export class TalkPage {
   readonly preparingQuestions: Locator;
   readonly sessionTimeBar: Locator;
   readonly sessionProgressLabel: Locator;
+  readonly foldEvaButton: Locator;
+  readonly unfoldEvaButton: Locator;
+  readonly evaStage: Locator;
+  readonly foldedEvaStatus: Locator;
 
   constructor(private readonly page: Page) {
     this.chat = new Chat(page);
@@ -91,6 +95,10 @@ export class TalkPage {
     this.practiceComplete = page.getByText('Practice complete', { exact: true });
     this.sessionProgressLabel = page.getByText(/^\d\d:\d\d( of \d\d:\d\d)? · Speak$/);
     this.sessionTimeBar = page.getByRole('progressbar', { name: 'Suggested session time' });
+    this.foldEvaButton = page.getByRole('button', { name: 'Fold Eva', exact: true });
+    this.unfoldEvaButton = page.getByRole('button', { name: 'Unfold Eva', exact: true });
+    this.evaStage = page.getByRole('complementary', { name: 'Eva', exact: true });
+    this.foldedEvaStatus = page.locator('header').getByRole('status');
     this.preparingQuestions = page.getByText('Preparing five questions…');
   }
 
