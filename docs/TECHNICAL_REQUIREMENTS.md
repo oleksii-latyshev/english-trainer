@@ -113,8 +113,9 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   trims model padding in 10 ms RMS windows at 0.003 (−50 dBFS), keeping 40 ms before and 15 ms
   after speech (the model's tail after the last word is a low-level creak, so it is not kept), with
   equal-power fades of 20 ms in and 30 ms out, so a join inside a sentence leaves about 60 ms of silence and no clip ends on a hard
-  edge; between sentences the frontend adds a 150 ms pause. Phrases are scheduled on one audio clock (Web Audio) created at the
-  model's 44.1 kHz so WebKit never resamples; a phrase starts exactly where the previous one ends.
+  edge; between sentences the frontend adds a 150 ms pause. Phrases are scheduled on one audio clock (Web Audio) at the output
+  device's own rate; `decodeAudioData` converts each 44.1 kHz phrase once, so nothing is resampled
+  in real time beside the 48 kHz microphone; a phrase starts exactly where the previous one ends.
 - **Fallback:** `whisper-cli` (`ENG_TRAINER_WHISPER_BIN`, `PATH`, Homebrew paths) in a private temp
   dir, 120 s timeout. Typed `TranscriptionError` codes: `model_missing`, `engine_missing`,
   `engine_failed`, `timeout`, `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`, `busy`.
