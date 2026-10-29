@@ -1,8 +1,8 @@
 # Usual mistakes flow
 
-The "Your usual mistakes" card on the Talk start screen: the three rules that come back most often
-with how many mistakes each holds, and a button that opens Mistakes. It reads `mistakeGroupsAtom`
-(`core/mistakes`) and shows nothing until a rule has a mistake.
+The "Your usual mistakes" card on the Talk start screen: the three largest rules that hold two or
+more mistakes, with how many each holds, and a button that opens Mistakes. It reads
+`mistakeGroupsAtom` (`core/mistakes`) and shows nothing until a rule holds two mistakes.
 
 ```mermaid
 sequenceDiagram

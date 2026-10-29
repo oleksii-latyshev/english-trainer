@@ -6,11 +6,15 @@ pub(crate) fn recurring_mistakes(
     connection: &Connection,
 ) -> rusqlite::Result<Vec<MistakePracticeCandidate>> {
     let mut statement = connection.prepare(
-        "SELECT id, original_example, corrected_example, explanation, times_seen, last_seen_at
-         FROM mistakes WHERE status != 'archived' AND times_seen >= 2
-         AND trim(original_example) != '' AND trim(corrected_example) != '' AND trim(explanation) != ''
-         AND length(original_example) <= 300 AND length(corrected_example) <= 300 AND length(explanation) <= 500
-         ORDER BY times_seen DESC, last_seen_at DESC, id ASC LIMIT 5",
+        "SELECT m.id, m.original_example, m.corrected_example, m.explanation, m.times_seen, m.last_seen_at
+         FROM mistakes m
+         JOIN (SELECT rule_key, COUNT(*) AS rule_count FROM mistakes
+               WHERE status != 'archived' AND rule_key IS NOT NULL AND rule_key != 'other'
+               GROUP BY rule_key HAVING COUNT(*) >= 2) r ON r.rule_key = m.rule_key
+         WHERE m.status != 'archived'
+         AND trim(m.original_example) != '' AND trim(m.corrected_example) != '' AND trim(m.explanation) != ''
+         AND length(m.original_example) <= 300 AND length(m.corrected_example) <= 300 AND length(m.explanation) <= 500
+         ORDER BY r.rule_count DESC, m.last_seen_at DESC, m.id ASC LIMIT 5",
     )?;
     let rows = statement.query_map([], |row| {
         let id = to_safe_u64_id(row.get(0)?)?;
@@ -34,27 +38,48 @@ mod tests {
     use crate::persistence::SessionDatabase;
 
     #[test]
-    fn candidate_selection_is_frequency_then_recency_and_ignores_due_date() {
+    fn candidates_come_from_rules_with_two_or_more_mistakes_largest_rule_then_recency() {
         let mut database = SessionDatabase::open_in_memory().unwrap();
         let older = database
-            .seed_recurring_mistake("first wrong form", "first right form", 3, 10)
+            .seed_ruled_mistake("first wrong form", "first right form", 1, 10, "articles")
             .unwrap();
         let newer = database
-            .seed_recurring_mistake("second wrong form", "second right form", 3, 20)
+            .seed_ruled_mistake("second wrong form", "second right form", 1, 20, "articles")
             .unwrap();
-        let frequent = database
-            .seed_recurring_mistake("third wrong form", "third right form", 5, 1)
+        let oldest_large = database
+            .seed_ruled_mistake("third wrong form", "third right form", 1, 1, "prepositions")
+            .unwrap();
+        let middle_large = database
+            .seed_ruled_mistake(
+                "fourth wrong form",
+                "fourth right form",
+                1,
+                2,
+                "prepositions",
+            )
+            .unwrap();
+        let newest_large = database
+            .seed_ruled_mistake("fifth wrong form", "fifth right form", 1, 3, "prepositions")
             .unwrap();
         let archived = database
-            .seed_recurring_mistake("hidden wrong form", "hidden right form", 8, 90)
+            .seed_ruled_mistake("hidden wrong form", "hidden right form", 8, 90, "articles")
             .unwrap();
-        let single = database
-            .seed_recurring_mistake("single wrong form", "single right form", 1, 100)
+        let alone = database
+            .seed_ruled_mistake(
+                "single wrong form",
+                "single right form",
+                5,
+                100,
+                "word_choice",
+            )
+            .unwrap();
+        let other_one = database
+            .seed_ruled_mistake("odd one", "odd one fixed", 5, 100, "other")
+            .unwrap();
+        let other_two = database
+            .seed_ruled_mistake("odd two", "odd two fixed", 5, 100, "other")
             .unwrap();
         let connection = database.connection_mut();
-        connection
-            .execute("UPDATE mistakes SET next_review_at = 9999999999999", [])
-            .unwrap();
         connection
             .execute(
                 "UPDATE mistakes SET status = 'archived' WHERE id = ?1",
@@ -66,7 +91,12 @@ mod tests {
             .into_iter()
             .map(|item| item.id)
             .collect();
-        assert_eq!(ids, vec![frequent, newer, older]);
-        assert!(!ids.contains(&single));
+        assert_eq!(
+            ids,
+            vec![newest_large, middle_large, oldest_large, newer, older]
+        );
+        for excluded in [alone, other_one, other_two, archived] {
+            assert!(!ids.contains(&excluded));
+        }
     }
 }

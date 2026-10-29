@@ -12,9 +12,21 @@ impl SessionDatabase {
         times_seen: i64,
         last_seen_at: i64,
     ) -> rusqlite::Result<u64> {
+        self.seed_ruled_mistake(original, corrected, times_seen, last_seen_at, "articles")
+    }
+
+    #[cfg(test)]
+    pub fn seed_ruled_mistake(
+        &mut self,
+        original: &str,
+        corrected: &str,
+        times_seen: i64,
+        last_seen_at: i64,
+        rule_key: &str,
+    ) -> rusqlite::Result<u64> {
         self.connection.execute(
-            "INSERT INTO mistakes (normalized_key, category, original_example, corrected_example, explanation, times_seen, last_seen_at, next_review_at, status) VALUES (?1, 'grammar', ?2, ?3, 'Use the natural form.', ?4, ?5, 0, 'learning')",
-            params![format!("practice:{original}:{corrected}"), original, corrected, times_seen, last_seen_at],
+            "INSERT INTO mistakes (normalized_key, category, original_example, corrected_example, explanation, times_seen, last_seen_at, next_review_at, status, rule_key) VALUES (?1, 'grammar', ?2, ?3, 'Use the natural form.', ?4, ?5, 0, 'learning', ?6)",
+            params![format!("practice:{original}:{corrected}"), original, corrected, times_seen, last_seen_at, rule_key],
         )?;
         to_safe_u64_id(self.connection.last_insert_rowid())
     }
@@ -46,7 +58,7 @@ impl SessionDatabase {
         let transaction = self.connection.transaction()?;
         for target in targets {
             let still_valid: bool = transaction.query_row(
-                "SELECT EXISTS(SELECT 1 FROM mistakes WHERE id = ?1 AND status != 'archived' AND times_seen >= 2 AND original_example = ?2 AND corrected_example = ?3)",
+                "SELECT EXISTS(SELECT 1 FROM mistakes m WHERE m.id = ?1 AND m.status != 'archived' AND m.original_example = ?2 AND m.corrected_example = ?3 AND m.rule_key IS NOT NULL AND m.rule_key != 'other' AND (SELECT COUNT(*) FROM mistakes peer WHERE peer.rule_key = m.rule_key AND peer.status != 'archived') >= 2)",
                 params![to_sql_id(target.id)?, target.original, target.corrected], |row| row.get(0))?;
             if !still_valid {
                 return Ok(None);
@@ -98,6 +110,9 @@ mod tests {
         let mut database = SessionDatabase::open_in_memory().unwrap();
         database
             .seed_recurring_mistake("I work in there", "I work there", 2, 5)
+            .unwrap();
+        database
+            .seed_recurring_mistake("I live in there", "I live there", 1, 4)
             .unwrap();
         let candidates = database.recurring_mistakes().unwrap();
         let questions: Vec<_> = (0..5)

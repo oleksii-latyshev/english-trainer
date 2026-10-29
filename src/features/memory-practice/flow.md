@@ -30,5 +30,5 @@ sequenceDiagram
 - Review offers "Resume review" for a saved run, "Start spoken review" when something is due and
   nothing otherwise ("All caught up").
 - Practice is blocked while Memory loads or failed, while a conversation is open, while the
-  microphone is busy and while no mistake has been seen at least twice
-  (`isPracticableMistake`, the same bounds Rust applies).
+  microphone is busy and while no rule holds at least two mistakes (`usualRulesAtom` from
+  `core/mistakes`, the same rule groups Rust picks the five mistakes from).

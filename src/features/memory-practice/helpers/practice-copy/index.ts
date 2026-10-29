@@ -14,7 +14,7 @@ export function practiceBlockedReason(block: PracticeBlock): string {
   if (!block.isLibraryReady) return 'Your repeated mistakes are still loading.';
   if (block.isSessionOpen) return 'Continue or finish the current conversation first.';
   if (block.isAudioBusy) return 'Wait for the microphone to become available.';
-  if (block.practicableCount === 0) return 'Mistakes need to appear at least twice first.';
+  if (block.practicableCount === 0) return 'A rule needs at least two mistakes first.';
   return '';
 }
 

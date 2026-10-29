@@ -34,7 +34,7 @@ Feature: Practice sessions
     Then the learner stays in Review writing and can retry Ready to speak
 
   Scenario: Practise recurring mistakes independently of due dates
-    Given Memory has a non-archived mistake seen at least twice
+    Given a rule holds two or more non-archived mistakes
     When the learner starts Practice my usual mistakes
     Then five short spoken questions are prepared without opening the microphone yet
     And Talk opens at question one after preparation succeeds

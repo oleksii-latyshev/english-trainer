@@ -20,7 +20,7 @@ type MistakesSeed = {
 
 declare global {
   interface Window {
-    __ET_MISTAKES__: { land(id: number): void };
+    __ET_MISTAKES__: { land(id: number): void; emit(): void };
   }
 }
 
@@ -53,6 +53,19 @@ export class MistakesBackend {
         question: 'What did you enjoy about studying at university?',
       },
     ];
+    return this;
+  }
+
+  withSingleMistakeRules(): this {
+    this.groups = {
+      groups: mistakeGroups.groups.map((group) => ({
+        ...group,
+        mistake_count: 1,
+        mistakes: [group.mistakes[0]],
+      })),
+      ungrouped: [],
+      due_count: 2,
+    };
     return this;
   }
 
@@ -119,13 +132,17 @@ export class MistakesBackend {
         groups.ungrouped = groups.ungrouped.filter((mistake) => mistake.id !== id);
         recount();
       }
+      function emit(): void {
+        for (const callback of listeners.values()) {
+          callback({ event: 'mistakes-updated', id: 1, payload: { lessons_ready: 1 } });
+        }
+      }
       window.__ET_MISTAKES__ = {
         land: (id) => {
           setLesson(id, 'ready');
-          for (const callback of listeners.values()) {
-            callback({ event: 'mistakes-updated', id: 1, payload: { lessons_ready: 1 } });
-          }
+          emit();
         },
+        emit,
       };
       internals.invoke = async (command, args = {}) => {
         switch (command) {

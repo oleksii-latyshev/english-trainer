@@ -88,11 +88,14 @@ export {
   PhraseCardRecordSchema,
 } from './schemas/learning';
 export {
+  ExerciseViewSchema,
+  InputKindSchema,
   MISTAKES_UPDATED_EVENT,
   MistakeDetailSchema,
   MistakeGroupsSchema,
   MistakesUpdatedSchema,
   RuleCardViewSchema,
+  RunViewSchema,
 } from './schemas/mistakes';
 export { PersonalProfileSchema } from './schemas/personal-profile';
 export {

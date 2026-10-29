@@ -26,6 +26,7 @@ test('a repeated mistake can start voice practice even when no items are due', a
   talk,
   tauri,
 }) => {
+  tauri.mistakes.withGroups();
   tauri.memory.withRepeatedMistake().preparingMistakePracticeFor(750);
   await app.open();
   await app.sidebar.openMemory();
@@ -48,6 +49,7 @@ test('failed question preparation keeps Memory available for retry', async ({
   talk,
   tauri,
 }) => {
+  tauri.mistakes.withGroups();
   tauri.memory.withRepeatedMistake().failingNextMistakePractice();
   await app.open();
   await app.sidebar.openMemory();
@@ -61,6 +63,7 @@ test('failed question preparation keeps Memory available for retry', async ({
 });
 
 test('an existing conversation blocks a new mistake practice', async ({ app, memory, tauri }) => {
+  tauri.mistakes.withGroups();
   tauri.memory.withRepeatedMistake();
   tauri.session.withOpenSession(initialSession);
   await app.open();
@@ -129,6 +132,7 @@ test('a started mistake run takes five voice answers and finishes with pending c
   wrapup,
   tauri,
 }) => {
+  tauri.mistakes.withGroups();
   tauri.memory.withRepeatedMistake();
   tauri.rescue.available();
   tauri.streaming.withWarmMicrophone();
@@ -158,6 +162,7 @@ test('a mistake run left after two answers resumes at the third question', async
   talk,
   tauri,
 }) => {
+  tauri.mistakes.withGroups();
   tauri.memory.withRepeatedMistake();
   tauri.rescue.available();
   tauri.streaming.withWarmMicrophone();

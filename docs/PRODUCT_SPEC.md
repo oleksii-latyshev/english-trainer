@@ -175,7 +175,7 @@ At the end of a session:
 
 ### 8.1 Practice my usual mistakes
 
-Mistakes (§9) offers a short spoken practice on mistakes seen at least twice: five questions, about
+Mistakes (§9) offers a short spoken practice on mistakes from rules that hold two or more mistakes: five questions, about
 two minutes, even when those mistakes are not due for scheduled review. Eva prepares varied
 questions that invite the corrected forms, then asks them without waiting for feedback. The
 learner can finish early or resume an unfinished practice. Normal coaching runs in

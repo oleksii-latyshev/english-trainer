@@ -1,4 +1,5 @@
 import type { MistakeGroup } from '@/core/mistakes';
+import { Button } from '@/shared/ui/button';
 import { Chip } from '@/shared/ui/chip';
 import { Disclosure } from '@/shared/ui/disclosure';
 import { GlassPanel } from '@/shared/ui/glass-panel';
@@ -7,9 +8,14 @@ import { fixedLabel, moreLabel, relapseLabel, SHOWN_MISTAKES } from '../../helpe
 import { MistakeRow } from '../mistake-row';
 import { RuleDetails } from '../rule-details';
 
-type Props = { group: MistakeGroup; onOpen: (id: number) => void };
+type Props = {
+  group: MistakeGroup;
+  isStartingRun: boolean;
+  onOpen: (id: number) => void;
+  onPractise: () => void;
+};
 
-export function RuleGroup({ group, onOpen }: Props) {
+export function RuleGroup({ group, isStartingRun, onOpen, onPractise }: Props) {
   const relapse = relapseLabel(group);
   const fixed = fixedLabel(group);
   const more = moreLabel(group);
@@ -43,6 +49,11 @@ export function RuleGroup({ group, onOpen }: Props) {
           ))}
         </ul>
         {more && <p className="text-control text-faint m-0">{more}</p>}
+        <div className="flex justify-end">
+          <Button onClick={onPractise} pending={isStartingRun} tone="secondary">
+            Practise this rule
+          </Button>
+        </div>
       </div>
       <Disclosure summary="Open the full rule">
         <RuleDetails ruleKey={group.rule_key} />

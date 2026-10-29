@@ -1,7 +1,7 @@
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react';
 import { AsyncResult } from 'effect/reactivity';
 import { TriangleAlert } from 'lucide-react';
-import { mistakeGroupsAtom } from '@/core/mistakes';
+import { mistakeGroupsAtom, type RuleKey } from '@/core/mistakes';
 import { Button } from '@/shared/ui/button';
 import { GlassPanel } from '@/shared/ui/glass-panel';
 import { Notice } from '@/shared/ui/notice';
@@ -9,7 +9,11 @@ import { NOT_SORTED_HINT, NOT_SORTED_TITLE, totalMistakes } from '../../helpers/
 import { MistakeRow } from '../mistake-row';
 import { RuleGroup } from '../rule-group';
 
-type Props = { onOpen: (id: number) => void };
+type Props = {
+  isStartingRun: boolean;
+  onOpen: (id: number) => void;
+  onPractiseRule: (ruleKey: RuleKey) => void;
+};
 
 function EmptyState() {
   return (
@@ -20,7 +24,7 @@ function EmptyState() {
   );
 }
 
-export function MistakeGroups({ onOpen }: Props) {
+export function MistakeGroups({ isStartingRun, onOpen, onPractiseRule }: Props) {
   const result = useAtomValue(mistakeGroupsAtom);
   const retry = useAtomRefresh(mistakeGroupsAtom);
   return AsyncResult.match(result, {
@@ -43,7 +47,13 @@ export function MistakeGroups({ onOpen }: Props) {
       return (
         <div className="max-narrow:grid-cols-1 grid grid-cols-2 items-start gap-4">
           {value.groups.map((group) => (
-            <RuleGroup group={group} key={group.rule_key} onOpen={onOpen} />
+            <RuleGroup
+              group={group}
+              isStartingRun={isStartingRun}
+              key={group.rule_key}
+              onOpen={onOpen}
+              onPractise={() => onPractiseRule(group.rule_key)}
+            />
           ))}
           {value.ungrouped.length > 0 && (
             <GlassPanel aria-labelledby="rule-not-sorted" className="flex flex-col gap-3 px-6 py-5">

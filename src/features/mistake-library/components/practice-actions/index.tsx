@@ -3,19 +3,25 @@ import { Option } from 'effect';
 import { AsyncResult } from 'effect/reactivity';
 import { mistakeGroupsAtom } from '@/core/mistakes';
 import { Button } from '@/shared/ui/button';
-import { Tooltip } from '@/shared/ui/tooltip';
 import { practiseLabel } from '../../helpers/group-copy';
 
 type Props = {
   blockedReason: string | null;
   isStarting: boolean;
   error: string;
+  isStartingRun: boolean;
   onTalkItThrough: () => void;
+  onPractise: () => void;
 };
 
-export const COMING_SOON = 'Coming soon';
-
-export function PracticeActions({ blockedReason, isStarting, error, onTalkItThrough }: Props) {
+export function PracticeActions({
+  blockedReason,
+  isStarting,
+  error,
+  isStartingRun,
+  onTalkItThrough,
+  onPractise,
+}: Props) {
   const groups = Option.getOrNull(AsyncResult.value(useAtomValue(mistakeGroupsAtom)));
   const dueCount = groups?.due_count ?? 0;
   return (
@@ -29,11 +35,14 @@ export function PracticeActions({ blockedReason, isStarting, error, onTalkItThro
         >
           {isStarting ? 'Preparing…' : 'Talk it through'}
         </Button>
-        <Tooltip content={COMING_SOON}>
-          <Button disabled tone="primary">
-            {practiseLabel(dueCount)}
-          </Button>
-        </Tooltip>
+        <Button
+          disabled={dueCount === 0}
+          onClick={onPractise}
+          pending={isStartingRun}
+          tone="primary"
+        >
+          {practiseLabel(dueCount)}
+        </Button>
       </div>
       {blockedReason && <p className="text-faint m-0 text-xs">{blockedReason}</p>}
       {error && (

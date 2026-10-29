@@ -1,3 +1,5 @@
+import { STEP_LABELS } from '@/core/mistakes';
+
 type LadderState = 'done' | 'current' | 'todo';
 
 export type LadderStep = {
@@ -5,8 +7,6 @@ export type LadderStep = {
   readonly label: string;
   readonly state: LadderState;
 };
-
-const STEP_LABELS = ['Fill the gaps', 'Fix it', 'Say it', 'Use it'] as const;
 
 export const STEP_COUNT = STEP_LABELS.length;
 
