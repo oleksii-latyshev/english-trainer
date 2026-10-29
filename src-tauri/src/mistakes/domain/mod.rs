@@ -1,4 +1,8 @@
+pub mod answer;
+pub mod check_prompt;
+pub mod ladder;
 pub mod lesson;
+pub mod practice;
 pub mod prompt;
 pub mod rules;
 pub mod view;

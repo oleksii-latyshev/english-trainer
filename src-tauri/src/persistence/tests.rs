@@ -624,3 +624,60 @@ fn a_lesson_needs_a_valid_state_and_goes_away_with_its_mistake() {
         .unwrap();
     assert_eq!(left, 0);
 }
+
+#[test]
+fn migrates_a_version_twenty_three_database_to_the_practice_runs_schema() {
+    let path = test_database_path();
+    let db = SessionDatabase::open(&path).unwrap();
+    db.connection
+        .execute_batch(
+            "DROP TABLE mistake_attempts; DROP TABLE mistake_runs;
+             INSERT INTO mistakes (id, normalized_key, category, original_example, corrected_example, explanation, last_seen_at, next_review_at)
+             VALUES (1, 'grammar:i have a job', 'grammar', 'I have job', 'I have a job', 'Add a.', 5, 6);
+             PRAGMA user_version = 23;",
+        )
+        .unwrap();
+    drop(db);
+
+    let db = SessionDatabase::open(&path).unwrap();
+    let version: i64 = db
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    db.connection
+        .execute_batch(
+            "INSERT INTO mistake_runs (id, kind, items_json, created_at) VALUES (1, 'due', '[]', 1);
+             INSERT INTO mistake_attempts (mistake_id, run_id, step, input, answer, outcome, checked_by, created_at)
+             VALUES (1, 1, 2, 'typed', 'x', 'checking', 'ai', 1);
+             INSERT INTO mistake_attempts (mistake_id, run_id, step, input, answer, outcome, checked_by, created_at)
+             VALUES (1, 1, 2, 'typed', 'y', 'retry', 'local', 2);",
+        )
+        .unwrap();
+    assert!(db
+        .connection
+        .execute(
+            "INSERT INTO mistake_attempts (mistake_id, run_id, step, input, answer, outcome, checked_by, created_at)
+             VALUES (1, 1, 2, 'typed', 'z', 'pass', 'local', 3)",
+            [],
+        )
+        .is_err());
+    assert!(db
+        .connection
+        .execute(
+            "INSERT INTO mistake_runs (kind, items_json, created_at) VALUES ('weird', '[]', 1)",
+            [],
+        )
+        .is_err());
+    let said: String = db
+        .connection
+        .query_row(
+            "SELECT original_example FROM mistakes WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(said, "I have job");
+    drop(db);
+    std::fs::remove_file(path).unwrap();
+}

@@ -1,3 +1,4 @@
+use super::domain::practice::Rejection;
 use crate::core::{IpcError, IpcErrorCode};
 use thiserror::Error;
 
@@ -11,6 +12,22 @@ pub enum MistakesError {
     },
     #[error("mistake {0} does not exist")]
     NotFound(u64),
+    #[error("nothing to practise")]
+    NothingToPractice,
+    #[error("the practice target is incomplete")]
+    MissingTarget,
+    #[error("practice run {0} does not exist")]
+    RunNotFound(u64),
+    #[error("practice run is finished")]
+    RunFinished,
+    #[error("exercise {0} is not in the run")]
+    ExerciseNotFound(u32),
+    #[error("answer rejected: {0:?}")]
+    Rejected(Rejection),
+    #[error("attempt {0} cannot be checked")]
+    CheckUnavailable(u64),
+    #[error("the background check failed")]
+    CheckFailed,
 }
 
 impl MistakesError {
@@ -35,8 +52,44 @@ impl From<MistakesError> for IpcError {
                 IpcErrorCode::InvalidRequest,
                 "That mistake is no longer in your list.",
             ),
+            MistakesError::NothingToPractice => Self::new(
+                IpcErrorCode::InvalidRequest,
+                "There is nothing to practise right now.",
+            ),
+            MistakesError::MissingTarget => {
+                Self::new(IpcErrorCode::InvalidRequest, "Choose what to practise.")
+            }
+            MistakesError::RunNotFound(_) | MistakesError::ExerciseNotFound(_) => Self::new(
+                IpcErrorCode::InvalidRequest,
+                "That practice is no longer available.",
+            ),
+            MistakesError::RunFinished => {
+                Self::new(IpcErrorCode::InvalidRequest, "This practice is finished.")
+            }
+            MistakesError::Rejected(rejection) => Self::new(
+                IpcErrorCode::InvalidRequest,
+                match rejection {
+                    Rejection::EmptyAnswer => "Write or say your answer first.",
+                    Rejection::AlreadyAnswered => "This one is already done.",
+                    Rejection::AwaitingCheck => "This answer is still being checked.",
+                    Rejection::RetryUsed => "You already tried this once more.",
+                },
+            ),
+            MistakesError::CheckUnavailable(_) => Self::new(
+                IpcErrorCode::InvalidRequest,
+                "That answer cannot be checked.",
+            ),
+            MistakesError::CheckFailed => Self::new(
+                IpcErrorCode::Unavailable,
+                "Could not check that answer right now. Please retry.",
+            ),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckError {
+    Failed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

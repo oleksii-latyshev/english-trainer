@@ -1,8 +1,11 @@
+mod agy_checker;
 mod agy_provider;
 mod clock;
 mod events;
+mod practice_store;
 mod sqlite_store;
 
+pub use agy_checker::AgyAnswerChecker;
 pub use agy_provider::AgyLessonProvider;
 pub use clock::SystemClock;
 pub use events::TauriMistakesNotifier;
