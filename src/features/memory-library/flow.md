@@ -1,12 +1,12 @@
 # Memory library flow
 
-The tabs, rows and details under the cards on the Memory screen: saved phrases and mistakes, what
-conversations showed about each one, and archive and delete.
+The list and details under the cards on the Memory screen: saved phrases, what conversations
+showed about each one, and archive and delete. Mistakes live in the Mistakes section (`core/mistakes`).
 
 ```text
 MemorySearch            search field in the screen header (searchQueryAtom)
 StatusSummary           "Where they are": counts of New, Learning, Improving, Stable
-LibraryList             tabs Phrases / Mistakes, "Show archived", the list
+LibraryList             "Show archived", the phrase list
   MemoryRow             wording, source, status, next review, "On your own" count
     EntryDetail         next review, gap, kind, explanation, EvidenceList, Say it now, Archive, Delete
 DeleteMemoryDialog      asks before a delete
@@ -31,7 +31,7 @@ sequenceDiagram
         Rust-->>List: failure
         List-->>Learner: "Could not load Memory" + Try again
     else read
-        Rust-->>Atoms: phrases and mistakes
+        Rust-->>Atoms: phrases
         Atoms-->>List: entries (archived hidden), filtered by the search text
     end
     Learner->>List: types in the search field
@@ -45,8 +45,7 @@ Opening a row shows the details and loads the evidence for that one item from Ru
 (`memoryUsageEvidenceAtom`, see `core/learning-memory/flow.md`). Selecting text in a row does not
 toggle it, so a word can be translated (`data-word-lookup`).
 
-The kind comes from Rust: a phrase card carries `kind` (computed on read, never stored), a mistake
-shows its category. Each evidence event is tagged by its outcome: `correct` is "On your own",
+The kind comes from Rust: a phrase card carries `kind` (computed on read, never stored). Each evidence event is tagged by its outcome: `correct` is "On your own",
 `with_help` is "With help" (the answer used help, or the item was cued first), `incorrect` is
 "Slipped back". `uncertain` events are not listed. Only "On your own" feeds the count in the row.
 
@@ -77,7 +76,7 @@ sequenceDiagram
     participant Detail as EntryDetail
     participant Atom as archiveEntryAtom / confirmDeleteAtom
     participant Service as LearningMemoryService
-    participant Rust as archive_learning_item / delete_phrase_card / delete_mistake
+    participant Rust as archive_learning_item / delete_phrase_card
     participant Toast
 
     Learner->>Detail: Archive

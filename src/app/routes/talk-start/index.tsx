@@ -2,7 +2,6 @@ import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { Navigate, useNavigate } from '@tanstack/react-router';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useFirstRunDecision } from '@/app/routes/first-run/use-first-run-gate';
-import { canChangeSessionAtom } from '@/core/answer-capture';
 import { FIRST_RUN_PATH } from '@/core/first-run';
 import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
 import {
@@ -12,7 +11,6 @@ import {
   practiceErrorAtom,
   practiceStateAtom,
   sessionDetails,
-  startMistakePracticeAtom,
   startOrResumePractice,
   startPracticeAtom,
 } from '@/core/practice-session';
@@ -21,7 +19,7 @@ import type { PracticeOptions, StartStatus } from '@/features/practice-setup';
 import { useReviewCommands, useWarmupHandoff } from '@/features/spoken-review';
 import { SpokenReviewScreen } from '@/screens/spoken-review';
 import { TalkStartScreen } from '@/screens/talk-start';
-import { mistakePracticeSummary, openSessionOf, reviewSummary } from './summaries';
+import { openSessionOf, reviewSummary } from './summaries';
 
 function startStatus(isRestoring: boolean, isBusy: boolean): StartStatus {
   if (isRestoring) return 'restoring';
@@ -35,7 +33,6 @@ export function TalkStartRoute() {
   const isBusy = useAtomValue(isSessionBusyAtom);
   const isSessionOpen = useAtomValue(isSessionOpenAtom);
   const isRestoring = useAtomValue(isRestoringAtom);
-  const canChangeSession = useAtomValue(canChangeSessionAtom);
   const due = dueMemory(useAtomValue(learningMemoryAtom));
   const learnerName = useAtomValue(learnerNameAtom);
   const firstRun = useFirstRunDecision();
@@ -87,16 +84,11 @@ export function TalkStartRoute() {
     <TalkStartScreen
       error={practiceError}
       learnerName={learnerName}
-      mistakePractice={mistakePracticeSummary(due, {
-        isSessionOpen,
-        isAudioBusy: isBusy || !canChangeSession,
-        isStarting: practiceState.tag === 'starting',
-      })}
       onContinue={() =>
         startOrResumePractice(registry, () => void navigate({ to: '/conversation' }))
       }
       onOpenMemory={() => void navigate({ to: '/memory' })}
-      onPracticeMistakes={() => registry.set(startMistakePracticeAtom, undefined)}
+      onOpenMistakes={() => void navigate({ to: '/mistakes' })}
       onStart={startPractice}
       onStartWarmup={(options) => {
         review.begin('warmup');

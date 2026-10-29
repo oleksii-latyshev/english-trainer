@@ -1,4 +1,4 @@
-import { RegistryContext, useAtomValue } from '@effect/atom-react';
+import { RegistryContext, useAtomMount, useAtomValue } from '@effect/atom-react';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { AsyncResult } from 'effect/reactivity';
 import { useContext } from 'react';
@@ -6,6 +6,7 @@ import { canChangeSessionAtom } from '@/core/answer-capture';
 import { microphoneSnapshotAtom } from '@/core/audio';
 import { FIRST_RUN_PATH } from '@/core/first-run';
 import { dueMemory, learningMemoryAtom } from '@/core/learning-memory';
+import { dueMistakeCountAtom, mistakesUpdatesAtom } from '@/core/mistakes';
 import {
   isSessionBusyAtom,
   isSessionOpenAtom,
@@ -19,7 +20,7 @@ import {
   EVA_SETTINGS_PATH,
   type SettingsSectionId,
 } from '@/screens/settings';
-import type { NavEntry } from './navigation';
+import type { DueCounts, NavEntry } from './navigation';
 import { Sidebar } from './sidebar';
 
 function useNavigationLocked(): boolean {
@@ -29,9 +30,10 @@ function useNavigationLocked(): boolean {
   return !canChangeSession || practiceTag === 'waiting' || isBusy;
 }
 
-function useDueCount(): number {
+function useDueCounts(): DueCounts {
   const due = dueMemory(useAtomValue(learningMemoryAtom));
-  return due.tag === 'ready' ? due.dueCount : 0;
+  const mistakes = useAtomValue(dueMistakeCountAtom);
+  return { memory: due.tag === 'ready' ? due.dueCount : 0, mistakes };
 }
 
 function useShellNavigation(navigationLocked: boolean) {
@@ -66,7 +68,8 @@ function useShellNavigation(navigationLocked: boolean) {
 }
 
 export function AppShell() {
-  const dueCount = useDueCount();
+  useAtomMount(mistakesUpdatesAtom);
+  const dueCounts = useDueCounts();
   const microphone = AsyncResult.getOrElse(useAtomValue(microphoneSnapshotAtom), () => ({
     status: 'off' as const,
   }));
@@ -83,7 +86,7 @@ export function AppShell() {
         <Sidebar
           activeSection={activeSettingsSection(currentPath, currentHash)}
           currentPath={currentPath}
-          dueCount={dueCount}
+          dueCounts={dueCounts}
           microphoneStatus={microphone.status}
           navigationLocked={navigationLocked}
           onNavigate={handleNavigate}

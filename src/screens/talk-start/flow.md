@@ -14,7 +14,7 @@ TalkStartScreen
                 LengthChoice + StartBar   otherwise
                 StartError            when starting failed
   right column  WarmupCard            when review data is ready
-                UsualMistakesCard     when a repeated mistake exists
+                UsualMistakesCard     when a rule has mistakes; opens Mistakes
                 WeekCard              minutes spoken this week
 ```
 

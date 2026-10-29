@@ -5,29 +5,21 @@ import { Button } from '@/shared/ui/button';
 import { GlassPanel } from '@/shared/ui/glass-panel';
 import { Notice } from '@/shared/ui/notice';
 import { Switch } from '@/shared/ui/switch';
-import { Tabs, TabsList, TabsPanel, TabsTab } from '@/shared/ui/tabs';
-import { COLUMN_TITLE, emptyCopy, isMemoryTab } from '../../helpers/list-copy';
-import { entriesOfTab, entryKey } from '../../helpers/memory-entries';
+import { COLUMN_TITLE, emptyCopy } from '../../helpers/list-copy';
+import { entryKey } from '../../helpers/memory-entries';
 import {
-  activeTabAtom,
   libraryAtom,
   openEntryKeyAtom,
   searchQueryAtom,
   showArchivedAtom,
-  shownCountsAtom,
   shownEntriesAtom,
 } from '../../model/atoms';
-import type { MemoryTab, SayNow } from '../../types';
+import type { SayNow } from '../../types';
 import { MemoryRow } from '../memory-row';
 
-const TABS: readonly { readonly id: MemoryTab; readonly label: string }[] = [
-  { id: 'phrases', label: 'Phrases' },
-  { id: 'mistakes', label: 'Mistakes' },
-];
-
-function EmptyList({ tab }: { tab: MemoryTab }) {
+function EmptyList() {
   const query = useAtomValue(searchQueryAtom);
-  const copy = emptyCopy(tab, query);
+  const copy = emptyCopy(query);
   return (
     <div className="text-caption text-faint flex flex-col items-center gap-1 px-5 py-10 text-center">
       <Bookmark aria-hidden="true" size={24} />
@@ -37,20 +29,19 @@ function EmptyList({ tab }: { tab: MemoryTab }) {
   );
 }
 
-function TabList({ tab, sayNow }: { tab: MemoryTab; sayNow: SayNow }) {
-  const shown = useAtomValue(shownEntriesAtom);
+function PhraseList({ sayNow }: { sayNow: SayNow }) {
+  const entries = useAtomValue(shownEntriesAtom);
   const [openKey, setOpenKey] = useAtom(openEntryKeyAtom);
-  const entries = entriesOfTab(shown, tab);
   const now = Date.now();
 
-  if (entries.length === 0) return <EmptyList tab={tab} />;
+  if (entries.length === 0) return <EmptyList />;
   return (
     <ul className="m-0 flex list-none flex-col p-0">
       <li
         aria-hidden="true"
         className="border-line-soft text-faint grid grid-cols-[minmax(0,1fr)_8rem_7.5rem_7.5rem_2rem] items-center gap-3 border-b px-5 py-3 text-xs"
       >
-        <span>{COLUMN_TITLE[tab]}</span>
+        <span>{COLUMN_TITLE}</span>
         <span>Status</span>
         <span>Next review</span>
         <span>On your own</span>
@@ -76,9 +67,7 @@ function TabList({ tab, sayNow }: { tab: MemoryTab; sayNow: SayNow }) {
 export function LibraryList({ sayNow }: { sayNow: SayNow }) {
   const library = useAtomValue(libraryAtom);
   const retry = useAtomRefresh(openedLearningMemoryAtom);
-  const [tab, setTab] = useAtom(activeTabAtom);
   const [showArchived, setShowArchived] = useAtom(showArchivedAtom);
-  const counts = useAtomValue(shownCountsAtom);
 
   if (library.tag === 'loading') {
     return (
@@ -100,21 +89,9 @@ export function LibraryList({ sayNow }: { sayNow: SayNow }) {
   }
 
   return (
-    <Tabs
-      className="min-h-0 flex-1"
-      onValueChange={(next) => {
-        if (isMemoryTab(next)) setTab(next);
-      }}
-      value={tab}
-    >
+    <section aria-label="Phrases in Memory" className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex items-center gap-3">
-        <TabsList label="Memory lists">
-          {TABS.map(({ id, label }) => (
-            <TabsTab key={id} value={id}>
-              {label} <span className="text-faint ml-1 font-medium">{counts[id]}</span>
-            </TabsTab>
-          ))}
-        </TabsList>
+        <h2 className="text-body m-0 font-bold">Phrases</h2>
         <span className="text-caption text-faint">Sorted by next review</span>
         <Switch
           checked={showArchived}
@@ -123,16 +100,9 @@ export function LibraryList({ sayNow }: { sayNow: SayNow }) {
           onCheckedChange={setShowArchived}
         />
       </div>
-      {TABS.map(({ id }) => (
-        <TabsPanel className="mt-0 min-h-0 flex-1 p-0" key={id} value={id}>
-          <GlassPanel
-            aria-label={`${id === 'phrases' ? 'Phrases' : 'Mistakes'} in Memory`}
-            className="overflow-hidden"
-          >
-            <TabList sayNow={sayNow} tab={id} />
-          </GlassPanel>
-        </TabsPanel>
-      ))}
-    </Tabs>
+      <GlassPanel aria-label="Phrases list" className="overflow-hidden">
+        <PhraseList sayNow={sayNow} />
+      </GlassPanel>
+    </section>
   );
 }

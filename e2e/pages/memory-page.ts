@@ -5,8 +5,6 @@ export class MemoryPage {
   readonly review: ReviewPage;
   readonly mistakePracticeHeading: Locator;
   readonly startPracticeButton: Locator;
-  readonly phrasesTab: Locator;
-  readonly mistakesTab: Locator;
   readonly search: Locator;
   readonly showArchived: Locator;
   readonly loadFailure: Locator;
@@ -22,8 +20,6 @@ export class MemoryPage {
     this.review = new ReviewPage(page);
     this.mistakePracticeHeading = page.getByRole('heading', { name: 'Practice my usual mistakes' });
     this.startPracticeButton = page.getByRole('button', { name: 'Practice · 2 min' });
-    this.phrasesTab = page.getByRole('tab', { name: /^Phrases/ });
-    this.mistakesTab = page.getByRole('tab', { name: /^Mistakes/ });
     this.search = page.getByRole('searchbox', { name: 'Search memory' });
     this.showArchived = page.getByRole('switch', { name: 'Show archived' });
     this.loadFailure = page.getByText('Could not load Memory from local storage.');
@@ -34,10 +30,6 @@ export class MemoryPage {
     this.statusSummary = page.getByRole('region', { name: 'Where they are' });
     this.heading = page.getByRole('heading', { name: 'Memory', exact: true });
     this.sayItNowButton = page.getByRole('button', { name: 'Say it now' });
-  }
-
-  correctedExample(text: string): Locator {
-    return this.page.getByText(text, { exact: true });
   }
 
   row(text: string): Locator {
@@ -62,10 +54,6 @@ export class MemoryPage {
 
   async startPractice(): Promise<void> {
     await this.startPracticeButton.click();
-  }
-
-  async openMistakes(): Promise<void> {
-    await this.mistakesTab.click();
   }
 
   async open(text: string): Promise<void> {

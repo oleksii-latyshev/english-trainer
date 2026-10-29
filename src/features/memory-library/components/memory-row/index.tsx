@@ -2,7 +2,6 @@ import { ChevronDown, Sun } from 'lucide-react';
 import { type MouseEvent, useId } from 'react';
 import {
   isDueToday,
-  mistakeSourceLine,
   nextReviewLabel,
   phraseSourceLine,
   statusLabel,
@@ -22,28 +21,10 @@ type Props = {
   sayNow: SayNow;
 };
 
-function EntryText({ entry }: { entry: MemoryEntry }) {
-  if (entry.kind === 'phrase') {
-    return (
-      <span className="text-body font-semibold" data-word-lookup>
-        {entry.card.phrase}
-      </span>
-    );
-  }
-  return (
-    <span className="text-body" data-word-lookup>
-      <s className="text-faint decoration-warn/80">{entry.mistake.original_example}</s>{' '}
-      <span className="text-faint">→</span>{' '}
-      <span className="text-ok-text font-semibold">{entry.mistake.corrected_example}</span>
-    </span>
-  );
-}
-
 export function MemoryRow({ entry, isOpen, now, onToggle, sayNow }: Props) {
   const detailId = useId();
-  const item = entry.kind === 'phrase' ? entry.card : entry.mistake;
-  const source =
-    entry.kind === 'phrase' ? phraseSourceLine(entry.card, now) : mistakeSourceLine(entry.mistake);
+  const item = entry.card;
+  const source = phraseSourceLine(entry.card, now);
   const ownCount = usedOnOwnCount(entry);
   const isDue = isDueToday(item.next_review_at, item.status, now);
   const { item: itemClass, toggle, chevron } = memoryRow({ isOpen });
@@ -67,7 +48,9 @@ export function MemoryRow({ entry, isOpen, now, onToggle, sayNow }: Props) {
         type="button"
       >
         <span className="flex min-w-0 flex-col gap-0.5">
-          <EntryText entry={entry} />
+          <span className="text-body font-semibold" data-word-lookup>
+            {entry.card.phrase}
+          </span>
           <span className="text-faint text-xs" data-word-lookup>
             {source}
           </span>

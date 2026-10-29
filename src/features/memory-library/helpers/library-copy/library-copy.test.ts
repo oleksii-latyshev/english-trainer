@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import type { MistakeRecord, PhraseCardRecord } from '@/core/ipc';
+import type { PhraseCardRecord } from '@/core/ipc';
 import {
   gapLabel,
   isDueToday,
   kindLabel,
-  mistakeSourceLine,
   nextReviewLabel,
   phraseSourceLine,
   statusLabel,
@@ -18,24 +17,6 @@ function day(offset: number): number {
 function inDays(offset: number): number {
   return new Date(2026, 9, 7 + offset, 8, 0).getTime();
 }
-
-const mistake: MistakeRecord = {
-  id: 1,
-  normalized_key: 'grammar:every bank sends',
-  category: 'grammar',
-  original_example: 'every bank send',
-  corrected_example: 'every bank sends',
-  explanation: 'Third person singular needs -s.',
-  times_seen: 3,
-  times_correct_afterwards: 0,
-  last_seen_at: day(0),
-  last_reviewed_at: null,
-  next_review_at: 500,
-  interval_days: 1,
-  ease_factor: 2.5,
-  status: 'learning',
-  is_due: true,
-};
 
 const phrase: PhraseCardRecord = {
   id: 1,
@@ -103,13 +84,6 @@ describe('library copy', () => {
       'Plans & stories · we had to make all data same · 3 days ago',
     );
   });
-
-  it('builds the source line of a mistake from its kind and how often it came up', () => {
-    expect(mistakeSourceLine(mistake)).toBe('Grammar · seen 3×');
-    expect(mistakeSourceLine({ ...mistake, category: 'vocabulary', times_seen: 2 })).toBe(
-      'Vocabulary · seen 2×',
-    );
-  });
 });
 
 describe('kindLabel', () => {
@@ -121,9 +95,5 @@ describe('kindLabel', () => {
     expect(kindLabel(entry('phrasal_verb'))).toBe('Phrasal verb');
     expect(kindLabel(entry('linking_phrase'))).toBe('Linking phrase');
     expect(kindLabel(entry('pattern'))).toBe('Pattern');
-  });
-
-  it('shows the category of a mistake as its kind', () => {
-    expect(kindLabel({ kind: 'mistake', mistake })).toBe('Grammar');
   });
 });

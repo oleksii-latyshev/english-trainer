@@ -21,7 +21,7 @@ function Fact({ term, children }: { term: string; children: string }) {
 export function EntryDetail({ entry, now, sayNow }: Props) {
   const archive = useAtomSet(archiveEntryAtom);
   const askDelete = useAtomSet(pendingDeleteAtom);
-  const item = entry.kind === 'phrase' ? entry.card : entry.mistake;
+  const item = entry.card;
   const label = entryLabel(entry);
   const isArchived = entryStatus(entry) === 'archived';
 
@@ -34,11 +34,6 @@ export function EntryDetail({ entry, now, sayNow }: Props) {
       </dl>
       <div className="flex flex-col gap-2">
         <EvidenceList entryRef={entryRef(entry)} />
-        {entry.kind === 'mistake' && entry.mistake.explanation && (
-          <p className="text-caption text-muted leading-copy mt-0.5 mb-0" data-word-lookup>
-            {entry.mistake.explanation}
-          </p>
-        )}
       </div>
       <div className="flex items-center gap-2">
         {!isArchived && (

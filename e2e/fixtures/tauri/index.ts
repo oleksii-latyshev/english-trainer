@@ -6,6 +6,7 @@ import { EvaGrowthBackend } from './eva-growth';
 import type { IpcCall } from './harness';
 import { LiveReviewBackend } from './live-review';
 import { MemoryBackend } from './memory';
+import { MistakesBackend } from './mistakes';
 import { NaturalVoiceBackend } from './natural-voice';
 import { PersonalProfileBackend } from './personal-profile';
 import { PlannerBackend } from './planner';
@@ -24,6 +25,7 @@ import { WrapupBackend } from './wrapup';
 export class FakeBackend {
   readonly session: SessionBackend;
   readonly memory: MemoryBackend;
+  readonly mistakes: MistakesBackend;
   readonly activity: SpeakingActivityBackend;
   readonly growth: EvaGrowthBackend;
   readonly profile: PersonalProfileBackend;
@@ -47,6 +49,7 @@ export class FakeBackend {
   constructor(private readonly page: Page) {
     this.session = new SessionBackend(page);
     this.memory = new MemoryBackend(page);
+    this.mistakes = new MistakesBackend(page);
     this.activity = new SpeakingActivityBackend(page);
     this.growth = new EvaGrowthBackend(page);
     this.profile = new PersonalProfileBackend(page);
@@ -85,6 +88,7 @@ export class FakeBackend {
       planner: this.planner.seed,
     });
     await this.memory.install();
+    await this.mistakes.install();
     await this.activity.install();
     await this.growth.install();
     await this.profile.install();

@@ -1,6 +1,6 @@
 import type { LearningStatus } from '@/core/ipc';
 import type { LearningMemory } from '@/core/learning-memory';
-import type { ActiveStatus, EntryRef, MemoryEntry, MemoryTab, StatusCounts } from '../../types';
+import type { ActiveStatus, EntryRef, MemoryEntry, StatusCounts } from '../../types';
 
 export const ACTIVE_STATUSES: readonly ActiveStatus[] = [
   'new',
@@ -10,16 +10,11 @@ export const ACTIVE_STATUSES: readonly ActiveStatus[] = [
 ] as const;
 
 export function toEntries(view: LearningMemory): readonly MemoryEntry[] {
-  return [
-    ...view.phrase_cards.map((card): MemoryEntry => ({ kind: 'phrase', card })),
-    ...view.mistakes.map((mistake): MemoryEntry => ({ kind: 'mistake', mistake })),
-  ];
+  return view.phrase_cards.map((card): MemoryEntry => ({ kind: 'phrase', card }));
 }
 
 export function entryRef(entry: MemoryEntry): EntryRef {
-  return entry.kind === 'phrase'
-    ? { itemType: 'phrase', itemId: entry.card.id }
-    : { itemType: 'mistake', itemId: entry.mistake.id };
+  return { itemType: 'phrase', itemId: entry.card.id };
 }
 
 export function entryKey(entry: MemoryEntry): string {
@@ -28,17 +23,11 @@ export function entryKey(entry: MemoryEntry): string {
 }
 
 export function entryStatus(entry: MemoryEntry): LearningStatus {
-  return entry.kind === 'phrase' ? entry.card.status : entry.mistake.status;
+  return entry.card.status;
 }
 
 export function entryLabel(entry: MemoryEntry): string {
-  return entry.kind === 'phrase'
-    ? entry.card.phrase
-    : `${entry.mistake.original_example} → ${entry.mistake.corrected_example}`;
-}
-
-function tabOf(entry: MemoryEntry): MemoryTab {
-  return entry.kind === 'phrase' ? 'phrases' : 'mistakes';
+  return entry.card.phrase;
 }
 
 export function visibleEntries(
@@ -53,21 +42,11 @@ function matches(query: string, ...fields: readonly string[]): boolean {
 }
 
 function matchesEntry(entry: MemoryEntry, query: string): boolean {
-  if (entry.kind === 'phrase') {
-    return matches(
-      query,
-      entry.card.phrase,
-      entry.card.meaning_or_note,
-      entry.card.session_topic ?? '',
-    );
-  }
-  const { mistake } = entry;
   return matches(
     query,
-    mistake.original_example,
-    mistake.corrected_example,
-    mistake.explanation,
-    mistake.category,
+    entry.card.phrase,
+    entry.card.meaning_or_note,
+    entry.card.session_topic ?? '',
   );
 }
 
@@ -77,13 +56,6 @@ export function searchEntries(
 ): readonly MemoryEntry[] {
   const query = rawQuery.trim().toLowerCase();
   return query ? entries.filter((entry) => matchesEntry(entry, query)) : entries;
-}
-
-export function entriesOfTab(
-  entries: readonly MemoryEntry[],
-  tab: MemoryTab,
-): readonly MemoryEntry[] {
-  return entries.filter((entry) => tabOf(entry) === tab);
 }
 
 export function statusCounts(entries: readonly MemoryEntry[]): StatusCounts {
@@ -96,7 +68,5 @@ export function statusCounts(entries: readonly MemoryEntry[]): StatusCounts {
 }
 
 export function usedOnOwnCount(entry: MemoryEntry): number {
-  return entry.kind === 'phrase'
-    ? entry.card.times_used_on_own
-    : entry.mistake.times_correct_afterwards;
+  return entry.card.times_used_on_own;
 }

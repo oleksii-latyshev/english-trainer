@@ -3,13 +3,20 @@ import { GrowthCard } from '@/features/eva-growth';
 import { isSettingsPath, type SettingsSectionId } from '@/screens/settings';
 import { NavItem } from '@/shared/ui/nav-item';
 import { MicStatus } from './mic-status';
-import { NAVIGATION, type NavEntry, navLabel } from './navigation';
+import {
+  type DueCounts,
+  dueOf,
+  isCurrent,
+  NAVIGATION,
+  type NavEntry,
+  navLabel,
+} from './navigation';
 import { SettingsSections } from './settings-sections';
 
 type SidebarProps = {
   currentPath: string;
   activeSection: SettingsSectionId | undefined;
-  dueCount: number;
+  dueCounts: DueCounts;
   navigationLocked: boolean;
   microphoneStatus: MicrophoneStatus;
   onNavigate: (item: NavEntry) => void;
@@ -20,24 +27,23 @@ type SidebarProps = {
 function SidebarItem({
   item,
   currentPath,
-  dueCount,
+  dueCounts,
   disabled,
   onNavigate,
 }: {
   item: NavEntry;
   currentPath: string;
-  dueCount: number;
+  dueCounts: DueCounts;
   disabled: boolean;
   onNavigate: (item: NavEntry) => void;
 }) {
   const Icon = item.icon;
+  const due = dueOf(item, dueCounts);
   return (
     <NavItem
-      active={item.matches.includes(currentPath)}
-      aria-label={navLabel(item, dueCount)}
-      badge={
-        item.path === '/memory' && dueCount > 0 ? { count: dueCount, suffix: ' due' } : undefined
-      }
+      active={isCurrent(item, currentPath)}
+      aria-label={navLabel(item, dueCounts)}
+      badge={due > 0 ? { count: due, suffix: ' due' } : undefined}
       disabled={disabled}
       icon={<Icon size={18} strokeWidth={1.8} />}
       onClick={() => onNavigate(item)}
@@ -51,7 +57,7 @@ function SidebarItem({
 export function Sidebar({
   currentPath,
   activeSection,
-  dueCount,
+  dueCounts,
   navigationLocked,
   microphoneStatus,
   onNavigate,
@@ -70,7 +76,7 @@ export function Sidebar({
         <SidebarItem
           currentPath={currentPath}
           disabled={navigationLocked}
-          dueCount={dueCount}
+          dueCounts={dueCounts}
           item={item}
           key={item.path}
           onNavigate={onNavigate}
