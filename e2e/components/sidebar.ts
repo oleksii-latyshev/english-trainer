@@ -2,8 +2,10 @@ import type { Locator, Page } from '@playwright/test';
 
 export class Sidebar {
   readonly growthCard: Locator;
+  readonly mistakesBadge: Locator;
 
   constructor(private readonly page: Page) {
+    this.mistakesBadge = page.getByRole('button', { name: 'Mistakes, 3 due' });
     this.growthCard = page.getByRole('button', { name: /^Eva's growth/ });
   }
 
@@ -17,6 +19,10 @@ export class Sidebar {
 
   async openMemory(): Promise<void> {
     await this.page.getByRole('button', { name: /^Memory/ }).click();
+  }
+
+  async openMistakes(): Promise<void> {
+    await this.page.getByRole('button', { name: /^Mistakes/ }).click();
   }
 
   async openGrowth(): Promise<void> {

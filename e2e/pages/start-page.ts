@@ -61,8 +61,8 @@ export class StartPage {
     await this.warmupToggle.click();
   }
 
-  async practiseUsualMistakes(): Promise<void> {
-    await this.usualMistakes.getByRole('button', { name: 'Practice 5 questions' }).click();
+  async openMistakes(): Promise<void> {
+    await this.usualMistakes.getByRole('button', { name: 'Open Mistakes' }).click();
   }
 
   async start(): Promise<void> {

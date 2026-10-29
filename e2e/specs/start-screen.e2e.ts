@@ -45,28 +45,23 @@ test('a due phrase is offered as a warm-up and Review now opens Memory', async (
   await expect(memory.mistakePracticeHeading).toBeVisible();
 });
 
-test('usual mistakes start the five-question practice from the Start screen', async ({
+test('usual mistakes list the rules that come back and open Mistakes', async ({
   app,
+  mistakes,
   start,
-  talk,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake().preparingMistakePracticeFor(0);
+  tauri.mistakes.withGroups();
   await app.open();
 
-  await expect(start.usualMistakes).toContainText('in the university');
-  await expect(start.usualMistakes).toContainText('at university');
-  await start.practiseUsualMistakes();
+  await expect(start.usualMistakes).toContainText('Past Simple vs Present Perfect');
+  await expect(start.usualMistakes).toContainText('Subject-verb agreement');
+  await start.openMistakes();
 
-  await expect(talk.questionProgress(1, 5)).toBeVisible();
+  await expect(mistakes.heading).toBeVisible();
 });
 
-test('without a repeated mistake the usual-mistakes card is not shown', async ({
-  app,
-  start,
-  tauri,
-}) => {
-  tauri.memory.withoutPracticableMistakes();
+test('without a mistake the usual-mistakes card is not shown', async ({ app, start }) => {
   await app.open();
 
   await expect(start.heading).toBeVisible();

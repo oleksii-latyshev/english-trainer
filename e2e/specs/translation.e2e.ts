@@ -1,25 +1,26 @@
 import { noAudio } from '../data/sessions';
 import { wordDialogue, wordSession } from '../data/translation';
 import { expect, test } from '../fixtures';
+import type { FakeBackend } from '../fixtures/tauri';
 import type { App } from '../pages/app';
-import type { MemoryPage } from '../pages/memory-page';
+import type { MistakesPage } from '../pages/mistakes-page';
 
-async function openMistakes(app: App, memory: MemoryPage) {
+async function openMistakeCard(app: App, mistakes: MistakesPage, tauri: FakeBackend) {
+  tauri.mistakes.withUniversityQuestion();
   await app.open();
-  await app.sidebar.openMemory();
-  await memory.openMistakes();
-  await expect(memory.correctedExample('at university')).toBeVisible();
+  await app.sidebar.openMistakes();
+  await mistakes.open('in the university');
+  await expect(mistakes.question).toBeVisible();
 }
 
 test('Memory translates a selected word only after an explicit action', async ({
   app,
-  memory,
+  mistakes,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake();
-  await openMistakes(app, memory);
+  await openMistakeCard(app, mistakes, tauri);
   const { translation } = app;
-  await translation.select(memory.correctedExample('at university'), 'university');
+  await translation.select(mistakes.question, 'university');
   await expect(translation.offerFor('university')).toBeVisible();
   expect(await tauri.calls('translate_text')).toEqual([]);
   await translation.translateSelected('university');
@@ -33,20 +34,19 @@ test('Memory translates a selected word only after an explicit action', async ({
 
 test('a selected phrase is translated whole and unmarked text offers nothing', async ({
   app,
-  memory,
+  mistakes,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake();
-  await openMistakes(app, memory);
+  await openMistakeCard(app, mistakes, tauri);
   const { translation } = app;
-  await translation.select(memory.correctedExample('at university'), 'at university');
+  await translation.select(mistakes.question, 'at university');
   await expect(translation.offerFor('at university')).toBeVisible();
   expect(await tauri.calls('translate_text')).toEqual([]);
   await translation.translateSelected('at university');
   await expect(translation.text('Перевод: at university')).toBeVisible();
   await expect(translation.text('A simple English explanation of at university.')).toBeVisible();
   await translation.close();
-  await translation.select(memory.mistakePracticeHeading, 'Practice');
+  await translation.select(mistakes.eyebrow, 'Eva');
   await expect(translation.anyOffer).toHaveCount(0);
   expect(await tauri.calls('translate_text')).toHaveLength(1);
 });
@@ -97,12 +97,11 @@ test('Talk and the wrap-up review share local word lookup without sending answer
 
 test('keyboard lookup accepts a phrase, rejects long text and retries provider errors', async ({
   app,
-  memory,
+  mistakes,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake();
   tauri.translation.failingNextTranslation();
-  await openMistakes(app, memory);
+  await openMistakeCard(app, mistakes, tauri);
   const { translation } = app;
   await translation.open();
   await translation.submitWithKeyboard('one two three four five six seven eight nine');
@@ -118,10 +117,9 @@ test('keyboard lookup accepts a phrase, rejects long text and retries provider e
   await expect(translation.dialog).toHaveCount(0);
 });
 
-test('missing models are prepared only by an explicit action', async ({ app, memory, tauri }) => {
-  tauri.memory.withRepeatedMistake();
+test('missing models are prepared only by an explicit action', async ({ app, mistakes, tauri }) => {
   tauri.translation.needingLanguageDownload();
-  await openMistakes(app, memory);
+  await openMistakeCard(app, mistakes, tauri);
   const { translation } = app;
   await translation.open();
   await translation.lookUp('useful');
@@ -135,12 +133,11 @@ test('missing models are prepared only by an explicit action', async ({ app, mem
 
 test('closing a pending lookup prevents its late result from reopening the panel', async ({
   app,
-  memory,
+  mistakes,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake();
   tauri.translation.delayingWord('useful');
-  await openMistakes(app, memory);
+  await openMistakeCard(app, mistakes, tauri);
   const { translation } = app;
   await translation.open();
   await translation.lookUp('useful');
@@ -157,7 +154,6 @@ test('native language changes persist and are used by later lookups', async ({
   settings,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake();
   await app.open();
   await app.sidebar.openSettings();
   await expect(settings.nativeLanguage).toHaveText('Russian');
@@ -192,12 +188,11 @@ test('native language remains editable when translation status fails', async ({
 
 test('an unavailable English explanation preserves the translation and can be retried', async ({
   app,
-  memory,
+  mistakes,
   tauri,
 }) => {
-  tauri.memory.withRepeatedMistake();
   tauri.translation.failingNextExplanation();
-  await openMistakes(app, memory);
+  await openMistakeCard(app, mistakes, tauri);
   const { translation } = app;
   await translation.open();
   await translation.lookUp('useful');
