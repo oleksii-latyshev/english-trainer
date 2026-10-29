@@ -151,7 +151,9 @@ pub async fn retry_mistake_check(
         .await
         .map_err(IpcError::task_failed("Could not retry the check."))?
         .map_err(IpcError::from)?;
-    spawn_check(background, id);
+    if let Some(id) = id {
+        spawn_check(background, id);
+    }
     Ok(())
 }
 

@@ -314,6 +314,7 @@ pub struct ExerciseResult {
     pub can_check: bool,
     pub retried: bool,
     pub retry_note: Option<String>,
+    pub check_failed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
@@ -382,6 +383,7 @@ fn result_view(item: &RunItem, attempts: &[&AttemptRecord]) -> Option<ExerciseRe
             && retry.is_none(),
         retried: retry.is_some(),
         retry_note: retry.map(|attempt| attempt.note.clone()),
+        check_failed: false,
     })
 }
 

@@ -581,8 +581,11 @@ fn a_failed_check_stays_checking_changes_no_schedule_and_can_be_retried() {
     assert_eq!(result_of(&state, 0).outcome, AttemptOutcome::Checking);
     assert_eq!(f.column(id, "next_review_at"), before);
     assert_eq!(f.column(id, "step4_pass_days"), 0);
-    assert!(f.notifier.0.lock().unwrap().is_empty());
-    assert_eq!(f.service.retry_check(attempt).unwrap(), attempt);
+    assert_eq!(f.notifier.0.lock().unwrap().len(), 1);
+    assert!(result_of(&state, 0).check_failed);
+    assert_eq!(f.service.retry_check(attempt).unwrap(), Some(attempt));
+    assert_eq!(f.service.retry_check(attempt).unwrap(), None);
+    assert!(!result_of(&f.service.run(view.run_id).unwrap(), 0).check_failed);
     f.service.run_check(attempt).unwrap();
     assert_eq!(
         result_of(&f.service.run(view.run_id).unwrap(), 0).outcome,
@@ -736,4 +739,60 @@ fn a_mistake_archived_mid_run_can_still_be_answered_without_touching_the_schedul
         AttemptOutcome::Pass
     );
     assert_eq!(f.column(id, "ladder_step"), 1);
+}
+
+#[test]
+fn a_check_in_flight_is_not_shown_as_failed() {
+    let mut f = fixture_with(FakeChecker::replying(vec![verdict(true, "Good.")]));
+    let id = f.mistake("I work there", "I worked there", Some(RuleKey::Articles));
+    f.set(id, "ladder_step = 4");
+    let view = f.one(id);
+    let answered = f.answer(view.run_id, 0, "I worked at a bank").unwrap();
+    assert!(!answered.exercise.result.as_ref().unwrap().check_failed);
+    assert!(!result_of(&f.service.run(view.run_id).unwrap(), 0).check_failed);
+}
+
+#[test]
+fn a_checking_attempt_nobody_is_running_shows_as_failed_after_a_restart() {
+    let mut f = fixture();
+    let id = f.mistake("I work there", "I worked there", Some(RuleKey::Articles));
+    f.set(id, "ladder_step = 4");
+    let view = f.one(id);
+    let attempt = f
+        .answer(view.run_id, 0, "I worked at a bank")
+        .unwrap()
+        .check
+        .unwrap();
+    let restarted = PracticeService::new(
+        Arc::new(f.store.clone()),
+        f.checker.clone(),
+        f.notifier.clone(),
+        f.clock.clone(),
+    );
+    assert!(result_of(&restarted.run(view.run_id).unwrap(), 0).check_failed);
+    assert_eq!(restarted.retry_check(attempt).unwrap(), Some(attempt));
+}
+
+#[test]
+fn retrying_a_failed_check_resolves_it() {
+    let mut f = fixture_with(FakeChecker::replying(vec![
+        Err(CheckError::Failed),
+        verdict(false, "Still off."),
+    ]));
+    let id = f.mistake("I work there", "I worked there", Some(RuleKey::Articles));
+    f.set(id, "ladder_step = 4");
+    let view = f.one(id);
+    let attempt = f
+        .answer(view.run_id, 0, "I work at a bank")
+        .unwrap()
+        .check
+        .unwrap();
+    assert!(f.service.run_check(attempt).is_err());
+    assert!(result_of(&f.service.run(view.run_id).unwrap(), 0).check_failed);
+    let again = f.service.retry_check(attempt).unwrap().unwrap();
+    f.service.run_check(again).unwrap();
+    let done = result_of(&f.service.run(view.run_id).unwrap(), 0);
+    assert_eq!(done.outcome, AttemptOutcome::Miss);
+    assert!(!done.check_failed);
+    assert_eq!(f.notifier.0.lock().unwrap().len(), 2);
 }

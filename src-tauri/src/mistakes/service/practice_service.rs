@@ -1,8 +1,8 @@
 use crate::mistakes::domain::check_prompt::CheckRequest;
 use crate::mistakes::domain::ladder::{schedule, ScheduleUpdate};
 use crate::mistakes::domain::practice::{
-    decide, exercise_view, plan_run, AttemptOutcome, CheckedBy, Decision, ExerciseView, InputKind,
-    RunItem, RunRecord, RunView, MISS_NOTE, PASS_NOTE,
+    decide, exercise_view, plan_run, run_view, AttemptOutcome, CheckedBy, Decision, ExerciseView,
+    InputKind, RunItem, RunRecord, RunView, MISS_NOTE, PASS_NOTE,
 };
 use crate::mistakes::domain::rules::RuleKey;
 use crate::mistakes::error::MistakesError;
@@ -32,6 +32,7 @@ pub struct PracticeService {
     notifier: Arc<dyn MistakesNotifier>,
     clock: Arc<dyn Clock>,
     gate: Arc<Mutex<()>>,
+    claimed: Arc<Mutex<HashSet<u64>>>,
     in_flight: Arc<Mutex<HashSet<u64>>>,
 }
 
@@ -67,6 +68,7 @@ impl PracticeService {
             notifier,
             clock,
             gate: Arc::default(),
+            claimed: Arc::default(),
             in_flight: Arc::default(),
         }
     }
@@ -77,7 +79,7 @@ impl PracticeService {
             .store
             .start_run(target, self.clock.now_ms(), &plan_run)?
             .ok_or(MistakesError::NothingToPractice)?;
-        Ok(crate::mistakes::domain::practice::run_view(&run))
+        Ok(self.view(&run))
     }
 
     pub fn target(
@@ -97,7 +99,7 @@ impl PracticeService {
 
     pub fn run(&self, run_id: u64) -> Result<RunView, MistakesError> {
         let run = self.open_record(run_id)?;
-        Ok(crate::mistakes::domain::practice::run_view(&run))
+        Ok(self.view(&run))
     }
 
     pub fn answer(
@@ -144,8 +146,11 @@ impl PracticeService {
             }
         }
         let attempt_id = self.store.record(&attempt, update)?;
-        let exercise = self.exercise(run_id, position)?;
         let check = (attempt.outcome == AttemptOutcome::Checking).then_some(attempt_id);
+        if let Some(id) = check {
+            lock(&self.claimed).insert(id);
+        }
+        let exercise = self.exercise(run_id, position)?;
         Ok(Answered { exercise, check })
     }
 
@@ -166,25 +171,36 @@ impl PracticeService {
         if !self.store.begin_check(attempt.id)? {
             return Err(MistakesError::CheckUnavailable(attempt.id));
         }
+        lock(&self.claimed).insert(attempt.id);
         Ok(Answered {
             exercise: self.exercise(run_id, position)?,
             check: Some(attempt.id),
         })
     }
 
-    pub fn retry_check(&self, attempt_id: u64) -> Result<u64, MistakesError> {
+    pub fn retry_check(&self, attempt_id: u64) -> Result<Option<u64>, MistakesError> {
         let attempt = self
             .store
             .attempt(attempt_id)?
             .ok_or(MistakesError::CheckUnavailable(attempt_id))?;
-        if attempt.outcome == AttemptOutcome::Checking {
-            Ok(attempt_id)
-        } else {
-            Err(MistakesError::CheckUnavailable(attempt_id))
+        if attempt.outcome != AttemptOutcome::Checking {
+            return Err(MistakesError::CheckUnavailable(attempt_id));
         }
+        Ok(lock(&self.claimed).insert(attempt_id).then_some(attempt_id))
     }
 
     pub fn run_check(&self, attempt_id: u64) -> Result<CheckOutcome, MistakesError> {
+        let result = self.check_attempt(attempt_id);
+        if !matches!(result, Ok(CheckOutcome::AlreadyRunning)) {
+            lock(&self.claimed).remove(&attempt_id);
+        }
+        if result.is_err() {
+            self.notifier.updated(0);
+        }
+        result
+    }
+
+    fn check_attempt(&self, attempt_id: u64) -> Result<CheckOutcome, MistakesError> {
         {
             let mut running = lock(&self.in_flight);
             if !running.insert(attempt_id) {
@@ -259,7 +275,27 @@ impl PracticeService {
     fn exercise(&self, run_id: u64, position: u32) -> Result<ExerciseView, MistakesError> {
         let run = self.open_record(run_id)?;
         let item = item_at(&run, position)?;
-        Ok(exercise_view(item, &run.attempts))
+        let mut view = exercise_view(item, &run.attempts);
+        self.mark_failed(&mut view);
+        Ok(view)
+    }
+
+    fn view(&self, run: &RunRecord) -> RunView {
+        let mut view = run_view(run);
+        for item in &mut view.items {
+            self.mark_failed(item);
+        }
+        view
+    }
+
+    fn mark_failed(&self, view: &mut ExerciseView) {
+        let claimed = lock(&self.claimed);
+        let running = lock(&self.in_flight);
+        if let Some(result) = view.result.as_mut() {
+            result.check_failed = result.outcome == AttemptOutcome::Checking
+                && !claimed.contains(&result.attempt_id)
+                && !running.contains(&result.attempt_id);
+        }
     }
 
     fn schedule_for(
