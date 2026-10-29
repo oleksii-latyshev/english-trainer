@@ -24,7 +24,7 @@ export function RunHeader({ runId }: Props) {
     ? 'Practice summary'
     : progressLabel(position, run.items.length, ruleTitleOf(groups, current?.rule_key ?? null));
   return (
-    <div className="flex min-h-8 items-center gap-4">
+    <div className="flex h-10 items-center gap-4">
       <span
         aria-label={`Exercise ${reached} of ${run.items.length}`}
         className="flex flex-none gap-1.5"
