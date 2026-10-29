@@ -9,9 +9,11 @@ import type { MistakeCardScreenProps, MistakesScreenProps } from './types';
 export function MistakesScreen({
   talkBlockedReason,
   isStartingTalk,
+  isStartingRun,
   talkError,
   onTalkItThrough,
   onOpenMistake,
+  onPractise,
 }: MistakesScreenProps) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -25,19 +27,36 @@ export function MistakesScreen({
             blockedReason={talkBlockedReason}
             error={talkError}
             isStarting={isStartingTalk}
+            isStartingRun={isStartingRun}
+            onPractise={() => onPractise({ kind: 'due' })}
             onTalkItThrough={onTalkItThrough}
           />
         </div>
       </header>
-      <MistakeGroups onOpen={onOpenMistake} />
+      <MistakeGroups
+        isStartingRun={isStartingRun}
+        onOpen={onOpenMistake}
+        onPractiseRule={(ruleKey) => onPractise({ kind: 'rule', ruleKey })}
+      />
     </div>
   );
 }
 
-export function MistakeCardScreen({ mistakeId, onBack }: MistakeCardScreenProps) {
+export function MistakeCardScreen({
+  mistakeId,
+  isStartingRun,
+  onBack,
+  onPractise,
+}: MistakeCardScreenProps) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <MistakeCard id={mistakeId} onArchived={onBack} onBack={onBack} />
+      <MistakeCard
+        id={mistakeId}
+        isStartingRun={isStartingRun}
+        onArchived={onBack}
+        onBack={onBack}
+        onPractise={() => onPractise({ kind: 'one', id: mistakeId })}
+      />
     </div>
   );
 }

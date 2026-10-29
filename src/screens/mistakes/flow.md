@@ -1,7 +1,7 @@
 # Mistakes screen
 
 Layout for `/mistakes` and `/mistakes/:mistakeId`. Logic lives in `features/mistake-library`; the
-route (`src/app/routes/mistakes`) passes navigation and the F12 start.
+route (`src/app/routes/mistakes`) passes navigation, the F12 start and `onPractise` for the runs.
 
 ```text
 MistakesScreen      header (title, OverviewLine, PracticeActions) + MistakeGroups

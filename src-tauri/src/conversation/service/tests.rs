@@ -74,10 +74,14 @@ fn mistake_plan(
 }
 
 fn seed_practice_mistake(store: &SessionStore) -> u64 {
-    store
-        .lock()
+    let mut state = store.lock();
+    state
         .database
-        .seed_recurring_mistake("I work in there", "I work there", 2, 20)
+        .seed_recurring_mistake("I live in there", "I live there", 1, 10)
+        .unwrap();
+    state
+        .database
+        .seed_recurring_mistake("I work in there", "I work there", 1, 20)
         .unwrap()
 }
 

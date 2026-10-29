@@ -35,6 +35,10 @@ export class MistakesPage {
     this.versionToKeep = page.getByRole('region', { name: 'Mistake' });
   }
 
+  practiseRule(title: string): Locator {
+    return this.group(title).getByRole('button', { name: 'Practise this rule' });
+  }
+
   group(title: string): Locator {
     return this.page.getByRole('region', { name: title });
   }

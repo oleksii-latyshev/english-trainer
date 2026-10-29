@@ -40,13 +40,18 @@ test('the full rule opens inside its group', async ({ app, mistakes, tauri }) =>
   await expect(app.text('Use Past Simple for a finished time')).toBeVisible();
 });
 
-test('the practice run waits for its own release', async ({ app, mistakes, tauri }) => {
+test('Practise counts the due mistakes and is on when something is due', async ({
+  app,
+  mistakes,
+  tauri,
+}) => {
   tauri.mistakes.withGroups();
   await app.open();
   await app.sidebar.openMistakes();
 
-  await expect(mistakes.practiseAll).toBeDisabled();
+  await expect(mistakes.practiseAll).toBeEnabled();
   await expect(mistakes.practiseAll).toContainText('Practise 3 · 5 min');
+  await expect(mistakes.practiseRule('Subject-verb agreement')).toBeEnabled();
 });
 
 test('a mistake card shows the version to keep and a ready lesson', async ({
@@ -65,7 +70,7 @@ test('a mistake card shows the version to keep and a ready lesson', async ({
   await expect(mistakes.versionToKeep.locator('mark')).toHaveText(['have', 'been', 'working']);
   await expect(mistakes.lesson).toContainText('Since March');
   await expect(mistakes.lesson).toContainText('Up to now');
-  await expect(mistakes.practiseThis).toBeDisabled();
+  await expect(mistakes.practiseThis).toBeEnabled();
   await expect(mistakes.hearIt).toBeEnabled();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/mistake-card.png` });
 });
@@ -119,17 +124,30 @@ test('without mistakes the screen explains where they come from', async ({ app, 
   await expect(mistakes.practiseAll).toBeDisabled();
 });
 
-test('Talk it through starts the spoken practice for a repeated mistake', async ({
+test('Talk it through starts the spoken practice from rules that hold two mistakes', async ({
   app,
   mistakes,
   talk,
   tauri,
 }) => {
   tauri.mistakes.withGroups();
-  tauri.memory.withRepeatedMistake();
   await app.open();
   await app.sidebar.openMistakes();
   await mistakes.talkItThrough.click();
 
   await expect(talk.questionProgress(1, 5)).toBeVisible();
+});
+
+test('Talk it through is off while every rule holds a single mistake', async ({
+  app,
+  mistakes,
+  tauri,
+}) => {
+  tauri.mistakes.withSingleMistakeRules();
+  await app.open();
+  await app.sidebar.openMistakes();
+
+  await expect(mistakes.talkItThrough).toBeDisabled();
+  await expect(app.text('A rule needs at least two mistakes first.')).toBeVisible();
+  expect(await tauri.calls('start_mistake_practice')).toEqual([]);
 });

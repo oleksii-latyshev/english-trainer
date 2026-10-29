@@ -2,10 +2,10 @@ import { Option } from 'effect';
 import { AsyncResult, Atom } from 'effect/reactivity';
 import {
   activeReviewRunAtom,
-  isPracticableMistake,
   openedLearningMemoryAtom,
   resolvedItemCount,
 } from '@/core/learning-memory';
+import { usualRulesAtom } from '@/core/mistakes';
 import type { ActiveReview } from '../types';
 
 const SAMPLE_COUNT = 2;
@@ -23,15 +23,19 @@ export type PracticeTargets =
 export const practiceTargetsAtom = Atom.make((get): PracticeTargets => {
   const result = get(openedLearningMemoryAtom);
   const view = Option.getOrNull(AsyncResult.value(result));
-  if (!view) return AsyncResult.isFailure(result) ? { tag: 'unavailable' } : { tag: 'loading' };
-  const practicable = view.mistakes
-    .filter(isPracticableMistake)
-    .sort((a, b) => b.times_seen - a.times_seen);
+  const usual = get(usualRulesAtom);
+  if (!view || usual.tag !== 'ready') {
+    const isUnavailable = AsyncResult.isFailure(result) || usual.tag === 'unavailable';
+    return isUnavailable ? { tag: 'unavailable' } : { tag: 'loading' };
+  }
   return {
     tag: 'ready',
     dueCount: view.due_count,
-    practicableCount: practicable.length,
-    samples: practicable.slice(0, SAMPLE_COUNT).map((mistake) => mistake.original_example),
+    practicableCount: usual.rules.reduce((sum, rule) => sum + rule.mistake_count, 0),
+    samples: usual.rules
+      .flatMap((rule) => rule.mistakes)
+      .slice(0, SAMPLE_COUNT)
+      .map((mistake) => mistake.said),
   };
 });
 

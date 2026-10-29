@@ -25,6 +25,6 @@ it('lists the three rules that come back most often', () => {
   expect(usualRules(groups).map((rule) => rule.title)).toEqual(['B', 'D', 'C']);
 });
 
-it('skips empty rules', () => {
-  expect(usualRules({ groups: [group('A', 0)], ungrouped: [], due_count: 0 })).toEqual([]);
+it('skips rules that hold a single mistake', () => {
+  expect(usualRules({ groups: [group('A', 1)], ungrouped: [], due_count: 0 })).toEqual([]);
 });

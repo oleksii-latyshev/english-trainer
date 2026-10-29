@@ -1,5 +1,11 @@
 import { Schema } from 'effect';
+import type { AttemptOutcome } from '../bindings/AttemptOutcome';
 import type { ContrastLine } from '../bindings/ContrastLine';
+import type { ExerciseResult } from '../bindings/ExerciseResult';
+import type { ExerciseView } from '../bindings/ExerciseView';
+import type { GapSentenceView } from '../bindings/GapSentenceView';
+import type { GapView } from '../bindings/GapView';
+import type { InputKind } from '../bindings/InputKind';
 import type { LessonState } from '../bindings/LessonState';
 import type { LessonView } from '../bindings/LessonView';
 import type { LessonWord } from '../bindings/LessonWord';
@@ -11,6 +17,8 @@ import type { MistakeSummary } from '../bindings/MistakeSummary';
 import type { MistakesUpdated } from '../bindings/MistakesUpdated';
 import type { RuleCardView } from '../bindings/RuleCardView';
 import type { RuleKey } from '../bindings/RuleKey';
+import type { RunKind } from '../bindings/RunKind';
+import type { RunView } from '../bindings/RunView';
 import { bindingSchema } from './binding-schema';
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
@@ -133,4 +141,57 @@ export const RuleCardViewSchema = bindingSchema<RuleCardView>()(
 
 export const MistakesUpdatedSchema = bindingSchema<MistakesUpdated>()(
   Schema.Struct({ lessons_ready: Count }),
+);
+
+const AttemptOutcomeSchema = bindingSchema<AttemptOutcome>()(
+  Schema.Literals(['pass', 'miss', 'checking', 'retry']),
+);
+
+const RunKindSchema = bindingSchema<RunKind>()(Schema.Literals(['due', 'one', 'rule']));
+
+export const InputKindSchema = bindingSchema<InputKind>()(Schema.Literals(['typed', 'spoken']));
+
+const GapViewSchema = bindingSchema<GapView>()(Schema.Struct({ start: Count, end: Count }));
+
+const GapSentenceViewSchema = bindingSchema<GapSentenceView>()(
+  Schema.Struct({
+    words: Schema.Array(Schema.NullOr(Schema.String)),
+    gaps: Schema.Array(GapViewSchema),
+  }),
+);
+
+const ExerciseResultSchema = bindingSchema<ExerciseResult>()(
+  Schema.Struct({
+    attempt_id: Schema.Int,
+    outcome: AttemptOutcomeSchema,
+    note: Schema.String,
+    keep: Schema.String,
+    lesson: Schema.String,
+    can_check: Schema.Boolean,
+    retried: Schema.Boolean,
+    retry_note: Schema.NullOr(Schema.String),
+    check_failed: Schema.Boolean,
+  }),
+);
+
+export const ExerciseViewSchema = bindingSchema<ExerciseView>()(
+  Schema.Struct({
+    position: Count,
+    mistake_id: Schema.Int,
+    step: Count,
+    rule_key: Schema.NullOr(RuleKeySchema),
+    question: Schema.String,
+    said: Schema.NullOr(Schema.String),
+    sentence: Schema.NullOr(GapSentenceViewSchema),
+    result: Schema.NullOr(ExerciseResultSchema),
+  }),
+);
+
+export const RunViewSchema = bindingSchema<RunView>()(
+  Schema.Struct({
+    run_id: Schema.Int,
+    kind: RunKindSchema,
+    finished: Schema.Boolean,
+    items: Schema.Array(ExerciseViewSchema),
+  }),
 );

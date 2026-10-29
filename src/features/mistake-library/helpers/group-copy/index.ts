@@ -52,6 +52,8 @@ export function moreLabel(group: MistakeGroup): string | null {
   return rest > 0 ? `and ${rest} more` : null;
 }
 
+const RUN_SIZE = 6;
+
 export function practiseLabel(dueCount: number): string {
-  return `Practise ${dueCount} · 5 min`;
+  return `Practise ${Math.min(dueCount, RUN_SIZE)} · 5 min`;
 }

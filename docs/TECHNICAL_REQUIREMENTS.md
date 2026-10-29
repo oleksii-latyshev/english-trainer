@@ -417,8 +417,8 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
 - `start_mistake_practice()` returns a voice/speaking `PracticeSession` with `is_mistake_practice:
   true`, topic label `Usual mistakes` and five target answers. Other sessions return false (frontend
   legacy payloads default to false).
-- Targets: non-archived mistakes with `times_seen >= 2`, regardless of due date, in deterministic
-  frequency/recency order. An empty pool returns an actionable error without a provider call or
+- Targets: non-archived mistakes whose rule (never `other`) holds at least two non-archived mistakes, regardless of due
+  date, largest rule first, then recency. An empty pool returns an actionable error without a provider call or
   session.
 - One bounded background-tier `agy` call (pinned Gemini model; the Gemini conversation API is not
   used) prepares five distinct English questions. Output must reference known targets, stay bounded
@@ -655,7 +655,7 @@ not `other` and already has another mistake, a `rule_relapses` row is written an
 mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempotent per answer.
 
 **Commands** (all through `IpcError`): `list_mistake_groups`, `get_mistake(id)`,
-`get_rule_card(rule_key)`, `start_mistake_run(kind, id?)`, `get_mistake_run(run_id)`,
+`get_rule_card(rule_key)`, `start_mistake_run(kind, id?, rule_key?)`, `check_mistake_answer(run_id, position)`, `get_mistake_run(run_id)`,
 `answer_mistake_step(run_id, position, answer, input)`, `retry_mistake_check(attempt_id)`,
 `finish_mistake_run(run_id)`, `archive_mistake(id)`, `retry_mistake_lesson(id)`. Rust emits
 `mistakes-updated` after a lesson batch or a background check.

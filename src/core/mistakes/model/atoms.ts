@@ -1,7 +1,8 @@
 import { Effect, Option, Stream } from 'effect';
 import { AsyncResult, Atom, Reactivity } from 'effect/reactivity';
+import { repeatedRules } from '../helpers/usual-rules';
 import { MistakesService } from '../services/mistakes-service';
-import type { RuleKey } from '../types';
+import type { MistakeGroup, RuleKey } from '../types';
 import { runtime } from './runtime';
 
 export const MISTAKES = ['mistakes'];
@@ -32,3 +33,16 @@ export const dueMistakeCountAtom = Atom.make((get): number =>
     onSome: (groups) => groups.due_count,
   }),
 );
+
+export type UsualRules =
+  | { readonly tag: 'loading' }
+  | { readonly tag: 'unavailable' }
+  | { readonly tag: 'ready'; readonly rules: readonly MistakeGroup[] };
+
+export const usualRulesAtom = Atom.make((get): UsualRules => {
+  const result = get(mistakeGroupsAtom);
+  return Option.match(AsyncResult.value(result), {
+    onSome: (groups) => ({ tag: 'ready', rules: repeatedRules(groups) }),
+    onNone: () => (AsyncResult.isFailure(result) ? { tag: 'unavailable' } : { tag: 'loading' }),
+  });
+});

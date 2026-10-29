@@ -21,7 +21,9 @@ describe('why mistake practice is blocked', () => {
       'current conversation',
     );
     expect(practiceBlockedReason({ ...READY, isAudioBusy: true })).toContain('microphone');
-    expect(practiceBlockedReason({ ...READY, practicableCount: 0 })).toContain('at least twice');
+    expect(practiceBlockedReason({ ...READY, practicableCount: 0 })).toContain(
+      'at least two mistakes',
+    );
   });
 });
 

@@ -1,5 +1,4 @@
 export { type DueMemory, dueMemory } from './helpers/due-memory';
-export { isPracticableMistake } from './helpers/practicable-mistake';
 export {
   currentPendingItem,
   isRunFinished,

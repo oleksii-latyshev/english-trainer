@@ -3,6 +3,7 @@ import { App } from '../pages/app';
 import { FirstRunPage } from '../pages/first-run-page';
 import { GrowthPage } from '../pages/growth-page';
 import { MemoryPage } from '../pages/memory-page';
+import { MistakeRunPage } from '../pages/mistake-run-page';
 import { MistakesPage } from '../pages/mistakes-page';
 import { ReviewPage } from '../pages/review-page';
 import { SettingsPage } from '../pages/settings-page';
@@ -20,6 +21,7 @@ type Fixtures = {
   wrapup: WrapupPage;
   memory: MemoryPage;
   mistakes: MistakesPage;
+  mistakeRun: MistakeRunPage;
   review: ReviewPage;
   settings: SettingsPage;
   firstRun: FirstRunPage;
@@ -52,6 +54,9 @@ export const test = base.extend<Fixtures>({
   },
   mistakes: async ({ page }, use) => {
     await use(new MistakesPage(page));
+  },
+  mistakeRun: async ({ page }, use) => {
+    await use(new MistakeRunPage(page));
   },
   review: async ({ page }, use) => {
     await use(new ReviewPage(page));

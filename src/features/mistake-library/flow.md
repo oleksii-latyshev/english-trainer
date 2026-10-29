@@ -5,11 +5,11 @@ The list of rule groups, the mistake card with its lesson, and the rule card. Da
 
 ```text
 MistakeGroups      groups by rule, "Not sorted yet", loading, failure, empty
-  RuleGroup        title, count, fixed, "Came back on <date>", progress, first mistakes, full rule
+  RuleGroup        title, count, fixed, "Came back on <date>", progress, first mistakes, Practise this rule, full rule
     MistakeRow     said -> version to keep with marked words, step dots
-MistakeCard        question, said, version to keep, Hear it, Archive, ladder
+MistakeCard        question, said, version to keep, Practise this, Hear it, Archive, ladder
   LessonPanel      ready: why, contrast, examples, word; pending; failed with Retry
-PracticeActions    Talk it through (F12), Practise (disabled, "Coming soon")
+PracticeActions    Talk it through (F12), Practise N · 5 min (the due run)
 ```
 
 ## Open a mistake
@@ -64,6 +64,12 @@ sequenceDiagram
 ## Talk it through
 
 `PracticeActions` calls `onTalkItThrough`; `MistakesRoute` starts the existing F12 practice
-(`startMistakePracticeAtom`), enabled when a repeated mistake exists and no conversation is open.
-"Practise N" and "Practise this" stay disabled with the tooltip "Coming soon" until the practice
-run exists.
+(`startMistakePracticeAtom`), enabled when a rule holds two or more mistakes (`usualRulesAtom`) and
+no conversation is open.
+
+## Practise
+
+"Practise N · 5 min" (due), "Practise this" on the card (one mistake) and "Practise this rule" on a
+group call `onPractise(target)`; the route starts the run (`startMistakeRunAtom`, see
+`features/mistake-run/flow.md`) and opens `/mistakes/practice/:runId`. An open run is returned
+unchanged, so the same buttons resume it.
