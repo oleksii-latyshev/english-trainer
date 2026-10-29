@@ -1,38 +1,32 @@
+import { useAtomValue } from '@effect/atom-react';
+import { Option } from 'effect';
+import { AsyncResult } from 'effect/reactivity';
+import { mistakeGroupsAtom } from '@/core/mistakes';
 import { Button } from '@/shared/ui/button';
+import { Chip } from '@/shared/ui/chip';
 import { GlassPanel } from '@/shared/ui/glass-panel';
-import type { UsualMistake } from '../../types';
+import { usualRules } from '../../helpers/usual-rules';
 
-type Props = {
-  mistakes: readonly UsualMistake[];
-  blockedReason: string | null;
-  isStarting: boolean;
-  onPractice: () => void;
-};
+type Props = { onOpen: () => void };
 
-const QUESTION_COUNT = 5;
-
-export function UsualMistakesCard({ mistakes, blockedReason, isStarting, onPractice }: Props) {
+export function UsualMistakesCard({ onOpen }: Props) {
+  const groups = Option.getOrNull(AsyncResult.value(useAtomValue(mistakeGroupsAtom)));
+  const rules = groups ? usualRules(groups) : [];
+  if (rules.length === 0) return null;
   return (
     <GlassPanel aria-label="Your usual mistakes" className="flex flex-col gap-3 p-5">
       <h2 className="text-caption text-faint font-semibold">Your usual mistakes</h2>
-      <ul className="text-control flex flex-col gap-2">
-        {mistakes.map((mistake) => (
-          <li className="flex justify-between gap-2" key={mistake.id}>
-            <s className="text-muted decoration-warn/70">{mistake.original}</s>
-            <span className="text-right">{mistake.corrected}</span>
+      <ul className="text-control m-0 flex list-none flex-col gap-2 p-0">
+        {rules.map((rule) => (
+          <li className="flex items-center justify-between gap-2" key={rule.key}>
+            <span>{rule.title}</span>
+            <Chip>{rule.count}</Chip>
           </li>
         ))}
       </ul>
-      <Button
-        className="w-full"
-        disabled={blockedReason !== null}
-        onClick={onPractice}
-        pending={isStarting}
-        tone="secondary"
-      >
-        {isStarting ? 'Preparing…' : `Practice ${QUESTION_COUNT} questions`}
+      <Button className="w-full" onClick={onOpen} tone="secondary">
+        Open Mistakes
       </Button>
-      {blockedReason && <p className="text-faint text-xs">{blockedReason}</p>}
     </GlassPanel>
   );
 }

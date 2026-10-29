@@ -23,12 +23,11 @@ export function TalkStartScreen({
   error,
   openSession,
   review,
-  mistakePractice,
   onStart,
   onStartWarmup,
   onContinue,
   onOpenMemory,
-  onPracticeMistakes,
+  onOpenMistakes,
 }: TalkStartScreenProps) {
   const [selection, setSelection] = useState<PracticeSelection>(DEFAULT_SELECTION);
   const [warmupFirst, setWarmupFirst] = useState(false);
@@ -102,14 +101,7 @@ export function TalkStartScreen({
             warmupFirst={warmupFirst}
           />
         )}
-        {mistakePractice && mistakePractice.mistakes.length > 0 && (
-          <UsualMistakesCard
-            blockedReason={mistakePractice.blockedReason}
-            isStarting={mistakePractice.isStarting}
-            mistakes={mistakePractice.mistakes}
-            onPractice={onPracticeMistakes}
-          />
-        )}
+        <UsualMistakesCard onOpen={onOpenMistakes} />
         <WeekCard />
       </aside>
     </div>

@@ -9,7 +9,7 @@ export function MemorySearch() {
       className="max-narrow:w-full w-80"
       label="Search memory"
       onValueChange={setQuery}
-      placeholder="Search phrases and mistakes"
+      placeholder="Search phrases"
       value={query}
     />
   );

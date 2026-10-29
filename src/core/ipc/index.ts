@@ -11,7 +11,6 @@ export type { ConversationTurn } from './bindings/ConversationTurn';
 
 export type { EvaStyle } from './bindings/EvaStyle';
 export type { FinishedPracticeSession } from './bindings/FinishedPracticeSession';
-export type { FocusCategory } from './bindings/FocusCategory';
 export type { GeminiKeyStatus } from './bindings/GeminiKeyStatus';
 
 export type { IpcErrorCode } from './bindings/IpcErrorCode';
@@ -88,6 +87,13 @@ export {
   MemoryUsageEvidenceSchema,
   PhraseCardRecordSchema,
 } from './schemas/learning';
+export {
+  MISTAKES_UPDATED_EVENT,
+  MistakeDetailSchema,
+  MistakeGroupsSchema,
+  MistakesUpdatedSchema,
+  RuleCardViewSchema,
+} from './schemas/mistakes';
 export { PersonalProfileSchema } from './schemas/personal-profile';
 export {
   AttemptComparisonSchema,

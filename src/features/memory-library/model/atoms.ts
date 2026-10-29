@@ -8,11 +8,10 @@ import {
 } from '@/core/learning-memory';
 import { toast } from '@/shared/ui/toast';
 import { type Library, libraryOf } from '../helpers/library-state';
-import { entriesOfTab, entryRef, searchEntries, visibleEntries } from '../helpers/memory-entries';
-import type { MemoryEntry, MemoryTab } from '../types';
+import { entryRef, searchEntries, visibleEntries } from '../helpers/memory-entries';
+import type { MemoryEntry } from '../types';
 
 export const searchQueryAtom = Atom.make('');
-export const activeTabAtom = Atom.make<MemoryTab>('phrases');
 export const showArchivedAtom = Atom.make(false);
 export const openEntryKeyAtom = Atom.make<string | null>(null);
 export const pendingDeleteAtom = Atom.make<MemoryEntry | null>(null);
@@ -26,14 +25,6 @@ export const shownEntriesAtom = Atom.make((get): readonly MemoryEntry[] => {
     visibleEntries(library.entries, get(showArchivedAtom)),
     get(searchQueryAtom),
   );
-});
-
-export const shownCountsAtom = Atom.make((get) => {
-  const shown = get(shownEntriesAtom);
-  return {
-    phrases: entriesOfTab(shown, 'phrases').length,
-    mistakes: entriesOfTab(shown, 'mistakes').length,
-  };
 });
 
 export const archiveEntryAtom = learningMemoryRuntime.fn(

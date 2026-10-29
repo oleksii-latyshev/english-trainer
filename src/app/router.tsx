@@ -8,6 +8,7 @@ import { FirstRunRoute } from '@/app/routes/first-run';
 import { GrowthRoute } from '@/app/routes/growth';
 import { MemoryRoute } from '@/app/routes/memory';
 import { MemoryReviewRoute } from '@/app/routes/memory/review';
+import { MistakeCardRoute, MistakesRoute } from '@/app/routes/mistakes';
 import { SettingsEvaRoute, SettingsRoute } from '@/app/routes/settings';
 import { TalkRoute } from '@/app/routes/talk';
 import { TalkStartRoute } from '@/app/routes/talk-start';
@@ -30,6 +31,18 @@ const conversationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/conversation',
   component: TalkRoute,
+});
+
+const mistakesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mistakes',
+  component: MistakesRoute,
+});
+
+const mistakeCardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/mistakes/$mistakeId',
+  component: MistakeCardRoute,
 });
 
 const memoryRoute = createRoute({
@@ -77,6 +90,8 @@ const summaryRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   conversationRoute,
+  mistakesRoute,
+  mistakeCardRoute,
   memoryRoute,
   memoryReviewRoute,
   settingsRoute,

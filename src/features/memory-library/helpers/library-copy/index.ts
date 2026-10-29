@@ -1,10 +1,4 @@
-import type {
-  FocusCategory,
-  LearningStatus,
-  MistakeRecord,
-  PhraseCardRecord,
-  PhraseKind,
-} from '@/core/ipc';
+import type { LearningStatus, PhraseCardRecord, PhraseKind } from '@/core/ipc';
 import type { MemoryEntry } from '../../types';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -26,10 +20,6 @@ export function statusLabel(status: LearningStatus): string {
   return capitalise(status);
 }
 
-function categoryLabel(category: FocusCategory): string {
-  return capitalise(category);
-}
-
 const PHRASE_KIND_LABELS: Readonly<Record<PhraseKind, string>> = {
   phrase: 'Phrase',
   phrasal_verb: 'Phrasal verb',
@@ -38,9 +28,7 @@ const PHRASE_KIND_LABELS: Readonly<Record<PhraseKind, string>> = {
 };
 
 export function kindLabel(entry: MemoryEntry): string {
-  return entry.kind === 'phrase'
-    ? PHRASE_KIND_LABELS[entry.card.kind]
-    : categoryLabel(entry.mistake.category);
+  return PHRASE_KIND_LABELS[entry.card.kind];
 }
 
 export function whenLabel(timestampMs: number, now: number): string {
@@ -77,8 +65,4 @@ export function phraseSourceLine(card: PhraseCardRecord, now: number): string {
   if (topic) return `${topic}${note ? ` · ${note}` : ''} · ${when}`;
   const origin = note || (card.session_id === null ? 'Saved by hand' : 'From a conversation');
   return `${origin} · ${when}`;
-}
-
-export function mistakeSourceLine(mistake: MistakeRecord): string {
-  return `${categoryLabel(mistake.category)} · seen ${mistake.times_seen}×`;
 }

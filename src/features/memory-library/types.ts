@@ -1,10 +1,6 @@
-import type { LearningItemType, LearningStatus, MistakeRecord, PhraseCardRecord } from '@/core/ipc';
+import type { LearningItemType, LearningStatus, PhraseCardRecord } from '@/core/ipc';
 
-export type MemoryEntry =
-  | { readonly kind: 'phrase'; readonly card: PhraseCardRecord }
-  | { readonly kind: 'mistake'; readonly mistake: MistakeRecord };
-
-export type MemoryTab = 'phrases' | 'mistakes';
+export type MemoryEntry = { readonly kind: 'phrase'; readonly card: PhraseCardRecord };
 
 export type ActiveStatus = Exclude<LearningStatus, 'archived'>;
 
