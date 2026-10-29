@@ -6,6 +6,7 @@ const MARGIN_BEFORE_MS: usize = 40;
 const MARGIN_AFTER_MS: usize = 15;
 const FADE_IN_MS: usize = 20;
 const FADE_OUT_MS: usize = 30;
+const PEAK_CEILING: i16 = 29204;
 
 fn apply_fades(samples: &mut [i16], fade_in: usize, fade_out: usize) {
     let length = samples.len();
@@ -14,6 +15,21 @@ fn apply_fades(samples: &mut [i16], fade_in: usize, fade_out: usize) {
     }
     for index in 0..fade_out.min(length) {
         samples[length - 1 - index] = scaled(samples[length - 1 - index], index, fade_out);
+    }
+}
+
+fn protect_peaks(samples: &mut [i16]) {
+    let peak = samples
+        .iter()
+        .map(|sample| i32::from(*sample).abs())
+        .max()
+        .unwrap_or(0);
+    if peak <= i32::from(PEAK_CEILING) {
+        return;
+    }
+    let gain = f64::from(PEAK_CEILING) / f64::from(peak);
+    for sample in samples {
+        *sample = (f64::from(*sample) * gain).round() as i16;
     }
 }
 
@@ -69,6 +85,7 @@ pub fn trim_padding(mut wav: Vec<u8>) -> Result<Vec<u8>, VoiceError> {
         0
     };
     let mut kept = samples[start..end].to_vec();
+    protect_peaks(&mut kept);
     apply_fades(&mut kept, fade_in, fade_out);
     let pcm: Vec<u8> = kept.iter().flat_map(|s| s.to_le_bytes()).collect();
     wav.truncate(44);
@@ -139,6 +156,30 @@ mod tests {
         wrong[40] = 0;
         assert!(trim_padding(wrong).is_err());
         assert!(trim_padding(vec![]).is_err());
+    }
+
+    #[test]
+    fn a_phrase_that_peaks_into_full_scale_is_scaled_down_with_headroom() {
+        let mut samples = vec![0; 16000];
+        samples[6400..8000].fill(1000);
+        samples[7000] = i16::MAX;
+        samples[7001] = i16::MIN;
+
+        let pcm = pcm_of(&trim_padding(wave(&samples)).unwrap());
+
+        let peak = pcm.iter().map(|s| i32::from(*s).abs()).max().unwrap();
+        assert_eq!(peak, i32::from(PEAK_CEILING));
+        assert!(pcm.contains(&891));
+    }
+
+    #[test]
+    fn a_phrase_below_the_ceiling_keeps_its_level() {
+        let mut samples = vec![0; 16000];
+        samples[6400..8000].fill(20000);
+
+        let pcm = pcm_of(&trim_padding(wave(&samples)).unwrap());
+
+        assert_eq!(pcm[pcm.len() / 2], 20000);
     }
 
     fn pcm_of(wave: &[u8]) -> Vec<i16> {
