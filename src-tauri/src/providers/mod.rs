@@ -230,6 +230,16 @@ pub struct CoachedAnswer {
     pub feedback: TurnFeedback,
 }
 
+/// A rewrite covers the whole answer, so its bound grows with the answer; short answers keep a floor.
+const MIN_REWRITE_CHARS: usize = 600;
+const MAX_REWRITE_CHARS: usize = 4_000;
+const REWRITE_TO_ANSWER_RATIO: usize = 2;
+
+pub fn max_rewrite_chars(transcript: &str) -> usize {
+    (transcript.trim().chars().count() * REWRITE_TO_ANSWER_RATIO)
+        .clamp(MIN_REWRITE_CHARS, MAX_REWRITE_CHARS)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(deny_unknown_fields)]
 #[ts(export)]

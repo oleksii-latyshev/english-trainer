@@ -4,8 +4,8 @@
 //! answers per call found as many real mistakes. The prompt is the one measured on real answers.
 
 use super::super::{
-    CoachedAnswer, CoachingAnswer, FocusCategory, FocusFeedback, ProviderError, ProviderErrorCode,
-    TurnFeedback,
+    max_rewrite_chars, CoachedAnswer, CoachingAnswer, FocusCategory, FocusFeedback, ProviderError,
+    ProviderErrorCode, TurnFeedback,
 };
 use super::{
     feedback::{is_transcript_excerpt, validate_feedback_text},
@@ -27,8 +27,6 @@ pub(crate) const MAX_BATCH_ANSWERS: usize = 5;
 const MAX_QUESTION_CHARS: usize = 300;
 const MAX_MISTAKE_TEXT_CHARS: usize = 180;
 const MAX_EXPLANATION_CHARS: usize = 240;
-/// A rewrite covers the whole answer, which is often longer than the quoted fragments.
-pub(crate) const MAX_REWRITE_CHARS: usize = 600;
 const MAX_MISTAKES_CONSIDERED: usize = 2;
 
 const TASK: &str = concat!(
@@ -197,11 +195,15 @@ fn validate_batch(raw: RawBatch, requested: &[CoachingAnswer]) -> Vec<CoachedAns
         if !seen.insert(answer.sequence) {
             continue;
         }
-        if let Some(feedback) = validate_entry(entry, &answer.transcript) {
-            coached.push(CoachedAnswer {
+        match validate_entry(entry, &answer.transcript) {
+            Some(feedback) => coached.push(CoachedAnswer {
                 sequence: answer.sequence,
                 feedback,
-            });
+            }),
+            None => eprintln!(
+                "Coaching for answer {} was dropped: the rewrite is empty, too long or not plain text.",
+                answer.sequence
+            ),
         }
     }
     coached
@@ -209,7 +211,7 @@ fn validate_batch(raw: RawBatch, requested: &[CoachingAnswer]) -> Vec<CoachedAns
 
 /// One focus point at most: the first mistake whose quote really is in the transcript.
 fn validate_entry(entry: RawAnswer, transcript: &str) -> Option<TurnFeedback> {
-    let b2_rewrite = validate_feedback_text(&entry.rewrite, MAX_REWRITE_CHARS).ok()?;
+    let b2_rewrite = validate_feedback_text(&entry.rewrite, max_rewrite_chars(transcript)).ok()?;
     let focus_feedback = entry
         .mistakes
         .into_iter()
