@@ -164,7 +164,10 @@ impl SpeechRecognitionService {
 
     fn keep_recording(&self, slot: Option<(u64, usize)>, wav: &[u8]) {
         if let Err(error) = self.ports.recordings.keep(slot, wav) {
-            eprintln!("Could not keep the recording: {error}");
+            crate::diagnostics::log(
+                "speech",
+                format_args!("Could not keep the recording: {error}"),
+            );
         }
     }
 

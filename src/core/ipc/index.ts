@@ -9,6 +9,7 @@ export type { ComponentStatus } from './bindings/ComponentStatus';
 export type { ConversationProvider } from './bindings/ConversationProvider';
 export type { ConversationTurn } from './bindings/ConversationTurn';
 
+export type { DiagnosticEvent } from './bindings/DiagnosticEvent';
 export type { EvaStyle } from './bindings/EvaStyle';
 export type { FinishedPracticeSession } from './bindings/FinishedPracticeSession';
 export type { GeminiKeyStatus } from './bindings/GeminiKeyStatus';
@@ -70,6 +71,7 @@ export { AnswerPlanSchema } from './schemas/answer-plan';
 export { ApiUsageOverviewSchema } from './schemas/api-usage';
 
 export { ConversationTurnSchema } from './schemas/conversation-turn';
+export { DiagnosticEventSchema } from './schemas/diagnostic-event';
 export { EvaGrowthSchema } from './schemas/eva-growth';
 export {
   FinishedSessionSchema,

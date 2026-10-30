@@ -63,7 +63,12 @@ impl WhisperEngine {
                 Ok(transcript) => return Ok(transcript),
                 Err(ServerError::Failed(error)) => return Err(error),
                 Err(ServerError::Unavailable(reason)) => {
-                    eprintln!("whisper-server is not used, running whisper-cli instead: {reason}");
+                    crate::diagnostics::log(
+                        "speech",
+                        format_args!(
+                            "whisper-server is not used, running whisper-cli instead: {reason}"
+                        ),
+                    );
                 }
             }
         }

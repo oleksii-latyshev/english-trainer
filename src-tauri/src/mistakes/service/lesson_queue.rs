@@ -84,7 +84,10 @@ impl Shared {
                     control.paused_until = Some(Instant::now() + self.quota_pause);
                     control.is_kicked = true;
                 }
-                Err(error) => eprintln!("Could not prepare mistake lessons: {error}"),
+                Err(error) => crate::diagnostics::log(
+                    "mistakes",
+                    format_args!("Could not prepare mistake lessons: {error}"),
+                ),
             }
         }
     }

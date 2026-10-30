@@ -217,6 +217,9 @@ pub async fn run_speech_check(
 
 fn report_progress(channel: &tauri::ipc::Channel<SpeechCheckProgress>, step: SpeechCheckProgress) {
     if channel.send(step).is_err() {
-        eprintln!("The speech check window closed; the measurement still finishes.");
+        crate::diagnostics::log(
+            "speech",
+            format_args!("The speech check window closed; the measurement still finishes."),
+        );
     }
 }

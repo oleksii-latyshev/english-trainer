@@ -1,4 +1,5 @@
 import { Clock, Effect, Layer, Stream } from 'effect';
+import { type DiagnosticEvent, Diagnostics } from '@/core/diagnostics';
 import { IpcError } from '@/core/ipc';
 import { CLOCK_POLL_MS } from '../helpers/speech-timing';
 import { AudioOutput, AudioOutputError, type AudioSession } from '../services/audio-output-service';
@@ -108,6 +109,14 @@ function fakeNaturalVoice(behaviour: NaturalBehaviour) {
   return { layer, requests, engine };
 }
 
+function fakeDiagnostics() {
+  const events: DiagnosticEvent[] = [];
+  const layer = Layer.succeed(Diagnostics, {
+    record: (event) => Effect.sync(() => void events.push(event)),
+  });
+  return { layer, events };
+}
+
 function fakeSystemVoice() {
   const spoken: RecordedRequest[] = [];
   const layer = Layer.succeed(SystemVoice, {
@@ -135,8 +144,10 @@ export function fakeSpeechEdges(behaviour: NaturalBehaviour = {}) {
   const audio = fakeAudioOutput(behaviour);
   const natural = fakeNaturalVoice(behaviour);
   const system = fakeSystemVoice();
+  const diagnostics = fakeDiagnostics();
   return {
-    layer: Layer.mergeAll(audio.layer, natural.layer, system.layer),
+    layer: Layer.mergeAll(audio.layer, natural.layer, system.layer, diagnostics.layer),
+    diagnosticEvents: diagnostics.events,
     clips: audio.clips,
     closedSessions: audio.closedSessions,
     requests: natural.requests,
