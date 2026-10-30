@@ -66,7 +66,10 @@ pub async fn retry_mistake_lesson(
 fn spawn_check(service: PracticeService, attempt_id: u64) {
     drop(tauri::async_runtime::spawn_blocking(move || {
         if let Err(error) = service.run_check(attempt_id) {
-            eprintln!("Mistake check {attempt_id} did not finish: {error}");
+            crate::diagnostics::log(
+                "mistakes",
+                format_args!("Mistake check {attempt_id} did not finish: {error}"),
+            );
         }
     }));
 }

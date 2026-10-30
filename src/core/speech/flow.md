@@ -68,6 +68,7 @@ sequenceDiagram
     participant Play as play loop
     participant System as SystemVoice
     participant Avail as naturalAvailabilityAtom
+    participant Diag as Diagnostics (core/diagnostics)
 
     Render->>Rust: phrase
     alt busy
@@ -76,11 +77,14 @@ sequenceDiagram
     end
     alt slow (guard: 800 ms for the first phrase, queued audio plus 400 ms later), unavailable, process failed, decode failed
         Render->>Play: Utterance(phrase), the rest of the reply goes to the system voice
+        Render-)Diag: record natural_voice_fallback (reason, phrase length, guard and elapsed ms, first phrase), no text, not awaited
         Render->>Avail: refresh, a background re-warm (not after busy)
         Play->>Play: wait until the queued natural audio has ended
         Play->>System: speak(sentence) one by one
     end
 ```
+
+The reason is one of `guard_timeout` (slower than the guard), `engine_busy` (still busy when the guard ended), `synthesis_failed` (unavailable, process failed or undecodable answer), `enqueue_failed` (the audio could not be decoded or scheduled) and `output_failed_to_open` (the audio output never opened, so the reply starts on the system voice; sent from `makePipeline` with no phrase and no timings). The line lands in `~/Library/Logs/<bundle identifier>/diagnostics.log` (see `core/diagnostics/flow.md`).
 
 ## Interrupt
 

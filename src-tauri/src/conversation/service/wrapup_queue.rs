@@ -90,8 +90,11 @@ impl Shared {
                     Ok(Some(job)) => job,
                     Ok(None) => break,
                     Err(_) => {
-                        eprintln!(
-                            "Could not read pending session phrases; the next wake will retry."
+                        crate::diagnostics::log(
+                            "wrapup",
+                            format_args!(
+                                "Could not read pending session phrases; the next wake will retry."
+                            ),
                         );
                         break;
                     }
@@ -111,7 +114,12 @@ impl Shared {
                     Ok(true) => self.notify.notify(WrapupEvent { session_id }),
                     Ok(false) => {}
                     Err(_) => {
-                        eprintln!("Could not save session phrases; the next wake will retry.");
+                        crate::diagnostics::log(
+                            "wrapup",
+                            format_args!(
+                                "Could not save session phrases; the next wake will retry."
+                            ),
+                        );
                         break;
                     }
                 }

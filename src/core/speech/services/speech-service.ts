@@ -1,4 +1,5 @@
 import { Context, Effect, Layer, type Stream } from 'effect';
+import { Diagnostics } from '@/core/diagnostics';
 import type { NaturalVoiceId } from '@/core/voice-preference';
 import type { NaturalVoiceFailure, SpeakRequest } from '../types';
 import { AudioOutput, type AudioOutputError } from './audio-output-service';
@@ -25,11 +26,13 @@ export class Speech extends Context.Service<Speech, SpeechShape>()('core/speech/
   static readonly layer = Layer.effect(
     Speech,
     Effect.gen(function* () {
+      const diagnostics = yield* Diagnostics;
       const natural = yield* NaturalVoice;
       const output = yield* AudioOutput;
       const system = yield* SystemVoice;
       return {
-        speak: (request) => runSpeech({ natural, output, system }, request),
+        speak: (request) =>
+          runSpeech({ diagnostics: diagnostics.record, natural, output, system }, request),
         preview: (text, voiceId, rate) =>
           Effect.scoped(
             Effect.gen(function* () {

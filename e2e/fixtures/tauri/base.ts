@@ -64,8 +64,11 @@ export async function installBase(page: Page, options: BaseSeed): Promise<void> 
   await installTauriCommands(page);
   await page.addInitScript(() => {
     const invoke = window.__TAURI_INTERNALS__.invoke;
-    window.__TAURI_INTERNALS__.invoke = (command, args) =>
-      command === 'prewarm_natural_voice' ? Promise.resolve(false) : invoke(command, args);
+    window.__TAURI_INTERNALS__.invoke = (command, args) => {
+      if (command === 'prewarm_natural_voice') return Promise.resolve(false);
+      if (command === 'record_diagnostic_event') return Promise.resolve(null);
+      return invoke(command, args);
+    };
   });
   await installMistakePractice(page);
   await installTranslation(page, options.translation);

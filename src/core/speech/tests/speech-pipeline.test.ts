@@ -1,54 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { Effect, Fiber, Layer, Schedule, Stream } from 'effect';
-import { TestClock } from 'effect/testing';
+import { Effect, Fiber, Schedule, Stream } from 'effect';
 import { Speech } from '../services/speech-service';
-import type { ReplyEvent, SpeechEngineChoice } from '../types';
-import { audioMsOf, fakeSpeechEdges, type NaturalBehaviour, recordingCallbacks } from './fakes';
-
-const NATURAL: SpeechEngineChoice = { kind: 'natural', voiceId: 0, fallbackVoiceURI: null };
-const SYSTEM: SpeechEngineChoice = { kind: 'system', voiceURI: null };
-
-const THREE_SENTENCES =
-  'I understand, learning a new language can feel slow sometimes. But you are making real progress, and your sentences are getting longer. Which topic would you like to practise next?';
-
-function finalOnly(text: string): Stream.Stream<ReplyEvent> {
-  return Stream.make({ _tag: 'Final', text });
-}
-
-function advance(totalMs: number, stepMs = 10) {
-  return Effect.forEach(Array.from({ length: totalMs / stepMs }), () => TestClock.adjust(stepMs), {
-    discard: true,
-  });
-}
-
-function scene(behaviour: NaturalBehaviour = {}) {
-  const edges = fakeSpeechEdges(behaviour);
-  const recorded = recordingCallbacks();
-  const layer = Speech.layer.pipe(
-    Layer.provideMerge(edges.layer),
-    Layer.provideMerge(TestClock.layer()),
-  );
-  return { edges, recorded, layer };
-}
-
-async function runToEnd(
-  engine: SpeechEngineChoice,
-  replies: Stream.Stream<ReplyEvent>,
-  behaviour: NaturalBehaviour = {},
-  durationMs = 40_000,
-) {
-  const { edges, recorded, layer } = scene(behaviour);
-  const program = Effect.gen(function* () {
-    const speech = yield* Speech;
-    const fiber = yield* Effect.forkChild(
-      speech.speak({ engine, rate: 1, replies, callbacks: recorded.callbacks }),
-    );
-    yield* advance(durationMs);
-    yield* Fiber.join(fiber);
-  });
-  await Effect.runPromise(program.pipe(Effect.provide(layer)));
-  return { ...edges, ...recorded };
-}
+import type { ReplyEvent } from '../types';
+import { audioMsOf } from './fakes';
+import { advance, finalOnly, NATURAL, runToEnd, SYSTEM, scene, THREE_SENTENCES } from './harness';
 
 describe('natural speech pipeline', () => {
   test('first audio starts once the first short phrase is rendered', async () => {
@@ -117,75 +72,6 @@ describe('natural speech pipeline', () => {
     const earlyRequests = await Effect.runPromise(program.pipe(Effect.provide(layer)));
 
     expect(earlyRequests).toEqual(['That sounds useful.']);
-  });
-});
-
-describe('fallback to the system voice', () => {
-  test('a first phrase slower than the interactive guard is spoken by the system voice', async () => {
-    const run = await runToEnd(NATURAL, finalOnly(THREE_SENTENCES), { latencyMs: () => 1200 });
-
-    expect(run.clips).toEqual([]);
-    expect(run.spoken.map((utterance) => utterance.text).join(' ')).toBe(THREE_SENTENCES);
-    expect(run.events).toEqual(['natural-failure', 'first-audio', 'end']);
-  });
-
-  test('later phrases may take longer than the first guard because audio is already queued', async () => {
-    const run = await runToEnd(NATURAL, finalOnly(THREE_SENTENCES), {
-      latencyMs: (_text, index) => (index === 0 ? 400 : 1500),
-    });
-
-    expect(run.spoken).toEqual([]);
-    expect(run.events).toEqual(['first-audio', 'end']);
-  });
-
-  test('a failure in the middle hands the rest to the system voice after the queued audio ends', async () => {
-    const run = await runToEnd(NATURAL, finalOnly(THREE_SENTENCES), {
-      failure: (index) => (index === 1 ? 'unavailable' : undefined),
-    });
-
-    const lastClipEnd = run.clips[run.clips.length - 1]?.endsAtMs ?? 0;
-    expect(run.clips).toHaveLength(1);
-    expect(run.spoken[0]?.atMs).toBeGreaterThanOrEqual(lastClipEnd);
-    const spokenText = [...run.requests.slice(0, 1), ...run.spoken].map((entry) => entry.text);
-    expect(spokenText.join(' ')).toBe(THREE_SENTENCES);
-    expect(run.events).toEqual(['first-audio', 'natural-failure', 'end']);
-  });
-
-  test('a busy engine is retried inside the guard without leaving natural speech', async () => {
-    const run = await runToEnd(NATURAL, finalOnly('That sounds useful.'), {
-      failure: (index) => (index < 2 ? 'busy' : undefined),
-      latencyMs: () => 20,
-    });
-
-    expect(run.requests.map((request) => request.text)).toEqual(
-      Array(3).fill('That sounds useful.'),
-    );
-    expect(run.clips).toHaveLength(1);
-    expect(run.events).toEqual(['first-audio', 'end']);
-  });
-
-  test('an engine that stays busy falls back without asking for a re-warm', async () => {
-    const run = await runToEnd(NATURAL, finalOnly('That sounds useful.'), {
-      failure: () => 'busy',
-      latencyMs: () => 20,
-    });
-
-    expect(run.spoken.map((utterance) => utterance.text)).toEqual(['That sounds useful.']);
-    expect(run.events).toEqual(['first-audio', 'end']);
-  });
-
-  test('an audio output that cannot open means system speech from the start', async () => {
-    const run = await runToEnd(NATURAL, finalOnly('That sounds useful.'), { openFails: true });
-
-    expect(run.requests).toEqual([]);
-    expect(run.events).toEqual(['natural-failure', 'first-audio', 'end']);
-  });
-
-  test('audio that cannot be decoded is replaced by the system voice', async () => {
-    const run = await runToEnd(NATURAL, finalOnly('That sounds useful.'), { decodeFails: true });
-
-    expect(run.spoken.map((utterance) => utterance.text)).toEqual(['That sounds useful.']);
-    expect(run.events).toEqual(['natural-failure', 'first-audio', 'end']);
   });
 });
 

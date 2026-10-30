@@ -1,4 +1,5 @@
-import { Clock, Data, Effect, Queue, Ref, Schedule } from 'effect';
+import { Cause, Clock, Data, Effect, Queue, Ref, Schedule } from 'effect';
+import type { DiagnosticEvent } from '@/core/diagnostics';
 import { cutPhrase, FIRST_PHRASE_BUDGET, laterPhraseBudget } from '../../helpers/phrase-plan';
 import { BUSY_RETRY_MS, INITIAL_SYNTHESIS_ESTIMATE } from '../../helpers/speech-timing';
 import {
@@ -12,6 +13,8 @@ import type { NaturalVoiceFailure } from '../../types';
 import type { ClipHandle } from '../audio-output-service';
 import { takeSentence } from './intake';
 import { markStarted, type NaturalOutput, type Pipeline, type TextState } from './pipeline';
+
+type FallbackReason = Extract<DiagnosticEvent, { kind: 'natural_voice_fallback' }>['reason'];
 
 export type RenderState = {
   readonly estimate: SynthesisEstimate;
@@ -31,11 +34,25 @@ type RenderedPhrase = {
 };
 
 class NaturalPhraseFailed extends Data.TaggedError('NaturalPhraseFailed')<{
-  readonly isBusy: boolean;
+  readonly reason: FallbackReason;
+  readonly guardMs: number;
+  readonly elapsedMs: number;
 }> {}
+
+function isBusyReason(reason: FallbackReason): boolean {
+  return reason === 'engine_busy';
+}
 
 function isBusyFailure(error: NaturalVoiceFailure): boolean {
   return error._tag === 'IpcError' && error.code === 'busy';
+}
+
+function failureReason(
+  error: NaturalVoiceFailure | Cause.TimeoutError,
+  isBusy: boolean,
+): FallbackReason {
+  if (!Cause.isTimeoutError(error)) return 'synthesis_failed';
+  return isBusy ? 'engine_busy' : 'guard_timeout';
 }
 
 function synthesizeWithinGuard(
@@ -46,14 +63,21 @@ function synthesizeWithinGuard(
 ) {
   return Effect.gen(function* () {
     const sawBusy = yield* Ref.make(false);
+    const startedAt = yield* Clock.currentTimeMillis;
     return yield* pipeline.natural.synthesize(phrase, output.voiceId, pipeline.request.rate).pipe(
       Effect.tapError((error) => Ref.set(sawBusy, isBusyFailure(error))),
       Effect.retry({ while: isBusyFailure, schedule: Schedule.spaced(BUSY_RETRY_MS) }),
       Effect.timeout(guardMs),
-      Effect.catch(() =>
-        Ref.get(sawBusy).pipe(
-          Effect.flatMap((isBusy) => Effect.fail(new NaturalPhraseFailed({ isBusy }))),
-        ),
+      Effect.catch((error) =>
+        Effect.gen(function* () {
+          const isBusy = yield* Ref.get(sawBusy);
+          const elapsedMs = (yield* Clock.currentTimeMillis) - startedAt;
+          return yield* new NaturalPhraseFailed({
+            reason: failureReason(error, isBusy),
+            guardMs,
+            elapsedMs,
+          });
+        }),
       ),
     );
   });
@@ -72,7 +96,11 @@ function renderPhrase(
     const synthMs = (yield* Clock.currentTimeMillis) - startedAt;
     const handle = yield* output.session
       .enqueue(wave, pauseMs)
-      .pipe(Effect.mapError(() => new NaturalPhraseFailed({ isBusy: false })));
+      .pipe(
+        Effect.mapError(
+          () => new NaturalPhraseFailed({ reason: 'enqueue_failed', guardMs, elapsedMs: synthMs }),
+        ),
+      );
     return { handle, synthMs };
   });
 }
@@ -100,7 +128,17 @@ function afterFailure(
   phrase: string,
   failure: NaturalPhraseFailed,
 ): Effect.Effect<RenderState> {
-  return fallBackToSystem(pipeline, failure.isBusy).pipe(
+  return fallBackToSystem(pipeline, isBusyReason(failure.reason)).pipe(
+    Effect.andThen(
+      pipeline.diagnostics({
+        kind: 'natural_voice_fallback',
+        reason: failure.reason,
+        phrase_chars: phrase.length,
+        guard_ms: failure.guardMs,
+        elapsed_ms: failure.elapsedMs,
+        is_first_phrase: !state.hasAudio,
+      }),
+    ),
     Effect.andThen(Queue.offer(pipeline.plays, { _tag: 'Utterance', text: phrase })),
     Effect.as({ ...state, previousPhrase: phrase }),
   );

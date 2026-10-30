@@ -2,6 +2,7 @@ mod ai_settings;
 mod api_usage;
 mod conversation;
 mod core;
+mod diagnostics;
 mod dock_icon;
 mod eva_growth;
 mod gemini_key;
@@ -73,6 +74,13 @@ fn set_dock_icon(
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            if let Ok(log_folder) = app.path().app_log_dir() {
+                let diagnostics = diagnostics::Diagnostics::new(
+                    diagnostics::FileLogStore::in_folder(&log_folder),
+                );
+                diagnostics::install(diagnostics.clone());
+                app.manage(diagnostics);
+            }
             let app_data = app.path().app_data_dir()?;
             std::fs::create_dir_all(&app_data)?;
             let key_service =
@@ -99,7 +107,10 @@ pub fn run() {
                 mistakes::QUOTA_PAUSE,
             )
             .map_err(|error| {
-                eprintln!("Could not start the lesson worker thread: {error}");
+                diagnostics::log(
+                    "startup",
+                    format_args!("Could not start the lesson worker thread: {error}"),
+                );
                 std::io::Error::other("Could not start mistake lessons. Restart the app.")
             })?;
             app.manage(mistakes::PracticeService::new(
@@ -129,7 +140,10 @@ pub fn run() {
                     },
                 )
                 .map_err(|error| {
-                    eprintln!("Could not start the coaching worker thread: {error}");
+                    diagnostics::log(
+                        "startup",
+                        format_args!("Could not start the coaching worker thread: {error}"),
+                    );
                     std::io::Error::other("Could not start answer coaching. Restart the app.")
                 })?,
             );
@@ -141,7 +155,10 @@ pub fn run() {
                     conversation::infra::events::wrapup_notifier(handle),
                 )
                 .map_err(|error| {
-                    eprintln!("Could not start the wrap-up worker thread: {error}");
+                    diagnostics::log(
+                        "startup",
+                        format_args!("Could not start the wrap-up worker thread: {error}"),
+                    );
                     std::io::Error::other(
                         "Could not start session phrase preparation. Restart the app.",
                     )
@@ -218,6 +235,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            diagnostics::commands::record_diagnostic_event,
             voice::commands::prewarm_natural_voice,
             voice::commands::synthesize_natural_voice,
             speech_recognition::commands::transcribe_audio,
@@ -314,8 +332,11 @@ pub fn run() {
             if let tauri::RunEvent::Exit = event {
                 if let Some(sessions) = app.try_state::<conversation::SessionStore>() {
                     if let Err(error) = sessions.checkpoint_on_exit() {
-                        eprintln!(
-                            "Could not checkpoint the practice session clock on exit: {error:?}"
+                        diagnostics::log(
+                            "shutdown",
+                            format_args!(
+                                "Could not checkpoint the practice session clock on exit: {error:?}"
+                            ),
                         );
                     }
                 }

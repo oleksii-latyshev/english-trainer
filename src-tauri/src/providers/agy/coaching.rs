@@ -200,9 +200,12 @@ fn validate_batch(raw: RawBatch, requested: &[CoachingAnswer]) -> Vec<CoachedAns
                 sequence: answer.sequence,
                 feedback,
             }),
-            None => eprintln!(
-                "Coaching for answer {} was dropped: the rewrite is empty, too long or not plain text.",
-                answer.sequence
+            None => crate::diagnostics::log(
+                "coaching",
+                format_args!(
+                    "Coaching for answer {} was dropped: the rewrite is empty, too long or not plain text.",
+                    answer.sequence
+                ),
             ),
         }
     }

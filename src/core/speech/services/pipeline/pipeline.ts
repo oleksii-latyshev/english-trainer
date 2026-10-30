@@ -1,4 +1,5 @@
 import { type Cause, Clock, Effect, Option, Queue, Ref, type Scope } from 'effect';
+import type { DiagnosticEvent } from '@/core/diagnostics';
 import type { NaturalVoiceId } from '@/core/voice-preference';
 import { createSpeechStreamState, type SpeechStreamState } from '../../helpers/reply-sentences';
 import type { SpeakRequest } from '../../types';
@@ -7,6 +8,7 @@ import type { NaturalVoiceShape } from '../natural-voice-service';
 import type { SystemVoiceShape } from '../system-voice-service';
 
 export type SpeechDependencies = {
+  readonly diagnostics: (event: DiagnosticEvent) => Effect.Effect<void>;
   readonly natural: NaturalVoiceShape;
   readonly output: AudioOutputShape;
   readonly system: SystemVoiceShape;
@@ -28,6 +30,7 @@ export type NaturalOutput = {
 };
 
 export type Pipeline = {
+  readonly diagnostics: (event: DiagnosticEvent) => Effect.Effect<void>;
   readonly natural: NaturalVoiceShape;
   readonly system: SystemVoiceShape;
   readonly request: SpeakRequest;
@@ -66,8 +69,17 @@ export function makePipeline(
     const naturalOutput = yield* openNaturalOutput(dependencies.output, request);
     if (request.engine.kind === 'natural' && naturalOutput === null) {
       yield* Effect.sync(() => request.callbacks.onNaturalFailure());
+      yield* dependencies.diagnostics({
+        kind: 'natural_voice_fallback',
+        reason: 'output_failed_to_open',
+        phrase_chars: 0,
+        guard_ms: 0,
+        elapsed_ms: null,
+        is_first_phrase: true,
+      });
     }
     return {
+      diagnostics: dependencies.diagnostics,
       natural: dependencies.natural,
       system: dependencies.system,
       request,
