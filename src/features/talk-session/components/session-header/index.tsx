@@ -20,6 +20,7 @@ type Props = {
   session: SessionDetails;
   isFinishing: boolean;
   isFinishBlocked: boolean;
+  leading?: ReactNode;
   children?: ReactNode;
 };
 
@@ -52,7 +53,7 @@ function PauseButton() {
   );
 }
 
-export function SessionHeader({ session, isFinishing, isFinishBlocked, children }: Props) {
+export function SessionHeader({ session, isFinishing, isFinishBlocked, leading, children }: Props) {
   const tick = useAtomValue(secondTickAtom);
   const now = tick._tag === 'Success' ? tick.value : performance.now();
   const commands = useSessionCommands();
@@ -75,6 +76,7 @@ export function SessionHeader({ session, isFinishing, isFinishBlocked, children 
 
   return (
     <header className="mx-auto flex w-full max-w-205 items-center gap-4 px-6 pt-3">
+      {leading}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-baseline gap-3">
           <span className="text-body truncate font-bold">{session.topicLabel}</span>

@@ -3,21 +3,21 @@ use crate::conversation::domain::rules::{
     validate_transcript, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS,
 };
 use crate::conversation::error::ConversationError;
-use crate::providers::{compare_attempts, AttemptComparison, TurnFeedback};
+use crate::providers::{compare_attempts, max_rewrite_chars, AttemptComparison, TurnFeedback};
 
 const MAX_FEEDBACK_CHARS: usize = 600;
 
-fn bounded_feedback_text(value: &str) -> bool {
-    !value.trim().is_empty() && value.chars().count() <= MAX_FEEDBACK_CHARS
+fn bounded_text(value: &str, max_chars: usize) -> bool {
+    !value.trim().is_empty() && value.chars().count() <= max_chars
 }
 
-fn is_storable(feedback: &TurnFeedback) -> bool {
+fn is_storable(feedback: &TurnFeedback, transcript: &str) -> bool {
     feedback.focus_feedback.len() <= 1
-        && bounded_feedback_text(&feedback.b2_rewrite)
+        && bounded_text(&feedback.b2_rewrite, max_rewrite_chars(transcript))
         && feedback.focus_feedback.iter().all(|focus| {
-            bounded_feedback_text(&focus.original)
-                && bounded_feedback_text(&focus.improved)
-                && bounded_feedback_text(&focus.explanation)
+            bounded_text(&focus.original, MAX_FEEDBACK_CHARS)
+                && bounded_text(&focus.improved, MAX_FEEDBACK_CHARS)
+                && bounded_text(&focus.explanation, MAX_FEEDBACK_CHARS)
                 && !crate::learning::normalize_phrase(&focus.improved).is_empty()
         })
 }
@@ -31,7 +31,7 @@ impl SessionStore {
         feedback: &TurnFeedback,
     ) -> Result<(), ConversationError> {
         validate_transcript(transcript)?;
-        if session_id > MAX_SAFE_SESSION_ID || sequence == 0 || !is_storable(feedback) {
+        if session_id > MAX_SAFE_SESSION_ID || sequence == 0 || !is_storable(feedback, transcript) {
             return Err(ConversationError::InvalidRetry);
         }
         let mut state = self.lock();
