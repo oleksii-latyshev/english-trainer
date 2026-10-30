@@ -14,6 +14,7 @@ import { useAnswerHelpEffects } from '@/features/answer-help';
 import {
   Composer,
   FlowMenu,
+  FoldEvaButton,
   FoldedEva,
   LiveTranscript,
   TurnStage,
@@ -59,9 +60,10 @@ function Workspace({ session, isFinishing, guards, ...props }: WorkspaceProps) {
       <SessionHeader
         isFinishBlocked={guards.isRecalling}
         isFinishing={isFinishing}
+        leading={isEvaFolded && <FoldedEva />}
         session={session}
       >
-        {isEvaFolded && <FoldedEva />}
+        {!isWriting && !isEvaFolded && <FoldEvaButton />}
         <FlowMenu />
       </SessionHeader>
       {isReplay && (

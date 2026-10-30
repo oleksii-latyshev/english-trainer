@@ -53,7 +53,7 @@ test('the folded choice shows Eva in the header, survives a reload and unfolds a
 
   await talk.foldEvaButton.click();
   await expect(talk.evaStage).toHaveCount(0);
-  await expect(talk.foldedEvaStatus).toBeVisible();
+  await expect(talk.foldedEvaStatus).toHaveText(/^Eva, /);
 
   await app.reload();
   await start.continueSession();

@@ -50,7 +50,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Talk as Talk (TurnStage, FoldedEva)
+    participant Talk as Talk (TurnStage, FoldedEva, FoldEvaButton)
     participant Fold as evaFoldedAtom (Atom.kvs)
     participant Store as KeyValueStore.layerStorage
 

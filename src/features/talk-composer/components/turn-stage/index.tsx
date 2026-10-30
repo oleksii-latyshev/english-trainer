@@ -1,10 +1,8 @@
-import { useAtom, useAtomValue } from '@effect/atom-react';
-import { ChevronUp } from 'lucide-react';
+import { useAtomValue } from '@effect/atom-react';
 import { usePreferredMicrophone } from '@/core/audio';
 import { evaStageAtom } from '@/core/eva-growth';
 import { evaFoldedAtom } from '@/core/eva-look';
 import { micLevelAtom } from '@/core/practice-turn';
-import { Button } from '@/shared/ui/button';
 import { Eva } from '@/shared/ui/eva';
 import { evaMoodFor, type MoodExtras } from '../../helpers/turn-state';
 import { useTurn } from '../../model/use-composer';
@@ -39,7 +37,7 @@ export function TurnStage({ mood, isWriting }: Props) {
   const audioLevel = useAtomValue(micLevelAtom);
   const isCompact = useAtomValue(isComposingAtom) || mood.isHelpOpen;
   const { actualInput } = usePreferredMicrophone();
-  const [isFolded, setFolded] = useAtom(evaFoldedAtom);
+  const isFolded = useAtomValue(evaFoldedAtom);
   if (isWriting) return <WritingStage />;
   if (isFolded) return null;
   return (
@@ -47,16 +45,6 @@ export function TurnStage({ mood, isWriting }: Props) {
       aria-label="Eva"
       className="short:gap-1 pointer-events-none relative z-10 flex flex-col items-center gap-3"
     >
-      <Button
-        aria-label="Fold Eva"
-        className="pointer-events-auto absolute top-0 right-6"
-        iconOnly
-        onClick={() => setFolded(true)}
-        size="sm"
-        tone="quiet"
-      >
-        <ChevronUp aria-hidden="true" />
-      </Button>
       <div
         className={`origin-top transition-[transform,margin] duration-200 motion-reduce:transition-none ${isCompact ? '-mb-16 scale-60' : 'short:-mb-11 short:scale-70'}`}
       >

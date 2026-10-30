@@ -1,6 +1,6 @@
 export { Composer } from './components/composer';
 export { FlowMenu } from './components/flow-menu';
-export { FoldedEva } from './components/folded-eva';
+export { FoldEvaButton, FoldedEva } from './components/folded-eva';
 export { LiveTranscript } from './components/live-transcript';
 export { TurnStage } from './components/turn-stage';
 

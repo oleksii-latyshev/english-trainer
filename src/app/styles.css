@@ -4,7 +4,7 @@
 @custom-variant fills-screen (&:has(.talk-screen, .review-screen, .first-run));
 @custom-variant eva-full (:root[data-eva-motion="full"] &);
 @custom-variant eva-live (:root:not([data-eva-motion="still"]) &);
-@custom-variant short (@media (max-height: 900px));
+@custom-variant short (@media (max-height: 1000px));
 
 @utility mask-fade-top {
   mask-image: linear-gradient(to bottom, transparent 6rem, #000 11rem);
