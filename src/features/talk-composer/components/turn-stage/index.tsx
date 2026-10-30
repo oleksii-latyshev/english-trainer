@@ -1,6 +1,7 @@
 import { useAtomValue } from '@effect/atom-react';
 import { usePreferredMicrophone } from '@/core/audio';
 import { evaStageAtom } from '@/core/eva-growth';
+import { evaFoldedAtom } from '@/core/eva-look';
 import { micLevelAtom } from '@/core/practice-turn';
 import { Eva } from '@/shared/ui/eva';
 import { evaMoodFor, type MoodExtras } from '../../helpers/turn-state';
@@ -36,14 +37,16 @@ export function TurnStage({ mood, isWriting }: Props) {
   const audioLevel = useAtomValue(micLevelAtom);
   const isCompact = useAtomValue(isComposingAtom) || mood.isHelpOpen;
   const { actualInput } = usePreferredMicrophone();
+  const isFolded = useAtomValue(evaFoldedAtom);
   if (isWriting) return <WritingStage />;
+  if (isFolded) return null;
   return (
     <aside
       aria-label="Eva"
-      className="pointer-events-none relative z-10 flex flex-col items-center gap-3"
+      className="short:gap-1 pointer-events-none relative z-10 flex flex-col items-center gap-3"
     >
       <div
-        className={`origin-top transition-[transform,margin] duration-200 motion-reduce:transition-none ${isCompact ? '-mb-16 scale-60' : ''}`}
+        className={`origin-top transition-[transform,margin] duration-200 motion-reduce:transition-none ${isCompact ? '-mb-16 scale-60' : 'short:-mb-11 short:scale-70'}`}
       >
         <Eva
           audioLevel={audioLevel}
@@ -60,10 +63,12 @@ export function TurnStage({ mood, isWriting }: Props) {
           {presentation.stageLabel}
         </span>
         <h2 className="text-title m-0 font-bold">{presentation.stageTitle}</h2>
-        {!isCompact && <p className="text-caption text-muted m-0">{presentation.stageHint}</p>}
+        {!isCompact && (
+          <p className="text-caption text-muted short:hidden m-0">{presentation.stageHint}</p>
+        )}
       </div>
       {!isCompact && actualInput && (
-        <p className="text-faint m-0 text-xs">Microphone: {actualInput.label}</p>
+        <p className="text-faint short:hidden m-0 text-xs">Microphone: {actualInput.label}</p>
       )}
     </aside>
   );

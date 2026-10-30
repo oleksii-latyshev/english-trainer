@@ -1,5 +1,6 @@
 import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { useContext } from 'react';
+import { evaFoldedAtom } from '@/core/eva-look';
 import {
   isReviewPhase,
   isSessionBusyAtom,
@@ -13,6 +14,8 @@ import { useAnswerHelpEffects } from '@/features/answer-help';
 import {
   Composer,
   FlowMenu,
+  FoldEvaButton,
+  FoldedEva,
   LiveTranscript,
   TurnStage,
   useComposerEffects,
@@ -47,6 +50,7 @@ function Workspace({ session, isFinishing, guards, ...props }: WorkspaceProps) {
   const slots = useComposerSlots(session, guards);
   const isReplay = isSpokenReplay(session);
   const isWriting = practiceStageIsWriting(session);
+  const isEvaFolded = useAtomValue(evaFoldedAtom) && !isWriting;
   const isReplayComplete = isReplay && session.spokenTurnCount >= session.writtenTurnCount;
   return (
     <section
@@ -56,8 +60,10 @@ function Workspace({ session, isFinishing, guards, ...props }: WorkspaceProps) {
       <SessionHeader
         isFinishBlocked={guards.isRecalling}
         isFinishing={isFinishing}
+        leading={isEvaFolded && <FoldedEva />}
         session={session}
       >
+        {!isWriting && !isEvaFolded && <FoldEvaButton />}
         <FlowMenu />
       </SessionHeader>
       {isReplay && (
@@ -69,10 +75,13 @@ function Workspace({ session, isFinishing, guards, ...props }: WorkspaceProps) {
         />
       )}
       <TurnStage isWriting={isWriting} mood={{ isHelpOpen: guards.isHelpOpen }} />
-      <div className={`flex min-h-56 w-full flex-1 flex-col ${isWriting ? '' : '-mt-24'}`}>
+      <div
+        className={`flex min-h-56 w-full flex-1 flex-col ${isWriting || isEvaFolded ? '' : '-mt-24'}`}
+      >
         <Dialogue
           canReplay={practiceStageUsesAudio(session)}
           currentQuestion={isReplayComplete ? undefined : session.question}
+          hasStageAbove={!isEvaFolded}
         >
           <TalkNotices />
           <LiveTranscript />

@@ -24,3 +24,12 @@ it('persists a chosen look', async () => {
   expect(registry.get(evaLookAtom).body).toBe('mint');
   expect(JSON.parse(stored.get('english_trainer_eva_look') ?? '{}').body).toBe('mint');
 });
+
+it('remembers whether Eva is folded and defaults to unfolded', async () => {
+  const { evaFoldedAtom } = await import('../model/atoms');
+  const registry = AtomRegistry.make();
+  expect(registry.get(evaFoldedAtom)).toBe(false);
+  registry.set(evaFoldedAtom, true);
+  expect(registry.get(evaFoldedAtom)).toBe(true);
+  expect(stored.get('english_trainer_eva_folded')).toBe('true');
+});
