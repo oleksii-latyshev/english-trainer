@@ -253,9 +253,12 @@ impl Shared {
                 for answer in &answers {
                     let Some(item) = coached.iter().find(|item| item.sequence == answer.sequence)
                     else {
-                        eprintln!(
-                            "Coaching for answer {} is missing from the reply.",
-                            answer.sequence
+                        crate::diagnostics::log(
+                            "coaching",
+                            format_args!(
+                                "Coaching for answer {} is missing from the reply.",
+                                answer.sequence
+                            ),
                         );
                         failed.push(answer.sequence);
                         continue;
@@ -266,9 +269,12 @@ impl Shared {
                         &answer.transcript,
                         &item.feedback,
                     ) {
-                        eprintln!(
-                            "Coaching for answer {} was not saved: {error}",
-                            answer.sequence
+                        crate::diagnostics::log(
+                            "coaching",
+                            format_args!(
+                                "Coaching for answer {} was not saved: {error}",
+                                answer.sequence
+                            ),
                         );
                         failed.push(answer.sequence);
                     }
@@ -281,7 +287,10 @@ impl Shared {
                     .pause_until(Instant::now() + self.quota_pause);
             }
             Err(error) => {
-                eprintln!("Coaching failed ({:?}): {}", error.code, error.message);
+                crate::diagnostics::log(
+                    "coaching",
+                    format_args!("Coaching failed ({:?}): {}", error.code, error.message),
+                );
                 let sequences: Vec<usize> = answers.iter().map(|answer| answer.sequence).collect();
                 self.count_failures(session_id, &sequences);
             }
