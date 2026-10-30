@@ -254,7 +254,7 @@ impl Shared {
                     let Some(item) = coached.iter().find(|item| item.sequence == answer.sequence)
                     else {
                         eprintln!(
-                            "Coaching for answer {} of session {session_id} is missing from the reply.",
+                            "Coaching for answer {} is missing from the reply.",
                             answer.sequence
                         );
                         failed.push(answer.sequence);
@@ -267,7 +267,7 @@ impl Shared {
                         &item.feedback,
                     ) {
                         eprintln!(
-                            "Coaching for answer {} of session {session_id} was not saved: {error}",
+                            "Coaching for answer {} was not saved: {error}",
                             answer.sequence
                         );
                         failed.push(answer.sequence);
@@ -281,10 +281,7 @@ impl Shared {
                     .pause_until(Instant::now() + self.quota_pause);
             }
             Err(error) => {
-                eprintln!(
-                    "Coaching for session {session_id} failed ({:?}): {}",
-                    error.code, error.message
-                );
+                eprintln!("Coaching failed ({:?}): {}", error.code, error.message);
                 let sequences: Vec<usize> = answers.iter().map(|answer| answer.sequence).collect();
                 self.count_failures(session_id, &sequences);
             }
