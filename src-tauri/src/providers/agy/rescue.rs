@@ -70,7 +70,7 @@ fn generate_with_binary(
     parse_envelope(&output, request.kind)
 }
 
-fn make_prompt(request: &RescueRequest) -> String {
+pub(crate) fn make_prompt(request: &RescueRequest) -> String {
     let learner_data = json!({
         "question": request.question,
         "partial_transcript": request.partial_transcript,
@@ -92,7 +92,7 @@ fn make_prompt(request: &RescueRequest) -> String {
     )
 }
 
-fn response_schema(kind: RescueKind) -> String {
+pub(crate) fn response_schema(kind: RescueKind) -> String {
     match kind {
         RescueKind::NextStep | RescueKind::Simpler => format!(
             r#"{{"type":"object","additionalProperties":false,"required":["kind","suggestion"],"properties":{{"kind":{{"type":"string","const":"{}"}},"suggestion":{{"type":"string","minLength":1,"maxLength":160}}}}}}"#,

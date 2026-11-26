@@ -107,6 +107,35 @@ pub(crate) fn run_process(
     timeout: Duration,
     model: &str,
 ) -> Result<String, ProviderError> {
+    let finished = execute(command, working_directory, timeout)?;
+    if !finished.success {
+        let (stderr, stdout) = (read_head(&finished.stderr), read_head(&finished.stdout));
+        if let Some(text) = [stderr, stdout].iter().find(|text| mentions_quota(text)) {
+            record_quota_limit(model, text);
+            return Err(quota_error());
+        }
+        return Err(ProviderError::new(
+            ProviderErrorCode::ProcessFailed,
+            "The AI provider could not respond. Check the selected model and Antigravity sign-in in Settings, then retry.",
+        ));
+    }
+    read_output(&finished.stdout)
+}
+
+/// A process that ran to its end; its output waits in two files of the working directory.
+pub(crate) struct Finished {
+    pub(crate) success: bool,
+    pub(crate) stdout: PathBuf,
+    pub(crate) stderr: PathBuf,
+}
+
+/// Runs the command until it ends or the deadline passes. Output goes to files so a chatty
+/// process can never fill a pipe; stderr is kept only to recognise an exhausted quota.
+pub(crate) fn execute(
+    command: &mut Command,
+    working_directory: &Path,
+    timeout: Duration,
+) -> Result<Finished, ProviderError> {
     let stdout_path = working_directory.join("provider-output.json");
     let stdout_file = fs::File::create(&stdout_path).map_err(|_| {
         ProviderError::new(
@@ -114,7 +143,6 @@ pub(crate) fn run_process(
             "Could not prepare provider output storage.",
         )
     })?;
-    // stderr is kept (bounded) only to recognise an exhausted quota.
     let stderr_path = working_directory.join("provider-error.txt");
     let stderr_file = fs::File::create(&stderr_path).map_err(|_| {
         ProviderError::new(
@@ -159,18 +187,16 @@ pub(crate) fn run_process(
             }
         }
     };
-    if !status.success() {
-        let (stderr, stdout) = (read_head(&stderr_path), read_head(&stdout_path));
-        if let Some(text) = [stderr, stdout].iter().find(|text| mentions_quota(text)) {
-            record_quota_limit(model, text);
-            return Err(quota_error());
-        }
-        return Err(ProviderError::new(
-            ProviderErrorCode::ProcessFailed,
-            "The AI provider could not respond. Check the selected model and Antigravity sign-in in Settings, then retry.",
-        ));
-    }
-    let output_size = fs::metadata(&stdout_path)
+    Ok(Finished {
+        success: status.success(),
+        stdout: stdout_path,
+        stderr: stderr_path,
+    })
+}
+
+/// The whole stdout of a finished process, bounded and valid UTF-8.
+pub(crate) fn read_output(stdout_path: &Path) -> Result<String, ProviderError> {
+    let output_size = fs::metadata(stdout_path)
         .map(|metadata| metadata.len())
         .map_err(|_| {
             ProviderError::new(
@@ -207,7 +233,7 @@ pub(crate) fn quota_error() -> ProviderError {
 }
 
 /// The bounded head of a file, empty when it cannot be read.
-fn read_head(path: &Path) -> String {
+pub(crate) fn read_head(path: &Path) -> String {
     use std::io::Read;
     let mut text = Vec::new();
     let Ok(file) = fs::File::open(path) else {

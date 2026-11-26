@@ -61,7 +61,7 @@ sequenceDiagram
         Service-->>Atoms: onDelta appends to responseTestStreamAtom
         Atoms-->>Test: streamed words shown
     end
-    alt provider failed (no key, offline, Apple Intelligence off, agy signed out)
+    alt provider failed (no key, offline, Apple Intelligence off, legacy agy signed out)
         Command-->>Ipc: IpcError with the provider's code and message
         Ipc-->>Atoms: failure
         Atoms-->>Test: error notice with that message

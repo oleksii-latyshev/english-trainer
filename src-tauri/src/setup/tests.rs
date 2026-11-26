@@ -150,7 +150,7 @@ fn serializes_diagnostics_with_snake_case_statuses() {
         whisper_cli: check_cli(None),
         whisper_model: check_model(&data.join("model.bin")),
         whisper_server: check_server(None, &idle_server()),
-        agy_cli: check_cli(None),
+        claude_cli: check_cli(None),
         database_path: data
             .join("english-trainer.sqlite3")
             .to_string_lossy()

@@ -20,7 +20,7 @@ function Findings({ data }: { data: SetupDiagnostics }) {
       <DiagnosticLine check={data.whisper_cli} label="Whisper command" />
       <DiagnosticLine check={data.whisper_server} label="Whisper server" />
       <DiagnosticLine check={data.whisper_model} label="Whisper model" />
-      <DiagnosticLine check={data.agy_cli} label="agy command" />
+      <DiagnosticLine check={data.claude_cli} label="claude command" />
       <div>
         <p>
           <strong className="text-foreground">Local database</strong>
@@ -39,10 +39,10 @@ function Findings({ data }: { data: SetupDiagnostics }) {
           shown above, then recheck.
         </p>
       )}
-      {data.agy_cli.status !== 'available' && (
+      {data.claude_cli.status !== 'available' && (
         <p>
-          Antigravity CLI powers coaching: install it and complete its sign-in flow (README,
-          Personal Alpha setup), then recheck.
+          Claude Code powers coaching and reviews: install it and sign in once with{' '}
+          <code>claude</code>, then recheck.
         </p>
       )}
     </>

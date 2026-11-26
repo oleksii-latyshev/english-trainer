@@ -20,9 +20,10 @@
   conversation → remember and review. The conversation never waits for coaching or help. Practice content is English only.
 - Local STT and local SQLite are defaults. Discard raw audio after transcription unless the user
   enables retention. Ambient prompts and notifications are opt-in.
-- Real-time AI providers are Apple Foundation Models (bundled helper) and the Gemini API;
-  Antigravity CLI (`agy`) is a legacy background adapter. These are app runtime providers, not
-  coding workers. Keep them behind engine traits and verify real API/CLI behaviour and latency
+- Real-time AI providers are Apple Foundation Models (bundled helper) and the Gemini API.
+  Background analysis (coaching, reviews, lessons) runs on the Claude Code CLI with Sonnet;
+  Antigravity CLI (`agy`) is a legacy adapter used only when Claude Code is not installed. These are
+  app runtime providers, not coding workers. Keep them behind engine traits and verify real API/CLI behaviour and latency
   before relying on it.
 
 ## Working in the code

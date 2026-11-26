@@ -9,10 +9,10 @@ use std::{
 
 static SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
-pub(super) struct TestDirectory(PathBuf);
+pub(crate) struct TestDirectory(PathBuf);
 
 impl TestDirectory {
-    pub(super) fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let id = SEQUENCE.fetch_add(1, Ordering::Relaxed);
         let path =
             std::env::temp_dir().join(format!("eng-trainer-agy-fake-{}-{id}", std::process::id()));
@@ -20,7 +20,7 @@ impl TestDirectory {
         Self(path)
     }
 
-    pub(super) fn path(&self) -> &Path {
+    pub(crate) fn path(&self) -> &Path {
         &self.0
     }
 }
@@ -35,7 +35,7 @@ impl Drop for TestDirectory {
 /// Arguments end with the ASCII unit separator and a call with the record separator, because a
 /// prompt argument contains newlines.
 #[cfg(unix)]
-pub(super) fn recording_cli(dir: &TestDirectory, body: &str) -> PathBuf {
+pub(crate) fn recording_cli(dir: &TestDirectory, body: &str) -> PathBuf {
     use std::os::unix::fs::PermissionsExt;
     let log = dir.path().join("calls.log");
     let script = format!(
@@ -51,7 +51,7 @@ pub(super) fn recording_cli(dir: &TestDirectory, body: &str) -> PathBuf {
 }
 
 /// The recorded calls, each as its list of arguments.
-pub(super) fn recorded_calls(dir: &TestDirectory) -> Vec<Vec<String>> {
+pub(crate) fn recorded_calls(dir: &TestDirectory) -> Vec<Vec<String>> {
     fs::read_to_string(dir.path().join("calls.log"))
         .unwrap_or_default()
         .split('\u{1e}')

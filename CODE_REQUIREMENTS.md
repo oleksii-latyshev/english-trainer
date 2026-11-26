@@ -163,9 +163,9 @@ e2e/            Playwright flows against Vite with typed fake commands
   explicit user setting. Providers receive only the transcript and the prompt context needed.
 - LLM providers: Apple Foundation Models (bundled helper) and the Gemini API are the real-time
   providers. API keys live in an encrypted, owner-only file in the app data folder — never in
-  SQLite, logs or the repository. The Antigravity CLI (`agy`) runs background work only, in private
+  SQLite, logs or the repository. The Claude Code CLI (`claude`, legacy `agy`) runs background work only, in private
   scratch directories with bounded timeouts, never with the repository as its working directory,
-  and every call names a Gemini model (`CliOptions.model` is required).
+  and every call names its model (`CLAUDE_MODEL` is pinned, never optional).
 - Ambient prompts, notifications and autostart are opt-in and respect quiet hours. Practice never
   requires Accessibility or Screen Recording permission.
 - Honest metrics: scores are CEFR-inspired trend indicators, never official CEFR results; Whisper

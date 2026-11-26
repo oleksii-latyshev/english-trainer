@@ -71,8 +71,9 @@ trimming comes from it.
   and paste it into Settings › Conversation AI. It is stored encrypted and bound to this Mac. On the
   free tier Google may use prompts to improve its models; only practice transcripts are sent.
 - **Apple on-device**: fallback when Gemini is unavailable; bundled helper, nothing to install.
-- **Antigravity CLI (`agy`)**: background coaching, wrap-up and review material. Install and sign in
-  with its own setup; the app finds it in `PATH`, Homebrew or `~/.local/bin`.
+- **Claude Code (`claude`)**: background coaching, wrap-up and review material, on Sonnet. Install
+  it and sign in once by running `claude`; the app finds it in `PATH`, `~/.local/bin` or Homebrew.
+  The legacy Antigravity CLI (`agy`) is used only when Claude Code is missing.
 
 Development overrides (only when the app inherits the shell environment, not from Finder):
 `ENG_TRAINER_GEMINI_API_KEY`, `ENG_TRAINER_WHISPER_BIN`, `ENG_TRAINER_WHISPER_SERVER_BIN`,

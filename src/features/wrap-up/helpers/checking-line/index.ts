@@ -1,5 +1,5 @@
 const PAUSED_LINE =
-  'Coaching is paused because Antigravity has no quota left. Unchecked answers are not included.';
+  'Coaching is paused because Claude has no quota left. Unchecked answers are not included.';
 
 export function checkingLine(pendingAnswers: number, isPaused: boolean): string {
   if (isPaused) return PAUSED_LINE;

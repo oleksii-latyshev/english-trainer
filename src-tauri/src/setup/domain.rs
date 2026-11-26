@@ -7,7 +7,7 @@ pub struct SetupDiagnostics {
     pub whisper_cli: ComponentCheck,
     pub whisper_model: ComponentCheck,
     pub whisper_server: ComponentCheck,
-    pub agy_cli: ComponentCheck,
+    pub claude_cli: ComponentCheck,
     pub database_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]

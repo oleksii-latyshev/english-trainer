@@ -21,7 +21,7 @@ export const SetupDiagnosticsSchema = bindingSchema<SetupDiagnostics>()(
     whisper_cli: ComponentCheckSchema,
     whisper_model: ComponentCheckSchema,
     whisper_server: ComponentCheckSchema,
-    agy_cli: ComponentCheckSchema,
+    claude_cli: ComponentCheckSchema,
     database_path: Schema.String,
     agy_default_model: Schema.optionalKey(Schema.String),
   }),
