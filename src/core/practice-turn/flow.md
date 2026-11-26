@@ -67,6 +67,48 @@ sequenceDiagram
 A committed turn that wins the race with the interruption still advances the session; only its
 voice and its text on screen are dropped.
 
+## Join speech that continues an answer
+
+When hands-free ends an answer too early, the learner may keep talking before Eva's reply is
+audible. After an automatic end (the pause, not a manual send, Space or a typed answer) in a spoken
+conversation with auto-listen on, `sendTurn` opens the join window: `joinWindowAtom` holds the
+answer, its sequence and the time. It lasts until the reply's first audio starts, at most
+`JOIN_WINDOW_MS` (4 s). The cap is checked by timestamp when a voice onset arrives, not by a timer.
+
+```mermaid
+sequenceDiagram
+    actor Learner
+    participant Onset as speech onset (warm microphone)
+    participant Window as joinWindowAtom
+    participant Interrupt as interruptReplyAtom
+    participant Rust as cancel_practice_reply
+    participant Capture as core/answer-capture
+    participant Composer as talk-composer submit
+    participant Turn as sendTurn
+
+    Learner->>Onset: keeps talking
+    Onset->>Window: still open (before first audio, inside the cap)?
+    alt open
+        Window->>Interrupt: continues = the cut-off answer
+        Interrupt->>Rust: cancel the in-flight reply (generation + 1, the half reply leaves the dialogue)
+        Interrupt->>Capture: continuationAtom set, listen (auto, pre-roll kept)
+        Capture-->>Composer: transcript of the continuation
+        Composer->>Turn: withContinuation: previous + " " + continuation, continuesTurn = sequence
+        Turn->>Rust: send_practice_turn(continues_turn)
+        Rust-->>Turn: one reply for the joined answer, one saved turn
+    else closed
+        Onset->>Interrupt: normal interruption, a new turn (only with echo cancellation)
+    end
+    opt the continuation ends without a transcript
+        Capture-->>Turn: idle or error, the cut-off answer is sent again as it was
+    end
+```
+
+If the cut-off turn had already been saved when the cancel arrived, `continues_turn` makes Rust
+replace it (and its coaching) instead of adding a turn, and the session's turn count is not
+advanced a second time (`committedTurnAtom`). A reply that was cancelled first saved nothing, so
+the joined text is a plain new turn.
+
 ## Effects that run for the whole app
 
 `practiceTurnEffectsAtom` is mounted by `App`: it keeps the warm microphone on while a spoken stage

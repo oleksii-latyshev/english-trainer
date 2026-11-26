@@ -10,6 +10,7 @@ import {
   stageResetAtom,
   warmMicrophoneAtom,
 } from './effects';
+import { resumeAbandonedAnswerAtom } from './resume';
 import { planningAtom, turnLockAtom } from './state';
 
 export const practiceTurnEffectsAtom = Atom.make((get) => {
@@ -21,6 +22,7 @@ export const practiceTurnEffectsAtom = Atom.make((get) => {
   get.mount(prewarmAtom);
   get.mount(autoListenAtom);
   get.mount(microphoneActivityAtom);
+  get.mount(resumeAbandonedAnswerAtom);
 });
 
 export function setPlanning(registry: AtomRegistry.AtomRegistry, isPlanning: boolean) {

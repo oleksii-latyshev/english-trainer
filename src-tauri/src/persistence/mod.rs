@@ -130,6 +130,14 @@ impl SessionDatabase {
         transaction.commit()
     }
 
+    pub fn delete_turn(&mut self, session_id: u64, sequence: usize) -> rusqlite::Result<()> {
+        self.connection.execute(
+            "DELETE FROM turns WHERE session_id = ?1 AND sequence = ?2",
+            params![to_sql_id(session_id)?, to_sql_sequence(sequence)?],
+        )?;
+        Ok(())
+    }
+
     pub fn turn_input_sources(&self, session_id: u64) -> rusqlite::Result<Vec<String>> {
         let mut statement = self.connection.prepare(
             "SELECT COALESCE(s.input_source, 'voice') FROM turns t LEFT JOIN turn_input_sources s ON s.session_id = t.session_id AND s.sequence = t.sequence WHERE t.session_id = ?1 ORDER BY t.sequence",

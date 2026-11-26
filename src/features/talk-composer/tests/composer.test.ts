@@ -6,7 +6,7 @@ import { microphoneSnapshotAtom } from '@/core/audio';
 import { conversationFlowAtom, DEFAULT_CONVERSATION_FLOW } from '@/core/conversation-flow';
 import { IpcError } from '@/core/ipc';
 import { type PracticeState, practiceStateAtom } from '@/core/practice-session';
-import { PracticeTurns, turnRuntime } from '@/core/practice-turn';
+import { continuationAtom, joinWindowAtom, PracticeTurns, turnRuntime } from '@/core/practice-turn';
 import { installFakeLocalStorage } from '@/shared/testing/fake-local-storage';
 import { changeDraft, sendDraft } from '../model/commands';
 import { draftAtom, isSendingAtom } from '../model/draft-atoms';
@@ -58,13 +58,14 @@ function opened(flow: Partial<typeof DEFAULT_CONVERSATION_FLOW>, script: Script)
   return registry;
 }
 
-function hear(registry: AtomRegistry.AtomRegistry, text: string) {
+function hear(registry: AtomRegistry.AtomRegistry, text: string, endedByPause = false) {
   registry.update(captureRequestIdAtom, (id) => id + 1);
   registry.set(captureStateAtom, {
     tag: 'transcript',
     text,
     durationMs: 3000,
     speechStoppedAtMs: 1,
+    endedByPause,
   });
 }
 
@@ -129,6 +130,41 @@ describe('what the learner said', () => {
     changeDraft(registry, 'I use a notebook every day.');
     await new Promise((resolve) => setTimeout(resolve, 250));
     expect(script.sent).toEqual([]);
+  });
+});
+
+describe('speech that continues an answer sent too early', () => {
+  const HANDS_FREE = { autoSendVoice: true, autoListen: true, handsFree: true };
+
+  it('opens the join window after an answer the pause ended', async () => {
+    const script: Script = { sent: [], fails: false };
+    const registry = opened(HANDS_FREE, script);
+    hear(registry, 'I went to', true);
+    await until(() => script.sent.length === 1);
+    expect(registry.get(joinWindowAtom)).toMatchObject({ transcript: 'I went to' });
+  });
+
+  it('does not open it for an answer the learner stopped', async () => {
+    const script: Script = { sent: [], fails: false };
+    const registry = opened(HANDS_FREE, script);
+    hear(registry, 'I went to', false);
+    await until(() => script.sent.length === 1);
+    expect(registry.get(joinWindowAtom)).toBeNull();
+  });
+
+  it('sends the continuation joined to the answer it continues', async () => {
+    const script: Script = { sent: [], fails: false };
+    const registry = opened(HANDS_FREE, script);
+    registry.set(continuationAtom, {
+      sessionId: 7,
+      sequence: 2,
+      transcript: 'I went to',
+      recordingMs: 1000,
+    });
+    hear(registry, 'the park.', true);
+    await until(() => script.sent.length === 1);
+    expect(script.sent[0]).toEqual({ transcript: 'I went to the park.', source: 'voice' });
+    expect(registry.get(continuationAtom)).toBeNull();
   });
 });
 

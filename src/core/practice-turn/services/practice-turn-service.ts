@@ -14,6 +14,7 @@ type SendRequest = {
   readonly transcript: string;
   readonly source: InputSource;
   readonly answerDurationMs: number | undefined;
+  readonly continuesTurn: number | undefined;
   readonly onDelta: (text: string) => void;
 };
 
@@ -37,6 +38,7 @@ export class PracticeTurns extends Context.Service<PracticeTurns, PracticeTurnsS
               transcript: request.transcript,
               inputSource: request.source,
               answerDurationMs: request.answerDurationMs,
+              continuesTurn: request.continuesTurn,
               onReply: openReplyChannel(request.onDelta),
             }),
           ),

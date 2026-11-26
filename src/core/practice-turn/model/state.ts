@@ -1,7 +1,14 @@
 import { Atom } from 'effect/reactivity';
 import { captureRequestIdAtom, captureTimingAtom } from '@/core/answer-capture';
 import type { SpeechTiming, StreamHandle } from '@/core/speech';
-import type { PendingReply, SendFailure, SentAnswer } from '../types';
+import type {
+  CommittedTurn,
+  Continuation,
+  JoinWindow,
+  PendingReply,
+  SendFailure,
+  SentAnswer,
+} from '../types';
 
 type TurnOutcome =
   | { readonly tag: 'idle' }
@@ -30,6 +37,12 @@ export const replyTimingAtom = Atom.keepAlive(Atom.make<SpeechTiming>({}));
 export const voiceErrorAtom = Atom.keepAlive(Atom.make(''));
 
 export const acceptedAnswerAtom = Atom.keepAlive(Atom.make<SentAnswer | null>(null));
+
+export const joinWindowAtom = Atom.keepAlive(Atom.make<JoinWindow | null>(null));
+
+export const continuationAtom = Atom.keepAlive(Atom.make<Continuation | null>(null));
+
+export const committedTurnAtom = Atom.keepAlive(Atom.make<CommittedTurn | null>(null));
 
 export const turnLockAtom = Atom.keepAlive(Atom.make(false));
 

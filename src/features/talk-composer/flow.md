@@ -39,6 +39,10 @@ sequenceDiagram
     end
 ```
 
+An answer the pause ended is sent with `endedByPause`; if the learner keeps talking before Eva's
+reply is audible, `core/practice-turn` cancels that reply and the next transcript is sent joined to
+the answer it continues (`withContinuation` in `submitAtom`). See `core/practice-turn/flow.md`.
+
 ## What the stage shows
 
 `turnStateAtom` orders what the learner can act on above what is merely pending: paused, listening

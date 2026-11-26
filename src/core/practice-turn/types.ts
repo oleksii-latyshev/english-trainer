@@ -14,10 +14,23 @@ export class TurnBlocked extends Data.TaggedError('TurnBlocked')<{
 
 export type TurnFailure = IpcError | IpcDecodeError;
 
+export type Continuation = {
+  readonly sessionId: number;
+  readonly sequence: number;
+  readonly transcript: string;
+  readonly recordingMs: number;
+};
+
+export type JoinWindow = Continuation & { readonly openedAtMs: number };
+
+export type CommittedTurn = { readonly sessionId: number; readonly sequence: number };
+
 export type SendInput = {
   readonly text: string;
   readonly source: InputSource;
   readonly recordingMs: number;
+  readonly endedByPause?: boolean;
+  readonly continuesTurn?: number;
 };
 
 export type SentAnswer = {

@@ -148,6 +148,7 @@ pub async fn send_practice_turn(
     transcript: String,
     input_source: Option<InputSource>,
     answer_duration_ms: Option<u64>,
+    continues_turn: Option<usize>,
     on_reply: Channel<ReplyStreamEvent>,
 ) -> Result<ConversationTurn, IpcError> {
     let settings = saved_ai_settings(&ai_settings)?;
@@ -159,6 +160,7 @@ pub async fn send_practice_turn(
             transcript,
             input_source.unwrap_or_default(),
             answer_duration_ms,
+            continues_turn,
             &mut engine,
         )
     })

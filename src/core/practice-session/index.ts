@@ -34,6 +34,7 @@ export {
   dismissSummary,
   markTurnPending,
   reportPracticeError,
+  reviseAcceptedTurn,
 } from './model/updates';
 export { PracticeSessions } from './services/practice-session-service';
 export type {

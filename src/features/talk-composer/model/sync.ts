@@ -1,4 +1,5 @@
 import { Atom, type AtomRegistry } from 'effect/reactivity';
+import { captureStateAtom } from '@/core/answer-capture';
 import { conversationFlowAtom, effectiveAutoSendDelayMs } from '@/core/conversation-flow';
 import { canSendDraft, shouldAutoSendVoiceTranscript } from '../helpers/input-source';
 import { autoSendAction } from '../helpers/send-countdown';
@@ -34,7 +35,9 @@ function canSendNow(registry: AtomRegistry.AtomRegistry): boolean {
 function autoSend(registry: AtomRegistry.AtomRegistry, transcript: Transcript) {
   const flow = registry.get(conversationFlowAtom);
   const delayMs = effectiveAutoSendDelayMs(flow);
-  const submission = { text: transcript.text, source: 'voice' } as const;
+  const captured = registry.get(captureStateAtom);
+  const endedByPause = captured.tag === 'transcript' && captured.endedByPause === true;
+  const submission = { text: transcript.text, source: 'voice', endedByPause } as const;
   if (autoSendAction(delayMs) === 'send-now') registry.set(submitAtom, submission);
   else registry.set(countdownAtom, { ...submission, delayMs });
 }

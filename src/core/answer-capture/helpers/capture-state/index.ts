@@ -15,8 +15,12 @@ export function canChangeSession(state: CaptureState): boolean {
   return !isCapturing(state);
 }
 
-export function preRollMsFor(mode: 'manual' | 'auto', assistantWasSpeaking: boolean): number {
-  return mode === 'auto' || assistantWasSpeaking ? 0 : PRE_ROLL_MS;
+export function preRollMsFor(
+  mode: 'manual' | 'auto',
+  assistantWasSpeaking: boolean,
+  keepsPreRoll = false,
+): number {
+  return (mode === 'auto' && !keepsPreRoll) || assistantWasSpeaking ? 0 : PRE_ROLL_MS;
 }
 
 export function stopMeansCancel(heardSpeech: boolean, isWatchingTurn: boolean): boolean {

@@ -22,6 +22,7 @@ type Watch = {
   readonly opened: OpenedAnswer;
   readonly stopped: Deferred.Deferred<Verdict>;
   readonly heard: Ref.Ref<boolean>;
+  readonly endedByPause: Ref.Ref<boolean>;
   readonly startedAtMs: number;
 };
 
@@ -89,10 +90,10 @@ function watchTurns(watch: Watch, hold: Ref.Ref<boolean>, extraPauseMs: Ref.Ref<
               updateRecording(registry, (state) => ({ ...state, heardSpeech: true })),
             ),
           )
-        : Effect.sync(() => {
-            if (registry.get(conversationFlowAtom).handsFree) {
-              Deferred.doneUnsafe(watch.stopped, Effect.succeed('stop'));
-            }
+        : Effect.gen(function* () {
+            if (!registry.get(conversationFlowAtom).handsFree) return;
+            yield* Ref.set(watch.endedByPause, true);
+            Deferred.doneUnsafe(watch.stopped, Effect.succeed('stop'));
           }),
     ),
   );
@@ -142,14 +143,15 @@ export function recordTurn(get: Atom.FnContext, request: ListenRequest, requeste
     Effect.gen(function* () {
       const recorder = yield* AnswerRecorder;
       const opened = yield* recorder.open({
-        preRollMs: preRollMsFor(request.mode, request.discardPreRoll),
+        preRollMs: preRollMsFor(request.mode, request.discardPreRoll, request.keepsPreRoll),
       });
       const startedAtMs = performance.now();
       const stopped = yield* Deferred.make<Verdict>();
       const heard = yield* Ref.make(false);
+      const endedByPause = yield* Ref.make(false);
       const hold = yield* Ref.make(false);
       const extraPauseMs = yield* Ref.make(0);
-      const watch: Watch = { registry, request, opened, stopped, heard, startedAtMs };
+      const watch: Watch = { registry, request, opened, stopped, heard, endedByPause, startedAtMs };
       registry.set(captureControlAtom, {
         stopped,
         capture: opened.capture,
@@ -189,7 +191,7 @@ export function recordTurn(get: Atom.FnContext, request: ListenRequest, requeste
         ...timing,
         captureFinalizationMs: Duration.toMillis(elapsed),
       }));
-      return { audio, speechStoppedAtMs };
+      return { audio, speechStoppedAtMs, endedByPause: yield* Ref.get(endedByPause) };
     }),
   );
 }
