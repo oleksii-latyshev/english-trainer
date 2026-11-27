@@ -32,7 +32,7 @@ flowchart LR
   ui <-->|"typed IPC (ts-rs)"| core["Rust core<br/>sessions · learning rules"]
   core --> stt["whisper.cpp<br/>local speech recognition"]
   core -->|"streamed reply"| live["Gemini API · Apple on-device<br/>conversation"]
-  core -.->|"background"| bg["agy (Gemini Flash)<br/>coaching · wrap-up · review"]
+  core -.->|"background"| bg["Claude Code (Sonnet)<br/>coaching · wrap-up · review"]
   core --> db[("SQLite<br/>history · Memory")]
   core --> tts["Supertonic 3<br/>local natural voice"]
   core --> tr["Apple Translation<br/>word lookup"]

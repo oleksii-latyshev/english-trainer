@@ -19,7 +19,7 @@ type Props = {
 };
 
 const PAUSED_MESSAGE =
-  'Coaching is paused for now because Antigravity has no quota left. Talking is not affected.';
+  'Coaching is paused for now because Claude has no quota left. Talking is not affected.';
 
 function Rewrite({ feedback, transcript }: { feedback: TurnFeedback; transcript: string }) {
   return (

@@ -40,7 +40,7 @@ it('reads the files setup relies on', async () => {
     whisper_cli: FOUND,
     whisper_model: MISSING,
     whisper_server: MISSING,
-    agy_cli: MISSING,
+    claude_cli: MISSING,
     database_path: '/data/english-trainer.sqlite3',
   }));
   const loaded = await diagnostics(registry);
@@ -54,7 +54,7 @@ it('reads the default Antigravity model when the app found one', async () => {
     whisper_cli: FOUND,
     whisper_model: FOUND,
     whisper_server: FOUND,
-    agy_cli: FOUND,
+    claude_cli: FOUND,
     database_path: '/data/english-trainer.sqlite3',
     agy_default_model: 'Gemini 3.8 Flash',
   }));
@@ -69,7 +69,7 @@ it('rechecking asks the backend again', async () => {
       whisper_cli: reads === 1 ? MISSING : FOUND,
       whisper_model: FOUND,
       whisper_server: FOUND,
-      agy_cli: FOUND,
+      claude_cli: FOUND,
       database_path: '/data/english-trainer.sqlite3',
     };
   });

@@ -15,7 +15,7 @@ use std::fs;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct RawUsageResponse {
+pub(crate) struct RawUsageResponse {
     findings: Vec<RawFinding>,
 }
 
@@ -92,7 +92,7 @@ pub(super) fn review_turn_usage(
     AgyEngine { binary }.review_usage(request)
 }
 
-fn validate_usage_request(request: &UsageReviewRequest) -> Result<(), ProviderError> {
+pub(crate) fn validate_usage_request(request: &UsageReviewRequest) -> Result<(), ProviderError> {
     if request.answered_question.trim().is_empty()
         || request.answered_question.chars().count() > 500
         || request.transcript.trim().is_empty()
@@ -137,7 +137,7 @@ fn validate_usage_request(request: &UsageReviewRequest) -> Result<(), ProviderEr
     Ok(())
 }
 
-fn make_usage_prompt(request: &UsageReviewRequest, retry: bool) -> String {
+pub(crate) fn make_usage_prompt(request: &UsageReviewRequest, retry: bool) -> String {
     let correction = if retry {
         " Your previous output was invalid. Return only valid structured output matching the schema with exact item_type, item_id, outcome, confidence, and exact_excerpt from transcript."
     } else {
@@ -154,7 +154,7 @@ fn make_usage_prompt(request: &UsageReviewRequest, retry: bool) -> String {
     )
 }
 
-fn usage_response_schema() -> &'static str {
+pub(crate) fn usage_response_schema() -> &'static str {
     r#"{"type":"object","additionalProperties":false,"required":["findings"],"properties":{"findings":{"type":"array","maxItems":3,"items":{"type":"object","additionalProperties":false,"required":["item_type","item_id","outcome","confidence","exact_excerpt"],"properties":{"item_type":{"type":"string","enum":["mistake","phrase"]},"item_id":{"type":"integer","minimum":1},"outcome":{"type":"string","enum":["correct","incorrect","uncertain"]},"confidence":{"type":"number","minimum":0.0,"maximum":1.0},"exact_excerpt":{"type":"string","maxLength":500}}}}}}"#
 }
 
@@ -166,7 +166,7 @@ fn parse_usage_envelope(output: &str) -> Result<RawUsageResponse, ()> {
     serde_json::from_value(envelope.structured_output).map_err(|_| ())
 }
 
-fn validate_usage_response(
+pub(crate) fn validate_usage_response(
     raw: RawUsageResponse,
     request: &UsageReviewRequest,
 ) -> Result<UsageReviewResponse, ()> {

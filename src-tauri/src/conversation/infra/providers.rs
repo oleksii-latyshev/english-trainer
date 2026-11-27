@@ -63,7 +63,7 @@ impl MistakeQuestionSource for AgyMistakeQuestions {
         &self,
         candidates: &[MistakePracticeCandidate],
     ) -> Result<Vec<GeneratedMistakeQuestion>, ProviderError> {
-        providers::agy::mistake_practice::generate(candidates)
+        providers::generate_mistake_questions(candidates)
     }
 }
 

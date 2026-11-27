@@ -245,14 +245,20 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   `x-goog-api-key` header, never returned to the UI, logged, put in a URL or in an error. Commands:
   `get_gemini_key_status` (`{ configured, source: settings | environment | null }`),
   `save_gemini_api_key`, `delete_gemini_api_key`.
-- Call sites choose tiers: `conversation` (fast) and `coaching` (background, batched, `agy`
-  `gemini-3.8-flash-medium`; the Gemini API is never used for coaching).
+- Call sites choose tiers: `conversation` (fast) and `coaching` (background, batched, `claude`
+  Sonnet; the Gemini API is never used for coaching).
 
 ## 6. Coaching, help and review providers
 
-All `agy` calls below pin a Gemini model, run in a private scratch directory and count against API
-usage (§10). Where the CLI `--json-schema` flag is omitted, the schema is sent in the prompt because
-installed CLI schema output can be empty, and the JSON in `response` is validated locally.
+All background calls below run through `providers/claude`: `claude -p --model sonnet
+--no-session-persistence --tools "" --strict-mcp-config --setting-sources "" --disable-slash-commands
+--output-format json --json-schema <schema> -- <prompt>` in a private scratch directory, with the
+subscription sign-in (never `--bare`, which skips it). The answer is `structured_output` of the JSON
+envelope (`is_error`, `result`, `structured_output`); a missing object is invalid output, "Not logged
+in" is `Unauthorized`, quota text is `RateLimited`, a missing binary is `Unavailable`
+(`ENG_TRAINER_CLAUDE_BIN`, `PATH`, `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`). Calls count
+against API usage (§10). When Claude Code is not installed but `agy` is, the legacy `agy` adapter
+answers instead. Typical latency is 1.5 to 3 s.
 
 ### 6.1 Coaching
 
@@ -264,19 +270,20 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   failed, empty or invalid batch counts one failed attempt for each answer it missed; an answer with
   2 failed attempts shows "Couldn't check this answer" with manual Retry (`retry_answer_coaching`,
   which also resumes a paused queue).
-- **Quota pause:** `RESOURCE_EXHAUSTED` or 429 (agy stderr, stdout or envelope,
+- **Quota pause:** Quota text ("usage limit", "hit your limit", 429; legacy agy `RESOURCE_EXHAUSTED`,
   `ProviderErrorCode::RateLimited`) pauses coaching without spending attempts for 30 minutes
   (`QUOTA_PAUSE`, in memory only); then one batch probes, and a limited probe pauses another 30
   minutes. Retry resumes at once. Talking is never blocked.
 - Results go through `SessionStore::save_feedback`: the learning engine records one mistake per
   answer (deduplicated by normalised key); typed or edited answers keep their evidence rules. Saving
   works after the session finished. After each batch Rust emits `coaching-updated { session_id }`.
-- **Batch call** (`providers/agy/coaching.rs`): one `agy` call, `--model gemini-3.8-flash-medium`,
-  170 s process budget. Batches of 5 were chosen by measurement (median about 40 s per batch; one
-  answer per call exhausted the quota after about 54 calls). The prompt ("do not use any tools or
+- **Batch call** (`providers/claude/coaching.rs`, prompt and validation shared with
+  `providers/agy/coaching.rs`): one `claude` call on Sonnet, 170 s process budget. Batches of 5 were
+  chosen by measurement on the legacy provider (one answer per call exhausted its quota after about
+  54 calls). The prompt ("do not use any tools or
   commands") gets `{ n: sequence, question, transcript }` per answer; the schema returns
   `answers[{ n, mistakes[0..2]{ original, improved, explanation, category }, rewrite }]`, read from
-  `structured_output` (object or text; `response` text is the fallback). Each answer is validated
+  `structured_output`. Each answer is validated
   alone: rewrite is plain text of at most 600 characters; the first mistake whose quote occurs in the
   transcript, with texts in bounds and a different `improved`, becomes the single focus point
   (`TurnFeedback.focus_feedback` has at most one). A bad entry costs only its own answer.
@@ -341,8 +348,7 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
   English description alone and works without recognised speech. Rust validates session, phase,
   sequence and exact question, saves the per-answer cue before the provider call and revalidates
   after. A separate concurrency guard never holds the session mutex across generation.
-- `RescueEngine`: one `agy` call, `gemini-3.8-flash-high`, 20 s process bound, no automatic retry,
-  schema in the prompt. Response is either one plain English suggestion (at most 160 characters / 30
+- `RescueEngine`: one `claude` call on Sonnet, 20 s process bound, no automatic retry. Response is either one plain English suggestion (at most 160 characters / 30
   words) or 3-5 distinct terms of 1-3 words. Unknown fields, wrong variants, translations and markup
   are typed errors. The 20 s bound does not guarantee the under-10-second target; latency is checked
   live, separately from deterministic tests.
@@ -420,7 +426,7 @@ installed CLI schema output can be empty, and the JSON in `response` is validate
 - Targets: non-archived mistakes whose rule (never `other`) holds at least two non-archived mistakes, regardless of due
   date, largest rule first, then recency. An empty pool returns an actionable error without a provider call or
   session.
-- One bounded background-tier `agy` call (pinned Gemini model; the Gemini conversation API is not
+- One bounded background-tier `claude` call (Sonnet; the Gemini conversation API is not
   used) prepares five distinct English questions. Output must reference known targets, stay bounded
   and not reveal the target wording.
 - Generation runs outside the database/session mutex. Concurrent starts are guarded, failure permits
@@ -617,13 +623,13 @@ Existing `mistakes.times_seen` and the dedupe by `normalized_key` stay; the Memo
 (`times_seen >= 2`, §9.1) no longer applies to Mistakes, which lists every non-archived mistake.
 Spoken Memory review no longer selects mistakes (one scheduler per item): `mistakes.next_review_at`
 is the due time of the Mistakes ladder. Phrases are unchanged. Lessons are prepared by
-`providers::run_background_json` (one pinned `agy` call per batch); relapses are found when a
+`providers::run_background_json` (one pinned `claude` call per batch); relapses are found when a
 lesson is saved, from the rule, for every mistake that has an earlier mistake with the same rule.
 
 **Lesson preparation.** After each coaching batch saves feedback (§6.1), the new mistakes join a
 lesson queue derived from SQLite (`mistake_lessons.state = pending` or missing, fewer than 2
-failures). One worker, batches of at most 5 mistakes, one `agy` call per batch (background tier,
-pinned Gemini Flash model, "do not use any tools or commands", schema in the prompt). Input per
+failures). One worker, batches of at most 5 mistakes, one `claude` call per batch (background tier,
+Sonnet, "do not use any tools or commands", schema via `--json-schema`). Input per
 mistake: Eva's question, the learner's sentence, the corrected sentence, the review's explanation
 and the rule list. Output per mistake: `rule_key` from the list, explanation (≤ 300 characters),
 contrast (two labelled sentences), two examples (≤ 120 characters each), optional word
@@ -638,7 +644,7 @@ Talk, the wrap-up or a practice run.
 
 - Step 1 and 2 locally: lowercase, strip punctuation, expand common contractions, collapse spaces;
   pass when equal to the corrected sentence (step 2: or to an accepted rewrite).
-- Step 2 "Check it" and step 4: one background `agy` call per answer (same tier), result `pass ·
+- Step 2 "Check it" and step 4: one background `claude` call per answer (same tier), result `pass ·
   miss` plus one sentence, saved to `mistake_attempts`; the run moves on while `checking`. A failed
   check stays `checking` with Retry and changes no schedule.
 - Step 3 locally: the corrected wording as whole words in order (the recall matcher of §9.1).
@@ -709,8 +715,8 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
     plan, the review cue ledger and mistake candidates are read through the same context, while the
     commands `get_daily_recall_plan`, `submit_daily_recall` and `start_mistake_practice` stay with the
     conversation, which gates them on the open session.
-- **API usage:** neither Gemini nor `agy` reports remaining quota, so requests are counted where sent
-  (Gemini stream adapter, `agy` runner) and limit errors where they arrive (Gemini 429: bounded
+- **API usage:** neither Gemini, `agy` nor `claude` reports remaining quota, so requests are counted where sent
+  (Gemini stream adapter, `agy` and `claude` runners; Claude counts are stored but not shown) and limit errors where they arrive (Gemini 429: bounded
   `error.message`; `agy`: the quota line and the reset moment such as "Resets in 4h44m53s"). Events go
   over a channel to a writer thread, so counting never delays a reply. Days are Pacific dates
   (daylight saving implemented by hand); counts older than 14 days are dropped. `get_api_usage`
@@ -728,7 +734,7 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
 ## 11. Setup diagnostics
 
 `get_setup_diagnostics` reports paths and readability of `whisper-cli`, `whisper-server` (with whether
-the model is kept loaded and why not), the Whisper model and `agy`, the database path, and the
+the model is kept loaded and why not), the Whisper model and `claude`, the database path, and the
 bounded, plain-text default model name from the local `agy` settings file (nothing else from it). It
 never proves authentication, transcription quality or microphone permission, and never starts capture
 or a provider request. Apple model availability and Gemini key presence (never the key) are reported
@@ -763,7 +769,7 @@ Synthetic benchmarks record timings and error categories only, never personal tr
 ## 14. Testing
 
 - Rust unit tests beside the code for parsers, validation, scheduling, migrations and transactions.
-- Fake providers at the edge: `ENG_TRAINER_AGY_BIN` for `agy`; a fake conversation provider and a
+- Fake providers at the edge: `ENG_TRAINER_CLAUDE_BIN` for `claude`, `ENG_TRAINER_AGY_BIN` for legacy `agy`; a fake conversation provider and a
   temporary SQLite database for the pipeline test in `src-tauri/tests/`.
 - Live provider checks are `#[ignore]` and run explicitly with synthetic input only. The bundled
   translation helper has one such check (`real_bundled_helper_translates_and_explains_a_phrase_on_device`; needs

@@ -88,9 +88,9 @@ export function AiProviderSettings({ geminiKeyField }: Props) {
       <ResponseTest provider={settings.provider} />
       <Notice tone="quiet">
         <p>
-          Coaching under your answers runs in the background through Antigravity with Gemini 3.8
-          Flash, whichever conversation provider you choose, so it never slows Eva down. Answer
-          examples and memory checks use Antigravity too.
+          Coaching under your answers runs in the background through Claude Code with Sonnet,
+          whichever conversation provider you choose, so it never slows Eva down. Answer examples
+          and memory checks use Claude Code too.
         </p>
       </Notice>
     </>

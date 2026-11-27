@@ -7,6 +7,7 @@ use ts_rs::TS;
 pub enum UsageSource {
     Gemini,
     Antigravity,
+    Claude,
 }
 
 impl UsageSource {
@@ -14,6 +15,7 @@ impl UsageSource {
         match self {
             Self::Gemini => "gemini",
             Self::Antigravity => "antigravity",
+            Self::Claude => "claude",
         }
     }
 }

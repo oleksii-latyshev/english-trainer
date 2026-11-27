@@ -19,7 +19,7 @@ sequenceDiagram
     participant Service as RescueService
     participant Command as rescue_answer
     participant Store as SessionStore rescue_answer
-    participant Provider as RescueProvider (agy)
+    participant Provider as RescueProvider (claude)
     participant Panel as Rescue
 
     Learner->>Stuck: presses Stuck or S while recording

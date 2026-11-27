@@ -32,7 +32,7 @@ How the running system is shaped. Numbers, limits and error codes live in
 └───────┬───────────────────────────┬──────────────────────────────────────┘
         │                           │
   Local helpers               Conversation / evaluation providers
-  whisper.cpp · Supertonic 3  Apple Foundation Models helper · Gemini API · agy
+  whisper.cpp · Supertonic 3  Apple Foundation Models helper · Gemini API · claude
 ```
 
 ## 3. Frontend and Rust split
@@ -103,7 +103,7 @@ sequenceDiagram
 - The reply streams from `send_practice_turn`; the UI queues completed sentences to the speech facade
   independently of coaching.
 - Each saved answer joins a per-session coaching queue in Rust. Batches of up to five answers run in
-  the background through `agy`; Talk marks the answers and the wrap-up fills in their reviews when
+  the background through the Claude CLI; Talk marks the answers and the wrap-up fills in their reviews when
   a batch lands (`coaching-updated` event). The UI re-reads on events and never polls.
 - A turn cancellation token is owned by Rust and checked atomically before saving; the UI also
   invalidates late stream and speech callbacks. Voice interruption is opt-in and gated by actual
@@ -116,24 +116,24 @@ sequenceDiagram
 | Engine | Purpose | Adapters |
 | :--- | :--- | :--- |
 | `ConversationEngine` (tier: conversation) | Short spoken reply + one question | Gemini API (HTTPS streaming, default) raced against the Apple helper as backup; Apple helper (one long-lived process, `prewarm()`); `agy` (legacy: process per turn) |
-| Batch coaching (tier: coaching) | Rephrasing and one focus point per answer, up to five answers per call | `agy`, `gemini-3.8-flash-medium`. The Gemini API is not used (its free quota is reserved for conversation) |
+| Batch coaching (tier: coaching) | Rephrasing and one focus point per answer, up to five answers per call | `claude`, Sonnet (`agy` only if Claude is missing). The Gemini API is not used (its free quota is reserved for conversation) |
 | Answer planner | Frame, phrases and hidden example for the current question | Gemini API, question-only prefetch |
-| `RescueEngine` | Next step, simpler wording or missing-word candidates during recording | `agy`, `gemini-3.8-flash-high` |
-| `SessionWrapupEngine` | Zero to three phrases from a finished session | `agy`, `gemini-3.8-flash-high` |
-| `ReviewMaterialEngine` | One situation and model sentence per due review item | `agy`, `gemini-3.8-flash-high` |
-| Mistake-practice planner | Five questions from recurring mistakes | `agy`, background tier |
-| `UsageReviewEngine` | Semantic check of phrase use (frozen subsystem) | `agy` (Gemini API when touched) |
+| `RescueEngine` | Next step, simpler wording or missing-word candidates during recording | `claude`, Sonnet |
+| `SessionWrapupEngine` | Zero to three phrases from a finished session | `claude`, Sonnet |
+| `ReviewMaterialEngine` | One situation and model sentence per due review item | `claude`, Sonnet |
+| Mistake-practice planner | Five questions from recurring mistakes | `claude`, Sonnet |
+| `UsageReviewEngine` | Semantic check of phrase use (frozen subsystem) | `claude`, Sonnet (Gemini API when touched) |
 | Word and phrase lookup | Native-language translation + English explanation | Bundled Swift helper `apple-translation`, warm `serve` processes for lookups (macOS Translation + local Foundation Models) |
 
 Rules:
 
-- Call sites choose a **tier**, not a model ID. Every `agy` call names a Gemini model;
-  `CliOptions.model` is mandatory and a test runs each entry point against a fake CLI.
+- Call sites choose a **tier**, not a model ID. Every `claude` call names Sonnet
+  (`CLAUDE_MODEL`, never optional) and a test checks the command line against a fake CLI.
 - Provider output is parsed into typed Rust values; invalid output is a recoverable typed error.
 - Only transcript and minimum prompt context leave the Mac. API keys live in an encrypted,
   owner-only file in the app data folder, never in SQLite or logs.
-- `agy` runs only in a private temporary directory, never in the repository.
-- The word-lookup helper never uses the conversation helper's queue, Gemini or `agy`. Rust owns the
+- `claude` (and legacy `agy`) run only in a private temporary directory, never in the repository.
+- The word-lookup helper never uses the conversation helper's queue, Gemini or `claude`. Rust owns the
   language preference, validation, concurrency guard and process lifetime. React offers lookup only
   on explicit action within marked English content.
 
@@ -159,7 +159,7 @@ Rules:
   first-answer scoring.
 - Answer help calls its providers through the `AnswerPlanner` port of the
   `conversation` context; the session store validates session, sequence and question and caches the
-  plan, the Gemini planner and its schema stay in `providers`. Stuck rescue calls the `agy`
+  plan, the Gemini planner and its schema stay in `providers`. Stuck rescue calls the `claude`
   `RescueEngine` through the `RescueProvider` port; the session store validates the question, records
   the help use for the answer and rejects overlapping requests.
 

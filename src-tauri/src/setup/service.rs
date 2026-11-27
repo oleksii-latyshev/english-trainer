@@ -9,12 +9,12 @@ pub fn collect(app_data: &Path, model: &Path, server: &ServerStatus) -> SetupDia
     let whisper_cli = check_cli(crate::speech_recognition::resolve_whisper_binary());
     let whisper_server = check_server(crate::speech_recognition::resolve_server_binary(), server);
     let whisper_model = check_model(model);
-    let agy_cli = check_cli(crate::providers::resolve_agy_binary());
+    let claude_cli = check_cli(crate::providers::resolve_claude_binary());
     SetupDiagnostics {
         whisper_cli,
         whisper_model,
         whisper_server,
-        agy_cli,
+        claude_cli,
         agy_default_model: std::env::var_os("HOME")
             .map(PathBuf::from)
             .and_then(|home| {

@@ -2,6 +2,8 @@ pub(crate) mod agy;
 mod answer_plan;
 mod answered_by;
 mod apple;
+mod background;
+pub(crate) mod claude;
 mod context;
 mod gemini;
 mod ipc;
@@ -13,14 +15,16 @@ mod session_wrapup;
 mod settings;
 pub(crate) mod spoken_review;
 pub use crate::ai_settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
-pub use agy::session_wrapup::generate_session_wrapup;
-pub use agy::spoken_review::generate_review_material;
-pub use agy::structured::run_background_json;
 pub use answer_plan::{parse_answer_plan, AnswerPlan};
 pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
+pub use background::generate_rescue;
+pub use background::{
+    coach_answers, generate_mistake_questions, generate_review_material, generate_session_wrapup,
+    review_turn_usage, run_background_json,
+};
 pub use gemini::generate_answer_plan;
-pub use rescue::{generate_rescue, RescueKind, RescueRequest, RescueResponse};
+pub use rescue::{RescueKind, RescueRequest, RescueResponse};
 pub use session_wrapup::{
     parse_wrapup_result, GeneratedWrapupPhrase, WrapupAnswer, WrapupRequest, WrapupResult,
 };
@@ -54,8 +58,8 @@ pub(crate) fn primary_prompt_chars(context: &ConversationContext) -> usize {
             .sum::<usize>()
 }
 
-pub(crate) fn resolve_agy_binary() -> Option<std::path::PathBuf> {
-    agy::resolve_binary()
+pub(crate) fn resolve_claude_binary() -> Option<std::path::PathBuf> {
+    claude::runner::resolve_binary()
 }
 
 /// Reply text delivered to the UI while a turn is still being generated.
@@ -136,17 +140,6 @@ pub fn prewarm_provider(settings: &AiSettings, apple: &AppleHelper) -> Result<()
         }
         ConversationProvider::Agy => Ok(()),
     }
-}
-
-/// Checks up to five answers with one background Antigravity call; see `agy::coaching`.
-pub fn coach_answers(answers: &[CoachingAnswer]) -> Result<Vec<CoachedAnswer>, ProviderError> {
-    agy::coaching::coach_answers(answers)
-}
-
-pub fn review_turn_usage(
-    request: &UsageReviewRequest,
-) -> Result<UsageReviewResponse, ProviderError> {
-    agy::review_turn_usage(request)
 }
 
 fn measure_turn(

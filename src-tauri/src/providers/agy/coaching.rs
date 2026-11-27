@@ -44,7 +44,7 @@ const TASK: &str = concat!(
     "Do not use any tools or commands; answer directly with the JSON.",
 );
 
-const SCHEMA: &str = r#"{"type":"object","additionalProperties":false,"required":["answers"],"properties":{"answers":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["n","mistakes","rewrite"],"properties":{"n":{"type":"integer"},"mistakes":{"type":"array","maxItems":2,"items":{"type":"object","additionalProperties":false,"required":["original","improved","explanation"],"properties":{"original":{"type":"string"},"improved":{"type":"string"},"explanation":{"type":"string"},"category":{"type":"string","enum":["grammar","vocabulary"]}}}},"rewrite":{"type":"string"}}}}}}"#;
+pub(crate) const SCHEMA: &str = r#"{"type":"object","additionalProperties":false,"required":["answers"],"properties":{"answers":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["n","mistakes","rewrite"],"properties":{"n":{"type":"integer"},"mistakes":{"type":"array","maxItems":2,"items":{"type":"object","additionalProperties":false,"required":["original","improved","explanation"],"properties":{"original":{"type":"string"},"improved":{"type":"string"},"explanation":{"type":"string"},"category":{"type":"string","enum":["grammar","vocabulary"]}}}},"rewrite":{"type":"string"}}}}}}"#;
 
 #[derive(Deserialize)]
 struct Envelope {
@@ -57,7 +57,7 @@ struct Envelope {
 }
 
 #[derive(Deserialize)]
-struct RawBatch {
+pub(crate) struct RawBatch {
     answers: Vec<RawAnswer>,
 }
 
@@ -93,12 +93,7 @@ pub(crate) fn coach_answers_with(
     binary: &Path,
     answers: &[CoachingAnswer],
 ) -> Result<Vec<CoachedAnswer>, ProviderError> {
-    if answers.is_empty() || answers.len() > MAX_BATCH_ANSWERS {
-        return Err(ProviderError::new(
-            ProviderErrorCode::InvalidRequest,
-            "Coaching takes between one and five answers at a time.",
-        ));
-    }
+    require_batch_size(answers)?;
     let workspace = ScratchDirectory::new().map_err(|_| {
         ProviderError::new(
             ProviderErrorCode::ProcessFailed,
@@ -127,7 +122,17 @@ pub(crate) fn coach_answers_with(
     Ok(validate_batch(raw, answers))
 }
 
-fn make_prompt(answers: &[CoachingAnswer]) -> String {
+pub(crate) fn require_batch_size(answers: &[CoachingAnswer]) -> Result<(), ProviderError> {
+    if answers.is_empty() || answers.len() > MAX_BATCH_ANSWERS {
+        return Err(ProviderError::new(
+            ProviderErrorCode::InvalidRequest,
+            "Coaching takes between one and five answers at a time.",
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn make_prompt(answers: &[CoachingAnswer]) -> String {
     let data: Vec<Value> = answers
         .iter()
         .map(|answer| {
@@ -182,7 +187,7 @@ fn json_in_text(text: Option<&str>) -> Result<Value, ProviderError> {
 }
 
 /// Keeps the answers that came back usable; a bad entry costs only its own answer.
-fn validate_batch(raw: RawBatch, requested: &[CoachingAnswer]) -> Vec<CoachedAnswer> {
+pub(crate) fn validate_batch(raw: RawBatch, requested: &[CoachingAnswer]) -> Vec<CoachedAnswer> {
     let mut seen = HashSet::new();
     let mut coached = Vec::new();
     for entry in raw.answers {
