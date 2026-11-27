@@ -65,29 +65,29 @@ impl UsageReviewWorker {
             .review_session(session_id, |answers| self.reviewer.review(answers));
         match outcome {
             Ok(report) if report.failed == 0 => Next::Done,
-            Ok(_) => self.after_failure(session_id, attempt, self.retry_delay, "some answers"),
+            Ok(_) => self.after_failure(attempt, self.retry_delay, "some answers"),
             Err(LearningError::Provider(error)) if error.code == ProviderErrorCode::RateLimited => {
                 crate::diagnostics::log(
                     "usage-review",
-                    format_args!("Usage review of session {session_id} hit the quota."),
+                    format_args!("The usage review hit the quota."),
                 );
                 Next::PausedFor(self.quota_pause)
             }
             Err(error) => {
                 crate::diagnostics::log(
                     "usage-review",
-                    format_args!("Usage review of session {session_id} failed: {error}"),
+                    format_args!("The usage review failed: {error}"),
                 );
-                self.after_failure(session_id, attempt, self.retry_delay, "the session")
+                self.after_failure(attempt, self.retry_delay, "the session")
             }
         }
     }
 
-    fn after_failure(&self, session_id: u64, attempt: u32, delay: Duration, what: &str) -> Next {
+    fn after_failure(&self, attempt: u32, delay: Duration, what: &str) -> Next {
         if attempt >= MAX_ATTEMPTS {
             crate::diagnostics::log(
                 "usage-review",
-                format_args!("Usage review of {what} in session {session_id} gave up."),
+                format_args!("The usage review of {what} gave up."),
             );
             return Next::GiveUp;
         }
