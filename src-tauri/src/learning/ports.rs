@@ -78,6 +78,7 @@ pub trait ReviewMaterialStore: Send + Sync {
 
 pub trait UsageStore: Send + Sync {
     fn reviewable_answers(&self, session_id: u64) -> Result<Vec<usize>, LearningError>;
+    fn unreviewed_sessions(&self, ended_since: i64) -> Result<Vec<u64>, LearningError>;
     fn prepare(&self, session_id: u64, sequence: usize) -> Result<UsagePreparation, LearningError>;
     fn finalize(
         &self,

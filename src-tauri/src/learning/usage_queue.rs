@@ -27,6 +27,9 @@ where
     }
 }
 
+/// Finished sessions older than this are not picked up again after a restart.
+pub const RESUME_WINDOW: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+
 /// What a run leaves to do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Next {
@@ -164,5 +167,26 @@ impl UsageReviewQueue {
     /// Queues the review of a finished session; it never blocks and never fails the caller.
     pub fn enqueue(&self, session_id: u64) {
         let _ = self.sender.send(session_id);
+    }
+
+    /// Queues the sessions of the last `RESUME_WINDOW` that still have unreviewed answers, so a
+    /// restart does not lose the jobs that only lived in memory.
+    pub fn resume(&self, service: &UsageReviewService, now_ms: i64) -> usize {
+        let window = i64::try_from(RESUME_WINDOW.as_millis()).unwrap_or(i64::MAX);
+        match service.unreviewed_sessions(now_ms.saturating_sub(window)) {
+            Ok(sessions) => {
+                for &session_id in &sessions {
+                    self.enqueue(session_id);
+                }
+                sessions.len()
+            }
+            Err(error) => {
+                crate::diagnostics::log(
+                    "usage-review",
+                    format_args!("Could not find unreviewed sessions: {error}"),
+                );
+                0
+            }
+        }
     }
 }

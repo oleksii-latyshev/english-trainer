@@ -200,6 +200,11 @@ impl UsageStore for SessionLearningStore {
             .with_database(|database, _| usage::review::reviewable_answers(database, session_id))
     }
 
+    fn unreviewed_sessions(&self, ended_since: i64) -> Result<Vec<u64>, LearningError> {
+        self.sessions
+            .with_database(|database, _| usage::review::unreviewed_sessions(database, ended_since))
+    }
+
     fn prepare(&self, session_id: u64, sequence: usize) -> Result<UsagePreparation, LearningError> {
         self.sessions.with_database(|database, active| {
             usage::review::prepare_review(database, active, session_id, sequence)
