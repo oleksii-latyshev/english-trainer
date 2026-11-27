@@ -3,7 +3,5 @@ import type { PracticeMode } from "./PracticeMode";
 import type { PracticePhase } from "./PracticePhase";
 import type { RecurringMistake } from "./RecurringMistake";
 import type { SessionNumbers } from "./SessionNumbers";
-import type { WrapupPhrase } from "./WrapupPhrase";
-import type { WrapupPreparation } from "./WrapupPreparation";
 
-export type FinishedPracticeSession = { session_id: number, finished: boolean, turn_count: number, target_turns: number, duration_ms: number, topic_label: string, duration_goal_seconds: number | null, numbers: SessionNumbers, phrases: Array<WrapupPhrase>, recurring_mistakes: Array<RecurringMistake>, pending_coaching: number, is_coaching_paused: boolean, wrapup_preparation: WrapupPreparation, practice_mode: PracticeMode, practice_phase: PracticePhase, written_turn_count: number, spoken_turn_count: number, is_mistake_practice: boolean, };
+export type FinishedPracticeSession = { session_id: number, finished: boolean, turn_count: number, target_turns: number, duration_ms: number, topic_label: string, duration_goal_seconds: number | null, numbers: SessionNumbers, recurring_mistakes: Array<RecurringMistake>, pending_coaching: number, is_coaching_paused: boolean, practice_mode: PracticeMode, practice_phase: PracticePhase, written_turn_count: number, spoken_turn_count: number, is_mistake_practice: boolean, };

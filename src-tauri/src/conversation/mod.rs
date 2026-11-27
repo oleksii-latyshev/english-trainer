@@ -7,7 +7,6 @@ pub(crate) mod service;
 
 pub use domain::{
     question_scaffold, FinishedPracticeSession, InputSource, PracticeDialogue, PracticeMode,
-    PracticePhase, PracticeSession, SavedWrapupPhrases, StartPracticeOptions, StoredTurn,
-    WrapupPhrase,
+    PracticePhase, PracticeSession, StartPracticeOptions, StoredTurn,
 };
-pub use service::{CoachingQueue, SessionStore, WrapupQueue, IDLE_FLUSH, QUOTA_PAUSE};
+pub use service::{CoachingQueue, SessionStore, IDLE_FLUSH, QUOTA_PAUSE};

@@ -50,10 +50,6 @@ pub enum ConversationError {
     RescueQuestionChanged,
     #[error("rescue help is still being prepared")]
     RescueBusy,
-    #[error("session phrases cannot be saved")]
-    WrapupSaveInvalid,
-    #[error("session phrases are already preparing or ready")]
-    WrapupNotRetryable,
     #[error("provider failed: {0:?}")]
     Provider(ProviderError),
     #[error("could not read or write practice sessions")]
@@ -158,14 +154,6 @@ impl From<ConversationError> for IpcError {
             ConversationError::RescueBusy => Self::new(
                 Busy,
                 "Rescue help is still being prepared. Keep speaking or wait briefly before retrying.",
-            ),
-            ConversationError::WrapupSaveInvalid => Self::new(
-                InvalidRequest,
-                "Could not save these session phrases. Choose up to three phrases from the finished wrap-up and retry.",
-            ),
-            ConversationError::WrapupNotRetryable => Self::new(
-                InvalidRequest,
-                "Session phrases are already preparing or ready. Finish a session before preparing its phrases.",
             ),
             ConversationError::Provider(error) => Self::from(error),
             ConversationError::Storage(_) => Self::new(

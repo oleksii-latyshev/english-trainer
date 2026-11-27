@@ -320,22 +320,11 @@ answers instead. Typical latency is 1.5 to 3 s.
 
 ### 6.2 Session wrap-up (F9)
 
-- `FinishedPracticeSession.wrapup_preparation` is `{ state: legacy | pending | ready }` or
-  `{ state: failed, error: IpcError }`. Finish atomically creates a `session_wrapups` row; empty
-  sessions are ready with no phrases. A worker resumes pending jobs at startup and snapshots up to 24
-  answers (1,500 characters each, 12,000 total) with their original questions. No session lock is
-  held during generation.
-- `SessionWrapupEngine` returns zero to three English phrases: `gemini-3.8-flash-high`, 85 s CLI /
-  90 s process bound, one call, no automatic retry, schema in the prompt. Strict validation: sequence
-  provenance, exact quote substrings, unique normalised phrases, English plain text, bounded
-  phrases/notes/quotes; a note cannot simply copy the quote.
-- Results or typed failures persist before `wrapup-updated { session_id }`. The UI reads once the
-  listeners are registered. `retry_session_wrapup(sessionId)` starts only failed or legacy finished sessions.
-  `get_session_wrapup` keeps the cached snapshot; already saved phrases are excluded at completion.
-- `save_wrapup_phrases(sessionId, phrases)` takes one to three exact cached suggestions, saves all
-  transactionally and returns `{ cards, created_ids }`. Undo uses only the new IDs; existing
-  duplicate cards and notes are preserved. The wrap-up screen no longer lists these phrases; the
-  Debrief (§6.1) takes words with `save_phrase_card` instead.
+- Finishing a session makes no AI call and writes no wrap-up row. `get_session_wrapup` computes the
+  numbers (speaking time, words per minute, average answer, each against earlier sessions) and
+  `pending_coaching` from SQLite. The legacy `session_wrapups` table is no longer read or written; it
+  stays in the schema because migrations are additive.
+- The wrap-up lists no phrases to save; the Debrief (§6.1) takes words with `save_phrase_card`.
 
 ### 6.3 Answer help (F6)
 
@@ -506,7 +495,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Tables:
 
 | Group | Tables |
 | :--- | :--- |
-| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions`, `session_wrapups`, `coaching_failures` |
+| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions`, `coaching_failures` |
 | Mistakes | `mistake_lessons`, `rule_cards`, `mistake_attempts`, `mistake_runs`, `rule_relapses` (§9.4) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` (with `is_cued`), `review_material_preparations` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
@@ -717,7 +706,7 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
     `set_practice_clock`, `transition_practice_phase`, `start_mistake_practice`, `retry_practice_turn`,
     `retry_answer_coaching`, `prefetch_answer_plan`,
     `rescue_answer`, `record_answer_help_used`.
-  - Wrap-up: `get_session_wrapup`, `retry_session_wrapup`, `save_wrapup_phrases`.
+  - Wrap-up: `get_session_wrapup`.
   - Memory: `get_daily_recall_plan`, `submit_daily_recall`, `save_phrase_card`, `delete_phrase_card`,
     `delete_mistake`, `archive_learning_item`, `get_learning_memory`, `view_learning_memory`,
     `start_memory_review`, `start_item_review`, `get_memory_review`, `submit_memory_recall`,

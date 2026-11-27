@@ -6,10 +6,7 @@ import type { SessionNumbers } from '../bindings/SessionNumbers';
 import type { SpeakingTime } from '../bindings/SpeakingTime';
 import type { Trend } from '../bindings/Trend';
 import type { WordsPerMinute } from '../bindings/WordsPerMinute';
-import type { WrapupPhrase } from '../bindings/WrapupPhrase';
-import type { WrapupPreparation } from '../bindings/WrapupPreparation';
 import { bindingSchema } from './binding-schema';
-import { IPC_ERROR_FIELDS } from './ipc-error';
 import { PracticeModeSchema, PracticePhaseSchema } from './practice-session';
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
@@ -44,15 +41,6 @@ export const SessionNumbersSchema = bindingSchema<SessionNumbers>()(
   }),
 );
 
-export const WrapupPhraseSchema = bindingSchema<WrapupPhrase>()(
-  Schema.Struct({
-    sequence: Identifier,
-    phrase: Schema.String,
-    note: Schema.String,
-    you_said: Schema.String,
-  }),
-);
-
 const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
   Schema.Struct({
     original: Schema.String,
@@ -60,15 +48,6 @@ const RecurringMistakeSchema = bindingSchema<RecurringMistake>()(
     explanation: Schema.String,
     times: Count,
   }),
-);
-
-const WrapupPreparationSchema = bindingSchema<WrapupPreparation>()(
-  Schema.Union([
-    Schema.Struct({ state: Schema.Literal('legacy') }),
-    Schema.Struct({ state: Schema.Literal('pending') }),
-    Schema.Struct({ state: Schema.Literal('ready') }),
-    Schema.Struct({ state: Schema.Literal('failed'), error: Schema.Struct(IPC_ERROR_FIELDS) }),
-  ]),
 );
 
 export const FinishedSessionSchema = bindingSchema<FinishedPracticeSession>()(
@@ -81,11 +60,9 @@ export const FinishedSessionSchema = bindingSchema<FinishedPracticeSession>()(
     topic_label: Schema.String,
     duration_goal_seconds: Schema.NullOr(Count),
     numbers: SessionNumbersSchema,
-    phrases: Schema.Array(WrapupPhraseSchema),
     recurring_mistakes: Schema.Array(RecurringMistakeSchema),
     pending_coaching: Count,
     is_coaching_paused: Schema.Boolean,
-    wrapup_preparation: WrapupPreparationSchema,
     practice_mode: PracticeModeSchema,
     practice_phase: PracticePhaseSchema,
     written_turn_count: Count,
@@ -93,7 +70,3 @@ export const FinishedSessionSchema = bindingSchema<FinishedPracticeSession>()(
     is_mistake_practice: Schema.Boolean,
   }),
 );
-
-export const WRAPUP_UPDATED_EVENT = 'wrapup-updated';
-
-export const WrapupUpdatedSchema = Schema.Struct({ session_id: Identifier });

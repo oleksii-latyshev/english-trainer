@@ -5,7 +5,6 @@ pub(crate) mod coaching;
 pub(crate) mod mistake_practice;
 pub(crate) mod rescue;
 pub(crate) mod runner;
-pub(crate) mod session_wrapup;
 pub(crate) mod spoken_review;
 pub(crate) mod structured;
 pub(crate) mod usage;

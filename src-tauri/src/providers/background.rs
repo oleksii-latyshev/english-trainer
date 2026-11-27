@@ -4,20 +4,12 @@
 use super::{
     agy, claude, CoachedAnswer, CoachingAnswer, ProviderError, RescueRequest, RescueResponse,
     ReviewMaterialRequest, ReviewMaterialResult, UsageReviewRequest, UsageReviewResponse,
-    WrapupRequest, WrapupResult,
 };
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use serde_json::Value;
 
 fn legacy_only() -> bool {
     claude::runner::resolve_binary().is_none() && agy::resolve_binary().is_some()
-}
-
-pub fn generate_session_wrapup(request: &WrapupRequest) -> Result<WrapupResult, ProviderError> {
-    if legacy_only() {
-        return agy::session_wrapup::generate_session_wrapup(request);
-    }
-    claude::session_wrapup::generate_session_wrapup(request)
 }
 
 pub fn generate_review_material(
