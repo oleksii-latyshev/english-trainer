@@ -7,14 +7,95 @@ use crate::learning::{
 use crate::providers::TurnFeedback;
 use rusqlite::{params, OptionalExtension};
 
+const MAX_CANDIDATES: usize = 3;
+const FIRST_ANSWERS: usize = 2;
+
+/// The saved item Eva steered toward in the question this answer replied to.
+pub(crate) fn steered_target_on(
+    connection: &rusqlite::Connection,
+    session_id: u64,
+    sequence: usize,
+) -> rusqlite::Result<Option<(LearningItemType, u64)>> {
+    let Some(steering_sequence) = sequence.checked_sub(1).filter(|before| *before > 0) else {
+        return Ok(None);
+    };
+    let row: Option<(String, i64)> = connection
+        .query_row(
+            "SELECT item_type, item_id FROM turn_steering WHERE session_id = ?1 AND sequence = ?2",
+            params![to_sql_id(session_id)?, to_sql_sequence(steering_sequence)?],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()?;
+    row.map(|(item_type, item_id)| {
+        let item_type = LearningItemType::parse(&item_type).ok_or(
+            rusqlite::Error::InvalidColumnType(0, "item_type".into(), rusqlite::types::Type::Text),
+        )?;
+        Ok((item_type, to_safe_u64_id(item_id)?))
+    })
+    .transpose()
+}
+
+pub(crate) fn is_reviewable_answer_on(
+    connection: &rusqlite::Connection,
+    session_id: u64,
+    sequence: usize,
+) -> rusqlite::Result<bool> {
+    if sequence == 0 {
+        return Ok(false);
+    }
+    Ok(sequence <= FIRST_ANSWERS || steered_target_on(connection, session_id, sequence)?.is_some())
+}
+
+/// Every answer of a finished conversation the usage review may assess: answers 1 and 2, and each
+/// answer that came right after a steered question. Spoken first-pass answers of plain voice
+/// conversation sessions only.
+pub(crate) fn reviewable_sequences_on(
+    connection: &rusqlite::Connection,
+    session_id: u64,
+) -> rusqlite::Result<Vec<usize>> {
+    let sql_sid = to_sql_id(session_id)?;
+    let plain_voice: bool = connection
+        .query_row(
+            "SELECT mode = 'conversation' AND COALESCE(practice_mode, 'voice') = 'voice'
+                    AND COALESCE(is_mistake_practice, 0) = 0
+             FROM sessions WHERE id = ?1",
+            params![sql_sid],
+            |row| row.get(0),
+        )
+        .optional()?
+        .unwrap_or(false);
+    if !plain_voice {
+        return Ok(Vec::new());
+    }
+    let mut statement = connection.prepare(
+        "SELECT t.sequence FROM turns t
+         LEFT JOIN turn_input_sources s ON s.session_id = t.session_id AND s.sequence = t.sequence
+         WHERE t.session_id = ?1 AND COALESCE(s.input_source, 'voice') = 'voice'
+         ORDER BY t.sequence",
+    )?;
+    let sequences = statement
+        .query_map(params![sql_sid], |row| row.get::<_, i64>(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut reviewable = Vec::new();
+    for sequence in sequences {
+        let sequence = usize::try_from(sequence)
+            .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, sequence))?;
+        if is_reviewable_answer_on(connection, session_id, sequence)? {
+            reviewable.push(sequence);
+        }
+    }
+    Ok(reviewable)
+}
+
 pub(crate) fn eligible_usage_candidates_on(
     connection: &rusqlite::Connection,
     session_id: u64,
     sequence: usize,
 ) -> rusqlite::Result<Vec<UsageCandidate>> {
-    if sequence == 0 || sequence > 2 {
+    if !is_reviewable_answer_on(connection, session_id, sequence)? {
         return Ok(Vec::new());
     }
+    let steered = steered_target_on(connection, session_id, sequence)?;
     let sql_sid = to_sql_id(session_id)?;
     let sql_seq = to_sql_sequence(sequence)?;
 
@@ -44,32 +125,25 @@ pub(crate) fn eligible_usage_candidates_on(
         _ => return Ok(Vec::new()),
     };
 
-    let answered_question = if sequence == 1 {
-        opening_question.clone()
-    } else {
-        let prev_q: Option<String> = connection
+    let previous_turn: Option<(String, String)> = match sequence.checked_sub(1) {
+        Some(previous) if previous > 0 => connection
             .query_row(
-                "SELECT assistant_question FROM turns WHERE session_id = ?1 AND sequence = 1",
-                params![sql_sid],
-                |row| row.get(0),
+                "SELECT assistant_reply, assistant_question FROM turns WHERE session_id = ?1 AND sequence = ?2",
+                params![sql_sid, to_sql_sequence(previous)?],
+                |row| Ok((row.get(0)?, row.get(1)?)),
             )
-            .optional()?;
-        prev_q.unwrap_or_else(|| opening_question.clone())
+            .optional()?,
+        _ => None,
+    };
+    let answered_question = match &previous_turn {
+        Some((_, question)) => question.clone(),
+        None => opening_question.clone(),
     };
 
     let mut rejected_strings: Vec<String> = vec![opening_question];
-    if sequence == 2 {
-        let prev_turn: Option<(String, String)> = connection
-            .query_row(
-                "SELECT assistant_reply, assistant_question FROM turns WHERE session_id = ?1 AND sequence = 1",
-                params![sql_sid],
-                |row| Ok((row.get(0)?, row.get(1)?)),
-            )
-            .optional()?;
-        if let Some((reply, question)) = prev_turn {
-            rejected_strings.push(reply);
-            rejected_strings.push(question);
-        }
+    if let Some((reply, question)) = previous_turn {
+        rejected_strings.push(reply);
+        rejected_strings.push(question);
     }
 
     let mut fb_stmt = connection.prepare(
@@ -143,9 +217,6 @@ pub(crate) fn eligible_usage_candidates_on(
             target: corr,
             cue: orig,
         });
-        if candidates.len() == 3 {
-            return Ok(candidates);
-        }
     }
 
     let mut phrase_stmt = connection.prepare(
@@ -182,10 +253,13 @@ pub(crate) fn eligible_usage_candidates_on(
             target: phrase,
             cue: meaning,
         });
-        if candidates.len() == 3 {
-            return Ok(candidates);
-        }
     }
 
+    if let Some((item_type, item_id)) = steered {
+        candidates.sort_by_key(|candidate| {
+            (candidate.item_type, candidate.item_id) != (item_type, item_id)
+        });
+    }
+    candidates.truncate(MAX_CANDIDATES);
     Ok(candidates)
 }

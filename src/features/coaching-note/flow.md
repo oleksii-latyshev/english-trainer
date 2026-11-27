@@ -71,9 +71,38 @@ sequenceDiagram
 ```
 
 The stream is the same `coaching-updated` signal the wrap-up already listens to; Rust also emits it
-when a usage review lands, so a win fills in without a reload. It is read here
+when the usage review of the finished session lands (one background call after Finish, covering
+answers 1 and 2 and every answer that followed a steered question), so a win fills in without a
+reload. It is read here
 too because a retried answer that gave up earlier is not counted as pending, so the wrap-up
 summary would not refresh for it.
+
+## A win after the session
+
+```mermaid
+sequenceDiagram
+    actor Learner
+    participant Rust as finish_practice_session
+    participant Queue as UsageReviewQueue
+    participant Claude as UsageReviewEngine (Claude, Sonnet)
+    participant View as Debrief
+
+    Learner->>Rust: Finish
+    Rust-->>Learner: wrap-up at once (nothing waits for the review)
+    Rust->>Queue: enqueue(session)
+    Queue->>Queue: answers 1, 2 and each answer after a steered question, not yet assessed
+    Queue->>Claude: one call with all of them
+    alt findings validate
+        Claude-->>Queue: findings per answer
+        Queue->>Queue: commit each answer atomically (With help never counts)
+    else a failure
+        Queue->>Queue: retry once after a minute, then give up
+    end
+    Queue-->>View: coaching-updated, wins fill in
+```
+
+Which answer followed which steered target is saved when Eva's steering reply commits
+(`turn_steering`), because the steering state of an open session lives in memory only.
 
 ## Check an answer again
 

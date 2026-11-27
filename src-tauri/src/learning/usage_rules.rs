@@ -17,7 +17,6 @@ pub enum UsagePreparation {
     },
 }
 
-pub const REVIEWABLE_ANSWERS: usize = 2;
 pub const MAX_CANDIDATES: usize = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,7 +43,7 @@ impl UsageRejection {
 
     pub fn message(self) -> &'static str {
         match self {
-            Self::OutOfRange => "Usage review is only available for conversation answers 1 and 2.",
+            Self::OutOfRange => "Usage review is only available for answers 1 and 2 and for answers that followed a steered question.",
             Self::AlreadyRunning => "A memory usage review is already running for this answer.",
             Self::NotSpoken => {
                 "Typed or edited answers cannot count as independent spoken memory evidence."
@@ -69,13 +68,17 @@ fn reject(rejection: UsageRejection) -> LearningError {
 }
 
 pub fn validate_review_turn(session_id: u64, sequence: usize) -> Result<(), LearningError> {
-    if session_id == 0 || session_id > MAX_ITEM_ID || sequence == 0 || sequence > REVIEWABLE_ANSWERS
-    {
+    if session_id == 0 || session_id > MAX_ITEM_ID || sequence == 0 {
         return Err(reject(UsageRejection::OutOfRange));
     }
     Ok(())
 }
 
+pub fn not_reviewable() -> LearningError {
+    reject(UsageRejection::OutOfRange)
+}
+
+#[cfg(test)]
 pub fn validate_saved_turn(session_id: u64, sequence: usize) -> Result<(), LearningError> {
     if session_id == 0 || session_id > MAX_ITEM_ID || sequence == 0 {
         return Err(reject(UsageRejection::InvalidLookup));
@@ -268,10 +271,10 @@ mod tests {
     }
 
     #[test]
-    fn only_answers_one_and_two_can_be_reviewed() {
+    fn a_review_needs_a_real_session_and_answer() {
         assert!(validate_review_turn(1, 1).is_ok());
-        assert!(validate_review_turn(1, 2).is_ok());
-        assert!(validate_review_turn(1, 3).is_err());
+        assert!(validate_review_turn(1, 4).is_ok());
+        assert!(validate_review_turn(1, 0).is_err());
         assert!(validate_review_turn(0, 1).is_err());
     }
 }

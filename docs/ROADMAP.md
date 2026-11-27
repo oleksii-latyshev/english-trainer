@@ -94,6 +94,6 @@ Ordered by expected value; start only with real usage data.
 | Background AI | Coaching (batches of ≤ 5 answers), wrap-up, review material and rescue run through `agy` pinned to Gemini Flash models; the Gemini API free quota is reserved for conversation and the F6 planner. `agy` never runs on the real-time path. |
 | Speech | Local Whisper (`small.en` when installed). Local natural voice (Supertonic 3) with macOS system voices as fallback; it came before the avatar at the learner's request. |
 | Gemini key | Pasted in Settings, encrypted file bound to this Mac (no Keychain prompt); `ENG_TRAINER_GEMINI_API_KEY` for development. Free-tier data use is stated next to the field. |
-| Usage-review / mastery streak | Frozen: kept working, not extended. |
+| Usage-review / mastery streak | Frozen: kept working, not extended. Exception (owner, 2026-11-27): it runs after the session on answers 1, 2 and those after a steered question (TR §9.2). |
 | Portability | macOS only for now; core code must not block Windows (providers behind traits, no macOS APIs outside adapters). |
 | Not planned | Streaks, guilt mechanics, badges, five-dimension benchmark, separate Interview/Drills/Progress modes before the MVP. |

@@ -315,7 +315,7 @@ answers instead. Typical latency is 1.5 to 3 s.
 - **Wins** (`persistence/usage_wins.rs`): `PracticeDialogue.debrief_wins` lists
   `{ sequence, phrase }` for `learning_usage_events` of type phrase with outcome `correct` in the
   session, joined to `phrase_cards`. With help, incorrect and uncertain events are never listed.
-  `review_practice_memory_usage` emits `coaching-updated` when a review lands so the wrap-up re-reads.
+  The session usage review (§9.2) emits `coaching-updated` after each run so the wrap-up re-reads.
 - `get_practice_dialogue` returns `debrief_words[]` (the capped words above), `debrief_wins[]` and `coaching[]` per turn: `{ state: pending | paused | failed }` or
   `{ state: ready, feedback }`. It reads an open session from memory and a finished one from SQLite
   (opening question and turns), so the wrap-up shows the whole conversation. Talk uses only the
@@ -505,7 +505,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Tables:
 
 | Group | Tables |
 | :--- | :--- |
-| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions`, `coaching_failures` |
+| Sessions | `sessions`, `turns`, `turn_input_sources`, `answer_help_uses`, `turn_feedback`, `attempt_comparisons`, `session_cue_exposures`, `session_phrase_recalls`, `mistake_practice_questions`, `coaching_failures`, `turn_steering` |
 | Mistakes | `mistake_lessons`, `rule_cards`, `mistake_attempts`, `mistake_runs`, `rule_relapses` (§9.4) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` (with `is_cued`), `review_material_preparations` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
@@ -571,9 +571,25 @@ Session rows also carry the practice mode/phase columns and `is_mistake_practice
 
 ### 9.2 Usage review and mastery (frozen subsystem)
 
-1. **Eligibility:** saved first-pass answers 1 and 2 only; retries, drills, typed and edited answers
-   are excluded. At most 3 non-archived candidates created before the session start (mistakes with
-   earlier occurrences, phrases with provenance outside the session), 2+ words, ≤ 300 characters.
+The owner approved widening eligibility and moving the trigger to the end of the session on
+2026-11-27; every other rule below is unchanged.
+
+1. **Eligibility:** saved first-pass answers 1 and 2, and every saved first-pass answer that directly
+   follows a steered question (Eva's question that carried a learning target, §6.1). Retries, drills,
+   typed and edited answers, mistake practice and write-then-speak sessions are excluded. At most 3
+   non-archived candidates created before the session start (mistakes with earlier occurrences,
+   phrases with provenance outside the session), 2+ words, ≤ 300 characters. For a steered answer the
+   steered target is the first candidate when it passes these rules, so it is never cut by the limit.
+   Which answer followed which steered target is saved when the steering reply commits, in
+   `turn_steering(session_id, sequence, item_type, item_id)` (schema 25, keyed by the turn whose
+   question steered; the answer is `sequence + 1`; removed with the turn).
+   **Trigger:** `finish_practice_session` queues one background job per session
+   (`UsageReviewQueue`, own worker thread, never on the turn path and never delaying the wrap-up).
+   The job reviews every eligible answer that has no saved assessment with one `UsageReviewEngine`
+   call (`review_usage_batch`, up to 12 answers per call; the legacy `agy` adapter reviews them one
+   by one). An answer whose findings do not validate stays unreviewed. A failed run is retried once
+   after 60 seconds, then given up; a used-up quota waits 30 minutes without using a try. Each run
+   emits `coaching-updated`. There is no manual trigger and no command to start a review.
 2. **Source rejection:** reject a target whose wording appeared in the opening question, the preceding
    AI reply/question, earlier saved feedback or the question scaffold. Targets with a cue exposure at
    or before the answer time stay candidates, but their correct use is recorded as with help (3).
@@ -721,7 +737,7 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
     `delete_mistake`, `archive_learning_item`, `get_learning_memory`, `view_learning_memory`,
     `start_memory_review`, `start_item_review`, `get_memory_review`, `submit_memory_recall`,
     `skip_memory_review_item`, `finish_memory_review`, `prepare_review_material`, `get_review_material`, `reveal_review_phrase`,
-    `review_practice_memory_usage`, `get_practice_memory_usage`, `get_memory_usage_evidence`.
+    `get_memory_usage_evidence`.
     The library commands (`save_phrase_card`, `delete_phrase_card`, `delete_mistake`,
     `archive_learning_item`, `get_learning_memory`, `view_learning_memory`, `get_memory_usage_evidence`)
     belong to the `learning` context and fail with `IpcError`; `view_learning_memory` also records that
@@ -733,9 +749,9 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
     away/through/around a phrasal verb) and never stored.
     The review and usage commands (`start_memory_review`, `start_item_review`, `get_memory_review`, `submit_memory_recall`,
     `skip_memory_review_item`, `finish_memory_review`, `prepare_review_material`,
-    `get_review_material`, `reveal_review_phrase`, `review_practice_memory_usage`,
-    `get_practice_memory_usage`) belong to the `learning` context too and fail with `IpcError`
-    (`ReviewService`, `UsageReviewService`); `finish_memory_review` returns nothing. The daily recall
+    `get_review_material`, `reveal_review_phrase`) belong to the `learning` context too and fail with
+    `IpcError` (`ReviewService`); `finish_memory_review` returns nothing. The usage review has no
+    command: `UsageReviewService` runs from `UsageReviewQueue` (§9.2). The daily recall
     plan, the review cue ledger and mistake candidates are read through the same context, while the
     commands `get_daily_recall_plan`, `submit_daily_recall` and `start_mistake_practice` stay with the
     conversation, which gates them on the open session.

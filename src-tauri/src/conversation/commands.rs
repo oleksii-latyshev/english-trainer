@@ -9,6 +9,7 @@ use super::{
 use crate::ai_settings::{AiSettings, AiSettingsService};
 use crate::core::IpcError;
 use crate::learning::recall::{DailyRecallPlan, SpokenRecallResult};
+use crate::learning::UsageReviewQueue;
 use crate::providers::{
     AnswerPlan, AppleHelper, AttemptComparison, ConversationContext, ConversationTurn,
     ReplyStreamEvent, RescueRequest, RescueResponse,
@@ -197,6 +198,7 @@ pub async fn get_practice_dialogue(
 pub async fn finish_practice_session(
     sessions: tauri::State<'_, SessionStore>,
     coaching: tauri::State<'_, CoachingQueue>,
+    usage_review: tauri::State<'_, UsageReviewQueue>,
     session_id: u64,
 ) -> Result<FinishedPracticeSession, IpcError> {
     let summary = blocking(
@@ -206,6 +208,7 @@ pub async fn finish_practice_session(
     )
     .await?;
     coaching.flush(session_id);
+    usage_review.enqueue(session_id);
     Ok(summary)
 }
 

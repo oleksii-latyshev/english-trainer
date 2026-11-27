@@ -195,6 +195,11 @@ impl ReviewMaterialStore for SessionLearningStore {
 }
 
 impl UsageStore for SessionLearningStore {
+    fn reviewable_answers(&self, session_id: u64) -> Result<Vec<usize>, LearningError> {
+        self.sessions
+            .with_database(|database, _| usage::review::reviewable_answers(database, session_id))
+    }
+
     fn prepare(&self, session_id: u64, sequence: usize) -> Result<UsagePreparation, LearningError> {
         self.sessions.with_database(|database, active| {
             usage::review::prepare_review(database, active, session_id, sequence)
@@ -213,6 +218,7 @@ impl UsageStore for SessionLearningStore {
         })
     }
 
+    #[cfg(test)]
     fn saved(
         &self,
         session_id: u64,

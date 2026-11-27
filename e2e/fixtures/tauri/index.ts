@@ -20,7 +20,6 @@ import { installSpeechSettings, type SpeechSettingsOptions } from './speech-sett
 import { SpokenRecallBackend } from './spoken-recall';
 import { StreamingBackend } from './streaming';
 import { TranslationBackend } from './translation';
-import { UsageReviewBackend } from './usage-review';
 import { WrapupBackend } from './wrapup';
 
 export class FakeBackend {
@@ -38,7 +37,6 @@ export class FakeBackend {
   readonly liveReview: LiveReviewBackend;
   readonly wrapup: WrapupBackend;
   readonly coaching: CoachingBackend;
-  readonly usageReview: UsageReviewBackend;
   readonly spokenRecall: SpokenRecallBackend;
   readonly streaming: StreamingBackend;
   readonly rescue: RescueBackend;
@@ -63,7 +61,6 @@ export class FakeBackend {
     this.liveReview = new LiveReviewBackend(page);
     this.wrapup = new WrapupBackend(page);
     this.coaching = new CoachingBackend(page);
-    this.usageReview = new UsageReviewBackend(page);
     this.spokenRecall = new SpokenRecallBackend(page);
     this.streaming = new StreamingBackend(page);
     this.rescue = new RescueBackend(page);
@@ -100,7 +97,6 @@ export class FakeBackend {
     await this.liveReview.install();
     await this.wrapup.install();
     await this.coaching.install();
-    await this.usageReview.install();
     await this.spokenRecall.install();
     await this.streaming.install();
     await this.rescue.install();

@@ -138,13 +138,16 @@ impl SessionStore {
             assistant_question: turn.question.clone().unwrap_or_default(),
             answered_by: turn.answered_by.clone(),
         };
-        state.database.save_turn_with_details(
+        state.database.save_turn_with_steering(
             session_id,
             sequence,
             &stored,
             input_source.as_str(),
-            turn.reply_time_ms(),
-            answer_duration_ms.filter(|_| input_source != InputSource::Text),
+            (
+                turn.reply_time_ms(),
+                answer_duration_ms.filter(|_| input_source != InputSource::Text),
+            ),
+            prepared.steered,
         )?;
         active_session_mut(&mut state, session_id)?
             .turns

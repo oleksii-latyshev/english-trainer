@@ -1,9 +1,11 @@
+use super::candidates::{is_reviewable_answer_on, reviewable_sequences_on};
 use super::exposure::{has_cue_exposure_before, record_cue_exposure};
 use super::read::{item_status, item_target_and_status, prepare_usage_review_on, saved_assessment};
 use super::write::{save_turn_usage_assessment, UsageAssessmentCommit};
 use crate::learning::infra::ids::{now_ms, storage};
 use crate::learning::usage_rules::{
-    credit_decision, not_conversation, not_spoken, stale_review, unknown_turn, UsagePreparation,
+    credit_decision, not_conversation, not_reviewable, not_spoken, stale_review, unknown_turn,
+    UsagePreparation,
 };
 use crate::learning::{
     LearningError, LearningItemType, LearningStatus, TurnUsageAssessment, UsageAssessmentFinding,
@@ -56,6 +58,13 @@ pub(crate) fn read_saved_assessment(
     Ok(saved)
 }
 
+pub(crate) fn reviewable_answers(
+    database: &SessionDatabase,
+    session_id: u64,
+) -> Result<Vec<usize>, LearningError> {
+    reviewable_sequences_on(database.connection(), session_id).map_err(storage("read"))
+}
+
 pub(crate) fn prepare_review(
     database: &mut SessionDatabase,
     active_session_id: Option<u64>,
@@ -67,6 +76,11 @@ pub(crate) fn prepare_review(
         .map_err(storage("read"))?
     {
         return Err(not_spoken());
+    }
+    if !is_reviewable_answer_on(database.connection(), session_id, sequence)
+        .map_err(storage("read"))?
+    {
+        return Err(not_reviewable());
     }
     if let Some(saved) = read_saved_assessment(database, active_session_id, session_id, sequence)? {
         return Ok(UsagePreparation::Saved(saved));

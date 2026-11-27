@@ -62,6 +62,23 @@ pub enum LearningItemType {
     Phrase,
 }
 
+impl LearningItemType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Mistake => "mistake",
+            Self::Phrase => "phrase",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "mistake" => Some(Self::Mistake),
+            "phrase" => Some(Self::Phrase),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct MistakeRecord {

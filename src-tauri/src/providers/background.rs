@@ -3,7 +3,7 @@
 
 use super::{
     agy, claude, CoachedAnswer, CoachingAnswer, ProviderError, RescueRequest, RescueResponse,
-    ReviewMaterialRequest, ReviewMaterialResult, UsageReviewRequest, UsageReviewResponse,
+    ReviewMaterialRequest, ReviewMaterialResult, UsageBatchAnswer, UsageBatchResult,
 };
 use crate::learning::mistake_practice::{GeneratedMistakeQuestion, MistakePracticeCandidate};
 use serde_json::Value;
@@ -36,13 +36,15 @@ pub fn coach_answers(answers: &[CoachingAnswer]) -> Result<Vec<CoachedAnswer>, P
     claude::coaching::coach_answers(answers)
 }
 
-pub fn review_turn_usage(
-    request: &UsageReviewRequest,
-) -> Result<UsageReviewResponse, ProviderError> {
+/// Reviews every eligible answer of a session with one background call; see `claude::usage`.
+/// The legacy adapter reviews them one by one.
+pub fn review_usage_batch(
+    answers: &[UsageBatchAnswer],
+) -> Result<Vec<UsageBatchResult>, ProviderError> {
     if legacy_only() {
-        return agy::review_turn_usage(request);
+        return agy::review_usage_batch(answers);
     }
-    claude::usage::review_turn_usage(request)
+    claude::usage::review_usage_batch(answers)
 }
 
 pub fn generate_rescue(request: &RescueRequest) -> Result<RescueResponse, ProviderError> {
