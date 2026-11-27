@@ -138,14 +138,27 @@ memory evidence. Planning expiry never starts recording; the learner chooses whe
 
 At the end of a session:
 
-- up to three phrases worth learning, each with an example from the learner's own answers, saved
-  to Learning Memory in one action; mistakes go to the Mistakes section (§9);
 - local numbers for the session: speaking time, words per minute, average answer length;
-- **Your conversation:** every turn in order, Eva's question and reply, then the learner's answer
-  with its review: what was said, a more natural version with the changed words marked, one short
-  reason, "Hear it" and "Say it again" (record, transcribe locally, compare with the first try).
-  An answer still being checked says so and fills in when coaching lands; one that could not be
-  checked offers a retry;
+- **Debrief:** one card per answer, one at a time, with a "3 / 8" progress and Back / Next. A card
+  shows Eva's question, what was said, a better version with the changed words marked and one short
+  reason. The better version is one step above the learner's level (B1 to B2): natural spoken
+  English usable tomorrow at work, not native polish and not rare or literary words. The answer's
+  findings are grouped as **Fix** (an error, at most two), **Better** (a correct but plain fragment
+  and a stronger version that teaches a word, collocation or phrase the learner did not use; a tense
+  fix is a Fix, never a Better; at most two) and **Missing word** (a fragment where the learner
+  searched for a word, shown by fillers, roundabout phrasing or repeated very, thing, do, good,
+  make: the exact word or phrase and a short plain-English meaning; at most two). Each card offers
+  one or two **words to take**, each with its meaning and an example from the better version.
+  Actions: **Hear it**, **Say it again** (record, transcribe locally, compare with the first try)
+  and **Take** per word. After the last card a short summary lists the words taken;
+- **Words to take:** at most five per session across all answers, chosen in Rust: missing words
+  first, then better words, then vocabulary fixes, in answer order, without repeats. Taking a word
+  saves it to Learning Memory as a phrase with its source answer, so it is woven into later
+  questions and counts as learned only through the evidence rules in §8. When five are taken the
+  Debrief says "5 of 5 taken";
+- an answer still being checked says so and its card fills in when coaching lands; one that could
+  not be checked offers a retry. The conversation never waits for the Debrief;
+- mistakes go to the Mistakes section (§9) as before;
 - no fluency or level claims.
 
 ## 8. Learning Memory

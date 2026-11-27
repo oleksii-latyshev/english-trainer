@@ -1,43 +1,24 @@
 import { RegistryContext, useAtom } from '@effect/atom-react';
 import { AsyncResult } from 'effect/reactivity';
 import { Volume2 } from 'lucide-react';
-import { type ReactNode, useContext } from 'react';
+import { useContext } from 'react';
 import { createPlayback } from '@/core/speech';
 import { Button } from '@/shared/ui/button';
 import { answerKey } from '../../helpers/answer-key';
 import { reviewView } from '../../helpers/review-view';
-import { highlightRewrite } from '../../helpers/rewrite-diff';
 import { retryCoachingAtom } from '../../model/atoms';
-import type { AnswerTarget, ReviewedAnswer, TurnCoaching, TurnFeedback } from '../../types';
+import type { AnswerTarget, TurnCoaching, TurnFeedback } from '../../types';
+import { MarkedRewrite } from '../marked-rewrite';
 import { SayAgain } from '../say-again';
 
 type Props = {
   target: AnswerTarget;
   transcript: string;
   coaching: TurnCoaching | undefined;
-  renderActions?: (answer: ReviewedAnswer) => ReactNode;
 };
 
 const PAUSED_MESSAGE =
   'Coaching is paused for now because Claude has no quota left. Talking is not affected.';
-
-function Rewrite({ feedback, transcript }: { feedback: TurnFeedback; transcript: string }) {
-  return (
-    <p className="text-body text-foreground leading-copy m-0" data-word-lookup>
-      {highlightRewrite(transcript, feedback.b2_rewrite).map((part, index) =>
-        part.isChanged ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
-          <mark className="bg-ok-bg text-ok rounded-sm px-0.5" key={index}>
-            {part.text}
-          </mark>
-        ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: The runs are positional output of one rewrite.
-          <span key={index}>{part.text}</span>
-        ),
-      )}
-    </p>
-  );
-}
 
 function Why({ feedback }: { feedback: TurnFeedback }) {
   const focus = feedback.focus_feedback[0];
@@ -80,35 +61,31 @@ function ReadyReview({
   target,
   transcript,
   feedback,
-  renderActions,
 }: Omit<Props, 'coaching'> & { feedback: TurnFeedback }) {
   const registry = useContext(RegistryContext);
   return (
     <>
       <span className="text-caption text-faint">More natural</span>
-      <Rewrite feedback={feedback} transcript={transcript} />
+      <MarkedRewrite rewrite={feedback.b2_rewrite} transcript={transcript} />
       <Why feedback={feedback} />
       <SayAgain
         target={target}
         trailing={
-          <>
-            <Button
-              onClick={() => void createPlayback(registry).play(feedback.b2_rewrite)}
-              size="sm"
-              tone="quiet"
-            >
-              <Volume2 aria-hidden="true" />
-              Hear it
-            </Button>
-            {renderActions?.({ target, feedback })}
-          </>
+          <Button
+            onClick={() => void createPlayback(registry).play(feedback.b2_rewrite)}
+            size="sm"
+            tone="quiet"
+          >
+            <Volume2 aria-hidden="true" />
+            Hear it
+          </Button>
         }
       />
     </>
   );
 }
 
-export function AnswerReview({ target, transcript, coaching, renderActions }: Props) {
+export function AnswerReview({ target, transcript, coaching }: Props) {
   const view = reviewView(coaching);
   return (
     <section
@@ -127,12 +104,7 @@ export function AnswerReview({ target, transcript, coaching, renderActions }: Pr
         <RetryLine actionLabel="Retry" message="Couldn’t check this answer." target={target} />
       )}
       {view.tag === 'ready' && (
-        <ReadyReview
-          feedback={view.feedback}
-          renderActions={renderActions}
-          target={target}
-          transcript={transcript}
-        />
+        <ReadyReview feedback={view.feedback} target={target} transcript={transcript} />
       )}
     </section>
   );

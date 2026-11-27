@@ -6,6 +6,7 @@ import { Ipc, IpcDecodeError, IpcError, IpcEvents } from '@/core/ipc';
 import {
   conversationAtom,
   conversationUpdatesAtom,
+  debriefStepAtom,
   retryCoachingAtom,
   sayAgainActiveAtom,
   sayAgainEffectsAtom,
@@ -20,6 +21,7 @@ Reflect.set(globalThis, 'isTauri', true);
 
 type Backend = {
   coaching: unknown[];
+  debriefWords: unknown[];
   calls: Array<{ command: string; args: unknown }>;
   compareFails: boolean;
   events: PubSub.PubSub<unknown>;
@@ -28,6 +30,7 @@ type Backend = {
 function aBackend(overrides: Partial<Backend> = {}): Backend {
   return {
     coaching: [{ state: 'pending' }],
+    debriefWords: [],
     calls: [],
     compareFails: false,
     events: Effect.runSync(PubSub.unbounded<unknown>()),
@@ -47,6 +50,9 @@ const READY = {
       },
     ],
     b2_rewrite: 'I work there as an engineer.',
+    upgrades: [],
+    gaps: [],
+    words_to_take: [],
   },
 };
 
@@ -73,6 +79,7 @@ function layerOf(backend: Backend) {
               answer_durations_ms: [null],
               help_used: [false],
               coaching: backend.coaching,
+              debrief_words: backend.debriefWords,
             });
           case 'retry_practice_turn':
             if (backend.compareFails) {
@@ -161,6 +168,25 @@ describe('the conversation under review', () => {
       command: 'retry_answer_coaching',
       args: { sessionId: 7, sequence: 1 },
     });
+  });
+});
+
+describe('the Debrief', () => {
+  it('loads the words offered to take with the conversation', async () => {
+    const word = { sequence: 1, phrase: 'back up', meaning: 'working', example: 'It is back up.' };
+    const registry = opened(aBackend({ coaching: [READY], debriefWords: [word] }));
+    await until(() => AsyncResult.isSuccess(registry.get(conversationAtom(7))));
+    const result = registry.get(conversationAtom(7));
+    expect(AsyncResult.isSuccess(result) && result.value.debrief_words).toEqual([word]);
+  });
+
+  it('keeps the step it is on for each session separately', () => {
+    const registry = AtomRegistry.make();
+    registry.mount(debriefStepAtom(7));
+    registry.mount(debriefStepAtom(8));
+    registry.set(debriefStepAtom(7), 3);
+    expect(registry.get(debriefStepAtom(7))).toBe(3);
+    expect(registry.get(debriefStepAtom(8))).toBe(0);
   });
 });
 

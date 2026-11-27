@@ -115,3 +115,7 @@ export const sayAgainViewAtom = Atom.family((key: string) =>
     }
   }),
 );
+
+export const debriefStepAtom = Atom.family((_sessionId: number) =>
+  Atom.keepAlive(Atom.make<number>(0)),
+);

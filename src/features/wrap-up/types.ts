@@ -3,7 +3,6 @@ import type {
   IpcDecodeError,
   IpcError,
   PhraseCardRecordSchema,
-  SavedWrapupPhrasesSchema,
   SessionNumbersSchema,
   TrendSchema,
   WrapupPhraseSchema,
@@ -19,23 +18,11 @@ export type WrapupPhrase = typeof WrapupPhraseSchema.Type;
 
 export type PhraseCard = typeof PhraseCardRecordSchema.Type;
 
-export type SavedPhrases = typeof SavedWrapupPhrasesSchema.Type;
-
 export type WrapUpFailure = IpcError | IpcDecodeError;
 
-export type PhraseSelection = {
-  readonly removed: ReadonlySet<string>;
-  readonly saved: ReadonlySet<string>;
-};
-
-export type AnswerPhrase = {
+export type TakenWord = {
   readonly sessionId: number;
   readonly sequence: number;
   readonly phrase: string;
-  readonly note: string;
-};
-
-export type AnswerFeedback = {
-  readonly focus_feedback: readonly { readonly improved: string; readonly explanation: string }[];
-  readonly b2_rewrite: string;
+  readonly meaning: string;
 };

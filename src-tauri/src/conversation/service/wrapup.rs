@@ -154,6 +154,7 @@ mod tests {
                     })
                     .collect(),
                 b2_rewrite: rewrite.into(),
+                ..Default::default()
             },
         }
     }

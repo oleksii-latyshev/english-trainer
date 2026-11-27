@@ -1,23 +1,18 @@
 import { RegistryContext, useAtomValue } from '@effect/atom-react';
 import { useContext } from 'react';
 import { dismissSummary, practiceStateAtom } from '@/core/practice-session';
-import { ConversationReview, type ReviewedAnswer } from '@/features/coaching-note';
+import { Debrief } from '@/features/coaching-note';
 import {
+  CheckingNote,
   type FinishedSession,
-  PhraseSection,
-  SaveAnswerPhrase,
   sessionLabel,
+  TakeWord,
+  useIsTaken,
   useLiveWrapup,
   WrapUpStats,
 } from '@/features/wrap-up';
 import { Button } from '@/shared/ui/button';
 import type { WrapUpScreenProps } from './types';
-
-function renderSaveAnswer({ target, feedback }: ReviewedAnswer) {
-  return (
-    <SaveAnswerPhrase feedback={feedback} sequence={target.sequence} sessionId={target.sessionId} />
-  );
-}
 
 type ContentProps = {
   readonly initial: FinishedSession;
@@ -27,6 +22,7 @@ type ContentProps = {
 function Content({ initial, onLeave }: ContentProps) {
   const registry = useContext(RegistryContext);
   const summary = useLiveWrapup(initial);
+  const isTaken = useIsTaken(summary.session_id);
   function leave() {
     dismissSummary(registry);
     onLeave();
@@ -50,21 +46,22 @@ function Content({ initial, onLeave }: ContentProps) {
         </div>
       </header>
       <WrapUpStats numbers={summary.numbers} />
+      <CheckingNote summary={summary} />
       {summary.turn_count > 0 && (
-        <section aria-labelledby="wrapup-conversation" className="flex flex-col gap-3">
+        <section aria-labelledby="wrapup-debrief" className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-body m-0 font-semibold" id="wrapup-conversation">
-              Your conversation
+            <h2 className="text-body m-0 font-semibold" id="wrapup-debrief">
+              Debrief
             </h2>
             <span className="text-caption text-faint">{summary.turn_count}</span>
           </div>
-          <ConversationReview
-            renderAnswerActions={renderSaveAnswer}
+          <Debrief
+            isTaken={isTaken}
+            renderTake={(word) => <TakeWord sessionId={summary.session_id} word={word} />}
             sessionId={summary.session_id}
           />
         </section>
       )}
-      <PhraseSection summary={summary} />
     </div>
   );
 }

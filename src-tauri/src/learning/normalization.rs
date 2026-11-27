@@ -11,6 +11,13 @@ pub fn normalize_phrase(text: &str) -> String {
     words.join(" ")
 }
 
+/// True when the words of `needle` occur in order, whole, inside `haystack`.
+pub fn contains_phrase(haystack: &str, needle: &str) -> bool {
+    let needle = normalize_phrase(needle);
+    !needle.is_empty()
+        && format!(" {} ", normalize_phrase(haystack)).contains(&format!(" {needle} "))
+}
+
 pub fn mistake_normalized_key(category: &FocusCategory, corrected: &str) -> String {
     let category_name = match category {
         FocusCategory::Grammar => "grammar",

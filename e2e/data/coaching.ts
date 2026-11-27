@@ -16,12 +16,21 @@ export const readyWithTip: Coaching = {
       },
     ],
     b2_rewrite: 'I work there as an engineer.',
+    upgrades: [],
+    gaps: [],
+    words_to_take: [],
   },
 };
 
 export const readyWithoutTip: Coaching = {
   state: 'ready',
-  feedback: { focus_feedback: [], b2_rewrite: 'It keeps my plans in one place.' },
+  feedback: {
+    focus_feedback: [],
+    b2_rewrite: 'It keeps my plans in one place.',
+    upgrades: [],
+    gaps: [],
+    words_to_take: [],
+  },
 };
 
 const answers = [
@@ -31,7 +40,10 @@ const answers = [
   'I like how simple it is.',
 ];
 
-export function coachedConversation(coaching: Coaching[]): {
+export function coachedConversation(
+  coaching: Coaching[],
+  debriefWords: PracticeDialogue['debrief_words'] = [],
+): {
   session: PracticeSession;
   dialogue: PracticeDialogue;
 } {
@@ -59,6 +71,7 @@ export function coachedConversation(coaching: Coaching[]): {
     answer_durations_ms: coaching.map(() => null),
     help_used: coaching.map(() => false),
     coaching,
+    debrief_words: debriefWords,
   };
   return { session, dialogue };
 }

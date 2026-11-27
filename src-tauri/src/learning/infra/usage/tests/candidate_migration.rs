@@ -69,6 +69,7 @@ fn eligible_candidates_filters_sources_and_requires_transcript_match() {
             explanation: "Do not use 'in' before 'there'.".into(),
         }],
         b2_rewrite: "I worked there yesterday.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(sid1, 1, &fb).unwrap();
     let _ = db

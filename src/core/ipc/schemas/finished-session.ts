@@ -2,7 +2,6 @@ import { Schema } from 'effect';
 import type { AverageAnswer } from '../bindings/AverageAnswer';
 import type { FinishedPracticeSession } from '../bindings/FinishedPracticeSession';
 import type { RecurringMistake } from '../bindings/RecurringMistake';
-import type { SavedWrapupPhrases } from '../bindings/SavedWrapupPhrases';
 import type { SessionNumbers } from '../bindings/SessionNumbers';
 import type { SpeakingTime } from '../bindings/SpeakingTime';
 import type { Trend } from '../bindings/Trend';
@@ -11,7 +10,6 @@ import type { WrapupPhrase } from '../bindings/WrapupPhrase';
 import type { WrapupPreparation } from '../bindings/WrapupPreparation';
 import { bindingSchema } from './binding-schema';
 import { IPC_ERROR_FIELDS } from './ipc-error';
-import { PhraseCardRecordSchema } from './learning';
 import { PracticeModeSchema, PracticePhaseSchema } from './practice-session';
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
@@ -93,13 +91,6 @@ export const FinishedSessionSchema = bindingSchema<FinishedPracticeSession>()(
     written_turn_count: Count,
     spoken_turn_count: Count,
     is_mistake_practice: Schema.Boolean,
-  }),
-);
-
-export const SavedWrapupPhrasesSchema = bindingSchema<SavedWrapupPhrases>()(
-  Schema.Struct({
-    cards: Schema.Array(PhraseCardRecordSchema),
-    created_ids: Schema.Array(Identifier),
   }),
 );
 

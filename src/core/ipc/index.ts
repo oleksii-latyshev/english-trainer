@@ -75,7 +75,6 @@ export { DiagnosticEventSchema } from './schemas/diagnostic-event';
 export { EvaGrowthSchema } from './schemas/eva-growth';
 export {
   FinishedSessionSchema,
-  SavedWrapupPhrasesSchema,
   SessionNumbersSchema,
   TrendSchema,
   WRAPUP_UPDATED_EVENT,

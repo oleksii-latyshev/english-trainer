@@ -11,6 +11,8 @@ export type TurnCoaching = typeof TurnCoachingSchema.Type;
 
 export type TurnFeedback = typeof TurnFeedbackSchema.Type;
 
+export type DebriefWord = ReviewedConversation['debrief_words'][number];
+
 export type AttemptComparison = typeof AttemptComparisonSchema.Type;
 
 export type ReviewedConversation = typeof PracticeDialogueSchema.Type;
@@ -20,11 +22,6 @@ export type CoachingNoteFailure = IpcError | IpcDecodeError;
 export type AnswerTarget = {
   readonly sessionId: number;
   readonly sequence: number;
-};
-
-export type ReviewedAnswer = {
-  readonly target: AnswerTarget;
-  readonly feedback: TurnFeedback;
 };
 
 export type SayAgainView =

@@ -31,6 +31,7 @@ pub(super) fn setup_usage_fixture() -> UsageFixture {
             explanation: "Correction.".into(),
         }],
         b2_rewrite: "B2 rewrite.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(sid1, 1, &fb).unwrap();
     db.finish_session(sid1).unwrap();

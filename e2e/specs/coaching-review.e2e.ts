@@ -57,7 +57,7 @@ test('the marker appearing does not change the height of the message', async ({
   expect(after?.height).toBe(before?.height);
 });
 
-test('wrap-up shows every turn with a review per answer that fills in when coaching lands', async ({
+test('the Debrief shows one answer at a time and a pending one fills in when coaching lands', async ({
   app,
   start,
   talk,
@@ -73,15 +73,17 @@ test('wrap-up shows every turn with a review per answer that fills in when coach
   await talk.finish();
   await expect(wrapup.heading).toBeVisible();
 
-  await expect(wrapup.conversation).toContainText(openingQuestion);
-  await expect(wrapup.conversation).toContainText(firstAnswer);
-  await expect(wrapup.conversation).toContainText('Reply number 1.');
+  await expect(wrapup.progress).toHaveText('1 / 2');
+  await expect(wrapup.debrief).toContainText(openingQuestion);
+  await expect(wrapup.debrief).toContainText(firstAnswer);
   await expect(wrapup.review(1)).toContainText('I work there as an engineer.');
   await expect(wrapup.review(1)).toContainText('Drop the extra preposition after work.');
   await expect(wrapup.review(1).locator('mark').first()).toBeVisible();
   await expect(wrapup.review(1).getByRole('button', { name: 'Hear it' })).toBeVisible();
+
+  await wrapup.next();
+  await expect(wrapup.debrief).toContainText(secondAnswer);
   await expect(wrapup.review(2)).toContainText('Checking your answer…');
-  await expect(wrapup.conversation).toContainText(secondAnswer);
 
   await tauri.coaching.land(withCoaching(dialogue, [readyWithTip, readyWithoutTip]), {
     pending_coaching: 0,

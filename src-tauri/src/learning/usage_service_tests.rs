@@ -84,6 +84,7 @@ fn real_provider_in_flight_does_not_block_send_finish_and_rejects_duplicate_revi
                     explanation: "Use the natural preposition.".into(),
                 }],
                 b2_rewrite: "I worked there yesterday.".into(),
+                ..Default::default()
             },
         )
         .unwrap();
@@ -220,6 +221,7 @@ fn store_with_a_mistake_to_reuse() -> SessionStore {
                     explanation: "Use the natural preposition.".into(),
                 }],
                 b2_rewrite: "I worked there yesterday.".into(),
+                ..Default::default()
             },
         )
         .unwrap();

@@ -233,12 +233,48 @@ pub fn max_rewrite_chars(transcript: &str) -> usize {
         .clamp(MIN_REWRITE_CHARS, MAX_REWRITE_CHARS)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, ts_rs::TS)]
 #[serde(deny_unknown_fields)]
 #[ts(export)]
 pub struct TurnFeedback {
     pub focus_feedback: Vec<FocusFeedback>,
     pub b2_rewrite: String,
+    #[serde(default)]
+    pub upgrades: Vec<Upgrade>,
+    #[serde(default)]
+    pub gaps: Vec<Gap>,
+    #[serde(default)]
+    pub words_to_take: Vec<WordToTake>,
+}
+
+/// A correct but plain fragment and a version one step above the learner's level.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[serde(deny_unknown_fields)]
+#[ts(export)]
+pub struct Upgrade {
+    pub original: String,
+    pub improved: String,
+    pub explanation: String,
+}
+
+/// A fragment where the learner circled around a word they did not have.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[serde(deny_unknown_fields)]
+#[ts(export)]
+pub struct Gap {
+    pub original: String,
+    pub word: String,
+    pub meaning: String,
+}
+
+/// A word or phrase worth keeping, with its meaning and an example from the better version.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[serde(deny_unknown_fields)]
+#[ts(export)]
+pub struct WordToTake {
+    pub phrase: String,
+    pub meaning: String,
+    pub example: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]

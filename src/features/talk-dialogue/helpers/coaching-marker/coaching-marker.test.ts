@@ -12,7 +12,13 @@ const focus = {
 function ready(count: number): TurnCoaching {
   return {
     state: 'ready',
-    feedback: { focus_feedback: Array.from({ length: count }, () => focus), b2_rewrite: 'Better.' },
+    feedback: {
+      focus_feedback: Array.from({ length: count }, () => focus),
+      b2_rewrite: 'Better.',
+      upgrades: [],
+      gaps: [],
+      words_to_take: [],
+    },
   };
 }
 

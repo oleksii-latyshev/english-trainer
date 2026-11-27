@@ -6,35 +6,49 @@ export class WrapupPage {
   readonly heading: Locator;
   readonly talkMoreButton: Locator;
   readonly doneButton: Locator;
-  readonly preparingPhrases: Locator;
   readonly pendingCoaching: Locator;
   readonly speakingTimeLabel: Locator;
   readonly noSpokenAnswers: Locator;
-  readonly conversation: Locator;
-  readonly retryPhrasesButton: Locator;
-  readonly noPhrases: Locator;
-  readonly savedButton: Locator;
+  readonly debrief: Locator;
+  readonly progress: Locator;
+  readonly summary: Locator;
   readonly undoButton: Locator;
-  private readonly phrasesRegion: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Nice session. Here’s what to keep.' });
     this.talkMoreButton = page.getByRole('button', { name: 'Talk more' });
     this.doneButton = page.getByRole('button', { name: 'Done' });
-    this.preparingPhrases = page.getByText('Preparing phrases from your answers…');
-    this.phrasesRegion = page.getByRole('region', { name: 'Phrases worth learning' });
-    this.pendingCoaching = this.phrasesRegion.getByText('Still checking 1 answer…');
+    this.pendingCoaching = page.getByText('Still checking 1 answer…');
     this.speakingTimeLabel = page.getByText('Speaking time', { exact: true });
     this.noSpokenAnswers = page.getByText('no spoken answers to time', { exact: true });
-    this.conversation = page.getByRole('region', { name: 'Your conversation' });
-    this.retryPhrasesButton = page.getByRole('button', { name: 'Retry phrases' });
-    this.noPhrases = page.getByText('No phrases to keep from this session.');
-    this.savedButton = this.phrasesRegion.getByRole('button', { name: 'Saved to Memory' });
+    this.debrief = page.getByRole('region', { name: 'Debrief', exact: true });
+    this.progress = this.debrief.getByRole('status').filter({ hasText: /^\d+ \/ \d+$/ });
+    this.summary = this.debrief.getByRole('region', { name: 'Debrief summary' });
     this.undoButton = page.getByRole('button', { name: 'Undo' });
   }
 
   review(sequence: number): Locator {
-    return this.conversation.getByRole('region', { name: `Review of answer ${sequence}` });
+    return this.debrief.getByRole('region', { name: `Review of answer ${sequence}` });
+  }
+
+  summaryLine(text: string): Locator {
+    return this.page.getByText(text);
+  }
+
+  async next(): Promise<void> {
+    await this.debrief.getByRole('button', { name: /^(Next|Finish)$/ }).click();
+  }
+
+  async back(): Promise<void> {
+    await this.debrief.getByRole('button', { name: 'Back' }).click();
+  }
+
+  take(phrase: string): Locator {
+    return this.debrief.getByRole('button', { name: `Take “${phrase}”` });
+  }
+
+  taken(phrase: string): Locator {
+    return this.debrief.getByRole('button', { name: `Taken “${phrase}”` });
   }
 
   async sayItAgain(sequence: number): Promise<void> {
@@ -46,42 +60,6 @@ export class WrapupPage {
     await expect(stop).toBeEnabled();
     await this.page.waitForTimeout(CAPTURE_BUFFER_MS);
     await stop.click();
-  }
-
-  async saveAnswerPhrase(sequence: number): Promise<void> {
-    await this.review(sequence).getByRole('button', { name: 'Save phrase' }).click();
-  }
-
-  answerSaved(sequence: number): Locator {
-    return this.review(sequence).getByRole('button', { name: 'Saved to Memory' });
-  }
-
-  summaryLine(text: string): Locator {
-    return this.page.getByText(text);
-  }
-
-  phrase(text: string): Locator {
-    return this.page.getByText(text);
-  }
-
-  usageNote(text: string): Locator {
-    return this.page.getByText(text);
-  }
-
-  learnerQuote(text: string): Locator {
-    return this.page.getByText(`You said: “${text}”`);
-  }
-
-  async removePhrase(phrase: string): Promise<void> {
-    await this.page.getByRole('button', { name: `Remove phrase “${phrase}”` }).click();
-  }
-
-  async saveAll(count: number): Promise<void> {
-    await this.page.getByRole('button', { name: `Save all ${count} phrases to Memory` }).click();
-  }
-
-  async retryPhrases(): Promise<void> {
-    await this.retryPhrasesButton.click();
   }
 
   async undo(): Promise<void> {

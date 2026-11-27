@@ -1,6 +1,8 @@
 import { Schema } from 'effect';
 import type { AttemptComparison } from '../bindings/AttemptComparison';
+import type { DebriefWord } from '../bindings/DebriefWord';
 import type { FocusFeedback } from '../bindings/FocusFeedback';
+import type { Gap } from '../bindings/Gap';
 import type { PracticeDialogue } from '../bindings/PracticeDialogue';
 import type { PracticeMode } from '../bindings/PracticeMode';
 import type { PracticePhase } from '../bindings/PracticePhase';
@@ -9,6 +11,8 @@ import type { StoredTurn } from '../bindings/StoredTurn';
 import type { TargetEvidence } from '../bindings/TargetEvidence';
 import type { TurnCoaching } from '../bindings/TurnCoaching';
 import type { TurnFeedback } from '../bindings/TurnFeedback';
+import type { Upgrade } from '../bindings/Upgrade';
+import type { WordToTake } from '../bindings/WordToTake';
 import { bindingSchema } from './binding-schema';
 import { AnsweredBySchema } from './conversation-turn';
 import { FocusCategorySchema } from './learning';
@@ -86,10 +90,46 @@ const FocusFeedbackSchema = bindingSchema<FocusFeedback>()(
   }),
 );
 
+const UpgradeSchema = bindingSchema<Upgrade>()(
+  Schema.Struct({
+    original: Schema.String,
+    improved: Schema.String,
+    explanation: Schema.String,
+  }),
+);
+
+const GapSchema = bindingSchema<Gap>()(
+  Schema.Struct({
+    original: Schema.String,
+    word: Schema.String,
+    meaning: Schema.String,
+  }),
+);
+
+const WordToTakeSchema = bindingSchema<WordToTake>()(
+  Schema.Struct({
+    phrase: Schema.String,
+    meaning: Schema.String,
+    example: Schema.String,
+  }),
+);
+
+const DebriefWordSchema = bindingSchema<DebriefWord>()(
+  Schema.Struct({
+    sequence: Identifier,
+    phrase: Schema.String,
+    meaning: Schema.String,
+    example: Schema.String,
+  }),
+);
+
 export const TurnFeedbackSchema = bindingSchema<TurnFeedback>()(
   Schema.Struct({
     focus_feedback: Schema.Array(FocusFeedbackSchema),
     b2_rewrite: Schema.String,
+    upgrades: Schema.Array(UpgradeSchema),
+    gaps: Schema.Array(GapSchema),
+    words_to_take: Schema.Array(WordToTakeSchema),
   }),
 );
 
@@ -112,6 +152,7 @@ export const PracticeDialogueSchema = bindingSchema<PracticeDialogue>()(
     answer_durations_ms: Schema.Array(Schema.NullOr(Count)),
     help_used: Schema.Array(Schema.Boolean),
     coaching: Schema.Array(TurnCoachingSchema),
+    debrief_words: Schema.Array(DebriefWordSchema),
   }),
 );
 

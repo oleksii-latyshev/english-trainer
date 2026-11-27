@@ -26,6 +26,7 @@ export const wordDialogue: PracticeDialogue = {
   reply_times_ms: [250],
   answer_durations_ms: [null],
   help_used: [false],
+  debrief_words: [],
   coaching: [
     {
       state: 'ready',
@@ -39,6 +40,9 @@ export const wordDialogue: PracticeDialogue = {
           },
         ],
         b2_rewrite: 'I have used a useful tool for my projects.',
+        upgrades: [],
+        gaps: [],
+        words_to_take: [],
       },
     },
   ],
