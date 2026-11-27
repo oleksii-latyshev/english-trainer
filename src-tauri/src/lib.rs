@@ -163,33 +163,29 @@ pub fn run() {
                 learning::SessionLearningStore::new(sessions.clone()),
             ));
             let usage_handle = app.handle().clone();
-            app.manage(
-                learning::UsageReviewQueue::start(
-                    learning::UsageReviewWorker::new(
-                        learning::UsageReviewService::new(learning::SessionLearningStore::new(
-                            sessions.clone(),
-                        )),
-                        providers::review_usage_batch,
-                        learning::RETRY_DELAY,
-                        learning::QUOTA_PAUSE,
-                    ),
-                    move |session_id| {
-                        conversation::infra::events::announce_coaching_update(
-                            &usage_handle,
-                            session_id,
-                        )
-                    },
-                )
-                .map_err(|error| {
-                    diagnostics::log(
-                        "startup",
-                        format_args!("Could not start the usage review worker thread: {error}"),
-                    );
-                    std::io::Error::other(
-                        "Could not start the learning use review. Restart the app.",
-                    )
-                })?,
+            let usage_review = learning::UsageReviewService::new(
+                learning::SessionLearningStore::new(sessions.clone()),
             );
+            let usage_queue = learning::UsageReviewQueue::start(
+                learning::UsageReviewWorker::new(
+                    usage_review.clone(),
+                    providers::review_usage_batch,
+                    learning::RETRY_DELAY,
+                    learning::QUOTA_PAUSE,
+                ),
+                move |session_id| {
+                    conversation::infra::events::announce_coaching_update(&usage_handle, session_id)
+                },
+            )
+            .map_err(|error| {
+                diagnostics::log(
+                    "startup",
+                    format_args!("Could not start the usage review worker thread: {error}"),
+                );
+                std::io::Error::other("Could not start the learning use review. Restart the app.")
+            })?;
+            usage_queue.resume(&usage_review, learning::now_ms());
+            app.manage(usage_queue);
             app.manage(speaking_activity::SpeakingActivityService::new(
                 speaking_activity::SessionActivityStore::new(sessions.clone()),
             ));

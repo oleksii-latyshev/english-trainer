@@ -13,6 +13,7 @@ use crate::learning::{
 };
 use crate::persistence::SessionDatabase;
 use crate::providers::{UsageReviewRequest, UsageReviewResponse};
+use rusqlite::params;
 use std::collections::HashSet;
 
 fn type_name(item_type: LearningItemType) -> &'static str {
@@ -63,6 +64,43 @@ pub(crate) fn reviewable_answers(
     session_id: u64,
 ) -> Result<Vec<usize>, LearningError> {
     reviewable_sequences_on(database.connection(), session_id).map_err(storage("read"))
+}
+
+pub(crate) fn unreviewed_sessions(
+    database: &SessionDatabase,
+    ended_since: i64,
+) -> Result<Vec<u64>, LearningError> {
+    unreviewed_sessions_on(database.connection(), ended_since).map_err(storage("read"))
+}
+
+fn unreviewed_sessions_on(
+    connection: &rusqlite::Connection,
+    ended_since: i64,
+) -> rusqlite::Result<Vec<u64>> {
+    let mut statement = connection.prepare(
+        "SELECT id FROM sessions WHERE ended_at IS NOT NULL AND ended_at >= ?1 ORDER BY id",
+    )?;
+    let finished = statement
+        .query_map(params![ended_since], |row| row.get::<_, i64>(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut unreviewed = Vec::new();
+    for id in finished {
+        let session_id =
+            u64::try_from(id).map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, id))?;
+        let mut pending = false;
+        for sequence in reviewable_sequences_on(connection, session_id)? {
+            let saved: i64 = connection.query_row(
+                "SELECT COUNT(*) FROM turn_usage_assessments WHERE session_id = ?1 AND sequence = ?2",
+                params![id, i64::try_from(sequence).unwrap_or(i64::MAX)],
+                |row| row.get(0),
+            )?;
+            pending |= saved == 0;
+        }
+        if pending {
+            unreviewed.push(session_id);
+        }
+    }
+    Ok(unreviewed)
 }
 
 pub(crate) fn prepare_review(

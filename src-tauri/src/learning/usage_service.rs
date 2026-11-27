@@ -103,6 +103,12 @@ impl UsageReviewService {
             .finalize(&request, turn_time, &response, (session_id, sequence))
     }
 
+    /// Sessions that ended since `ended_since` (ms) and still have a reviewable answer without an
+    /// assessment.
+    pub fn unreviewed_sessions(&self, ended_since: i64) -> Result<Vec<u64>, LearningError> {
+        self.store.unreviewed_sessions(ended_since)
+    }
+
     /// Reviews every answer of the session the usage review covers (answers 1 and 2, and each
     /// answer that followed a steered question) with one provider call per `MAX_BATCH_ANSWERS`.
     /// An answer assessed before is not asked again, so a repeated run costs nothing.

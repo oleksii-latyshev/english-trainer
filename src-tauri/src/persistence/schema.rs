@@ -610,6 +610,16 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
                 FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
             );",
         )?;
+        transaction.pragma_update(None, "user_version", 25)?;
+        transaction.commit()?;
+        version = 25;
+    }
+    if version < 26 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute(
+            "UPDATE mistake_lessons SET state = 'pending', failures = 0 WHERE state = 'failed'",
+            [],
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

@@ -603,7 +603,8 @@ The owner approved widening eligibility and moving the trigger to the end of the
    call (`review_usage_batch`, up to 12 answers per call; the legacy `agy` adapter reviews them one
    by one). An answer whose findings do not validate stays unreviewed. A failed run is retried once
    after 60 seconds, then given up; a used-up quota waits 30 minutes without using a try. Each run
-   emits `coaching-updated`. There is no manual trigger and no command to start a review.
+   emits `coaching-updated`. There is no manual trigger and no command to start a review. At startup the queue is refilled with
+   the sessions finished in the last 7 days that still have an eligible answer without an assessment.
 2. **Source rejection:** reject a target whose wording appeared in the opening question, the preceding
    AI reply/question, earlier saved feedback or the question scaffold. Targets with a cue exposure at
    or before the answer time stay candidates, but their correct use is recorded as with help (3).

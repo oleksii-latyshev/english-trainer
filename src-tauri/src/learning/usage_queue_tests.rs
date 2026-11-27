@@ -125,3 +125,55 @@ fn the_queue_runs_a_queued_session_off_the_calling_thread_and_notifies() {
         .unwrap()
         .is_some());
 }
+
+fn started_queue(
+    steered: &super::usage_test_support::Steered,
+    runs: Arc<Mutex<Vec<u64>>>,
+) -> UsageReviewQueue {
+    let worker = UsageReviewWorker::new(
+        usage_service(&steered.store),
+        |answers: &[UsageBatchAnswer]| Ok(all_correct(answers)),
+        RETRY,
+        PAUSE,
+    );
+    UsageReviewQueue::start(worker, move |session_id| {
+        runs.lock().unwrap().push(session_id)
+    })
+    .unwrap()
+}
+
+fn wait_for(runs: &Arc<Mutex<Vec<u64>>>, count: usize) {
+    for _ in 0..200 {
+        if runs.lock().unwrap().len() >= count {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+#[test]
+fn a_restart_queues_a_recent_session_that_was_never_reviewed() {
+    let steered = finished_steered_session();
+    let runs = Arc::new(Mutex::new(Vec::new()));
+    let queue = started_queue(&steered, runs.clone());
+    let service = usage_service(&steered.store);
+
+    assert_eq!(queue.resume(&service, crate::learning::now_ms()), 2);
+    wait_for(&runs, 2);
+
+    assert!(runs.lock().unwrap().contains(&steered.session_id));
+    assert_eq!(queue.resume(&service, crate::learning::now_ms()), 0);
+}
+
+#[test]
+fn a_restart_skips_sessions_older_than_the_window() {
+    let steered = finished_steered_session();
+    let runs = Arc::new(Mutex::new(Vec::new()));
+    let queue = started_queue(&steered, runs);
+    let service = usage_service(&steered.store);
+    let later = crate::learning::now_ms()
+        + i64::try_from(super::usage_queue::RESUME_WINDOW.as_millis()).unwrap()
+        + 60_000;
+
+    assert_eq!(queue.resume(&service, later), 0);
+}

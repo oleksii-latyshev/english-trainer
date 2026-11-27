@@ -694,6 +694,38 @@ fn migrates_a_version_twenty_three_database_to_the_practice_runs_schema() {
 }
 
 #[test]
+fn migrates_a_version_twenty_five_database_putting_failed_lessons_back_to_pending() {
+    let path = test_database_path();
+    let db = SessionDatabase::open(&path).unwrap();
+    db.connection
+        .execute_batch(
+            "INSERT INTO mistakes (id, normalized_key, category, original_example, corrected_example, explanation, last_seen_at, next_review_at)
+             VALUES (1, 'grammar:a', 'grammar', 'I has', 'I have', 'Use have.', 5, 6),
+                    (2, 'grammar:b', 'grammar', 'He go', 'He goes', 'Add s.', 5, 6);
+             INSERT INTO mistake_lessons (mistake_id, state, failures, updated_at) VALUES (1, 'failed', 2, 1);
+             INSERT INTO mistake_lessons (mistake_id, state, explanation, failures, updated_at) VALUES (2, 'ready', 'Done.', 0, 1);
+             PRAGMA user_version = 25;",
+        )
+        .unwrap();
+    drop(db);
+
+    let db = SessionDatabase::open(&path).unwrap();
+    let lesson = |id: i64| -> (String, i64) {
+        db.connection
+            .query_row(
+                "SELECT state, failures FROM mistake_lessons WHERE mistake_id = ?1",
+                [id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap()
+    };
+    assert_eq!(lesson(1), ("pending".to_string(), 0));
+    assert_eq!(lesson(2), ("ready".to_string(), 0));
+    drop(db);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn feedback_saved_before_the_debrief_reads_with_empty_new_lists_and_new_findings_round_trip() {
     let mut db = SessionDatabase::open_in_memory().unwrap();
     let session = db.create_session("Opening?").unwrap();
