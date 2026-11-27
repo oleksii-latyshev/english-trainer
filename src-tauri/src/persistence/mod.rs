@@ -19,7 +19,6 @@ pub(crate) mod session_wrapup;
 mod speaking_activity;
 mod speech_settings;
 mod translation_settings;
-pub(crate) mod wrapup_generation;
 use std::path::Path;
 
 pub(crate) const SCHEMA_VERSION: i64 = 24;

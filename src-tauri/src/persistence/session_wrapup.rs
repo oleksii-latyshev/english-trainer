@@ -4,12 +4,10 @@ use super::{now_ms, to_sql_id, SessionDatabase};
 use crate::learning::session_stats::AnswerSample;
 use crate::providers::TurnFeedback;
 use rusqlite::params;
-use std::collections::HashSet;
 
 /// One answer whose feedback was reviewed, with the learner's words.
 pub(crate) struct ReviewedAnswer {
     pub(crate) sequence: usize,
-    pub(crate) transcript: String,
     pub(crate) feedback: TurnFeedback,
 }
 
@@ -82,17 +80,17 @@ impl SessionDatabase {
         session_id: u64,
     ) -> rusqlite::Result<Vec<ReviewedAnswer>> {
         let mut statement = self.connection.prepare(
-            "SELECT t.sequence, t.user_transcript, f.feedback_json
+            "SELECT t.sequence, f.feedback_json
              FROM turn_feedback f JOIN turns t
                ON t.session_id = f.session_id AND t.sequence = f.sequence
              WHERE f.session_id = ?1 ORDER BY t.sequence",
         )?;
         let rows = statement.query_map([to_sql_id(session_id)?], |row| {
             let sequence: i64 = row.get(0)?;
-            let encoded: String = row.get(2)?;
+            let encoded: String = row.get(1)?;
             let feedback = serde_json::from_str(&encoded).map_err(|error| {
                 rusqlite::Error::FromSqlConversionFailure(
-                    2,
+                    1,
                     rusqlite::types::Type::Text,
                     Box::new(error),
                 )
@@ -100,19 +98,9 @@ impl SessionDatabase {
             Ok(ReviewedAnswer {
                 sequence: usize::try_from(sequence)
                     .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, sequence))?,
-                transcript: row.get(1)?,
                 feedback,
             })
         })?;
-        rows.collect()
-    }
-
-    /// Normalized wording of every saved phrase card, to skip phrases already in Memory.
-    pub(crate) fn saved_phrase_keys(&self) -> rusqlite::Result<HashSet<String>> {
-        let mut statement = self
-            .connection
-            .prepare("SELECT normalized_phrase FROM phrase_cards")?;
-        let rows = statement.query_map([], |row| row.get::<_, String>(0))?;
         rows.collect()
     }
 

@@ -1,9 +1,12 @@
 use super::*;
 #[cfg(test)]
 use crate::learning::has_cue_exposure_before;
+#[cfg(test)]
 use crate::learning::infra::sqlite;
 use crate::learning::mistake_practice::MistakePracticeCandidate;
-use crate::learning::{recurring_mistakes, save_turn_feedback, PhraseCardRecord};
+#[cfg(test)]
+use crate::learning::PhraseCardRecord;
+use crate::learning::{recurring_mistakes, save_turn_feedback};
 
 impl SessionDatabase {
     pub(crate) fn connection(&self) -> &Connection {
@@ -27,6 +30,7 @@ impl SessionDatabase {
         recurring_mistakes(&self.connection)
     }
 
+    #[cfg(test)]
     pub fn save_phrase_card(
         &self,
         phrase: &str,

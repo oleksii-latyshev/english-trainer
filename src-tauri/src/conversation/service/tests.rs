@@ -1046,7 +1046,7 @@ fn summary_evidence_database_failure_keeps_the_session_active() {
         .unwrap();
     rusqlite::Connection::open(&path)
         .unwrap()
-        .execute("DROP TABLE phrase_cards", [])
+        .execute("DROP TABLE turn_feedback", [])
         .unwrap();
 
     let error = store.finish(session.session_id).unwrap_err();
@@ -1670,11 +1670,7 @@ fn coaching_is_saved_for_a_finished_session_only_for_the_answer_it_belongs_to() 
     store
         .save_feedback(session.session_id, 1, "I work in there", &sample_feedback())
         .unwrap();
-    assert!(store
-        .session_wrapup(session.session_id)
-        .unwrap()
-        .phrases
-        .is_empty());
+    store.session_wrapup(session.session_id).unwrap();
     assert!(store.coaching_queue(session.session_id).unwrap().is_empty());
     assert_eq!(
         store
@@ -1961,45 +1957,7 @@ fn finished_summary_carries_numbers_trends_phrases_and_recurring_mistakes() {
         )
         .unwrap();
 
-    let pending = store.finish(id).unwrap();
-    assert_eq!(pending.wrapup_preparation, WrapupPreparation::Pending);
-    assert!(pending.phrases.is_empty());
-    let (_, request) = store.next_wrapup_request().unwrap().unwrap();
-    store
-        .complete_session_wrapup(
-            earlier.session_id,
-            &request,
-            Ok(crate::providers::WrapupResult {
-                phrases: Vec::new(),
-            }),
-        )
-        .unwrap();
-    let (_, request) = store.next_wrapup_request().unwrap().unwrap();
-    let generated = crate::providers::WrapupResult {
-        phrases: vec![
-            crate::providers::GeneratedWrapupPhrase {
-                sequence: 1,
-                phrase: "I have worked here for two weeks.".into(),
-                note: "Describe an ongoing situation.".into(),
-                you_said: "since two weeks".into(),
-            },
-            crate::providers::GeneratedWrapupPhrase {
-                sequence: 2,
-                phrase: "for two weeks".into(),
-                note: "Use for with a length of time.".into(),
-                you_said: "since two weeks".into(),
-            },
-            crate::providers::GeneratedWrapupPhrase {
-                sequence: 2,
-                phrase: "I have lived here for two weeks.".into(),
-                note: "Describe where you have been living.".into(),
-                you_said: "I live here since two weeks too".into(),
-            },
-        ],
-    };
-    store
-        .complete_session_wrapup(id, &request, Ok(generated))
-        .unwrap();
+    store.finish(id).unwrap();
     let summary = store.session_wrapup(id).unwrap();
 
     assert_eq!(summary.numbers.speaking_time.duration_ms, Some(28_000));
@@ -2012,19 +1970,6 @@ fn finished_summary_carries_numbers_trends_phrases_and_recurring_mistakes() {
         summary.numbers.average_answer.trend,
         crate::learning::session_stats::Trend::Words { change: -44 }
     );
-    let phrases: Vec<_> = summary
-        .phrases
-        .iter()
-        .map(|p| (p.sequence, p.phrase.as_str()))
-        .collect();
-    assert_eq!(
-        phrases,
-        [
-            (2, "for two weeks"),
-            (2, "I have lived here for two weeks.")
-        ]
-    );
-    assert_eq!(summary.phrases[0].you_said, "since two weeks");
     assert_eq!(
         summary.recurring_mistakes,
         vec![RecurringMistake {
@@ -2047,7 +1992,6 @@ fn finished_summary_without_coaching_has_empty_lists() {
         })
         .unwrap();
     let summary = store.finish(session.session_id).unwrap();
-    assert!(summary.phrases.is_empty());
     assert!(summary.recurring_mistakes.is_empty());
     assert_eq!(summary.numbers.speaking_time.duration_ms, None);
 }

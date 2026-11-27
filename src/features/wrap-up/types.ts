@@ -5,7 +5,6 @@ import type {
   PhraseCardRecordSchema,
   SessionNumbersSchema,
   TrendSchema,
-  WrapupPhraseSchema,
 } from '@/core/ipc';
 
 export type FinishedSession = typeof FinishedSessionSchema.Type;
@@ -13,8 +12,6 @@ export type FinishedSession = typeof FinishedSessionSchema.Type;
 export type SessionNumbers = typeof SessionNumbersSchema.Type;
 
 export type Trend = typeof TrendSchema.Type;
-
-export type WrapupPhrase = typeof WrapupPhraseSchema.Type;
 
 export type PhraseCard = typeof PhraseCardRecordSchema.Type;
 

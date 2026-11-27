@@ -77,9 +77,6 @@ export {
   FinishedSessionSchema,
   SessionNumbersSchema,
   TrendSchema,
-  WRAPUP_UPDATED_EVENT,
-  WrapupPhraseSchema,
-  WrapupUpdatedSchema,
 } from './schemas/finished-session';
 export { GeminiKeyStatusSchema } from './schemas/gemini-key-status';
 

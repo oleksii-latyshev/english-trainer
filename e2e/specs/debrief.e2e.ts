@@ -12,7 +12,7 @@ test('the Debrief steps through each answer with its findings and words to take'
   const { session, dialogue } = debriefConversation();
   tauri.coaching.available();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();
@@ -53,7 +53,7 @@ test('taking a word saves it to Memory with its answer and the summary lists it'
   const { session, dialogue } = debriefConversation();
   tauri.coaching.available();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();
@@ -106,7 +106,7 @@ test('only the five words Rust offered can be taken and the count says when all 
   };
   tauri.coaching.available();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();
@@ -136,7 +136,7 @@ test('the five-word cap reads 5 of 5 taken when every offered word is taken', as
   const { session, dialogue } = debriefConversation();
   tauri.coaching.available();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();

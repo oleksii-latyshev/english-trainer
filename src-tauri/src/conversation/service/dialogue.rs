@@ -5,10 +5,9 @@ use crate::conversation::domain::rehearsal::{
 use crate::conversation::domain::rules::DAILY_TARGET_TURNS;
 use crate::conversation::domain::{
     pick_debrief_words, ActiveSession, FinishedPracticeSession, PracticeDialogue, PracticePhase,
-    PracticeSession, WrapupPreparation,
+    PracticeSession,
 };
 use crate::conversation::error::ConversationError;
-use crate::persistence::wrapup_generation::PreparedWrapup;
 use std::time::Instant;
 
 impl SessionStore {
@@ -54,7 +53,7 @@ impl SessionStore {
         }
         let turn_count = session.turns.len();
         let active_duration_ms = session.active_duration_ms;
-        let mut summary = self.finished_summary(&state, session_id, turn_count)?;
+        let summary = self.finished_summary(&state, session_id, turn_count)?;
         if !state
             .database
             .finish_session_with_duration(session_id, active_duration_ms)?
@@ -62,12 +61,6 @@ impl SessionStore {
             return Err(ConversationError::InvalidSession);
         }
         state.active = None;
-        summary.phrases.clear();
-        summary.wrapup_preparation = if turn_count == 0 {
-            WrapupPreparation::Ready
-        } else {
-            WrapupPreparation::Pending
-        };
         Ok(summary)
     }
 
@@ -120,16 +113,9 @@ impl SessionStore {
             topic_label: metadata.topic_label,
             duration_goal_seconds: metadata.duration_goal_seconds,
             numbers: wrapup.numbers,
-            phrases: wrapup.phrases,
             recurring_mistakes: wrapup.recurring_mistakes,
             pending_coaching: if is_paused { 0 } else { waiting },
             is_coaching_paused: is_paused,
-            wrapup_preparation: match state.database.wrapup_record(session_id)? {
-                None => WrapupPreparation::Legacy,
-                Some(PreparedWrapup::Pending) => WrapupPreparation::Pending,
-                Some(PreparedWrapup::Ready(_)) => WrapupPreparation::Ready,
-                Some(PreparedWrapup::Failed(error)) => WrapupPreparation::Failed { error },
-            },
             practice_mode,
             practice_phase,
             written_turn_count,

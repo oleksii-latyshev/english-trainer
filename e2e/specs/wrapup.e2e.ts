@@ -20,7 +20,7 @@ test('finishing stays usable while coaching is pending', async ({
   wrapup,
   tauri,
 }) => {
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 1));
+  tauri.wrapup.finishingWith(wrapupSummary(1));
   await finishSession(app, start, talk, wrapup);
 
   await expect(wrapup.pendingCoaching).toBeVisible();
@@ -37,7 +37,7 @@ test('the wrap-up no longer lists a separate set of phrases to save', async ({
   wrapup,
   tauri,
 }) => {
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await finishSession(app, start, talk, wrapup);
 
   await expect(app.text('Phrases worth learning')).toHaveCount(0);

@@ -18,11 +18,8 @@ mod recall;
 mod rescue;
 mod turn;
 mod wrapup;
-mod wrapup_generation;
-mod wrapup_queue;
 
 pub use coaching_queue::{CoachingQueue, IDLE_FLUSH, QUOTA_PAUSE};
-pub use wrapup_queue::WrapupQueue;
 
 #[cfg(test)]
 mod tests;

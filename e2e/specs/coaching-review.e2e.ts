@@ -67,7 +67,7 @@ test('the Debrief shows one answer at a time and a pending one fills in when coa
   const { session, dialogue } = coachedConversation([readyWithTip, { state: 'pending' }]);
   tauri.coaching.available();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 1));
+  tauri.wrapup.finishingWith(wrapupSummary(1));
   await app.open();
   await start.continueSession();
   await talk.finish();
@@ -102,7 +102,7 @@ test('a failed answer can be checked again from the wrap-up', async ({
   const { session, dialogue } = coachedConversation([{ state: 'failed' }]);
   tauri.coaching.available();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();
@@ -126,7 +126,7 @@ test('Say it again on the wrap-up records, transcribes and shows the comparison'
   tauri.coaching.available();
   tauri.speech.grantMicrophone();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();

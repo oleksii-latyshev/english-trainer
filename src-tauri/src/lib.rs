@@ -147,23 +147,6 @@ pub fn run() {
                     std::io::Error::other("Could not start answer coaching. Restart the app.")
                 })?,
             );
-            let handle = app.handle().clone();
-            app.manage(
-                conversation::WrapupQueue::start(
-                    sessions.clone(),
-                    providers::generate_session_wrapup,
-                    conversation::infra::events::wrapup_notifier(handle),
-                )
-                .map_err(|error| {
-                    diagnostics::log(
-                        "startup",
-                        format_args!("Could not start the wrap-up worker thread: {error}"),
-                    );
-                    std::io::Error::other(
-                        "Could not start session phrase preparation. Restart the app.",
-                    )
-                })?,
-            );
             app.manage(ai_settings::AiSettingsService::new(
                 ai_settings::SessionSettingsStore::new(sessions.clone()),
                 ai_settings::AppleProviderWarmup::new(apple_helper.clone()),
@@ -297,8 +280,6 @@ pub fn run() {
             conversation::commands::get_practice_dialogue,
             conversation::commands::finish_practice_session,
             conversation::commands::get_session_wrapup,
-            conversation::commands::retry_session_wrapup,
-            conversation::commands::save_wrapup_phrases,
             conversation::commands::retry_answer_coaching,
             conversation::commands::get_daily_recall_plan,
             conversation::commands::submit_daily_recall,
