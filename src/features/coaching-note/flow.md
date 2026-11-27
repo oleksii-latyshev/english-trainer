@@ -77,7 +77,8 @@ sequenceDiagram
 The stream is the same `coaching-updated` signal the wrap-up already listens to; Rust also emits it
 when the usage review of the finished session lands (one background call after Finish, covering
 answers 1 and 2 and every answer that followed a steered question), so a win fills in without a
-reload. It is read here
+reload. The conversation also re-reads on the `MISTAKES` reactivity key, so the rule to practise
+appears once the lesson of a mistake from this session is ready. It is read here
 too because a retried answer that gave up earlier is not counted as pending, so the wrap-up
 summary would not refresh for it.
 
