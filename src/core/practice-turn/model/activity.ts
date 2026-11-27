@@ -1,12 +1,13 @@
 import { Deferred, Duration, Effect, Stream } from 'effect';
-import { AsyncResult, Atom } from 'effect/reactivity';
+import { AsyncResult, Atom, type AtomRegistry } from 'effect/reactivity';
 import { microphoneSnapshotAtom, WarmMicrophone } from '@/core/audio';
 import { conversationFlowAtom } from '@/core/conversation-flow';
 import { practiceStageUsesAudio, practiceStateAtom, sessionDetails } from '@/core/practice-session';
 import { speechStateAtom } from '@/core/speech';
+import { currentJoinWindow } from './continuation';
 import { interruptReply } from './interrupt';
 import { turnRuntime } from './runtime';
-import { canVoiceInterruptAtom, micLevelAtom } from './state';
+import { canVoiceInterruptAtom, joinWindowAtom, micLevelAtom } from './state';
 
 const LEVEL_UPDATE = Duration.millis(100);
 
@@ -25,10 +26,23 @@ const detectsInterruptionAtom = Atom.make((get) => {
   return get(conversationFlowAtom).voiceInterrupt && (tag === 'speaking' || tag === 'starting');
 });
 
+const joinsContinuationAtom = Atom.make((get) => get(joinWindowAtom) !== null);
+
+function onSpeechOnset(registry: AtomRegistry.AtomRegistry, canInterrupt: boolean) {
+  const window = currentJoinWindow(registry);
+  if (window !== null) {
+    const { openedAtMs: _openedAtMs, ...continues } = window;
+    interruptReply(registry, { record: true, retainPreRoll: true, continues });
+    return;
+  }
+  if (canInterrupt) interruptReply(registry, { record: true, retainPreRoll: true });
+}
+
 export const microphoneActivityAtom = turnRuntime.atom((get) => {
   const isReady = get(isMicrophoneReadyAtom);
   const isEnabled = get(audioStageAtom);
   const detects = get(detectsInterruptionAtom);
+  const joins = get(joinsContinuationAtom);
   const { registry } = get;
   if (!isReady || !isEnabled) return Effect.void;
   return Effect.gen(function* () {
@@ -39,6 +53,7 @@ export const microphoneActivityAtom = turnRuntime.atom((get) => {
     const hasEchoCancellation = yield* session.echoCancellationEnabled;
     const canInterrupt = detects && hasEchoCancellation;
     registry.set(canVoiceInterruptAtom, canInterrupt);
+    const listensForOnset = canInterrupt || joins;
     yield* Effect.addFinalizer(() =>
       Effect.sync(() => {
         registry.set(canVoiceInterruptAtom, false);
@@ -50,12 +65,8 @@ export const microphoneActivityAtom = turnRuntime.atom((get) => {
       Stream.runForEach((level) => Effect.sync(() => registry.set(micLevelAtom, level))),
     );
     const onsets = session
-      .speechOnsets({ isEnabled: Effect.succeed(canInterrupt) })
-      .pipe(
-        Stream.runForEach(() =>
-          Effect.sync(() => interruptReply(registry, { record: true, retainPreRoll: true })),
-        ),
-      );
+      .speechOnsets({ isEnabled: Effect.succeed(listensForOnset) })
+      .pipe(Stream.runForEach(() => Effect.sync(() => onSpeechOnset(registry, canInterrupt))));
     yield* Effect.all([levels, onsets], { concurrency: 'unbounded', discard: true });
   }).pipe(Effect.ignore);
 });

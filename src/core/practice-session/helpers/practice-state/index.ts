@@ -58,6 +58,16 @@ export function advancePractice(
   };
 }
 
+export function reviseTurn(
+  current: PracticeState,
+  sessionId: number,
+  turn: Pick<ConversationTurn, 'question' | 'spoken_reply'>,
+): PracticeState {
+  if (current.tag !== 'active' && current.tag !== 'waiting') return current;
+  if (current.sessionId !== sessionId) return current;
+  return { ...current, question: turn.question ?? turn.spoken_reply };
+}
+
 export function setTurnPending(current: PracticeState, isPending: boolean): PracticeState {
   if (isPending && current.tag === 'active') return { ...current, tag: 'waiting' };
   if (!isPending && current.tag === 'waiting') return { ...current, tag: 'active' };

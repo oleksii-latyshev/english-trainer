@@ -393,7 +393,12 @@ answers instead. Typical latency is 1.5 to 3 s.
   `answer_help_uses(session_id, sequence)`.
 - `send_practice_turn` takes optional `answer_duration_ms` (voice and edited only) and optional
   `input_source` (`voice | edited | text`; omitted means `text`), saved atomically with the answer in
-  `turn_input_sources`. Failed provider calls save nothing.
+  `turn_input_sources`. Failed provider calls save nothing. Optional `continues_turn` (the answer's
+  sequence) joins speech that continued an answer sent too early: when the latest saved turn is
+  that sequence, a voice turn whose transcript the new text starts with, it is deleted (its
+  feedback with it) and the joined text is saved as the same turn; when nothing was saved for it
+  (the reply was cancelled first) the joined text is a plain new turn; any other sequence is
+  rejected.
 - `record_answer_help_used(session_id, sequence)` is idempotent, rejects other sessions and any
   sequence but the pending answer, and changes no learning or mastery rule.
 - Voice auto-send applies only to a new successful transcription and only when enabled. Drafts stay in

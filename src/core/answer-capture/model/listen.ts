@@ -33,8 +33,8 @@ export const listenAtom = Atom.keepAlive(
         registry.set(captureStateAtom, IDLE_CAPTURE);
         return;
       }
-      const { audio, speechStoppedAtMs } = recorded.value;
-      const recording = keepRecording(registry, audio, speechStoppedAtMs);
+      const { audio, speechStoppedAtMs, endedByPause } = recorded.value;
+      const recording = keepRecording(registry, audio, speechStoppedAtMs, endedByPause);
       yield* transcribeRecording(registry, {
         recording,
         wav: audio.wav,
@@ -56,6 +56,7 @@ export const transcribeAgainAtom = Atom.keepAlive(
           playbackUrl: state.playbackUrl,
           durationMs: state.durationMs,
           speechStoppedAtMs: state.speechStoppedAtMs,
+          endedByPause: state.endedByPause,
         },
         wav: clip.wav,
         actualInput: state.actualInput,

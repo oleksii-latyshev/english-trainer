@@ -48,7 +48,11 @@ export function startListening(registry: AtomRegistry.AtomRegistry, request: Lis
     registry.set(captureTimingAtom, {});
     bumpRequestId(registry);
     registry.set(captureStateAtom, { tag: 'requesting' });
-    registry.set(listenAtom, { mode: request.mode, discardPreRoll: assistantWasSpeaking });
+    registry.set(listenAtom, {
+      mode: request.mode,
+      discardPreRoll: assistantWasSpeaking,
+      keepsPreRoll: request.keepsPreRoll,
+    });
   });
 }
 

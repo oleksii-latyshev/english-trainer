@@ -1,4 +1,4 @@
-use super::{active_session_mut, SessionStore};
+use super::{active_session_mut, SessionStore, State};
 use crate::conversation::domain::context_builder::{build_context, ContextInput};
 use crate::conversation::domain::rehearsal::{
     scripted_reply, validate_answer_source, ScriptedReply,
@@ -24,10 +24,11 @@ impl SessionStore {
         transcript: String,
         input_source: InputSource,
         answer_duration_ms: Option<u64>,
+        continues_turn: Option<usize>,
         engine: &mut dyn ReplyEngine,
     ) -> Result<ConversationTurn, ConversationError> {
         validate_transcript(&transcript)?;
-        let prepared = self.begin_turn(session_id, &transcript, input_source)?;
+        let prepared = self.begin_turn(session_id, &transcript, input_source, continues_turn)?;
         let result = match &prepared.scripted {
             Some(scripted) => Ok(scripted.turn()),
             None => engine.generate(&prepared.context, prepared.cancellation.clone()),
@@ -46,6 +47,7 @@ impl SessionStore {
         session_id: u64,
         transcript: &str,
         input_source: InputSource,
+        continues_turn: Option<usize>,
     ) -> Result<PreparedTurn, ConversationError> {
         let mut state = self.lock();
         let session = state
@@ -57,6 +59,13 @@ impl SessionStore {
             return Err(ConversationError::Busy);
         }
         validate_answer_source(session, input_source)?;
+        if let Some(sequence) = continues_turn {
+            release_cut_off_turn(&mut state, session_id, sequence, transcript)?;
+        }
+        let session = state
+            .active
+            .as_ref()
+            .ok_or(ConversationError::InvalidSession)?;
         let scripted = scripted_reply(session)?;
         let needs_learning_targets =
             !session.is_mistake_practice && (session.turns.len() == 1 || session.turns.len() == 5);
@@ -188,9 +197,61 @@ impl SessionStore {
             transcript,
             input_source,
             answer_duration_ms,
+            None,
             &mut engine,
         )
     }
+
+    #[cfg(test)]
+    pub fn send_continued_turn<F>(
+        &self,
+        session_id: u64,
+        transcript: String,
+        continues_turn: usize,
+        generate: F,
+    ) -> Result<ConversationTurn, ConversationError>
+    where
+        F: FnOnce(
+            &ConversationContext,
+        ) -> Result<ConversationTurn, crate::providers::ProviderError>,
+    {
+        let mut engine = OnceEngine(Some(|context: &ConversationContext, _| generate(context)));
+        self.send_turn_with_engine(
+            session_id,
+            transcript,
+            InputSource::Voice,
+            None,
+            Some(continues_turn),
+            &mut engine,
+        )
+    }
+}
+
+fn release_cut_off_turn(
+    state: &mut State,
+    session_id: u64,
+    sequence: usize,
+    joined: &str,
+) -> Result<(), ConversationError> {
+    let saved = active_session_mut(state, session_id)?.turns.len();
+    if sequence == saved + 1 {
+        return Ok(());
+    }
+    if sequence == 0 || sequence != saved {
+        return Err(ConversationError::InvalidTranscript);
+    }
+    let cut_off = active_session_mut(state, session_id)?
+        .turns
+        .last()
+        .map(|turn| turn.learner.clone())
+        .ok_or(ConversationError::InvalidTranscript)?;
+    let continues_it = joined.trim().starts_with(cut_off.trim());
+    if !continues_it || !state.database.is_voice_turn(session_id, sequence)? {
+        return Err(ConversationError::InvalidTranscript);
+    }
+    state.database.delete_turn(session_id, sequence)?;
+    active_session_mut(state, session_id)?.turns.pop();
+    Ok(())
 }
 
 #[cfg(test)]
@@ -216,5 +277,107 @@ where
                 "The reply engine was already used.",
             )),
         }
+    }
+}
+
+#[cfg(test)]
+mod continuation_tests {
+    use super::*;
+    use crate::conversation::service::code_of;
+    use crate::core::IpcErrorCode;
+
+    fn reply(text: &str) -> ConversationTurn {
+        ConversationTurn {
+            spoken_reply: text.into(),
+            question: Some("What next?".into()),
+            session_phase: "conversation".into(),
+            is_complete: false,
+            provider_latency_ms: None,
+            first_token_ms: None,
+            answered_by: None,
+        }
+    }
+
+    #[test]
+    fn a_continuation_replaces_the_committed_turn_instead_of_adding_one() {
+        let store = SessionStore::default();
+        let id = store.start().unwrap().session_id;
+        store
+            .send_turn(id, "I went to".into(), |_| Ok(reply("Where?")))
+            .unwrap();
+        let mut seen = Vec::new();
+        store
+            .send_continued_turn(id, "I went to the park.".into(), 1, |context| {
+                seen.push(context.latest_transcript.clone());
+                Ok(reply("Nice."))
+            })
+            .unwrap();
+        let dialogue = store.dialogue(id).unwrap();
+        assert_eq!(dialogue.turns.len(), 1);
+        assert_eq!(dialogue.turns[0].learner, "I went to the park.");
+        assert_eq!(dialogue.turns[0].assistant_reply, "Nice.");
+        assert_eq!(seen, ["I went to the park."]);
+        assert_eq!(
+            store.lock().database.turn_input_sources(id).unwrap().len(),
+            1
+        );
+    }
+
+    #[test]
+    fn a_continuation_of_a_cancelled_reply_is_a_plain_new_turn() {
+        let store = SessionStore::default();
+        let id = store.start().unwrap().session_id;
+        store
+            .send_continued_turn(id, "I went to the park.".into(), 1, |_| Ok(reply("Nice.")))
+            .unwrap();
+        assert_eq!(store.dialogue(id).unwrap().turns.len(), 1);
+    }
+
+    #[test]
+    fn a_continuation_cannot_replace_an_earlier_turn() {
+        let store = SessionStore::default();
+        let id = store.start().unwrap().session_id;
+        store
+            .send_turn(id, "First answer.".into(), |_| Ok(reply("One.")))
+            .unwrap();
+        store
+            .send_turn(id, "Second answer.".into(), |_| Ok(reply("Two.")))
+            .unwrap();
+        let error = store
+            .send_continued_turn(id, "First answer. And more.".into(), 1, |_| {
+                Ok(reply("Three."))
+            })
+            .unwrap_err();
+        assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
+        assert_eq!(store.dialogue(id).unwrap().turns.len(), 2);
+    }
+
+    #[test]
+    fn a_continuation_must_start_with_the_answer_it_continues() {
+        let store = SessionStore::default();
+        let id = store.start().unwrap().session_id;
+        store
+            .send_turn(id, "I went to".into(), |_| Ok(reply("Where?")))
+            .unwrap();
+        let error = store
+            .send_continued_turn(id, "Something else.".into(), 1, |_| Ok(reply("Nice.")))
+            .unwrap_err();
+        assert_eq!(code_of(error), IpcErrorCode::InvalidRequest);
+        assert_eq!(store.dialogue(id).unwrap().turns.len(), 1);
+    }
+
+    #[test]
+    fn coaching_sees_one_answer_after_a_continuation() {
+        let store = SessionStore::default();
+        let id = store.start().unwrap().session_id;
+        store
+            .send_turn(id, "I went to".into(), |_| Ok(reply("Where?")))
+            .unwrap();
+        store
+            .send_continued_turn(id, "I went to the park.".into(), 1, |_| Ok(reply("Nice.")))
+            .unwrap();
+        let waiting = store.coaching_queue(id).unwrap();
+        assert_eq!(waiting.len(), 1);
+        assert_eq!(waiting[0].transcript, "I went to the park.");
     }
 }

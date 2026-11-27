@@ -1,3 +1,4 @@
+export { withContinuation } from './model/continuation';
 export { interruptReply } from './model/interrupt';
 export { pauseMicrophone, resumeMicrophone } from './model/microphone-controls';
 export { lockTurn, practiceTurnEffectsAtom, setPlanning } from './model/mounts';
@@ -6,6 +7,8 @@ export { sendTurn } from './model/send';
 export {
   acceptedAnswerAtom,
   canVoiceInterruptAtom,
+  continuationAtom,
+  joinWindowAtom,
   micLevelAtom,
   pendingReplyAtom,
   planningAtom,

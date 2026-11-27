@@ -3,7 +3,7 @@ import { Atom, type AtomRegistry } from 'effect/reactivity';
 import { updateAiSettingsAtom } from '@/core/ai-settings';
 import { captureStateAtom } from '@/core/answer-capture';
 import type { InputSource } from '@/core/practice-session';
-import { sendTurn, turnRuntime } from '@/core/practice-turn';
+import { sendTurn, turnRuntime, withContinuation } from '@/core/practice-turn';
 import { toast } from '@/shared/ui/toast';
 import {
   countdownLabel,
@@ -15,7 +15,11 @@ import { countdownLabelAtom, draftAtom, EMPTY_DRAFT, isSendingAtom } from './dra
 const COUNTDOWN_TICK = Duration.millis(100);
 const SWITCH_FAILED = 'Could not switch to Apple on-device. You can change the model in Settings.';
 
-export type Submission = { readonly text: string; readonly source: InputSource };
+export type Submission = {
+  readonly text: string;
+  readonly source: InputSource;
+  readonly endedByPause?: boolean;
+};
 
 function recordingMsOf(registry: AtomRegistry.AtomRegistry): number {
   const state = registry.get(captureStateAtom);
@@ -29,11 +33,15 @@ export const submitAtom = Atom.keepAlive(
       if (registry.get(isSendingAtom)) return;
       registry.set(isSendingAtom, true);
       const exit = yield* Effect.exit(
-        sendTurn(registry, {
-          text: submission.text,
-          source: submission.source,
-          recordingMs: recordingMsOf(registry),
-        }),
+        sendTurn(
+          registry,
+          withContinuation(registry, {
+            text: submission.text,
+            source: submission.source,
+            recordingMs: recordingMsOf(registry),
+            endedByPause: submission.endedByPause,
+          }),
+        ),
       ).pipe(Effect.ensuring(Effect.sync(() => registry.set(isSendingAtom, false))));
       if (Exit.isSuccess(exit)) registry.set(draftAtom, EMPTY_DRAFT);
     }),
@@ -57,7 +65,11 @@ export const countdownAtom = Atom.keepAlive(
         );
         yield* Effect.sleep(COUNTDOWN_TICK);
       }
-      registry.set(submitAtom, { text: input.text, source: input.source });
+      registry.set(submitAtom, {
+        text: input.text,
+        source: input.source,
+        endedByPause: input.endedByPause,
+      });
     }),
   ),
 );

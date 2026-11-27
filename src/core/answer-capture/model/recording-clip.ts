@@ -14,9 +14,10 @@ export function keepRecording(
   registry: AtomRegistry.AtomRegistry,
   audio: RecordedAudio,
   speechStoppedAtMs: number,
+  endedByPause: boolean,
 ): Recording {
   discardRecording(registry);
   const playbackUrl = URL.createObjectURL(audio.wav);
   registry.set(recordedClipAtom, { wav: audio.wav, playbackUrl });
-  return { playbackUrl, durationMs: audio.durationMs, speechStoppedAtMs };
+  return { playbackUrl, durationMs: audio.durationMs, speechStoppedAtMs, endedByPause };
 }

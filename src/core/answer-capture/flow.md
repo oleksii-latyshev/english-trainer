@@ -28,7 +28,7 @@ sequenceDiagram
     and hands-free turn detection
         Warm-->>Listen: SpeechStarted, TurnEnded after the pause
         Listen->>Listen: live text ending in a comma or an open word (and, the, to, is...) adds 1.2 s to the end pause
-        Listen->>Listen: TurnEnded stops the recording when hands-free is on
+        Listen->>Listen: TurnEnded stops the recording when hands-free is on and marks the transcript endedByPause (a learner stop does not)
     and silence in auto-listen
         Listen->>Listen: 20 s without speech and without a hold cancels
     end
