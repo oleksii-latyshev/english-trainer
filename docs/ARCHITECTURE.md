@@ -121,7 +121,7 @@ sequenceDiagram
 | `RescueEngine` | Next step, simpler wording or missing-word candidates during recording | `claude`, Sonnet |
 | `ReviewMaterialEngine` | One situation and model sentence per due review item | `claude`, Sonnet |
 | Mistake-practice planner | Five questions from recurring mistakes | `claude`, Sonnet |
-| `UsageReviewEngine` | Semantic check of phrase use (frozen subsystem) | `claude`, Sonnet (Gemini API when touched) |
+| `UsageReviewEngine` | Semantic check of phrase use, batched per finished session (frozen subsystem) | `claude`, Sonnet (Gemini API when touched) |
 | Word and phrase lookup | Native-language translation + English explanation | Bundled Swift helper `apple-translation`, warm `serve` processes for lookups (macOS Translation + local Foundation Models) |
 
 Rules:
@@ -145,8 +145,10 @@ Rules:
   atomically.
 - Input source (`voice`, `edited`, `text`) and cue exposure (help shown) are stored, so cued or typed
   answers never count as independent spoken evidence.
-- An explicit usage review may assess the first two conversation answers against prior targets and
-  maintain a multi-week mastery streak. This subsystem is frozen (TR §9.2).
+- When a session finishes, one background usage review assesses answers 1 and 2 and every answer
+  that followed a steered question against prior targets, with one provider call, and maintains a
+  multi-week mastery streak. This subsystem is frozen apart from the owner-approved change of
+  2026-11-27 (TR §9.2).
 - Session variants share one session model: topic and time goal with an active-time clock kept in
   Rust, write-then-speak phases, and a five-question mistake-practice plan. Rust validates phase
   transitions. Rehearsal and mistake practice are cued, so they never become independent-use

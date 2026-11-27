@@ -592,6 +592,24 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             CREATE UNIQUE INDEX IF NOT EXISTS idx_mistake_attempts_one_retry
                 ON mistake_attempts(run_id, mistake_id) WHERE outcome = 'retry';",
         )?;
+        transaction.pragma_update(None, "user_version", 24)?;
+        transaction.commit()?;
+        version = 24;
+    }
+    if version < 25 {
+        let transaction = connection.unchecked_transaction()?;
+        // The saved item Eva steered toward in a turn's question. The answer that follows is the
+        // one the usage review checks for it.
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS turn_steering (
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                item_type TEXT NOT NULL CHECK(item_type IN ('mistake', 'phrase')),
+                item_id INTEGER NOT NULL,
+                PRIMARY KEY(session_id, sequence),
+                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+            );",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
     }

@@ -162,9 +162,34 @@ pub fn run() {
             app.manage(learning::ReviewService::new(
                 learning::SessionLearningStore::new(sessions.clone()),
             ));
-            app.manage(learning::UsageReviewService::new(
-                learning::SessionLearningStore::new(sessions.clone()),
-            ));
+            let usage_handle = app.handle().clone();
+            app.manage(
+                learning::UsageReviewQueue::start(
+                    learning::UsageReviewWorker::new(
+                        learning::UsageReviewService::new(learning::SessionLearningStore::new(
+                            sessions.clone(),
+                        )),
+                        providers::review_usage_batch,
+                        learning::RETRY_DELAY,
+                        learning::QUOTA_PAUSE,
+                    ),
+                    move |session_id| {
+                        conversation::infra::events::announce_coaching_update(
+                            &usage_handle,
+                            session_id,
+                        )
+                    },
+                )
+                .map_err(|error| {
+                    diagnostics::log(
+                        "startup",
+                        format_args!("Could not start the usage review worker thread: {error}"),
+                    );
+                    std::io::Error::other(
+                        "Could not start the learning use review. Restart the app.",
+                    )
+                })?,
+            );
             app.manage(speaking_activity::SpeakingActivityService::new(
                 speaking_activity::SessionActivityStore::new(sessions.clone()),
             ));
@@ -302,8 +327,6 @@ pub fn run() {
             learning::review_commands::submit_memory_recall,
             learning::review_commands::skip_memory_review_item,
             learning::review_commands::finish_memory_review,
-            learning::usage_commands::review_practice_memory_usage,
-            learning::usage_commands::get_practice_memory_usage,
             learning::commands::get_memory_usage_evidence,
         ])
         .build(tauri::generate_context!())

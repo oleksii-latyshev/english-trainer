@@ -180,8 +180,8 @@ At the end of a session:
   Words taken in a Debrief come first (oldest due, from an earlier session), then a due mistake.
   A word is steered toward at most once per session, and the conversation never waits for it.
 - The Debrief shows **✓ Used on your own: <phrase>** on the card of the answer where a taken word
-  was used without help, and lists those words in its summary. They come from the usage review, so
-  they appear once it has finished. With help, slipped and unjudged uses never show there.
+  was used without help, and lists those words in its summary. They come from the usage review that
+  runs in the background after the session, so they appear once it has finished. With help, slipped and unjudged uses never show there.
 - Optional shadowing: listen to an AI sentence and repeat it.
 - A review has up to six due items. Before a new spoken session, the learner can choose a
   two-minute warm-up of up to three due phrases, or Skip today. An unfinished review resumes

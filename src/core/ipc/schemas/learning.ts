@@ -25,7 +25,7 @@ export const FocusCategorySchema = bindingSchema<FocusCategory>()(
   Schema.Literals(['grammar', 'vocabulary', 'coherence', 'interaction']),
 );
 
-export const UsageOutcomeSchema = bindingSchema<UsageOutcome>()(
+const UsageOutcomeSchema = bindingSchema<UsageOutcome>()(
   Schema.Literals(['correct', 'with_help', 'incorrect', 'uncertain']),
 );
 

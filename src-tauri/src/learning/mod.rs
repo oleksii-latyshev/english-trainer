@@ -8,7 +8,7 @@ pub(crate) mod review_material;
 mod review_rules;
 mod review_service;
 mod service;
-pub mod usage_commands;
+pub mod usage_queue;
 mod usage_rules;
 mod usage_service;
 mod validation;
@@ -49,6 +49,7 @@ pub use usage::{
     UsageAssessmentFinding, UsageCandidate, UsageEventRecord, UsageOutcome, MAX_EXCERPT_CHARS,
     MIN_CONFIDENCE,
 };
+pub use usage_queue::{UsageReviewQueue, UsageReviewWorker, QUOTA_PAUSE, RETRY_DELAY};
 pub use usage_service::UsageReviewService;
 
 #[cfg(test)]
@@ -62,4 +63,10 @@ mod usage_tests;
 #[cfg(test)]
 mod review_service_tests;
 #[cfg(test)]
+mod usage_queue_tests;
+#[cfg(test)]
 mod usage_service_tests;
+#[cfg(test)]
+mod usage_session_tests;
+#[cfg(test)]
+mod usage_test_support;

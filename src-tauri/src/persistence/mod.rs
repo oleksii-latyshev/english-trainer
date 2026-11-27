@@ -24,7 +24,7 @@ mod translation_settings;
 mod usage_wins;
 use std::path::Path;
 
-pub(crate) const SCHEMA_VERSION: i64 = 24;
+pub(crate) const SCHEMA_VERSION: i64 = 25;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;
@@ -111,6 +111,7 @@ impl SessionDatabase {
         self.save_turn_with_details(session_id, sequence, turn, input_source, None, None)
     }
 
+    #[cfg(test)]
     pub fn save_turn_with_details(
         &mut self,
         session_id: u64,
@@ -119,6 +120,27 @@ impl SessionDatabase {
         input_source: &str,
         reply_ms: Option<u64>,
         answer_duration_ms: Option<u64>,
+    ) -> rusqlite::Result<()> {
+        self.save_turn_with_steering(
+            session_id,
+            sequence,
+            turn,
+            input_source,
+            (reply_ms, answer_duration_ms),
+            None,
+        )
+    }
+
+    /// Saves a turn and, when Eva's question steered toward a saved item, which item, in one
+    /// transaction. The answer to that question is the next sequence.
+    pub fn save_turn_with_steering(
+        &mut self,
+        session_id: u64,
+        sequence: usize,
+        turn: &StoredTurn,
+        input_source: &str,
+        (reply_ms, answer_duration_ms): (Option<u64>, Option<u64>),
+        steered: Option<TargetKey>,
     ) -> rusqlite::Result<()> {
         let transaction = self.connection.transaction()?;
         transaction.execute(
@@ -129,6 +151,17 @@ impl SessionDatabase {
             "INSERT INTO turn_input_sources (session_id, sequence, input_source) VALUES (?1, ?2, ?3)",
             params![to_sql_id(session_id)?, to_sql_sequence(sequence)?, input_source],
         )?;
+        if let Some((item_type, item_id)) = steered {
+            transaction.execute(
+                "INSERT INTO turn_steering (session_id, sequence, item_type, item_id) VALUES (?1, ?2, ?3, ?4)",
+                params![
+                    to_sql_id(session_id)?,
+                    to_sql_sequence(sequence)?,
+                    item_type.as_str(),
+                    to_sql_id(item_id)?
+                ],
+            )?;
+        }
         transaction.commit()
     }
 

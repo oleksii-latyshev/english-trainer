@@ -16,7 +16,6 @@ sequenceDiagram
     participant Help as features/answer-help
     participant Rescue as features/rescue
     participant Recall as features/spoken-recall
-    participant Usage as features/usage-review
     participant Review as features/write-speak
     participant Coaching as features/coaching-note
 
@@ -29,7 +28,6 @@ sequenceDiagram
     Screen->>Help: only when the stage keeps the microphone warm and nothing else holds the turn
     Screen->>Rescue: only while the capture is recording
     Screen->>Recall: once every answer is in
-    Screen->>Usage: after a spoken answer
     Dialogue-->>Learner: a quiet tip marker beside each answer, never a note
     Note over Screen,Review: no open session shows the start prompt; review phases hand the screen to ReviewStage
     Screen->>Review: ReviewStage with renderAnswerReview
