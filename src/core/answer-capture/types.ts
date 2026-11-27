@@ -7,6 +7,7 @@ export type Recording = {
   readonly playbackUrl: string;
   readonly durationMs: number;
   readonly speechStoppedAtMs: number;
+  readonly endedByPause?: boolean;
 };
 
 export type Listening = {
@@ -35,6 +36,7 @@ export type CaptureState =
       readonly text: string;
       readonly durationMs: number;
       readonly speechStoppedAtMs: number;
+      readonly endedByPause?: boolean;
     } & WithInput)
   | ({
       readonly tag: 'error';
@@ -45,4 +47,5 @@ export type CaptureState =
 export type ListenRequest = {
   readonly mode: RecordingMode;
   readonly discardPreRoll: boolean;
+  readonly keepsPreRoll?: boolean;
 };

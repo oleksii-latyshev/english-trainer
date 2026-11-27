@@ -57,6 +57,7 @@ function finishTranscription(
     text: outcome.text,
     durationMs: recording.durationMs,
     speechStoppedAtMs: recording.speechStoppedAtMs,
+    endedByPause: recording.endedByPause,
     actualInput,
   });
 }

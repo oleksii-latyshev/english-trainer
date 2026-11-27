@@ -5,9 +5,13 @@ import { markTurnPending, practiceStateAtom, sessionDetails } from '@/core/pract
 import { createPlayback, speechStateAtom } from '@/core/speech';
 import { sendFailureOf } from '../helpers/send-failure';
 import { PracticeTurns } from '../services/practice-turn-service';
+import type { Continuation } from '../types';
+import { closeJoinWindow } from './continuation';
 import { turnRuntime } from './runtime';
 import {
   acceptedAnswerAtom,
+  committedTurnAtom,
+  continuationAtom,
   generationAtom,
   IDLE_OUTCOME,
   interruptingAtom,
@@ -20,6 +24,7 @@ import {
 export type InterruptRequest = {
   readonly record: boolean;
   readonly retainPreRoll: boolean;
+  readonly continues?: Continuation;
 };
 
 const SPEAKING_TAGS: readonly string[] = ['speaking', 'starting', 'paused'];
@@ -30,11 +35,33 @@ function resetTurnState(registry: AtomRegistry.AtomRegistry) {
   registry.set(outcomeRecordAtom, IDLE_OUTCOME);
 }
 
+function resumeListening(
+  registry: AtomRegistry.AtomRegistry,
+  request: InterruptRequest,
+  wasSpeaking: boolean,
+) {
+  const { continues } = request;
+  if (continues === undefined) {
+    startListening(registry, {
+      mode: 'manual',
+      discardPreRoll: wasSpeaking && !request.retainPreRoll,
+    });
+    return;
+  }
+  Atom.batch(() => {
+    registry.set(continuationAtom, continues);
+    startListening(registry, { mode: 'auto', discardPreRoll: false, keepsPreRoll: true });
+  });
+}
+
 export function discardPendingReply(registry: AtomRegistry.AtomRegistry) {
   registry.update(generationAtom, (generation) => generation + 1);
   registry.get(replyVoiceAtom)?.cancel();
   createPlayback(registry).stop();
   registry.set(sendPendingAtom, false);
+  registry.set(continuationAtom, null);
+  registry.set(committedTurnAtom, null);
+  closeJoinWindow(registry);
   resetTurnState(registry);
 }
 
@@ -47,6 +74,7 @@ export const interruptReplyAtom = Atom.keepAlive(
       const wasSpeaking = SPEAKING_TAGS.includes(registry.get(speechStateAtom).tag);
       registry.update(generationAtom, (generation) => generation + 1);
       const generation = registry.get(generationAtom);
+      closeJoinWindow(registry);
       registry.get(replyVoiceAtom)?.cancel();
       createPlayback(registry).stop();
       const sessionId = sessionDetails(registry.get(practiceStateAtom))?.sessionId;
@@ -71,12 +99,7 @@ export const interruptReplyAtom = Atom.keepAlive(
       registry.set(sendPendingAtom, false);
       markTurnPending(registry, false);
       resetTurnState(registry);
-      if (request.record) {
-        startListening(registry, {
-          mode: 'manual',
-          discardPreRoll: wasSpeaking && !request.retainPreRoll,
-        });
-      }
+      if (request.record) resumeListening(registry, request, wasSpeaking);
     }),
     { concurrent: true },
   ),

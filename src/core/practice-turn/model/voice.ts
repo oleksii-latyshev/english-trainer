@@ -2,6 +2,7 @@ import type { AtomRegistry } from 'effect/reactivity';
 import { captureTimingAtom } from '@/core/answer-capture';
 import type { SessionDetails } from '@/core/practice-session';
 import { createPlayback } from '@/core/speech';
+import { closeJoinWindow } from './continuation';
 import {
   generationAtom,
   replyEndedAtom,
@@ -43,6 +44,7 @@ export function beginReplyVoice(
   const handle = createPlayback(registry).beginStream({
     onStart: (latencyMs) => {
       if (!isCurrent()) return;
+      closeJoinWindow(registry);
       const audioAtMs = performance.now();
       registry.update(replyTimingAtom, (timing) => ({
         ...timing,

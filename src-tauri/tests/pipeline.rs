@@ -78,6 +78,7 @@ fn write_then_speak_runs_through_a_real_database_and_reopens_at_the_saved_phase(
             "Written response one".into(),
             InputSource::Text,
             None,
+            None,
             &mut engine,
         )
         .unwrap();
@@ -87,6 +88,7 @@ fn write_then_speak_runs_through_a_real_database_and_reopens_at_the_saved_phase(
             started.session_id,
             "Written response two".into(),
             InputSource::Text,
+            None,
             None,
             &mut engine,
         )
@@ -103,6 +105,7 @@ fn write_then_speak_runs_through_a_real_database_and_reopens_at_the_saved_phase(
             "Spoken response one".into(),
             InputSource::Voice,
             Some(1_000),
+            None,
             &mut UnusedEngine,
         )
         .unwrap();

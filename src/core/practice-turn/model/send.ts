@@ -6,12 +6,14 @@ import {
   isCapturing,
   resetCapture,
 } from '@/core/answer-capture';
+import { conversationFlowAtom } from '@/core/conversation-flow';
 import {
   acceptTurn,
   canSendPracticeSource,
   markTurnPending,
   practiceStageUsesAudio,
   practiceStateAtom,
+  reviseAcceptedTurn,
   type SessionDetails,
   sessionDetails,
 } from '@/core/practice-session';
@@ -19,8 +21,11 @@ import { sendFailureOf } from '../helpers/send-failure';
 import { spokenDurationMs, spokenTurn } from '../helpers/spoken-turn';
 import { PracticeTurns } from '../services/practice-turn-service';
 import { type SendInput, TurnBlocked } from '../types';
+import { closeJoinWindow, openJoinWindow } from './continuation';
 import {
   acceptedAnswerAtom,
+  committedTurnAtom,
+  continuationAtom,
   generationAtom,
   outcomeRecordAtom,
   pendingReplyAtom,
@@ -46,13 +51,17 @@ function blockReason(
   return session;
 }
 
-function begin(registry: AtomRegistry.AtomRegistry, session: SessionDetails): number {
+function begin(
+  registry: AtomRegistry.AtomRegistry,
+  session: SessionDetails,
+  sequence: number,
+): number {
   registry.set(sendPendingAtom, true);
   markTurnPending(registry, true);
   registry.set(pendingReplyAtom, {
     sessionId: session.sessionId,
     text: '',
-    savedTurnCount: session.turnCount + 1,
+    savedTurnCount: sequence,
   });
   registry.update(generationAtom, (generation) => generation + 1);
   return registry.get(generationAtom);
@@ -63,12 +72,42 @@ function speechStoppedAt(registry: AtomRegistry.AtomRegistry): number | undefine
   return state.tag === 'transcript' ? state.speechStoppedAtMs : undefined;
 }
 
+function canJoinContinuation(registry: AtomRegistry.AtomRegistry, session: SessionDetails) {
+  return (
+    session.practiceMode === 'voice' &&
+    !session.isMistakePractice &&
+    practiceStageUsesAudio(session) &&
+    registry.get(conversationFlowAtom).autoListen
+  );
+}
+
+function openJoinWindowAfterPause(
+  registry: AtomRegistry.AtomRegistry,
+  session: SessionDetails,
+  input: SendInput,
+  sequence: number,
+) {
+  if (!input.endedByPause || input.source !== 'voice') return;
+  if (!canJoinContinuation(registry, session)) return;
+  openJoinWindow(registry, {
+    sessionId: session.sessionId,
+    sequence,
+    transcript: input.text,
+    recordingMs: input.recordingMs,
+    openedAtMs: performance.now(),
+  });
+}
+
 export function sendTurn(registry: AtomRegistry.AtomRegistry, input: SendInput) {
   return Effect.gen(function* () {
     const checked = blockReason(registry, input);
     if (checked instanceof TurnBlocked) return yield* checked;
     const session = checked;
-    const generation = begin(registry, session);
+    const sequence = input.continuesTurn ?? session.turnCount + 1;
+    registry.set(continuationAtom, null);
+    const generation = begin(registry, session, sequence);
+    closeJoinWindow(registry);
+    openJoinWindowAfterPause(registry, session, input, sequence);
     function isLatest() {
       return registry.get(generationAtom) === generation;
     }
@@ -89,6 +128,7 @@ export function sendTurn(registry: AtomRegistry.AtomRegistry, input: SendInput) 
         transcript: input.text,
         source: input.source,
         answerDurationMs: spokenDurationMs(input.source, input.recordingMs),
+        continuesTurn: input.continuesTurn,
         onDelta: (text) => {
           if (!isLatest()) return;
           registry.update(pendingReplyAtom, (reply) =>
@@ -102,6 +142,7 @@ export function sendTurn(registry: AtomRegistry.AtomRegistry, input: SendInput) 
           Effect.sync(() => {
             voice?.cancel();
             if (!isLatest()) return;
+            closeJoinWindow(registry);
             registry.set(pendingReplyAtom, null);
             registry.set(outcomeRecordAtom, {
               requestId,
@@ -117,10 +158,17 @@ export function sendTurn(registry: AtomRegistry.AtomRegistry, input: SendInput) 
           }),
         ),
       );
-    acceptTurn(registry, session.sessionId, turn);
+    const committed = registry.get(committedTurnAtom);
+    const replacesCommitted =
+      input.continuesTurn !== undefined &&
+      committed?.sessionId === session.sessionId &&
+      committed.sequence === input.continuesTurn;
+    if (replacesCommitted) reviseAcceptedTurn(registry, session.sessionId, turn);
+    else acceptTurn(registry, session.sessionId, turn);
+    registry.set(committedTurnAtom, { sessionId: session.sessionId, sequence });
     registry.set(acceptedAnswerAtom, {
       sessionId: session.sessionId,
-      sequence: session.turnCount + 1,
+      sequence,
       originalTranscript: input.text,
       requestId,
     });
