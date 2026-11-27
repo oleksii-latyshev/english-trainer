@@ -13,17 +13,31 @@ pub(crate) mod usage;
 #[cfg(test)]
 mod model_pinning_tests;
 
-use super::{ProviderError, UsageReviewRequest, UsageReviewResponse};
+use super::{ProviderError, UsageBatchAnswer, UsageBatchResult};
 use std::path::PathBuf;
 
 pub(super) struct AgyEngine {
     pub(super) binary: PathBuf,
 }
 
-pub(super) fn review_turn_usage(
-    request: &UsageReviewRequest,
-) -> Result<UsageReviewResponse, ProviderError> {
-    usage::review_turn_usage(request)
+pub(super) fn review_usage_batch(
+    answers: &[UsageBatchAnswer],
+) -> Result<Vec<UsageBatchResult>, ProviderError> {
+    let mut results = Vec::new();
+    let mut last_error = None;
+    for answer in answers {
+        match usage::review_turn_usage(&answer.request) {
+            Ok(response) => results.push(UsageBatchResult {
+                sequence: answer.sequence,
+                response,
+            }),
+            Err(error) => last_error = Some(error),
+        }
+    }
+    match (results.is_empty(), last_error) {
+        (true, Some(error)) => Err(error),
+        _ => Ok(results),
+    }
 }
 
 pub(super) fn resolve_binary() -> Option<PathBuf> {

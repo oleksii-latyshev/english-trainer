@@ -5,7 +5,6 @@ export { lockTurn, practiceTurnEffectsAtom, setPlanning } from './model/mounts';
 export { turnRuntime } from './model/runtime';
 export { sendTurn } from './model/send';
 export {
-  acceptedAnswerAtom,
   canVoiceInterruptAtom,
   continuationAtom,
   joinWindowAtom,

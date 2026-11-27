@@ -19,7 +19,7 @@ pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
 pub use background::generate_rescue;
 pub use background::{
-    coach_answers, generate_mistake_questions, generate_review_material, review_turn_usage,
+    coach_answers, generate_mistake_questions, generate_review_material, review_usage_batch,
     run_background_json,
 };
 pub use gemini::generate_answer_plan;
@@ -198,6 +198,20 @@ pub struct UsageReviewRequest {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UsageReviewResponse {
     pub findings: Vec<UsageFinding>,
+}
+
+/// One answer of a session in a batched usage review, keyed by its sequence.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UsageBatchAnswer {
+    pub sequence: usize,
+    pub request: UsageReviewRequest,
+}
+
+/// The validated findings for one answer of a batch. An answer the provider got wrong is missing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UsageBatchResult {
+    pub sequence: usize,
+    pub response: UsageReviewResponse,
 }
 
 /// One of the learner's answers waiting to be coached, with the question it answered.

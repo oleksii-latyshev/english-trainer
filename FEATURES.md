@@ -27,7 +27,6 @@ mindmap
       Need help?
       Stuck
       Quiet tip marker
-      Learning use review
       Spoken recall
       Write, then speak
       Translate a selection
@@ -94,7 +93,6 @@ The conversation itself. Screen: [`screens/talk`](src/screens/talk/flow.md).
 | Need help? | F6 | Frame, Phrases and a model Example, prepared before the learner starts | [answer-help](src/features/answer-help/flow.md) |
 | Stuck | F7 | Next step, a simpler way to say it or a missing word, without ending the recording | [rescue](src/features/rescue/flow.md) |
 | Quiet tip marker | F5 | An answer with a review waiting gets a marker; the review itself is on the wrap-up | [talk-dialogue](src/features/talk-dialogue/flow.md) |
-| Learning use review | — | Did the learner use a saved phrase or avoid a known mistake | [usage-review](src/features/usage-review/flow.md) |
 | Spoken recall | — | After the last answer, say a phrase saved in an earlier session | [spoken-recall](src/features/spoken-recall/flow.md) |
 | Write, then speak | F11 | Write an answer, see it reviewed, then say it aloud and see that reviewed | [write-speak](src/features/write-speak/flow.md) |
 | Translate a selection | F13 | A selected word or phrase in the learner's language plus an English explanation, on the Mac | [text-translation](src/features/text-translation/flow.md) |

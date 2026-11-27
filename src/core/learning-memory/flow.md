@@ -110,4 +110,4 @@ runs them, so the card, the library and the badges reload after every answer.
 
 Changes made through atoms (`archive`, `delete` in `features/memory-library`) carry the
 `LEARNING_MEMORY` reactivity key, so every atom above reloads. That includes the saves and undos of
-`features/wrap-up` and the usage review of `features/usage-review`.
+`features/wrap-up`.

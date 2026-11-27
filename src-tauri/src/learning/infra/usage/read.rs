@@ -88,17 +88,16 @@ pub(crate) fn prepare_usage_review_on(
         return Ok(None);
     };
     let candidates = eligible_usage_candidates_on(connection, session_id, sequence)?;
-    let question = if sequence == 1 {
-        opening_question.clone()
-    } else {
-        connection
+    let question = match sequence.checked_sub(1).filter(|previous| *previous > 0) {
+        None => opening_question,
+        Some(previous) => connection
             .query_row(
-                "SELECT assistant_question FROM turns WHERE session_id = ?1 AND sequence = 1",
-                params![sql_sid],
+                "SELECT assistant_question FROM turns WHERE session_id = ?1 AND sequence = ?2",
+                params![sql_sid, to_sql_sequence(previous)?],
                 |row| row.get::<_, String>(0),
             )
             .optional()?
-            .unwrap_or(opening_question)
+            .unwrap_or(opening_question),
     };
     Ok(Some(PreparedUsageReview {
         request: UsageReviewRequest {
