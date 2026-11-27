@@ -247,7 +247,6 @@ fn finishing_flushes_coaching_without_completing_independent_phrase_preparation(
         summary.pending_coaching, 2,
         "both answers are still unchecked"
     );
-    assert!(summary.phrases.is_empty());
 
     release_tx.send(()).unwrap();
     assert_eq!(fixture.next_batch(), [1, 2]);
@@ -255,11 +254,6 @@ fn finishing_flushes_coaching_without_completing_independent_phrase_preparation(
 
     let later = fixture.store.session_wrapup(session.session_id).unwrap();
     assert_eq!(later.pending_coaching, 0);
-    assert!(later.phrases.is_empty());
-    assert_eq!(
-        later.wrapup_preparation,
-        crate::conversation::domain::WrapupPreparation::Pending
-    );
     assert_eq!(later.turn_count, 2);
     assert_eq!(
         fixture

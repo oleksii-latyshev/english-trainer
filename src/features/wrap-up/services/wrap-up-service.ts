@@ -8,8 +8,6 @@ import {
   IpcEvents,
   invokeCommand,
   PhraseCardRecordSchema,
-  WRAPUP_UPDATED_EVENT,
-  WrapupUpdatedSchema,
 } from '@/core/ipc';
 import type { FinishedSession, PhraseCard, TakenWord, WrapUpFailure } from '../types';
 
@@ -47,17 +45,10 @@ export class WrapUpService extends Context.Service<WrapUpService, WrapUpServiceS
             sequence,
           }),
         updates: (sessionId) =>
-          events
-            .listenAll([
-              { event: COACHING_UPDATED_EVENT, schema: CoachingUpdatedSchema },
-              { event: WRAPUP_UPDATED_EVENT, schema: WrapupUpdatedSchema },
-            ])
-            .pipe(
-              Stream.filter(
-                (event) => Option.isNone(event) || event.value.session_id === sessionId,
-              ),
-              Stream.map(() => undefined),
-            ),
+          events.listenAll([{ event: COACHING_UPDATED_EVENT, schema: CoachingUpdatedSchema }]).pipe(
+            Stream.filter((event) => Option.isNone(event) || event.value.session_id === sessionId),
+            Stream.map(() => undefined),
+          ),
       };
     }),
   );

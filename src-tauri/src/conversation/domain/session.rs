@@ -1,8 +1,5 @@
 use super::rehearsal::replay_questions;
-use super::{
-    DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching, WrapupPhrase,
-    WrapupPreparation,
-};
+use super::{DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching};
 use crate::learning::mistake_practice::MistakePracticeQuestion;
 use crate::providers::{AnsweredBy, AttemptComparison};
 use serde::{Deserialize, Serialize};
@@ -77,11 +74,9 @@ pub struct FinishedPracticeSession {
     pub topic_label: String,
     pub duration_goal_seconds: Option<u32>,
     pub numbers: crate::learning::session_stats::SessionNumbers,
-    pub phrases: Vec<WrapupPhrase>,
     pub recurring_mistakes: Vec<RecurringMistake>,
     pub pending_coaching: usize,
     pub is_coaching_paused: bool,
-    pub wrapup_preparation: WrapupPreparation,
     pub practice_mode: PracticeMode,
     pub practice_phase: PracticePhase,
     pub written_turn_count: usize,

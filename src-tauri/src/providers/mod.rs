@@ -11,7 +11,6 @@ mod plain_prompt;
 mod race;
 mod reply_text;
 mod rescue;
-mod session_wrapup;
 mod settings;
 pub(crate) mod spoken_review;
 pub use crate::ai_settings::{AgyModel, AiSettings, ConversationProvider, EvaStyle};
@@ -20,14 +19,11 @@ pub use answered_by::{AnswerProvider, AnsweredBy};
 pub use apple::AppleHelper;
 pub use background::generate_rescue;
 pub use background::{
-    coach_answers, generate_mistake_questions, generate_review_material, generate_session_wrapup,
-    review_turn_usage, run_background_json,
+    coach_answers, generate_mistake_questions, generate_review_material, review_turn_usage,
+    run_background_json,
 };
 pub use gemini::generate_answer_plan;
 pub use rescue::{RescueKind, RescueRequest, RescueResponse};
-pub use session_wrapup::{
-    parse_wrapup_result, GeneratedWrapupPhrase, WrapupAnswer, WrapupRequest, WrapupResult,
-};
 #[cfg(test)]
 pub use spoken_review::GeneratedReviewMaterial;
 pub use spoken_review::{
@@ -181,10 +177,6 @@ pub trait UsageReviewEngine: Send + Sync {
 
 pub trait RescueEngine: Send + Sync {
     fn generate_rescue(&self, request: &RescueRequest) -> Result<RescueResponse, ProviderError>;
-}
-
-pub trait SessionWrapupEngine: Send + Sync {
-    fn generate_wrapup(&self, request: &WrapupRequest) -> Result<WrapupResult, ProviderError>;
 }
 
 pub trait ReviewMaterialEngine: Send + Sync {

@@ -14,7 +14,7 @@ import {
 import { runtime } from '../model/runtime';
 import { WrapUpService } from '../services/wrap-up-service';
 import type { FinishedSession } from '../types';
-import { aCard, aFinishedSession, aPhrase } from './builders';
+import { aCard, aFinishedSession } from './builders';
 
 Reflect.set(globalThis, 'isTauri', true);
 
@@ -29,9 +29,7 @@ type Backend = {
 
 function aBackend(overrides: Partial<Backend> = {}): Backend {
   return {
-    summary: aFinishedSession({
-      phrases: [aPhrase(), aPhrase({ phrase: 'I tend to plan ahead.' })],
-    }),
+    summary: aFinishedSession(),
     calls: [],
     failing: new Set(),
     events: Effect.runSync(PubSub.unbounded<unknown>()),
@@ -104,28 +102,25 @@ describe('the wrap-up of a finished session', () => {
   it('reads the session once the screen is open', async () => {
     const registry = opened(aBackend());
     await until(() => summaryOf(registry) !== undefined);
-    expect(summaryOf(registry)?.phrases).toHaveLength(2);
+    expect(summaryOf(registry)?.turn_count).toBe(3);
   });
 
-  it('fills in phrases when preparation or coaching lands for this session', async () => {
-    const backend = aBackend({
-      summary: aFinishedSession({ wrapup_preparation: { state: 'pending' }, pending_coaching: 1 }),
-    });
+  it('fills in the checked answers when coaching lands for this session', async () => {
+    const backend = aBackend({ summary: aFinishedSession({ pending_coaching: 1 }) });
     const registry = opened(backend);
-    await until(() => summaryOf(registry)?.wrapup_preparation.state === 'pending');
-    backend.summary = aFinishedSession({ phrases: [aPhrase()], pending_coaching: 0 });
+    await until(() => summaryOf(registry)?.pending_coaching === 1);
+    backend.summary = aFinishedSession({ pending_coaching: 0 });
     PubSub.publishUnsafe(backend.events, Option.some({ session_id: SESSION }));
-    await until(() => summaryOf(registry)?.phrases.length === 1);
-    expect(summaryOf(registry)?.pending_coaching).toBe(0);
+    await until(() => summaryOf(registry)?.pending_coaching === 0);
   });
 
   it('reads again once the listeners are registered, so a result in the gap is not lost', async () => {
-    const backend = aBackend();
+    const backend = aBackend({ summary: aFinishedSession({ pending_coaching: 2 }) });
     const registry = opened(backend);
-    await until(() => summaryOf(registry)?.phrases.length === 2);
-    backend.summary = aFinishedSession({ phrases: [aPhrase()] });
+    await until(() => summaryOf(registry)?.pending_coaching === 2);
+    backend.summary = aFinishedSession({ pending_coaching: 1 });
     PubSub.publishUnsafe(backend.events, Option.none());
-    await until(() => summaryOf(registry)?.phrases.length === 1);
+    await until(() => summaryOf(registry)?.pending_coaching === 1);
   });
 
   it('ignores updates of another session', async () => {

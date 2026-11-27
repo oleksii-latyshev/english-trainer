@@ -115,16 +115,6 @@ impl SessionDatabase {
                     .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(0, i64::MAX))?
             ],
         )? == 1;
-        if updated {
-            transaction.execute(
-                "INSERT INTO session_wrapups (session_id, state, result_json)
-                 SELECT ?1, CASE WHEN EXISTS(SELECT 1 FROM turns WHERE session_id = ?1)
-                    THEN 'pending' ELSE 'ready' END,
-                 CASE WHEN EXISTS(SELECT 1 FROM turns WHERE session_id = ?1)
-                    THEN NULL ELSE '{\"phrases\":[]}' END",
-                [to_sql_id(session_id)?],
-            )?;
-        }
         transaction.commit()?;
         Ok(updated)
     }

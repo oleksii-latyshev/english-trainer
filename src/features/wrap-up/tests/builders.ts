@@ -1,4 +1,4 @@
-import type { FinishedSession, PhraseCard, WrapupPhrase } from '../types';
+import type { FinishedSession, PhraseCard } from '../types';
 
 export function aFinishedSession(overrides: Partial<FinishedSession> = {}): FinishedSession {
   return {
@@ -14,26 +14,14 @@ export function aFinishedSession(overrides: Partial<FinishedSession> = {}): Fini
       words_per_minute: { value: 110, trend: { kind: 'percent', change: 4 } },
       average_answer: { words: 22, trend: { kind: 'words', change: 3 } },
     },
-    phrases: [],
     recurring_mistakes: [],
     pending_coaching: 0,
     is_coaching_paused: false,
-    wrapup_preparation: { state: 'ready' },
     practice_mode: 'voice',
     practice_phase: 'speaking',
     written_turn_count: 0,
     spoken_turn_count: 3,
     is_mistake_practice: false,
-    ...overrides,
-  };
-}
-
-export function aPhrase(overrides: Partial<WrapupPhrase> = {}): WrapupPhrase {
-  return {
-    sequence: 1,
-    phrase: 'It saves me time.',
-    note: 'Use this to explain a practical benefit.',
-    you_said: 'It make my work faster.',
     ...overrides,
   };
 }

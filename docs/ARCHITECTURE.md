@@ -119,7 +119,6 @@ sequenceDiagram
 | Batch coaching (tier: coaching) | Rephrasing and one focus point per answer, up to five answers per call | `claude`, Sonnet (`agy` only if Claude is missing). The Gemini API is not used (its free quota is reserved for conversation) |
 | Answer planner | Frame, phrases and hidden example for the current question | Gemini API, question-only prefetch |
 | `RescueEngine` | Next step, simpler wording or missing-word candidates during recording | `claude`, Sonnet |
-| `SessionWrapupEngine` | Zero to three phrases from a finished session | `claude`, Sonnet |
 | `ReviewMaterialEngine` | One situation and model sentence per due review item | `claude`, Sonnet |
 | Mistake-practice planner | Five questions from recurring mistakes | `claude`, Sonnet |
 | `UsageReviewEngine` | Semantic check of phrase use (frozen subsystem) | `claude`, Sonnet (Gemini API when touched) |
@@ -152,11 +151,9 @@ Rules:
   Rust, write-then-speak phases, and a five-question mistake-practice plan. Rust validates phase
   transitions. Rehearsal and mistake practice are cued, so they never become independent-use
   evidence. Rules: TR §7.
-- Session finish commits a durable wrap-up job. A `WrapupQueue` resumes pending jobs at startup and
-  calls the engine outside the session mutex, behind the `WrapupGenerator` and `WrapupNotifier`
-  ports of the `conversation` context; results or typed failures persist before events
-  refresh the UI. Review material has its own SQLite cache so background generation cannot delay
-  first-answer scoring.
+- Finishing a session makes no AI call: the wrap-up numbers are computed in Rust and the Debrief
+  comes from the batch coaching. Review material has its own SQLite cache so background generation
+  cannot delay first-answer scoring.
 - Answer help calls its providers through the `AnswerPlanner` port of the
   `conversation` context; the session store validates session, sequence and question and caches the
   plan, the Gemini planner and its schema stay in `providers`. Stuck rescue calls the `claude`

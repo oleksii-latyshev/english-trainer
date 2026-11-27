@@ -4,7 +4,7 @@ use super::infra::providers::{
 use super::ports::ReplyEngine;
 use super::{
     CoachingQueue, FinishedPracticeSession, InputSource, PracticeDialogue, PracticePhase,
-    PracticeSession, SavedWrapupPhrases, SessionStore, StartPracticeOptions, WrapupQueue,
+    PracticeSession, SessionStore, StartPracticeOptions,
 };
 use crate::ai_settings::{AiSettings, AiSettingsService};
 use crate::core::IpcError;
@@ -197,7 +197,6 @@ pub async fn get_practice_dialogue(
 pub async fn finish_practice_session(
     sessions: tauri::State<'_, SessionStore>,
     coaching: tauri::State<'_, CoachingQueue>,
-    wrapup: tauri::State<'_, WrapupQueue>,
     session_id: u64,
 ) -> Result<FinishedPracticeSession, IpcError> {
     let summary = blocking(
@@ -207,7 +206,6 @@ pub async fn finish_practice_session(
     )
     .await?;
     coaching.flush(session_id);
-    wrapup.wake();
     Ok(summary)
 }
 
@@ -220,28 +218,6 @@ pub async fn get_session_wrapup(
         sessions,
         "Could not load the wrap-up. Please retry.",
         move |store| store.session_wrapup(session_id),
-    )
-    .await
-}
-
-#[tauri::command]
-pub fn retry_session_wrapup(
-    wrapup: tauri::State<'_, WrapupQueue>,
-    session_id: u64,
-) -> Result<(), IpcError> {
-    wrapup.retry(session_id).map_err(IpcError::from)
-}
-
-#[tauri::command]
-pub async fn save_wrapup_phrases(
-    sessions: tauri::State<'_, SessionStore>,
-    session_id: u64,
-    phrases: Vec<String>,
-) -> Result<SavedWrapupPhrases, IpcError> {
-    blocking(
-        sessions,
-        "Could not save the phrases. Please retry.",
-        move |store| store.save_wrapup_phrases(session_id, &phrases),
     )
     .await
 }

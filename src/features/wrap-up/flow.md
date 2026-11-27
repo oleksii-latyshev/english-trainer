@@ -7,8 +7,8 @@ other, so the screen hands the Take button and the taken state to the Debrief.
 ## Fill in live
 
 The wrap-up opens with the snapshot `finish_practice_session` returned. The feature reads the session
-again and keeps it current, so the numbers and the "Still checking" line change as work lands in
-Rust. The conversation never waits for either.
+again and keeps it current, so the numbers and the "Still checking" line change as coaching lands in
+Rust. The conversation never waits for it.
 
 ```mermaid
 sequenceDiagram
@@ -31,13 +31,13 @@ sequenceDiagram
     else IpcError or decode failure
         Rust-->>Screen: the snapshot already on screen stays
     end
-    Atoms->>Atoms: both listeners registered, the marker triggers a read
-    Rust-->>Ipc: wrapup-updated or coaching-updated for this session
+    Atoms->>Atoms: the listener is registered, the marker triggers a read
+    Rust-->>Ipc: coaching-updated for this session
     Ipc-->>Atoms: refresh (events of other sessions are dropped)
     Atoms-->>Screen: the new snapshot replaces the old one
 ```
 
-`IpcEvents.listenAll` registers both listeners and then emits a "listening" marker before any
+`IpcEvents.listenAll` registers the listener and then emits a "listening" marker before any
 event. The feature reads the summary when the marker arrives and again on each matching event, so a
 result that lands between registration and the first read is not lost. There is no timer.
 
