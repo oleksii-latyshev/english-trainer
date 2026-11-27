@@ -127,6 +127,7 @@ fn coaching_validates_the_structured_answers_like_the_legacy_provider() {
         sequence: 1,
         question: "What did he do?".into(),
         transcript: "He go home".into(),
+        habits: Vec::new(),
     }];
 
     let coached = coach_answers_with(&cli, &answers).unwrap();
@@ -149,6 +150,7 @@ fn an_unreadable_coaching_payload_is_invalid_output() {
         sequence: 1,
         question: "Q".into(),
         transcript: "He go home".into(),
+        habits: Vec::new(),
     }];
     let error = coach_answers_with(&cli, &answers).unwrap_err();
     assert_eq!(error.code, ProviderErrorCode::InvalidOutput);

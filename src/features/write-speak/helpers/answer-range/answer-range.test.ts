@@ -28,6 +28,7 @@ function aDialogue(overrides: Partial<WriteSpeakDialogue> = {}): WriteSpeakDialo
     coaching: [{ state: 'pending' }, { state: 'paused' }],
     debrief_words: [],
     debrief_wins: [],
+    habits: [],
     ...overrides,
   };
 }

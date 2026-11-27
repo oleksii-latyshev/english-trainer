@@ -206,6 +206,8 @@ pub struct CoachingAnswer {
     pub sequence: usize,
     pub question: String,
     pub transcript: String,
+    /// The learner's top habit words, the same for every answer of a batch.
+    pub habits: Vec<String>,
 }
 
 /// The coaching a batch returned for one answer.

@@ -1,5 +1,6 @@
 use super::rehearsal::replay_questions;
 use super::{DebriefWin, DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching};
+use crate::learning::habits::Habit;
 use crate::learning::mistake_practice::MistakePracticeQuestion;
 use crate::providers::{AnsweredBy, AttemptComparison};
 use serde::{Deserialize, Serialize};
@@ -48,7 +49,7 @@ impl InputSource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, ts_rs::TS)]
 #[ts(export)]
 pub struct PracticeDialogue {
     pub session_id: u64,
@@ -63,6 +64,9 @@ pub struct PracticeDialogue {
     pub debrief_words: Vec<DebriefWord>,
     /// Taken words used on their own in this session, once the usage review has landed.
     pub debrief_wins: Vec<DebriefWin>,
+    /// The learner's plain words that keep coming back, with their trend; empty until two
+    /// conversations of enough words have been saved.
+    pub habits: Vec<Habit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]

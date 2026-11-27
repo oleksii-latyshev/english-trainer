@@ -81,6 +81,7 @@ function layerOf(backend: Backend) {
               coaching: backend.coaching,
               debrief_words: backend.debriefWords,
               debrief_wins: [],
+              habits: [],
             });
           case 'retry_practice_turn':
             if (backend.compareFails) {

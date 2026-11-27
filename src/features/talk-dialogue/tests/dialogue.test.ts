@@ -50,6 +50,7 @@ function dialogueOf(sessionId: number, turns: number) {
     coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
     debrief_words: [],
     debrief_wins: [],
+    habits: [],
   };
 }
 

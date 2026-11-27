@@ -8,9 +8,28 @@ use crate::conversation::domain::{
     PracticeSession,
 };
 use crate::conversation::error::ConversationError;
+use crate::learning::habits::{top_habits, Habit};
 use std::time::Instant;
 
 impl SessionStore {
+    /// Habits from the finished sessions up to this one. A failed read only hides them.
+    pub(crate) fn habits(&self, state: &State, session_id: u64) -> Vec<Habit> {
+        state
+            .database
+            .finished_session_texts(session_id)
+            .map(|texts| top_habits(&texts))
+            .unwrap_or_default()
+    }
+
+    /// The top habit words as the coaching prompt gets them.
+    pub(crate) fn habit_words(&self, session_id: u64) -> Vec<String> {
+        let state = self.lock();
+        self.habits(&state, session_id)
+            .into_iter()
+            .map(|habit| habit.word)
+            .collect()
+    }
+
     pub fn dialogue(&self, session_id: u64) -> Result<PracticeDialogue, ConversationError> {
         let state = self.lock();
         let (opening_question, turns) = match state
@@ -30,7 +49,8 @@ impl SessionStore {
         };
         let details = state.database.turn_details(session_id)?;
         let coaching = self.turn_coaching(&state, session_id, turns.len())?;
-        let debrief_words = pick_debrief_words(&coaching);
+        let habits = self.habits(&state, session_id);
+        let debrief_words = pick_debrief_words(&coaching, &habits);
         Ok(PracticeDialogue {
             session_id,
             opening_question,
@@ -41,6 +61,7 @@ impl SessionStore {
             coaching,
             debrief_words,
             debrief_wins: state.database.session_wins(session_id)?,
+            habits,
             turns,
         })
     }
