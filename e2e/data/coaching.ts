@@ -45,6 +45,7 @@ export function coachedConversation(
   debriefWords: PracticeDialogue['debrief_words'] = [],
   debriefWins: PracticeDialogue['debrief_wins'] = [],
   habits: PracticeDialogue['habits'] = [],
+  focusRule: PracticeDialogue['focus_rule'] = null,
 ): {
   session: PracticeSession;
   dialogue: PracticeDialogue;
@@ -76,6 +77,7 @@ export function coachedConversation(
     debrief_words: debriefWords,
     debrief_wins: debriefWins,
     habits,
+    focus_rule: focusRule,
   };
   return { session, dialogue };
 }

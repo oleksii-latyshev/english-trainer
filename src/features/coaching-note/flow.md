@@ -16,7 +16,9 @@ words taken. A taken word the usage review saw the learner use on their own in t
 "✓ Used on your own: <phrase>" under the answer, and the summary lists those words too
 (`debrief_wins`, read from Rust; With help never appears). Below them "Your habits" lists the
 plain words Rust counted across recent conversations (`habits`, at most three) as
-"very 3.4 → 1.2 per 100 words"; the block is absent while Rust sends none. A pending, paused or failed answer shows the same status line and retry as
+"very 3.4 → 1.2 per 100 words"; the block is absent while Rust sends none. Last, "Rule to practise" shows the rule Rust picked
+(`focus_rule`: title, one-line summary, "3 times today · 5 open", a "Came back" chip) with Practise this
+rule, which calls `onPractiseRule(rule_key)` from the wrap-up screen; the block is absent when Rust sends none. A pending, paused or failed answer shows the same status line and retry as
 `AnswerReview`.
 
 ```mermaid

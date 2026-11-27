@@ -8,6 +8,7 @@ use crate::conversation::domain::{
     PracticeSession,
 };
 use crate::conversation::error::ConversationError;
+use crate::learning::focus_rule::{pick_focus_rule, FocusRule};
 use crate::learning::habits::{top_habits, Habit};
 use std::time::Instant;
 
@@ -19,6 +20,15 @@ impl SessionStore {
             .finished_session_texts(session_id)
             .map(|texts| top_habits(&texts))
             .unwrap_or_default()
+    }
+
+    /// The rule to practise after this session. A failed read only hides it.
+    fn focus_rule(&self, state: &State, session_id: u64) -> Option<FocusRule> {
+        state
+            .database
+            .session_rule_counts(session_id)
+            .ok()
+            .and_then(|counts| pick_focus_rule(&counts))
     }
 
     /// The top habit words as the coaching prompt gets them.
@@ -62,6 +72,7 @@ impl SessionStore {
             debrief_words,
             debrief_wins: state.database.session_wins(session_id)?,
             habits,
+            focus_rule: self.focus_rule(&state, session_id),
             turns,
         })
     }

@@ -1,5 +1,6 @@
 use super::rehearsal::replay_questions;
 use super::{DebriefWin, DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching};
+use crate::learning::focus_rule::FocusRule;
 use crate::learning::habits::Habit;
 use crate::learning::mistake_practice::MistakePracticeQuestion;
 use crate::providers::{AnsweredBy, AttemptComparison};
@@ -67,6 +68,8 @@ pub struct PracticeDialogue {
     /// The learner's plain words that keep coming back, with their trend; empty until two
     /// conversations of enough words have been saved.
     pub habits: Vec<Habit>,
+    /// The grammar rule broken most in this session, offered for practice in Mistakes.
+    pub focus_rule: Option<FocusRule>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]

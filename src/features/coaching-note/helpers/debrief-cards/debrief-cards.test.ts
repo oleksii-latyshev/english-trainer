@@ -30,6 +30,7 @@ const conversation: ReviewedConversation = {
   ],
   debrief_wins: [{ sequence: 3, phrase: 'look into' }],
   habits: [],
+  focus_rule: null,
 };
 
 describe('debriefCards', () => {

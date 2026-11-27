@@ -1,16 +1,30 @@
+import { Button } from '@/shared/ui/button';
+import { Chip } from '@/shared/ui/chip';
+import { focusRuleLine } from '../../helpers/focus-rule-line';
 import { habitLine } from '../../helpers/habit-line';
 import { takenLine } from '../../helpers/taken-line';
 import { wonPhrases } from '../../helpers/win-line';
-import type { DebriefWin, DebriefWord, Habit } from '../../types';
+import type { DebriefWin, DebriefWord, FocusRule, Habit, RuleKey } from '../../types';
 
 type Props = {
   words: readonly DebriefWord[];
   wins: readonly DebriefWin[];
   habits: readonly Habit[];
+  focusRule: FocusRule | null;
+  isStartingRun: boolean;
+  onPractiseRule: (ruleKey: RuleKey) => void;
   isTaken: (word: DebriefWord) => boolean;
 };
 
-export function DebriefSummary({ words, wins, habits, isTaken }: Props) {
+export function DebriefSummary({
+  words,
+  wins,
+  habits,
+  focusRule,
+  isStartingRun,
+  onPractiseRule,
+  isTaken,
+}: Props) {
   const taken = words.filter(isTaken);
   const won = wonPhrases(wins);
   return (
@@ -69,6 +83,26 @@ export function DebriefSummary({ words, wins, habits, isTaken }: Props) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      {focusRule && (
+        <div className="flex flex-col gap-1.5">
+          <h4 className="text-caption text-faint m-0 font-normal">Rule to practise</h4>
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-body text-foreground font-semibold">{focusRule.title}</span>
+            {focusRule.came_back && <Chip tone="warning">Came back</Chip>}
+          </div>
+          <p className="text-caption text-muted leading-copy m-0">{focusRule.summary}</p>
+          <p className="text-caption text-faint m-0">{focusRuleLine(focusRule)}</p>
+          <div>
+            <Button
+              onClick={() => onPractiseRule(focusRule.rule_key)}
+              pending={isStartingRun}
+              tone="secondary"
+            >
+              Practise this rule
+            </Button>
+          </div>
         </div>
       )}
     </section>

@@ -15,6 +15,10 @@ export type DebriefWord = ReviewedConversation['debrief_words'][number];
 
 export type DebriefWin = ReviewedConversation['debrief_wins'][number];
 
+export type FocusRule = NonNullable<ReviewedConversation['focus_rule']>;
+
+export type RuleKey = FocusRule['rule_key'];
+
 export type Habit = ReviewedConversation['habits'][number];
 
 export type AttemptComparison = typeof AttemptComparisonSchema.Type;

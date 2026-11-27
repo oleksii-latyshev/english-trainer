@@ -51,6 +51,7 @@ function dialogueOf(sessionId: number, turns: number) {
     debrief_words: [],
     debrief_wins: [],
     habits: [],
+    focus_rule: null,
   };
 }
 

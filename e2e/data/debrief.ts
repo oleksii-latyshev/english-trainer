@@ -105,6 +105,13 @@ export function debriefConversation(
   words: DebriefWord[] = fiveWords,
   wins: PracticeDialogue['debrief_wins'] = [],
   habits: PracticeDialogue['habits'] = [],
+  focusRule: PracticeDialogue['focus_rule'] = null,
 ) {
-  return coachedConversation([fixAndWords, betterAndWords, gapAndWord], words, wins, habits);
+  return coachedConversation(
+    [fixAndWords, betterAndWords, gapAndWord],
+    words,
+    wins,
+    habits,
+    focusRule,
+  );
 }

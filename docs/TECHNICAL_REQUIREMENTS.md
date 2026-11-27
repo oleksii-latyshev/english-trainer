@@ -330,12 +330,19 @@ answers instead. Typical latency is 1.5 to 3 s.
   `{ sequence, phrase }` for `learning_usage_events` of type phrase with outcome `correct` in the
   session, joined to `phrase_cards`. With help, incorrect and uncertain events are never listed.
   The session usage review (§9.2) emits `coaching-updated` after each run so the wrap-up re-reads.
-- `get_practice_dialogue` returns `debrief_words[]` (the capped words above), `debrief_wins[]`, `habits[]` and `coaching[]` per turn: `{ state: pending | paused | failed }` or
+- `get_practice_dialogue` returns `debrief_words[]` (the capped words above), `debrief_wins[]`, `habits[]`, `focus_rule` and `coaching[]` per turn: `{ state: pending | paused | failed }` or
   `{ state: ready, feedback }`. It reads an open session from memory and a finished one from SQLite
   (opening question and turns), so the wrap-up shows the whole conversation. Talk uses only the
   state (marker: pending → faint dot, ready → "N tip(s)" or "Looks good", failed or paused → none);
   the wrap-up renders the feedback (`features/coaching-note`, re-read on `coaching-updated`). `get_session_wrapup(session_id)` rebuilds a finished session's
   wrap-up; `FinishedPracticeSession` has `pending_coaching` and `is_coaching_paused`.
+  `focus_rule` is `null` or `{ rule_key, title, summary, in_session, open, came_back }`: the rule with
+  the most mistakes recorded in the session (`mistake_occurrences` joined to `mistakes.rule_key`, so
+  mistakes whose lesson is not ready are skipped), ties broken by the open mistakes of that rule.
+  `other` is never chosen and `word_choice` or `collocation` only when no grammar rule was broken.
+  Title and summary come from `RuleKey::info()`; `open` counts unarchived, unfixed mistakes of the
+  rule; `came_back` means the rule has occurrences in an earlier session. Selection is
+  `learning/focus_rule.rs`, the read is `persistence/focus_rule.rs`.
   `retry_practice_turn` saves a second attempt against the whole better version and returns a local
   `AttemptComparison` (`words_to_take` and `corrections`, each `{ phrase, said }`); it works for
   an open session (rejected with `busy` while a reply is in flight) and for a finished one

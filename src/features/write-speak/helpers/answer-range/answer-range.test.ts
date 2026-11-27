@@ -29,6 +29,7 @@ function aDialogue(overrides: Partial<WriteSpeakDialogue> = {}): WriteSpeakDialo
     debrief_words: [],
     debrief_wins: [],
     habits: [],
+    focus_rule: null,
     ...overrides,
   };
 }

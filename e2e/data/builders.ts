@@ -44,6 +44,7 @@ export function savedMistakePractice(answered: number): {
     debrief_words: [],
     debrief_wins: [],
     habits: [],
+    focus_rule: null,
     coaching: Array.from({ length: answered }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -76,6 +77,7 @@ export function longConversation(turns: number): {
     debrief_words: [],
     debrief_wins: [],
     habits: [],
+    focus_rule: null,
     coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -114,6 +116,7 @@ export function restoredSpeakingReview(): { session: PracticeSession; dialogue: 
     debrief_words: [],
     debrief_wins: [],
     habits: [],
+    focus_rule: null,
     coaching: [
       {
         state: 'ready',

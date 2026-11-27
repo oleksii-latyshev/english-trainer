@@ -13,6 +13,7 @@ export class WrapupPage {
   readonly progress: Locator;
   readonly summary: Locator;
   readonly undoButton: Locator;
+  readonly practiseRule: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Nice session. Here’s what to keep.' });
@@ -24,6 +25,7 @@ export class WrapupPage {
     this.debrief = page.getByRole('region', { name: 'Debrief', exact: true });
     this.progress = this.debrief.getByRole('status').filter({ hasText: /^\d+ \/ \d+$/ });
     this.summary = this.debrief.getByRole('region', { name: 'Debrief summary' });
+    this.practiseRule = this.summary.getByRole('button', { name: 'Practise this rule' });
     this.undoButton = page.getByRole('button', { name: 'Undo' });
   }
 

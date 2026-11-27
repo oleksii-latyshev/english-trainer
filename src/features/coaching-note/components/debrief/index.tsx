@@ -14,7 +14,7 @@ import {
 } from '../../helpers/debrief-steps';
 import { takenLine } from '../../helpers/taken-line';
 import { conversationAtom, conversationUpdatesAtom, debriefStepAtom } from '../../model/atoms';
-import type { DebriefWord, ReviewedConversation } from '../../types';
+import type { DebriefWord, ReviewedConversation, RuleKey } from '../../types';
 import { DebriefCardView } from '../debrief-card';
 import { DebriefSummary } from '../debrief-summary';
 
@@ -22,6 +22,8 @@ type Props = {
   sessionId: number;
   isTaken: (word: DebriefWord) => boolean;
   renderTake: (word: DebriefWord) => ReactNode;
+  isStartingRun: boolean;
+  onPractiseRule: (ruleKey: RuleKey) => void;
 };
 
 const CONVERSATION_FAILED_MESSAGE = 'Could not load your conversation.';
@@ -31,6 +33,8 @@ function Walk({
   conversation,
   isTaken,
   renderTake,
+  isStartingRun,
+  onPractiseRule,
 }: Props & { conversation: ReviewedConversation }) {
   const [step, setStep] = useAtom(debriefStepAtom(sessionId));
   const cards = debriefCards(conversation);
@@ -66,8 +70,11 @@ function Walk({
         </>
       ) : (
         <DebriefSummary
+          focusRule={conversation.focus_rule}
           habits={conversation.habits}
+          isStartingRun={isStartingRun}
           isTaken={isTaken}
+          onPractiseRule={onPractiseRule}
           wins={conversation.debrief_wins}
           words={conversation.debrief_words}
         />

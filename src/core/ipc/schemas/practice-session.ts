@@ -3,6 +3,7 @@ import type { AttemptComparison } from '../bindings/AttemptComparison';
 import type { DebriefWin } from '../bindings/DebriefWin';
 import type { DebriefWord } from '../bindings/DebriefWord';
 import type { FocusFeedback } from '../bindings/FocusFeedback';
+import type { FocusRule } from '../bindings/FocusRule';
 import type { Gap } from '../bindings/Gap';
 import type { Habit } from '../bindings/Habit';
 import type { PhraseCheck } from '../bindings/PhraseCheck';
@@ -18,6 +19,7 @@ import type { WordToTake } from '../bindings/WordToTake';
 import { bindingSchema } from './binding-schema';
 import { AnsweredBySchema } from './conversation-turn';
 import { FocusCategorySchema } from './learning';
+import { RuleKeySchema } from './mistakes';
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 const Identifier = Schema.Int.check(Schema.isGreaterThan(0));
@@ -126,6 +128,17 @@ const HabitSchema = bindingSchema<Habit>()(
   }),
 );
 
+const FocusRuleSchema = bindingSchema<FocusRule>()(
+  Schema.Struct({
+    rule_key: RuleKeySchema,
+    title: Schema.String,
+    summary: Schema.String,
+    in_session: Count,
+    open: Count,
+    came_back: Schema.Boolean,
+  }),
+);
+
 const DebriefWinSchema = bindingSchema<DebriefWin>()(
   Schema.Struct({
     sequence: Identifier,
@@ -165,6 +178,7 @@ export const PracticeDialogueSchema = bindingSchema<PracticeDialogue>()(
     debrief_words: Schema.Array(DebriefWordSchema),
     debrief_wins: Schema.Array(DebriefWinSchema),
     habits: Schema.Array(HabitSchema),
+    focus_rule: Schema.NullOr(FocusRuleSchema),
   }),
 );
 
