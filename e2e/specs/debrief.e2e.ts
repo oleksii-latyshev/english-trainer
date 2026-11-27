@@ -183,3 +183,30 @@ test('Say it again checks the words to take and the corrected fragments of the w
   ]);
   await expect(wrapup.take(forTwoYears.phrase)).toBeVisible();
 });
+
+test('a taken word used on the learner\u2019s own shows on its card and in the summary', async ({
+  app,
+  start,
+  talk,
+  wrapup,
+  tauri,
+}) => {
+  const { session, dialogue } = debriefConversation(undefined, [
+    { sequence: 2, phrase: 'look into' },
+  ]);
+  tauri.coaching.available();
+  tauri.session.withOpenSession(session, dialogue);
+  tauri.wrapup.finishingWith(wrapupSummary());
+  await app.open();
+  await start.continueSession();
+  await talk.finish();
+
+  await expect(wrapup.review(1)).toBeVisible();
+  await expect(wrapup.debrief).not.toContainText('Used on your own');
+  await wrapup.next();
+  await expect(wrapup.debrief).toContainText('\u2713 Used on your own: look into');
+  await wrapup.next();
+  await wrapup.next();
+  await expect(wrapup.summary).toContainText('Used on your own');
+  await expect(wrapup.summary).toContainText('look into');
+});

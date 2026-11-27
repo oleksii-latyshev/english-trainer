@@ -12,7 +12,9 @@ One card per spoken answer, in order, with "3 / 8" and Back / Next. A card shows
 what was said, the better version with changed words marked, one line of why, the findings grouped
 as Fix, Better and Missing word, and the words to take. Only words in `debrief_words` (at most five
 per session, chosen in Rust) get a Take button. After the last card, Finish opens a summary of the
-words taken. A pending, paused or failed answer shows the same status line and retry as
+words taken. A taken word the usage review saw the learner use on their own in that answer shows
+"✓ Used on your own: <phrase>" under the answer, and the summary lists those words too
+(`debrief_wins`, read from Rust; With help never appears). A pending, paused or failed answer shows the same status line and retry as
 `AnswerReview`.
 
 ```mermaid
@@ -68,7 +70,8 @@ sequenceDiagram
     Ipc-->>Atoms: refresh (no polling), answers fill in where they stand
 ```
 
-The stream is the same `coaching-updated` signal the wrap-up already listens to. It is read here
+The stream is the same `coaching-updated` signal the wrap-up already listens to; Rust also emits it
+when a usage review lands, so a win fills in without a reload. It is read here
 too because a retried answer that gave up earlier is not counted as pending, so the wrap-up
 summary would not refresh for it.
 

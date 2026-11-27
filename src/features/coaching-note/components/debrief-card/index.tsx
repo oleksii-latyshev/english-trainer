@@ -7,6 +7,7 @@ import type { DebriefCard } from '../../helpers/debrief-cards';
 import { findingGroups, reasonLine } from '../../helpers/debrief-findings';
 import { offeredWord } from '../../helpers/offered-word';
 import { reviewView } from '../../helpers/review-view';
+import { winLine } from '../../helpers/win-line';
 import type { DebriefWord, TurnFeedback } from '../../types';
 import { AnswerReview } from '../answer-review';
 import { MarkedRewrite } from '../marked-rewrite';
@@ -138,11 +139,25 @@ function ReadyBody({ card, feedback, renderTake }: Props & { feedback: TurnFeedb
   );
 }
 
+function Wins({ phrases }: { phrases: readonly string[] }) {
+  if (phrases.length === 0) return null;
+  return (
+    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      {phrases.map((phrase) => (
+        <li className="text-caption text-ok font-semibold wrap-anywhere" key={phrase}>
+          {winLine(phrase)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function DebriefCardView({ card, renderTake }: Props) {
   const view = reviewView(card.coaching);
   return (
     <div className="flex flex-col gap-3">
       <Exchange card={card} />
+      <Wins phrases={card.wins} />
       {view.tag === 'ready' ? (
         <ReadyBody card={card} feedback={view.feedback} renderTake={renderTake} />
       ) : (

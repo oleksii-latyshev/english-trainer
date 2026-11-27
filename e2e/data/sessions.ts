@@ -18,6 +18,7 @@ export function emptyDialogue(session: PracticeSession): PracticeDialogue {
     answer_durations_ms: [],
     help_used: [],
     debrief_words: [],
+    debrief_wins: [],
     coaching: [],
   };
 }

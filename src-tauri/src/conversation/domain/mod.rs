@@ -10,7 +10,7 @@ pub(crate) mod topics;
 mod wrapup;
 
 pub use coaching::TurnCoaching;
-pub use debrief::{pick_debrief_words, DebriefWord};
+pub use debrief::{pick_debrief_words, DebriefWin, DebriefWord};
 pub use retry_check::compare_attempts;
 pub use scaffold::question_scaffold;
 pub use session::{

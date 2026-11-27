@@ -322,10 +322,20 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
         )
         .unwrap();
 
-    let targets = db.due_learning_targets(second).unwrap();
-    assert_eq!(targets.len(), 2);
-    assert_eq!(targets[0].target, "I work there");
-    assert_eq!(targets[1].target, "The main trade-off was");
+    let phrase = db.next_learning_target(second, &[]).unwrap().unwrap();
+    assert_eq!(phrase.prompt.kind, "phrase");
+    assert_eq!(phrase.prompt.target, "The main trade-off was");
+
+    let mistake = db
+        .next_learning_target(second, &[phrase.key])
+        .unwrap()
+        .unwrap();
+    assert_eq!(mistake.prompt.kind, "mistake");
+    assert_eq!(mistake.prompt.target, "I work there");
+    assert!(db
+        .next_learning_target(second, &[phrase.key, mistake.key])
+        .unwrap()
+        .is_none());
 
     db.connection
         .execute(
@@ -333,8 +343,8 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
             ["word ".repeat(50)],
         )
         .unwrap();
-    let bounded = db.due_learning_targets(second).unwrap();
-    assert_eq!(bounded[1].cue.chars().count(), 160);
+    let bounded = db.next_learning_target(second, &[]).unwrap().unwrap();
+    assert_eq!(bounded.prompt.cue.chars().count(), 160);
 }
 
 #[test]
@@ -736,4 +746,52 @@ fn feedback_saved_before_the_debrief_reads_with_empty_new_lists_and_new_findings
     db.save_turn_feedback(session, 2, &new).unwrap();
 
     assert_eq!(db.turn_feedback(session, 2).unwrap(), Some(new));
+}
+
+#[test]
+fn session_wins_are_taken_phrases_used_on_their_own() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let first = db.create_session("Opening?").unwrap();
+    for text in ["look into", "figure out", "come across"] {
+        db.save_phrase_card(text, "note", None, None).unwrap();
+    }
+    db.finish_session(first).unwrap();
+    let second = db.create_session("Opening?").unwrap();
+    for sequence in 1..=2 {
+        db.save_turn(
+            second,
+            sequence,
+            &StoredTurn {
+                learner: "Answer".into(),
+                assistant_reply: "Reply".into(),
+                assistant_question: "Next?".into(),
+                answered_by: None,
+            },
+        )
+        .unwrap();
+    }
+    let record = |item_id: i64, sequence: i64, outcome: &str| {
+        db.connection
+            .execute(
+                "INSERT INTO learning_usage_events
+                 (item_type, item_id, session_id, sequence, origin, original_turn_time, outcome, exact_excerpt, confidence, created_at)
+                 VALUES ('phrase', ?1, ?2, ?3, 'assessment', 0, ?4, 'excerpt', 1.0, 0)",
+                params![item_id, second as i64, sequence, outcome],
+            )
+            .unwrap();
+    };
+    record(1, 2, "correct");
+    record(2, 1, "with_help");
+    record(3, 1, "incorrect");
+    record(1, 1, "correct");
+
+    let wins = db.session_wins(second).unwrap();
+
+    assert_eq!(
+        wins.iter()
+            .map(|win| (win.sequence, win.phrase.as_str()))
+            .collect::<Vec<_>>(),
+        [(1, "look into"), (2, "look into")]
+    );
+    assert!(db.session_wins(first).unwrap().is_empty());
 }

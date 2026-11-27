@@ -42,6 +42,7 @@ export function savedMistakePractice(answered: number): {
     answer_durations_ms: Array.from({ length: answered }, () => null),
     help_used: Array.from({ length: answered }, () => false),
     debrief_words: [],
+    debrief_wins: [],
     coaching: Array.from({ length: answered }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -72,6 +73,7 @@ export function longConversation(turns: number): {
     answer_durations_ms: Array.from({ length: turns }, () => null),
     help_used: Array.from({ length: turns }, () => false),
     debrief_words: [],
+    debrief_wins: [],
     coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -108,6 +110,7 @@ export function restoredSpeakingReview(): { session: PracticeSession; dialogue: 
     answer_durations_ms: [null, 1200],
     help_used: [false, false],
     debrief_words: [],
+    debrief_wins: [],
     coaching: [
       {
         state: 'ready',

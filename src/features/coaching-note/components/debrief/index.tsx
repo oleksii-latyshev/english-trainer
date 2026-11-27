@@ -65,7 +65,11 @@ function Walk({
           <DebriefCardView card={card} key={card.target.sequence} renderTake={renderTake} />
         </>
       ) : (
-        <DebriefSummary isTaken={isTaken} words={conversation.debrief_words} />
+        <DebriefSummary
+          isTaken={isTaken}
+          wins={conversation.debrief_wins}
+          words={conversation.debrief_words}
+        />
       )}
       <div className="flex items-center justify-between gap-2">
         <Button disabled={step === 0} onClick={() => setStep(previousStep(step))} tone="secondary">

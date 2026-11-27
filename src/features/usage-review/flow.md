@@ -50,6 +50,6 @@ sequenceDiagram
     end
 ```
 
-A correct use in an answer that used help, or of an item Eva cued before the turn, is recorded as
+When a review lands, Rust emits `coaching-updated` so the wrap-up can show the win. A correct use in an answer that used help, or of an item Eva cued before the turn, is recorded as
 "with help": shown in Memory, never counted as use on your own. An incorrect use is shown as information in amber, never red. No findings means no eligible target,
 and no progress is recorded.

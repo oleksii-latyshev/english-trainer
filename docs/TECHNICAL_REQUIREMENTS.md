@@ -184,7 +184,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 ### 5.1 Contract
 
 - `ConversationContext`: `opening_question`; up to 20 `recent_turns` (learner, assistant reply,
-  assistant question); `latest_transcript` (1-4,000 characters); up to 2 `learning_targets`;
+  assistant question); `latest_transcript` (1-4,000 characters); at most 1 `learning_targets` item (`MAX_LEARNING_TARGETS`);
   `earlier_answers` (older learner answers, each cut to about 160 characters at a word boundary);
   `asked_questions` (40 most recent, each at most 200 characters; the prompt forbids repeating
   them). One builder serves every turn. Total at most 24,000 characters; over budget, drop condensed
@@ -306,7 +306,17 @@ answers instead. Typical latency is 1.5 to 3 s.
   words of gaps, then of upgrades, then of vocabulary mistakes, then the remaining
   `words_to_take`, each group in answer order, deduplicated case-insensitively. A word not in the
   list cannot be taken from the Debrief. Taking calls `save_phrase_card` with the session and answer.
-- `get_practice_dialogue` returns `debrief_words[]` (the capped words above) and `coaching[]` per turn: `{ state: pending | paused | failed }` or
+- **Steering** (`conversation/service/turn.rs`, `persistence/learning_targets.rs`): `begin_turn`
+  attaches one learning target when the number of earlier answers is a multiple of three (the reply
+  to answers 1, 4, 7 …) and the session is not mistake practice. `next_learning_target` returns the
+  oldest due taken phrase from an earlier session, else the oldest due mistake with two sightings
+  from an earlier session, skipping the keys kept in `ActiveSession.steered_targets` (in memory; a
+  key is added when the reply succeeds). It adds no provider call, only the context.
+- **Wins** (`persistence/usage_wins.rs`): `PracticeDialogue.debrief_wins` lists
+  `{ sequence, phrase }` for `learning_usage_events` of type phrase with outcome `correct` in the
+  session, joined to `phrase_cards`. With help, incorrect and uncertain events are never listed.
+  `review_practice_memory_usage` emits `coaching-updated` when a review lands so the wrap-up re-reads.
+- `get_practice_dialogue` returns `debrief_words[]` (the capped words above), `debrief_wins[]` and `coaching[]` per turn: `{ state: pending | paused | failed }` or
   `{ state: ready, feedback }`. It reads an open session from memory and a finished one from SQLite
   (opening question and turns), so the wrap-up shows the whole conversation. Talk uses only the
   state (marker: pending → faint dot, ready → "N tip(s)" or "Looks good", failed or paused → none);

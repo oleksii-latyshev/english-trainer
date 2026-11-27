@@ -7,6 +7,7 @@ use crate::conversation::domain::rules::validate_transcript;
 use crate::conversation::domain::{InputSource, StoredTurn};
 use crate::conversation::error::ConversationError;
 use crate::conversation::ports::ReplyEngine;
+use crate::persistence::TargetKey;
 use crate::providers::{cancelled_reply, ConversationContext, ConversationTurn};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -15,6 +16,15 @@ struct PreparedTurn {
     context: ConversationContext,
     cancellation: Arc<AtomicBool>,
     scripted: Option<ScriptedReply>,
+    steered: Option<TargetKey>,
+}
+
+/// Eva steers toward one saved word on her reply to the 1st answer and then every 3rd one
+/// (`answers_so_far` counts the answers before the one being sent).
+const STEERING_INTERVAL: usize = 3;
+
+fn is_steering_turn(answers_so_far: usize) -> bool {
+    answers_so_far.is_multiple_of(STEERING_INTERVAL)
 }
 
 impl SessionStore {
@@ -67,16 +77,18 @@ impl SessionStore {
             .as_ref()
             .ok_or(ConversationError::InvalidSession)?;
         let scripted = scripted_reply(session)?;
-        let needs_learning_targets =
-            !session.is_mistake_practice && (session.turns.len() == 1 || session.turns.len() == 5);
-        let learning_targets = if needs_learning_targets {
-            state.database.due_learning_targets(session_id)?
+        let steering = if !session.is_mistake_practice && is_steering_turn(session.turns.len()) {
+            state
+                .database
+                .next_learning_target(session_id, &session.steered_targets)?
         } else {
-            Vec::new()
+            None
         };
         let profile = state.database.get_personal_profile()?.without_name();
         let session = active_session_mut(&mut state, session_id)?;
         session.in_flight = true;
+        let steered = steering.as_ref().map(|target| target.key);
+        let learning_targets = steering.into_iter().map(|target| target.prompt).collect();
         session.reply_cancelled = Arc::new(AtomicBool::new(false));
         let cancellation = session.reply_cancelled.clone();
         let context = build_context(ContextInput {
@@ -91,6 +103,7 @@ impl SessionStore {
             context,
             cancellation,
             scripted,
+            steered,
         })
     }
 
@@ -117,6 +130,7 @@ impl SessionStore {
         };
         let session = active_session_mut(&mut state, session_id)?;
         session.in_flight = false;
+        session.steered_targets.extend(prepared.steered);
         let sequence = session.turns.len() + 1;
         let stored = StoredTurn {
             learner: prepared.context.latest_transcript,
@@ -379,5 +393,19 @@ mod continuation_tests {
         let waiting = store.coaching_queue(id).unwrap();
         assert_eq!(waiting.len(), 1);
         assert_eq!(waiting[0].transcript, "I went to the park.");
+    }
+}
+
+#[cfg(test)]
+mod steering_tests {
+    use super::is_steering_turn;
+
+    #[test]
+    fn eva_steers_on_the_first_reply_and_then_every_third() {
+        let steering: Vec<usize> = (0..10)
+            .filter(|answers| is_steering_turn(*answers))
+            .collect();
+
+        assert_eq!(steering, [0, 3, 6, 9]);
     }
 }

@@ -28,6 +28,7 @@ const conversation: ReviewedConversation = {
   debrief_words: [
     { sequence: 3, phrase: 'unwind', meaning: 'relax', example: 'I unwind at home.' },
   ],
+  debrief_wins: [{ sequence: 3, phrase: 'look into' }],
 };
 
 describe('debriefCards', () => {
@@ -49,5 +50,12 @@ describe('debriefCards', () => {
     expect(first?.offered).toEqual([]);
     expect(second?.coaching).toEqual({ state: 'paused' });
     expect(second?.offered.map((word) => word.phrase)).toEqual(['unwind']);
+  });
+
+  it('marks only the taken words used on their own in that answer', () => {
+    const [first, second] = debriefCards(conversation);
+
+    expect(first?.wins).toEqual([]);
+    expect(second?.wins).toEqual(['look into']);
   });
 });
