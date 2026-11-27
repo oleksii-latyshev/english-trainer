@@ -44,6 +44,7 @@ fn every_agy_entry_point_passes_a_gemini_model() {
             sequence: 1,
             question: "Q?".into(),
             transcript: "I work.".into(),
+            habits: Vec::new(),
         }],
     );
     assert_every_call_is_gemini(&dir, 1);

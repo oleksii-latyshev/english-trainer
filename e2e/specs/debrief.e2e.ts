@@ -210,3 +210,57 @@ test('a taken word used on the learner\u2019s own shows on its card and in the s
   await expect(wrapup.summary).toContainText('Used on your own');
   await expect(wrapup.summary).toContainText('look into');
 });
+
+test('the summary shows the learner’s habits with their trend, calmly', async ({
+  app,
+  start,
+  talk,
+  wrapup,
+  tauri,
+}) => {
+  const { session, dialogue } = debriefConversation(
+    undefined,
+    [],
+    [
+      { word: 'very', from_rate: 3.4, to_rate: 1.2 },
+      { word: 'make', from_rate: 2, to_rate: 2.5 },
+    ],
+  );
+  tauri.coaching.available();
+  tauri.session.withOpenSession(session, dialogue);
+  tauri.wrapup.finishingWith(wrapupSummary());
+  await app.open();
+  await start.continueSession();
+  await talk.finish();
+
+  await expect(wrapup.review(1)).toBeVisible();
+  await expect(wrapup.debrief).not.toContainText('Your habits');
+  await wrapup.next();
+  await wrapup.next();
+  await wrapup.next();
+  await expect(wrapup.summary).toContainText('Your habits');
+  await expect(wrapup.summary).toContainText('very 3.4 → 1.2 per 100 words');
+  await expect(wrapup.summary).toContainText('make 2.0 → 2.5 per 100 words');
+});
+
+test('the summary has no habits block before two conversations have been saved', async ({
+  app,
+  start,
+  talk,
+  wrapup,
+  tauri,
+}) => {
+  const { session, dialogue } = debriefConversation();
+  tauri.coaching.available();
+  tauri.session.withOpenSession(session, dialogue);
+  tauri.wrapup.finishingWith(wrapupSummary());
+  await app.open();
+  await start.continueSession();
+  await talk.finish();
+
+  await wrapup.next();
+  await wrapup.next();
+  await wrapup.next();
+  await expect(wrapup.summary).toBeVisible();
+  await expect(wrapup.summary).not.toContainText('Your habits');
+});

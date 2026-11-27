@@ -66,6 +66,7 @@ function Walk({
         </>
       ) : (
         <DebriefSummary
+          habits={conversation.habits}
           isTaken={isTaken}
           wins={conversation.debrief_wins}
           words={conversation.debrief_words}

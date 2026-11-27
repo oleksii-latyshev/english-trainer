@@ -301,9 +301,23 @@ answers instead. Typical latency is 1.5 to 3 s.
   `{ focus_feedback[0..2], b2_rewrite, upgrades, gaps, words_to_take }`. The new lists are
   `#[serde(default)]`, so rows saved before them read as empty lists and need no SQL migration.
   The Mistakes flow records only `focus_feedback[0]`, as before.
+- **Habits** (`learning/habits.rs`, `persistence/habits.rs`; local, no AI, never on the turn path):
+  `finished_session_texts` joins the learner's saved answers (voice, edited and typed first
+  answers of finished conversation sessions up to the one shown; mistake practice and retries are
+  not counted) into one text per session, newest 30 sessions. `top_habits` normalises each text
+  with `normalize_phrase` (case, punctuation, curly apostrophes), ignores sessions under 50 words
+  and reads the last 5. It counts, per 100 words, a fixed list (very, really, thing/things, stuff,
+  good, bad, big, nice, a lot / lots of, get/got, do/did/does, make/made, like, basically, actually,
+  just, so) and any other word of three or more letters outside a small stopword list whose rate
+  over those sessions is at least 2. A habit is said in at least 2 of the sessions and has a mean
+  rate of at least 2 (listed words: at least 1); the top 3 by mean rate are kept. `Habit { word,
+  from_rate, to_rate }` is the rate in the earliest and the latest session read, rounded to one
+  decimal. Fewer than 2 qualifying sessions give no habits. `PracticeDialogue.habits` carries them;
+  `CoachingAnswer.habits` gives the words to the coaching prompt as data, and the prompt tells the
+  model to prefer findings that replace them.
 - **Words to take cap** (`conversation/domain/debrief.rs`): `PracticeDialogue.debrief_words` lists
   at most five `{ sequence, phrase, meaning, example }` across the session's ready answers: first
-  words of gaps, then of upgrades, then of vocabulary mistakes, then the remaining
+  words whose gap or upgrade `original` contains a habit word, then of gaps, then of upgrades, then of vocabulary mistakes, then the remaining
   `words_to_take`, each group in answer order, deduplicated case-insensitively. A word not in the
   list cannot be taken from the Debrief. Taking calls `save_phrase_card` with the session and answer.
 - **Steering** (`conversation/service/turn.rs`, `persistence/learning_targets.rs`): `begin_turn`
@@ -316,7 +330,7 @@ answers instead. Typical latency is 1.5 to 3 s.
   `{ sequence, phrase }` for `learning_usage_events` of type phrase with outcome `correct` in the
   session, joined to `phrase_cards`. With help, incorrect and uncertain events are never listed.
   The session usage review (§9.2) emits `coaching-updated` after each run so the wrap-up re-reads.
-- `get_practice_dialogue` returns `debrief_words[]` (the capped words above), `debrief_wins[]` and `coaching[]` per turn: `{ state: pending | paused | failed }` or
+- `get_practice_dialogue` returns `debrief_words[]` (the capped words above), `debrief_wins[]`, `habits[]` and `coaching[]` per turn: `{ state: pending | paused | failed }` or
   `{ state: ready, feedback }`. It reads an open session from memory and a finished one from SQLite
   (opening question and turns), so the wrap-up shows the whole conversation. Talk uses only the
   state (marker: pending → faint dot, ready → "N tip(s)" or "Looks good", failed or paused → none);

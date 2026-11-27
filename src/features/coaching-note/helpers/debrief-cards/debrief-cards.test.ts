@@ -29,6 +29,7 @@ const conversation: ReviewedConversation = {
     { sequence: 3, phrase: 'unwind', meaning: 'relax', example: 'I unwind at home.' },
   ],
   debrief_wins: [{ sequence: 3, phrase: 'look into' }],
+  habits: [],
 };
 
 describe('debriefCards', () => {

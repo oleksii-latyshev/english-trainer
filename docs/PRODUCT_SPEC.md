@@ -150,9 +150,16 @@ At the end of a session:
   make: the exact word or phrase and a short plain-English meaning; at most two). Each card offers
   one or two **words to take**, each with its meaning and an example from the better version.
   Actions: **Hear it**, **Say it again** (record, transcribe locally, compare with the first try)
-  and **Take** per word. After the last card a short summary lists the words taken;
-- **Words to take:** at most five per session across all answers, chosen in Rust: missing words
-  first, then better words, then vocabulary fixes, in answer order, without repeats. Taking a word
+  and **Take** per word. After the last card a short summary lists the words taken and, once two
+  conversations have been saved, **Your habits**: up to three plain words the learner says again
+  and again, each with its trend, for example "very 3.4 → 1.2 per 100 words" (the rate in the
+  earliest and the latest of the last five conversations). The wording is calm and judges nothing;
+- **Habits:** counted locally from the learner's own answers, without AI (rules in
+  TECHNICAL_REQUIREMENTS §Habits). They are also given to the background coaching, which prefers
+  better words and words to take that replace a habit word the answer uses;
+- **Words to take:** at most five per session across all answers, chosen in Rust: words that
+  replace a habit word first, then missing words, then better words, then vocabulary fixes, in
+  answer order, without repeats. Taking a word
   saves it to Learning Memory as a phrase with its source answer, so it is woven into later
   questions and counts as learned only through the evidence rules in §8. When five are taken the
   Debrief says "5 of 5 taken";

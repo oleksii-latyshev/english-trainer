@@ -14,7 +14,9 @@ as Fix, Better and Missing word, and the words to take. Only words in `debrief_w
 per session, chosen in Rust) get a Take button. After the last card, Finish opens a summary of the
 words taken. A taken word the usage review saw the learner use on their own in that answer shows
 "✓ Used on your own: <phrase>" under the answer, and the summary lists those words too
-(`debrief_wins`, read from Rust; With help never appears). A pending, paused or failed answer shows the same status line and retry as
+(`debrief_wins`, read from Rust; With help never appears). Below them "Your habits" lists the
+plain words Rust counted across recent conversations (`habits`, at most three) as
+"very 3.4 → 1.2 per 100 words"; the block is absent while Rust sends none. A pending, paused or failed answer shows the same status line and retry as
 `AnswerReview`.
 
 ```mermaid

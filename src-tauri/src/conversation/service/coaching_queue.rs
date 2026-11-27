@@ -239,12 +239,14 @@ impl Shared {
     }
 
     fn check(&self, session_id: u64, answers: Vec<crate::persistence::UncoachedAnswer>) {
+        let habits = self.store.habit_words(session_id);
         let request: Vec<CoachingAnswer> = answers
             .iter()
             .map(|answer| CoachingAnswer {
                 sequence: answer.sequence,
                 question: answer.question.clone(),
                 transcript: answer.transcript.clone(),
+                habits: habits.clone(),
             })
             .collect();
         match self.coach.coach(&request) {

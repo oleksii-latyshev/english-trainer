@@ -10,18 +10,21 @@ fn live_coaching_batch() {
             question: "What did you do yesterday?".into(),
             transcript: "Yesterday I go to the office and I am agree with my manager about the plan."
                 .into(),
+            habits: Vec::new(),
         },
         CoachingAnswer {
             sequence: 2,
             question: "What was the hardest part of your week?".into(),
             transcript: "The hardest part was a very big problem with the server. It was very bad because the users could not do the payment, and we had to do a lot of work, very long hours, to make it good again. I was very tired and, um, the thing, the thing that you write to say what went wrong, I forgot how to say it."
                 .into(),
+            habits: Vec::new(),
         },
         CoachingAnswer {
             sequence: 3,
             question: "How do you plan to improve your English this year?".into(),
             transcript: "I want to speak more good with my team. I think it is a good idea to practise every day, and I will make a lot of conversations, and I will do a good plan so I can say what I think in a good way."
                 .into(),
+            habits: Vec::new(),
         },
     ];
     let started = std::time::Instant::now();

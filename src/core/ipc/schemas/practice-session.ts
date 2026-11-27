@@ -4,6 +4,7 @@ import type { DebriefWin } from '../bindings/DebriefWin';
 import type { DebriefWord } from '../bindings/DebriefWord';
 import type { FocusFeedback } from '../bindings/FocusFeedback';
 import type { Gap } from '../bindings/Gap';
+import type { Habit } from '../bindings/Habit';
 import type { PhraseCheck } from '../bindings/PhraseCheck';
 import type { PracticeDialogue } from '../bindings/PracticeDialogue';
 import type { PracticeMode } from '../bindings/PracticeMode';
@@ -117,6 +118,14 @@ const DebriefWordSchema = bindingSchema<DebriefWord>()(
   }),
 );
 
+const HabitSchema = bindingSchema<Habit>()(
+  Schema.Struct({
+    word: Schema.String,
+    from_rate: Schema.Number,
+    to_rate: Schema.Number,
+  }),
+);
+
 const DebriefWinSchema = bindingSchema<DebriefWin>()(
   Schema.Struct({
     sequence: Identifier,
@@ -155,6 +164,7 @@ export const PracticeDialogueSchema = bindingSchema<PracticeDialogue>()(
     coaching: Schema.Array(TurnCoachingSchema),
     debrief_words: Schema.Array(DebriefWordSchema),
     debrief_wins: Schema.Array(DebriefWinSchema),
+    habits: Schema.Array(HabitSchema),
   }),
 );
 
