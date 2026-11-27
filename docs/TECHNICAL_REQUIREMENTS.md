@@ -281,13 +281,32 @@ answers instead. Typical latency is 1.5 to 3 s.
   `providers/agy/coaching.rs`): one `claude` call on Sonnet, 170 s process budget. Batches of 5 were
   chosen by measurement on the legacy provider (one answer per call exhausted its quota after about
   54 calls). The prompt ("do not use any tools or
-  commands") gets `{ n: sequence, question, transcript }` per answer; the schema returns
-  `answers[{ n, mistakes[0..2]{ original, improved, explanation, category }, rewrite }]`, read from
-  `structured_output`. Each answer is validated
-  alone: rewrite is plain text of at most 600 characters; the first mistake whose quote occurs in the
-  transcript, with texts in bounds and a different `improved`, becomes the single focus point
-  (`TurnFeedback.focus_feedback` has at most one). A bad entry costs only its own answer.
-- `get_practice_dialogue` returns `coaching[]` per turn: `{ state: pending | paused | failed }` or
+  commands") gets `{ n: sequence, question, transcript }` per answer. The level is B1 to B2:
+  natural spoken English usable tomorrow at work, not native polish, no rare or literary words.
+  Fillers and roundabout phrasing are signals for gaps; likely speech-recognition errors are still
+  ignored. The schema returns
+  `answers[{ n, mistakes[0..2]{ original, improved, explanation, category }, upgrades[0..2]{ original,
+  improved, explanation }, gaps[0..2]{ original, word, meaning }, words_to_take[0..2]{ phrase,
+  meaning, example }, rewrite }]`, read from `structured_output`. `rewrite` is the whole answer one
+  step above the learner's level. An upgrade must teach a word, collocation or phrase the learner
+  did not use; a tense or agreement fix is a mistake. Each answer is validated alone, and every
+  list drops its invalid entries instead of failing the answer: texts are plain single lines within
+  bounds (fragments 180, explanation, meaning and example 240 characters, rewrite at most twice the
+  answer, 600 to 4,000), `original` of a mistake, upgrade and gap must occur in the transcript, an
+  upgrade or mistake differs from its `improved`, a gap word is not already in its `original`, and a
+  word to take must occur in the better version (`rewrite`, a mistake or an upgrade) with an
+  example that contains it. Entries are deduplicated by normalised text. Lists are capped at two.
+  A bad rewrite costs only its own answer.
+- `TurnFeedback` (ts-rs, stored as JSON in `turn_feedback.feedback_json`) is
+  `{ focus_feedback[0..2], b2_rewrite, upgrades, gaps, words_to_take }`. The new lists are
+  `#[serde(default)]`, so rows saved before them read as empty lists and need no SQL migration.
+  The Mistakes flow records only `focus_feedback[0]`, as before.
+- **Words to take cap** (`conversation/domain/debrief.rs`): `PracticeDialogue.debrief_words` lists
+  at most five `{ sequence, phrase, meaning, example }` across the session's ready answers: first
+  words of gaps, then of upgrades, then of vocabulary mistakes, then the remaining
+  `words_to_take`, each group in answer order, deduplicated case-insensitively. A word not in the
+  list cannot be taken from the Debrief. Taking calls `save_phrase_card` with the session and answer.
+- `get_practice_dialogue` returns `debrief_words[]` (the capped words above) and `coaching[]` per turn: `{ state: pending | paused | failed }` or
   `{ state: ready, feedback }`. It reads an open session from memory and a finished one from SQLite
   (opening question and turns), so the wrap-up shows the whole conversation. Talk uses only the
   state (marker: pending → faint dot, ready → "N tip(s)" or "Looks good", failed or paused → none);
@@ -315,7 +334,8 @@ answers instead. Typical latency is 1.5 to 3 s.
   `get_session_wrapup` keeps the cached snapshot; already saved phrases are excluded at completion.
 - `save_wrapup_phrases(sessionId, phrases)` takes one to three exact cached suggestions, saves all
   transactionally and returns `{ cards, created_ids }`. Undo uses only the new IDs; existing
-  duplicate cards and notes are preserved.
+  duplicate cards and notes are preserved. The wrap-up screen no longer lists these phrases; the
+  Debrief (§6.1) takes words with `save_phrase_card` instead.
 
 ### 6.3 Answer help (F6)
 

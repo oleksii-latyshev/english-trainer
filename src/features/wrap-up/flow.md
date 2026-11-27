@@ -1,14 +1,14 @@
 # Wrap-up
 
-The numbers, the phrases worth learning and the saves of one finished session. `screens/wrap-up`
-composes this feature with `features/coaching-note` (Your conversation); features never import each
-other, so the screen hands the per-answer save to the review as a slot.
+The numbers, the "Still checking" line and the Take button of one finished session. `screens/wrap-up`
+composes this feature with `features/coaching-note` (the Debrief); features never import each
+other, so the screen hands the Take button and the taken state to the Debrief.
 
 ## Fill in live
 
 The wrap-up opens with the snapshot `finish_practice_session` returned. The feature reads the session
-again and keeps it current, so phrases and the "Still checking" line change as work lands in Rust.
-The conversation never waits for either.
+again and keeps it current, so the numbers and the "Still checking" line change as work lands in
+Rust. The conversation never waits for either.
 
 ```mermaid
 sequenceDiagram
@@ -27,7 +27,7 @@ sequenceDiagram
     Service->>Ipc: get_session_wrapup
     Ipc->>Rust: invoke
     alt snapshot
-        Rust-->>Screen: numbers, phrases, preparation, pending coaching
+        Rust-->>Screen: numbers, pending coaching
     else IpcError or decode failure
         Rust-->>Screen: the snapshot already on screen stays
     end
@@ -41,94 +41,33 @@ sequenceDiagram
 event. The feature reads the summary when the marker arrives and again on each matching event, so a
 result that lands between registration and the first read is not lost. There is no timer.
 
-## Save all and Undo
+## Take a word
+
+`TakeWord` is rendered by the screen beside each word of a Debrief card that Rust offered (at most
+five per session; the cap is a Rust decision). It saves the word as a Memory phrase with its meaning
+and the session and answer it came from, so the existing weaving into later questions and the
+"used on your own" evidence rules apply unchanged. `useIsTaken` tells the Debrief which words are
+taken, for the "N of M taken" line and the summary.
 
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant Section as PhraseSection
-    participant Save as savePhrasesAtom
-    participant Service as WrapUpService
-    participant Rust as save_wrapup_phrases
-    participant Toast as saved toast
-    participant Undo as undoPhrasesAtom
-    participant Memory as LearningMemoryService
-
-    Learner->>Section: Remove on a phrase
-    Section->>Section: the phrase leaves the list (kept for this session)
-    Learner->>Section: Save all N phrases to Memory
-    Section->>Save: the kept phrases that are not saved yet
-    Save->>Service: savePhrases(sessionId, phrases)
-    Service->>Rust: invoke (one transaction)
-    alt saved
-        Rust-->>Save: cards and created_ids
-        Save->>Section: phrases marked saved, button says Saved to Memory
-        Save->>Toast: Saved to Memory, with Undo only when created_ids is not empty
-        Note over Save: the LEARNING_MEMORY key reloads Memory and the badges
-    else IpcError
-        Rust-->>Section: "Could not save these phrases. Please try again."
-    end
-    Learner->>Toast: Undo
-    Toast->>Undo: phrases and created_ids
-    Undo->>Memory: remove each created phrase card
-    alt removed
-        Undo->>Section: phrases are unsaved again, toast "Removed from Memory"
-    else failure
-        Undo->>Toast: "Could not undo the save. Remove it from Memory instead."
-    end
-```
-
-Undo removes only the cards this save created; a phrase that was already in Memory is never deleted.
-
-## Prepare phrases again
-
-```mermaid
-sequenceDiagram
-    actor Learner
-    participant Section as PhraseSection
-    participant Retry as retryPreparationAtom
-    participant Service as WrapUpService
-    participant Rust as retry_session_wrapup
-
-    Learner->>Section: Retry phrases or Prepare phrases
-    Section->>Retry: sessionId
-    Retry->>Service: retryPreparation
-    Service->>Rust: invoke (wakes the worker)
-    alt accepted
-        Rust-->>Retry: ok
-        Retry->>Section: read again, "Preparing phrases from your answers…"
-        Rust-->>Section: wrapup-updated, the phrases fill in
-    else IpcError
-        Rust-->>Section: the Rust message, or "Could not prepare phrases. Please retry."
-    end
-```
-
-## Save the better version of one answer
-
-`SaveAnswerPhrase` is rendered by the screen inside each ready review of "Your conversation". It
-saves the improved wording of the first focus point with its explanation, or the whole natural
-rewrite when there is no focus point, with the session and answer it came from. Nothing is offered
-when the phrase is longer than a Memory card takes.
-
-```mermaid
-sequenceDiagram
-    actor Learner
-    participant Button as SaveAnswerPhrase
-    participant Save as saveAnswerAtom
+    participant Button as TakeWord
+    participant Take as takeWordAtom
     participant Service as WrapUpService
     participant Rust as save_phrase_card
-    participant Undo as undoAnswerAtom
+    participant Undo as undoTakeAtom
 
-    Learner->>Button: Save phrase
-    Button->>Save: phrase, note, session, answer
-    Save->>Service: saveAnswerPhrase
+    Learner->>Button: Take
+    Button->>Take: phrase, meaning, session, answer
+    Take->>Service: saveWord
     Service->>Rust: invoke
     alt saved
-        Rust-->>Save: the card
-        Save->>Button: Saved to Memory, with Undo only for a card created by this save
+        Rust-->>Take: the card
+        Take->>Button: Taken, with a toast that offers Undo only for a card created by this take
     else IpcError
-        Rust-->>Button: "Retry saving phrase"
+        Rust-->>Button: "Retry taking"
     end
     Learner->>Undo: Undo
-    Undo->>Button: Save phrase again after the card is removed
+    Undo->>Button: Take again after the card is removed
 ```

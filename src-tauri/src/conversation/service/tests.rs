@@ -43,6 +43,7 @@ fn sample_feedback() -> TurnFeedback {
             explanation: "Drop the extra preposition.".into(),
         }],
         b2_rewrite: "I work there as an engineer.".into(),
+        ..Default::default()
     }
 }
 
@@ -310,6 +311,7 @@ fn a_long_answer_keeps_a_rewrite_of_similar_length_but_not_a_runaway_one() {
     let rewrite = |text: String| TurnFeedback {
         focus_feedback: Vec::new(),
         b2_rewrite: text,
+        ..Default::default()
     };
 
     let runaway = rewrite("Last week I fixed a caching bug. ".repeat(100));
@@ -1333,6 +1335,7 @@ fn feedback_mistake_deduplication_and_idempotency_across_turns() {
             explanation: "Drop the extra preposition.".into(),
         }],
         b2_rewrite: "I work there now.".into(),
+        ..Default::default()
     };
 
     store
@@ -1556,6 +1559,7 @@ fn empty_focus_feedback_preserves_independent_flow() {
     let feedback_no_focus = TurnFeedback {
         focus_feedback: Vec::new(),
         b2_rewrite: "Even stronger fluent version.".into(),
+        ..Default::default()
     };
 
     store
@@ -1937,6 +1941,7 @@ fn feedback_for(original: &str, improved: &str, rewrite: &str) -> TurnFeedback {
             explanation: "Use for with a length of time.".into(),
         }],
         b2_rewrite: rewrite.into(),
+        ..Default::default()
     }
 }
 

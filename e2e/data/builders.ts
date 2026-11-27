@@ -41,6 +41,7 @@ export function savedMistakePractice(answered: number): {
     reply_times_ms: Array.from({ length: answered }, () => 250),
     answer_durations_ms: Array.from({ length: answered }, () => null),
     help_used: Array.from({ length: answered }, () => false),
+    debrief_words: [],
     coaching: Array.from({ length: answered }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -70,6 +71,7 @@ export function longConversation(turns: number): {
     reply_times_ms: Array.from({ length: turns }, () => 250),
     answer_durations_ms: Array.from({ length: turns }, () => null),
     help_used: Array.from({ length: turns }, () => false),
+    debrief_words: [],
     coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
   };
   return { session, dialogue };
@@ -105,6 +107,7 @@ export function restoredSpeakingReview(): { session: PracticeSession; dialogue: 
     reply_times_ms: [250, 250],
     answer_durations_ms: [null, 1200],
     help_used: [false, false],
+    debrief_words: [],
     coaching: [
       {
         state: 'ready',
@@ -118,6 +121,9 @@ export function restoredSpeakingReview(): { session: PracticeSession; dialogue: 
             },
           ],
           b2_rewrite: 'I have used a small task board to plan my day.',
+          upgrades: [],
+          gaps: [],
+          words_to_take: [],
         },
       },
       { state: 'pending' },

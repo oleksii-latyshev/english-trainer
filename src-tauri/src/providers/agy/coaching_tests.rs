@@ -76,7 +76,7 @@ fn a_long_answer_gets_its_whole_rewrite_while_a_runaway_one_is_dropped() {
 }
 
 #[test]
-fn only_the_first_valid_mistake_is_kept_and_missing_category_means_grammar() {
+fn invalid_mistakes_are_dropped_valid_ones_kept_and_missing_category_means_grammar() {
     let dir = TestDirectory::new();
     let cli = recording_cli(
         &dir,
@@ -90,9 +90,136 @@ fn only_the_first_valid_mistake_is_kept_and_missing_category_means_grammar() {
     let answers = [answer(1, "I am agree it is a big mistake")];
     let coached = coach_answers_with(&cli, &answers).unwrap();
     let focus = &coached[0].feedback.focus_feedback;
-    assert_eq!(focus.len(), 1);
+    assert_eq!(focus.len(), 2);
     assert_eq!(focus[0].improved, "a major mistake");
     assert_eq!(focus[0].category, FocusCategory::Vocabulary);
+    assert_eq!(focus[1].improved, "I agree");
+    assert_eq!(focus[1].category, FocusCategory::Grammar);
+}
+
+const PLAIN_TRANSCRIPT: &str =
+    "I was very tired after the thing for the meeting because we did a lot of work";
+
+fn coached_from(entry: &str) -> crate::providers::TurnFeedback {
+    let dir = TestDirectory::new();
+    let cli = recording_cli(&dir, &reply(&format!(r#"{{"answers":[{entry}]}}"#)));
+    let mut coached = coach_answers_with(&cli, &[answer(1, PLAIN_TRANSCRIPT)]).unwrap();
+    coached.remove(0).feedback
+}
+
+#[test]
+fn upgrades_gaps_and_words_to_take_are_read_from_the_reply() {
+    let feedback = coached_from(
+        r#"{"n":1,"mistakes":[],
+        "upgrades":[{"original":"very tired","improved":"exhausted","explanation":"A stronger, common word."}],
+        "gaps":[{"original":"the thing for the meeting","word":"agenda","meaning":"a list of topics for a meeting"}],
+        "words_to_take":[
+          {"phrase":"agenda","meaning":"a list of topics for a meeting","example":"I prepared the agenda for the meeting."},
+          {"phrase":"exhausted","meaning":"very tired","example":"I was exhausted after a long day."}],
+        "rewrite":"I was exhausted after preparing the agenda for the meeting because we put in a lot of work."}"#,
+    );
+
+    assert_eq!(feedback.upgrades[0].improved, "exhausted");
+    assert_eq!(feedback.gaps[0].word, "agenda");
+    assert_eq!(
+        feedback
+            .words_to_take
+            .iter()
+            .map(|word| word.phrase.as_str())
+            .collect::<Vec<_>>(),
+        ["agenda", "exhausted"]
+    );
+}
+
+#[test]
+fn findings_with_a_bad_fragment_are_dropped_and_the_answer_still_comes_back() {
+    let feedback = coached_from(
+        r#"{"n":1,"mistakes":[],
+        "upgrades":[
+          {"original":"never said this","improved":"exhausted","explanation":"Not in the transcript."},
+          {"original":"very tired","improved":"Very tired!","explanation":"Same words."},
+          {"original":"a lot of work","improved":"**a heavy workload**","explanation":"Markdown."}],
+        "gaps":[
+          {"original":"made up fragment","word":"agenda","meaning":"Not in the transcript."},
+          {"original":"the thing for the meeting","word":"the thing","meaning":"Already said."}],
+        "words_to_take":[
+          {"phrase":"work","meaning":"The learner used it.","example":"I like work."},
+          {"phrase":"agenda","meaning":"A list.","example":"No such word in the example."},
+          {"phrase":"workload","meaning":"Not in the better version.","example":"The workload is heavy."}],
+        "rewrite":"I was exhausted after the meeting."}"#,
+    );
+
+    assert!(feedback.upgrades.is_empty());
+    assert!(feedback.gaps.is_empty());
+    assert!(feedback.words_to_take.is_empty());
+    assert_eq!(feedback.b2_rewrite, "I was exhausted after the meeting.");
+}
+
+#[test]
+fn every_list_is_capped_at_two_deduplicated_and_does_not_repeat_a_mistake_fragment() {
+    let feedback = coached_from(
+        r#"{"n":1,
+        "mistakes":[{"original":"we did a lot of work","improved":"we did a lot of work","explanation":"Same."},
+                    {"original":"did a lot","improved":"put in a lot","explanation":"Better pairing.","category":"vocabulary"}],
+        "upgrades":[
+          {"original":"did a lot","improved":"put in a lot","explanation":"Already a mistake."},
+          {"original":"very tired","improved":"exhausted","explanation":"Stronger."},
+          {"original":"Very Tired","improved":"worn out","explanation":"Repeats the fragment."},
+          {"original":"after the thing","improved":"after the task","explanation":"More exact."},
+          {"original":"the meeting","improved":"the stand-up","explanation":"More exact."}],
+        "gaps":[],
+        "words_to_take":[
+          {"phrase":"exhausted","meaning":"very tired","example":"I was exhausted."},
+          {"phrase":"Exhausted","meaning":"very tired","example":"I was exhausted."},
+          {"phrase":"put in","meaning":"spend effort","example":"We put in a lot of work."},
+          {"phrase":"the task","meaning":"a job","example":"I did the task."}],
+        "rewrite":"I was exhausted after we put in a lot of work on the task."}"#,
+    );
+
+    assert_eq!(feedback.focus_feedback.len(), 1);
+    assert_eq!(feedback.focus_feedback[0].improved, "put in a lot");
+    let upgraded: Vec<_> = feedback
+        .upgrades
+        .iter()
+        .map(|upgrade| upgrade.original.as_str())
+        .collect();
+    assert_eq!(upgraded, ["very tired", "after the thing"]);
+    assert_eq!(
+        feedback
+            .words_to_take
+            .iter()
+            .map(|word| word.phrase.as_str())
+            .collect::<Vec<_>>(),
+        ["exhausted", "put in"]
+    );
+}
+
+#[test]
+fn a_reply_without_the_new_lists_still_validates() {
+    let feedback = coached_from(r#"{"n":1,"mistakes":[],"rewrite":"I was exhausted."}"#);
+
+    assert!(feedback.upgrades.is_empty() && feedback.gaps.is_empty());
+    assert!(feedback.words_to_take.is_empty());
+}
+
+#[test]
+fn the_prompt_and_schema_ask_for_every_finding_and_for_gap_signals() {
+    let prompt = make_prompt(&[answer(1, "Hello")]);
+
+    for needle in [
+        "upgrades",
+        "gaps",
+        "words_to_take",
+        "B1 to B2",
+        "fillers",
+        "recognition errors",
+    ] {
+        assert!(prompt.contains(needle), "the prompt names {needle}");
+    }
+    for field in ["upgrades", "gaps", "words_to_take"] {
+        assert!(SCHEMA.contains(&format!(r#""{field}":{{"type":"array","maxItems":2"#)));
+    }
+    assert!(serde_json::from_str::<serde_json::Value>(SCHEMA).is_ok());
 }
 
 #[test]

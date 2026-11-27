@@ -21,6 +21,7 @@ fn sample_turn_feedback(category: FocusCategory, improved: &str) -> TurnFeedback
             explanation: "Explanation note".into(),
         }],
         b2_rewrite: "Stronger rewrite.".into(),
+        ..Default::default()
     }
 }
 
@@ -680,4 +681,59 @@ fn migrates_a_version_twenty_three_database_to_the_practice_runs_schema() {
     assert_eq!(said, "I have job");
     drop(db);
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn feedback_saved_before_the_debrief_reads_with_empty_new_lists_and_new_findings_round_trip() {
+    let mut db = SessionDatabase::open_in_memory().unwrap();
+    let session = db.create_session("Opening?").unwrap();
+    for sequence in 1..=2 {
+        db.save_turn(
+            session,
+            sequence,
+            &StoredTurn {
+                learner: "I go there".into(),
+                assistant_reply: "Reply".into(),
+                assistant_question: "Next?".into(),
+                answered_by: None,
+            },
+        )
+        .unwrap();
+    }
+    db.connection
+        .execute(
+            "INSERT INTO turn_feedback (session_id, sequence, feedback_json) VALUES (?1, 1, ?2)",
+            params![
+                to_sql_id(session).unwrap(),
+                r#"{"focus_feedback":[{"category":"grammar","original":"I go","improved":"I went","explanation":"Past."}],"b2_rewrite":"I went there."}"#
+            ],
+        )
+        .unwrap();
+
+    let old = db.turn_feedback(session, 1).unwrap().unwrap();
+
+    assert_eq!(old.focus_feedback.len(), 1);
+    assert!(old.upgrades.is_empty() && old.gaps.is_empty() && old.words_to_take.is_empty());
+
+    let new = TurnFeedback {
+        upgrades: vec![crate::providers::Upgrade {
+            original: "very tired".into(),
+            improved: "exhausted".into(),
+            explanation: "Stronger.".into(),
+        }],
+        gaps: vec![crate::providers::Gap {
+            original: "the thing".into(),
+            word: "agenda".into(),
+            meaning: "a list of topics".into(),
+        }],
+        words_to_take: vec![crate::providers::WordToTake {
+            phrase: "agenda".into(),
+            meaning: "a list of topics".into(),
+            example: "I wrote the agenda.".into(),
+        }],
+        ..sample_turn_feedback(FocusCategory::Vocabulary, "I went")
+    };
+    db.save_turn_feedback(session, 2, &new).unwrap();
+
+    assert_eq!(db.turn_feedback(session, 2).unwrap(), Some(new));
 }

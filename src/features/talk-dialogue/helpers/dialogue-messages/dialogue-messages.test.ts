@@ -17,6 +17,7 @@ function aDialogue(input: DialogueInput): PracticeDialogue {
     answer_durations_ms: [],
     help_used: [],
     coaching: [],
+    debrief_words: [],
     ...input,
     turns: input.turns.map((turn) => ({ answered_by: null, ...turn })),
   };

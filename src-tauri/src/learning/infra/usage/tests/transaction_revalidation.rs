@@ -39,6 +39,7 @@ pub(super) fn prepared_turn(sequence: usize) -> PreparedTurn {
                 explanation: "Correction.".into(),
             }],
             b2_rewrite: "I used better words yesterday.".into(),
+            ..Default::default()
         },
     )
     .unwrap();
@@ -213,6 +214,7 @@ fn commit_rejects_changed_question_candidate_status_and_feedback() {
         let feedback = TurnFeedback {
             focus_feedback: Vec::new(),
             b2_rewrite: "good wording".into(),
+            ..Default::default()
         };
         turn.db
             .connection()

@@ -1,5 +1,4 @@
 export { AnswerReview } from './components/answer-review';
-export { ConversationReview } from './components/conversation-review';
+export { Debrief } from './components/debrief';
 export { sayAgainActiveAtom } from './model/atoms';
 export { cancelSayAgain } from './model/controls';
-export type { ReviewedAnswer } from './types';

@@ -13,6 +13,7 @@ fn sample_turn_feedback(category: FocusCategory, improved: &str) -> TurnFeedback
             explanation: "Explanation note".into(),
         }],
         b2_rewrite: "Stronger rewrite.".into(),
+        ..Default::default()
     }
 }
 
@@ -204,6 +205,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             explanation: "Correction.".into(),
         }],
         b2_rewrite: "I chose better words.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(first, 1, &initial_feedback).unwrap();
     db.finish_session(first).unwrap();
@@ -245,6 +247,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             explanation: "Correction.".into(),
         }],
         b2_rewrite: "I selected better words.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(recurrence, 1, &feedback).unwrap();
     let relapse: (String, i64, String) = db
@@ -280,6 +283,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             explanation: "Updated correction.".into(),
         }],
         b2_rewrite: "I selected much better words.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(recurrence, 1, &changed).unwrap();
     let replacement: (i64, String) = db
@@ -301,6 +305,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             explanation: "More specific explanation.".into(),
         }],
         b2_rewrite: "I selected much better words indeed.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(recurrence, 1, &explanation_change)
         .unwrap();
@@ -322,6 +327,7 @@ fn conversation_feedback_relapse_uses_turn_time_and_revalidates_replacements() {
             explanation: "Ungrounded wording.".into(),
         }],
         b2_rewrite: "I selected much better words indeed.".into(),
+        ..Default::default()
     };
     db.save_turn_feedback(recurrence, 1, &ungrounded).unwrap();
     let count: i64 = db
@@ -360,6 +366,7 @@ fn removing_a_turn_correction_archives_its_observation_until_it_recurs() {
         &TurnFeedback {
             focus_feedback: vec![],
             b2_rewrite: "I work there".into(),
+            ..Default::default()
         },
     )
     .unwrap();

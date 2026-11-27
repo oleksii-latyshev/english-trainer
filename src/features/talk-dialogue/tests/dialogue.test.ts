@@ -48,6 +48,7 @@ function dialogueOf(sessionId: number, turns: number) {
     answer_durations_ms: Array.from({ length: turns }, () => null),
     help_used: Array.from({ length: turns }, () => false),
     coaching: Array.from({ length: turns }, () => ({ state: 'pending' })),
+    debrief_words: [],
   };
 }
 

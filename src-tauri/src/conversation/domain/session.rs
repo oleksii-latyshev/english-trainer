@@ -1,6 +1,7 @@
 use super::rehearsal::replay_questions;
 use super::{
-    PracticeMode, PracticePhase, RecurringMistake, TurnCoaching, WrapupPhrase, WrapupPreparation,
+    DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching, WrapupPhrase,
+    WrapupPreparation,
 };
 use crate::learning::mistake_practice::MistakePracticeQuestion;
 use crate::providers::{AnsweredBy, AttemptComparison};
@@ -61,6 +62,8 @@ pub struct PracticeDialogue {
     pub answer_durations_ms: Vec<Option<u64>>,
     pub help_used: Vec<bool>,
     pub coaching: Vec<TurnCoaching>,
+    /// The words the learner may take from the Debrief, at most five across the session.
+    pub debrief_words: Vec<DebriefWord>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]

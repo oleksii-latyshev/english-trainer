@@ -2,7 +2,13 @@ import { describe, expect, it } from 'bun:test';
 import type { TurnFeedback } from '../../types';
 import { reviewView } from '.';
 
-const feedback: TurnFeedback = { focus_feedback: [], b2_rewrite: 'Every bank sends them.' };
+const feedback: TurnFeedback = {
+  focus_feedback: [],
+  b2_rewrite: 'Every bank sends them.',
+  upgrades: [],
+  gaps: [],
+  words_to_take: [],
+};
 
 describe('reviewView', () => {
   it('turns each coaching state into what the review shows', () => {

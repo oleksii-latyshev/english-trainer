@@ -7,28 +7,15 @@ import {
   IpcDecodeError,
   IpcEvents,
   invokeCommand,
-  invokeUnitCommand,
   PhraseCardRecordSchema,
-  SavedWrapupPhrasesSchema,
   WRAPUP_UPDATED_EVENT,
   WrapupUpdatedSchema,
 } from '@/core/ipc';
-import type {
-  AnswerPhrase,
-  FinishedSession,
-  PhraseCard,
-  SavedPhrases,
-  WrapUpFailure,
-} from '../types';
+import type { FinishedSession, PhraseCard, TakenWord, WrapUpFailure } from '../types';
 
 type WrapUpServiceShape = {
   readonly read: (sessionId: number) => Effect.Effect<FinishedSession, WrapUpFailure>;
-  readonly retryPreparation: (sessionId: number) => Effect.Effect<void, WrapUpFailure>;
-  readonly savePhrases: (
-    sessionId: number,
-    phrases: readonly string[],
-  ) => Effect.Effect<SavedPhrases, WrapUpFailure>;
-  readonly saveAnswerPhrase: (answer: AnswerPhrase) => Effect.Effect<PhraseCard, WrapUpFailure>;
+  readonly saveWord: (word: TakenWord) => Effect.Effect<PhraseCard, WrapUpFailure>;
   readonly updates: (sessionId: number) => Stream.Stream<void>;
 };
 
@@ -52,17 +39,10 @@ export class WrapUpService extends Context.Service<WrapUpService, WrapUpServiceS
                 }),
             ),
           ),
-        retryPreparation: (sessionId) =>
-          invokeUnitCommand(ipc, 'retry_session_wrapup', { sessionId }),
-        savePhrases: (sessionId, phrases) =>
-          invokeCommand(ipc, 'save_wrapup_phrases', SavedWrapupPhrasesSchema, {
-            sessionId,
-            phrases,
-          }),
-        saveAnswerPhrase: ({ sessionId, sequence, phrase, note }) =>
+        saveWord: ({ sessionId, sequence, phrase, meaning }) =>
           invokeCommand(ipc, 'save_phrase_card', PhraseCardRecordSchema, {
             phrase,
-            meaning_or_note: note,
+            meaning_or_note: meaning,
             session_id: sessionId,
             sequence,
           }),

@@ -33,7 +33,7 @@ mindmap
       Translate a selection
     Wrap-up
       Session summary
-      Your conversation
+      Debrief
     Memory
       Practice cards
       Spoken review
@@ -105,8 +105,8 @@ The page after Finish. Screen: [`screens/wrap-up`](src/screens/wrap-up/flow.md).
 
 | Feature | ID | What it does | Flow |
 | :--- | :---: | :--- | :--- |
-| Session summary | F9 | Numbers, up to three phrases worth learning, save and undo | [wrap-up](src/features/wrap-up/flow.md) |
-| Your conversation | F5 | Every answer with a more natural version, the changed words marked, one reason, Hear it and Say it again | [coaching-note](src/features/coaching-note/flow.md) |
+| Session summary | F9 | Numbers, the still-checking line and Take for the words of the Debrief, with undo | [wrap-up](src/features/wrap-up/flow.md) |
+| Debrief | F5 | One card per answer: the better version with changed words marked, why, Fix / Better / Missing word, up to five words to take per session, Hear it and Say it again | [coaching-note](src/features/coaching-note/flow.md) |
 
 ## Memory
 

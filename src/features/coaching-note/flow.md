@@ -1,18 +1,53 @@
 # Coaching note
 
-The review of one answer, and of the whole conversation on the wrap-up: what the learner said, the
-more natural version with the changed words marked, one short reason, Hear it and Say it again.
-Talk never shows it; Talk only marks an answer (`features/talk-dialogue`). The wrap-up screen
-(`screens/wrap-up`) renders `ConversationReview`, and the write-then-speak review stage renders
-`AnswerReview` per answer. Both take an optional `renderAnswerActions` slot that adds actions beside
-Hear it; the wrap-up screen uses it for the per-answer save of `features/wrap-up`.
+The review of one answer, and the Debrief of the whole conversation on the wrap-up. Talk never
+shows it; Talk only marks an answer (`features/talk-dialogue`). The wrap-up screen
+(`screens/wrap-up`) renders `Debrief`, and the write-then-speak review stage renders `AnswerReview`
+per answer. `Debrief` takes `renderTake` (the Take button of `features/wrap-up`) and `isTaken`, so
+this feature never imports that one.
+
+## Step through the Debrief
+
+One card per spoken answer, in order, with "3 / 8" and Back / Next. A card shows Eva's question,
+what was said, the better version with changed words marked, one line of why, the findings grouped
+as Fix, Better and Missing word, and the words to take. Only words in `debrief_words` (at most five
+per session, chosen in Rust) get a Take button. After the last card, Finish opens a summary of the
+words taken. A pending, paused or failed answer shows the same status line and retry as
+`AnswerReview`.
+
+```mermaid
+sequenceDiagram
+    actor Learner
+    participant Debrief as Debrief
+    participant Step as debriefStepAtom
+    participant Card as DebriefCardView
+    participant Take as renderTake slot
+
+    Learner->>Debrief: opens the wrap-up
+    Debrief->>Step: step 0
+    Debrief->>Card: card 1 of N
+    alt ready
+        Card-->>Learner: better version, why, findings, words to take
+        Card->>Take: each word Rust offered for this answer
+    else pending, paused or failed
+        Card-->>Learner: "Checking your answer…" or Retry
+    end
+    Learner->>Debrief: Next
+    Debrief->>Step: step + 1
+    Learner->>Debrief: Finish on the last card
+    Debrief->>Step: step N
+    Debrief-->>Learner: summary of the words taken, "N of M taken"
+    Learner->>Debrief: Back
+    Debrief->>Step: step - 1
+```
+
 
 ## Read the conversation and fill in pending answers
 
 ```mermaid
 sequenceDiagram
     actor Learner
-    participant View as ConversationReview
+    participant View as Debrief
     participant Atoms as conversationAtom
     participant Service as CoachingNoteService
     participant Ipc as Ipc and IpcEvents
@@ -24,7 +59,7 @@ sequenceDiagram
     Service->>Ipc: get_practice_dialogue
     Ipc->>Rust: invoke (works for a finished session)
     alt turns and coaching
-        Rust-->>View: every turn, each answer pending, ready, failed or paused
+        Rust-->>View: every turn, each answer pending, ready, failed or paused, and debrief_words
     else IpcError or decode failure
         Rust-->>View: notice with Retry (an earlier read stays visible)
     end

@@ -37,6 +37,7 @@ fn feedback_for(answer: &CoachingAnswer) -> CoachedAnswer {
                 explanation: "Say it the natural way.".into(),
             }],
             b2_rewrite: format!("{}, said naturally.", answer.transcript),
+            ..Default::default()
         },
     }
 }

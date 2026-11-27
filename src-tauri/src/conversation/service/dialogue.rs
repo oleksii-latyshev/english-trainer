@@ -4,8 +4,8 @@ use crate::conversation::domain::rehearsal::{
 };
 use crate::conversation::domain::rules::DAILY_TARGET_TURNS;
 use crate::conversation::domain::{
-    ActiveSession, FinishedPracticeSession, PracticeDialogue, PracticePhase, PracticeSession,
-    WrapupPreparation,
+    pick_debrief_words, ActiveSession, FinishedPracticeSession, PracticeDialogue, PracticePhase,
+    PracticeSession, WrapupPreparation,
 };
 use crate::conversation::error::ConversationError;
 use crate::persistence::wrapup_generation::PreparedWrapup;
@@ -31,6 +31,7 @@ impl SessionStore {
         };
         let details = state.database.turn_details(session_id)?;
         let coaching = self.turn_coaching(&state, session_id, turns.len())?;
+        let debrief_words = pick_debrief_words(&coaching);
         Ok(PracticeDialogue {
             session_id,
             opening_question,
@@ -39,6 +40,7 @@ impl SessionStore {
             answer_durations_ms: details.iter().map(|turn| turn.answer_duration_ms).collect(),
             help_used: details.iter().map(|turn| turn.help_used).collect(),
             coaching,
+            debrief_words,
             turns,
         })
     }
