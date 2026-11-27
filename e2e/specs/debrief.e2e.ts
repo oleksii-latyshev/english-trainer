@@ -151,3 +151,35 @@ test('the five-word cap reads 5 of 5 taken when every offered word is taken', as
 
   await expect(wrapup.debrief).toContainText('5 of 5 taken');
 });
+
+test('Say it again checks the words to take and the corrected fragments of the whole better version', async ({
+  app,
+  start,
+  talk,
+  wrapup,
+  tauri,
+}) => {
+  const { session, dialogue } = debriefConversation();
+  tauri.coaching.available().speaking('I have worked there for two years.');
+  tauri.speech.grantMicrophone();
+  tauri.session.withOpenSession(session, dialogue);
+  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  await app.open();
+  await start.continueSession();
+  await talk.finish();
+
+  await wrapup.sayItAgain(1);
+  await wrapup.stopRecording(1);
+
+  const review = wrapup.review(1);
+  await expect(review).toContainText('Second try');
+  await expect(review.getByText('for two years said', { exact: true })).toBeVisible();
+  await expect(review.getByText('get paid not said yet', { exact: true })).toBeVisible();
+  await expect(review.getByText('I work there not said yet', { exact: true })).toBeVisible();
+  expect(await tauri.calls('retry_practice_turn')).toEqual([
+    expect.objectContaining({
+      args: { sessionId: 41, sequence: 1, transcript: 'I have worked there for two years.' },
+    }),
+  ]);
+  await expect(wrapup.take(forTwoYears.phrase)).toBeVisible();
+});

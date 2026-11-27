@@ -1,10 +1,9 @@
 import { RegistryContext, useAtomMount, useAtomValue } from '@effect/atom-react';
-import { Check, Mic, Square } from 'lucide-react';
+import { Check, Mic, Square, X } from 'lucide-react';
 import { type ReactNode, useContext } from 'react';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
 import { answerKey } from '../../helpers/answer-key';
-import { secondTryHint, usedImprovedWording } from '../../helpers/second-try';
 import { sayAgainEffectsAtom, sayAgainViewAtom, secondTryAtom } from '../../model/atoms';
 import {
   cancelSayAgain,
@@ -12,35 +11,54 @@ import {
   startSayAgain,
   stopSayAgain,
 } from '../../model/controls';
-import type { AnswerTarget, AttemptComparison, SayAgainView } from '../../types';
+import type { AnswerTarget, AttemptComparison, PhraseCheck, SayAgainView } from '../../types';
 
 type Props = {
   target: AnswerTarget;
   trailing?: ReactNode;
 };
 
-function Comparison({ comparison }: { comparison: AttemptComparison }) {
-  const hint = secondTryHint(comparison);
+function CheckList({ label, checks }: { label: string; checks: readonly PhraseCheck[] }) {
+  if (checks.length === 0) return null;
   return (
-    <div className="border-line flex flex-col gap-1.5 rounded-xl border border-dashed px-3.5 py-3">
+    <div className="flex flex-col gap-1">
+      <span className="text-caption text-faint">{label}</span>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {checks.map((check) => (
+          <li
+            className={`text-caption inline-flex items-center gap-1.5 ${check.said ? 'text-ok' : 'text-muted'}`}
+            key={check.phrase}
+          >
+            {check.said ? (
+              <Check aria-hidden="true" className="size-3.5" />
+            ) : (
+              <X aria-hidden="true" className="size-3.5" />
+            )}
+            <span>{check.phrase}</span>
+            <span className="sr-only">{check.said ? ' said' : ' not said yet'}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Comparison({ comparison }: { comparison: AttemptComparison }) {
+  return (
+    <div className="border-line flex flex-col gap-2 rounded-xl border border-dashed px-3.5 py-3">
       <span className="text-caption text-faint">Second try</span>
       <p className="text-body text-foreground m-0" data-word-lookup>
         {comparison.retry_transcript}
       </p>
-      {usedImprovedWording(comparison) && (
-        <span className="text-caption text-ok inline-flex items-center gap-1.5">
-          <Check aria-hidden="true" className="size-3.5" />
-          You used “{comparison.target}”
-        </span>
-      )}
-      {hint && <span className="text-caption text-faint">{hint}</span>}
+      <CheckList checks={comparison.words_to_take} label="Words to take" />
+      <CheckList checks={comparison.corrections} label="Corrected fragments" />
     </div>
   );
 }
 
 const PROGRESS: Partial<Record<SayAgainView['tag'], string>> = {
   requesting: 'Waiting for the microphone…',
-  capturing: 'Recording. Say the better version, then stop.',
+  capturing: 'Recording. Say the whole better version, then stop.',
   transcribing: 'Transcribing locally…',
   comparing: 'Comparing the two tries…',
 };

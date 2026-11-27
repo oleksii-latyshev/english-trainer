@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-async function installCoaching(page: Page): Promise<void> {
+async function installCoaching(page: Page, spokenText: string): Promise<void> {
   await page.addInitScript((spoken: string) => {
     const harness = window.__ET_HARNESS__;
     const listeners = new Map<number, (payload: unknown) => void>();
@@ -44,16 +44,28 @@ async function installCoaching(page: Page): Promise<void> {
       if (!dialogue || !turn || coaching?.state !== 'ready') {
         throw { code: 'invalid_request', message: 'This answer has no review to compare with.' };
       }
-      const target = coaching.feedback.focus_feedback[0]?.improved ?? '';
+      const feedback = coaching.feedback;
       const retry = String(args.transcript);
+      const normalise = (text: string) =>
+        ` ${text
+          .toLowerCase()
+          .split(/[^a-z0-9']+/)
+          .filter(Boolean)
+          .join(' ')} `;
+      const said = (phrase: string) => normalise(retry).includes(normalise(phrase));
+      const check = (phrases: string[]) =>
+        [...new Set(phrases)].map((phrase) => ({ phrase, said: said(phrase) }));
       return {
         turn_sequence: sequence,
         original_transcript: turn.learner,
         retry_transcript: retry,
-        target,
-        target_evidence: retry.includes(target) ? 'newly_observed_in_retry' : 'not_observed',
-        word_count_change: 0,
-        hesitation: 'Not measured from transcript text.',
+        target: feedback.b2_rewrite,
+        words_to_take: check(feedback.words_to_take.map((word) => word.phrase)),
+        corrections: check([
+          ...feedback.focus_feedback.map((focus) => focus.improved),
+          ...feedback.upgrades.map((upgrade) => upgrade.improved),
+          ...feedback.gaps.map((gap) => gap.word),
+        ]),
       };
     }
 
@@ -84,11 +96,12 @@ async function installCoaching(page: Page): Promise<void> {
       }
       return originalInvoke(command, args);
     };
-  }, SPOKEN_SECOND_TRY);
+  }, spokenText);
 }
 
 export class CoachingBackend {
   enabled = false;
+  private spoken = SPOKEN_SECOND_TRY;
 
   constructor(private readonly page: Page) {}
 
@@ -97,8 +110,13 @@ export class CoachingBackend {
     return this;
   }
 
+  speaking(text: string): this {
+    this.spoken = text;
+    return this;
+  }
+
   async install(): Promise<void> {
-    if (this.enabled) await installCoaching(this.page);
+    if (this.enabled) await installCoaching(this.page, this.spoken);
   }
 
   async land(

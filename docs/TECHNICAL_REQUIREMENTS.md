@@ -312,11 +312,11 @@ answers instead. Typical latency is 1.5 to 3 s.
   state (marker: pending → faint dot, ready → "N tip(s)" or "Looks good", failed or paused → none);
   the wrap-up renders the feedback (`features/coaching-note`, re-read on `coaching-updated`). `get_session_wrapup(session_id)` rebuilds a finished session's
   wrap-up; `FinishedPracticeSession` has `pending_coaching` and `is_coaching_paused`.
-  `retry_practice_turn` saves a second attempt and returns a local `AttemptComparison`; it works for
+  `retry_practice_turn` saves a second attempt against the whole better version and returns a local
+  `AttemptComparison` (`words_to_take` and `corrections`, each `{ phrase, said }`); it works for
   an open session (rejected with `busy` while a reply is in flight) and for a finished one
   (rejected with `invalid_session` when the session does not exist)
-  (`target_evidence`: `already_present_in_both | newly_observed_in_retry | partially_observed |
-  not_observed | uncertain`, word-count change).
+  (practice only: it never changes Memory).
 
 ### 6.2 Session wrap-up (F9)
 

@@ -15,6 +15,8 @@ export type DebriefWord = ReviewedConversation['debrief_words'][number];
 
 export type AttemptComparison = typeof AttemptComparisonSchema.Type;
 
+export type PhraseCheck = AttemptComparison['words_to_take'][number];
+
 export type ReviewedConversation = typeof PracticeDialogueSchema.Type;
 
 export type CoachingNoteFailure = IpcError | IpcDecodeError;

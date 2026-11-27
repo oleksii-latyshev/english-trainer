@@ -137,7 +137,7 @@ test('Say it again on the wrap-up records, transcribes and shows the comparison'
 
   await expect(wrapup.review(1)).toContainText('Second try');
   await expect(wrapup.review(1)).toContainText(SPOKEN_SECOND_TRY);
-  await expect(wrapup.review(1)).toContainText('You used “I work there”');
+  await expect(wrapup.review(1).getByRole('listitem')).toContainText(['I work there said']);
   expect(await tauri.calls('retry_practice_turn')).toEqual([
     expect.objectContaining({
       args: { sessionId: 41, sequence: 1, transcript: SPOKEN_SECOND_TRY },

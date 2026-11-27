@@ -1,9 +1,10 @@
 use super::SessionStore;
+use crate::conversation::domain::compare_attempts;
 use crate::conversation::domain::rules::{
     validate_transcript, MAX_SAFE_SESSION_ID, MAX_TRANSCRIPT_CHARS,
 };
 use crate::conversation::error::ConversationError;
-use crate::providers::{compare_attempts, max_rewrite_chars, AttemptComparison, TurnFeedback};
+use crate::providers::{max_rewrite_chars, AttemptComparison, TurnFeedback};
 
 const MAX_FEEDBACK_CHARS: usize = 600;
 
@@ -98,15 +99,10 @@ impl SessionStore {
             .database
             .turn_feedback(session_id, sequence)?
             .ok_or(ConversationError::InvalidRetry)?;
-        let target = feedback
-            .focus_feedback
-            .first()
-            .map(|focus| focus.improved.as_str())
-            .unwrap_or("");
-        if target.len() > 300 || transcript.len() > MAX_TRANSCRIPT_CHARS {
+        if transcript.len() > MAX_TRANSCRIPT_CHARS {
             return Err(ConversationError::InvalidRetry);
         }
-        let comparison = compare_attempts(sequence, &original.learner, &transcript, target);
+        let comparison = compare_attempts(sequence, &original.learner, &transcript, &feedback);
         state.database.save_comparison(session_id, &comparison)?;
         Ok(comparison)
     }

@@ -12,9 +12,8 @@ function aComparison(overrides: Partial<AttemptComparison> = {}): AttemptCompari
     original_transcript: 'I work there.',
     retry_transcript: 'I work there now.',
     target: 'work there',
-    target_evidence: 'newly_observed_in_retry',
-    word_count_change: 1,
-    hesitation: 'none',
+    words_to_take: [],
+    corrections: [{ phrase: 'work there', said: true }],
     ...overrides,
   };
 }

@@ -120,8 +120,8 @@ sequenceDiagram
         Effects->>Service: compareSecondTry(session, sequence, transcript)
         Service->>Rust: invoke
         alt comparison
-            Rust-->>Effects: AttemptComparison
-            Effects-->>UI: "Second try" with the transcript, a win line or a hint
+            Rust-->>Effects: AttemptComparison (words_to_take, corrections: phrase and said)
+            Effects-->>UI: "Second try" with the transcript and two short lists of ✓ said or ✗ not said yet
         else IpcError
             Rust-->>UI: message, capture reset, the learner can record again
         end
@@ -131,6 +131,12 @@ sequenceDiagram
     Learner->>UI: Cancel
     UI->>Controls: cancelSayAgain (drops the target, resets capture, interrupts a comparison)
 ```
+
+The target is the whole better version (`b2_rewrite`), the same text Hear it plays. Rust checks the
+local transcript phrase by phrase with `learning::contains_phrase` (`conversation/domain/retry_check.rs`):
+each of the card's words to take, and each corrected fragment (a finding's `improved`, an upgrade's
+`improved`, a gap word). There is no score. A retry is cued practice: it changes no Memory status or
+evidence.
 
 Only one answer is re-spoken at a time: the other answers' buttons are disabled while one is active.
 `sayAgainActiveAtom` lets the route lock the turn composer while the write-then-speak review stage
