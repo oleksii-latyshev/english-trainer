@@ -16,7 +16,9 @@ words taken. A taken word the usage review saw the learner use on their own in t
 "✓ Used on your own: <phrase>" under the answer, and the summary lists those words too
 (`debrief_wins`, read from Rust; With help never appears). Below them "Your habits" lists the
 plain words Rust counted across recent conversations (`habits`, at most three) as
-"very 3.4 → 1.2 per 100 words"; the block is absent while Rust sends none. A pending, paused or failed answer shows the same status line and retry as
+"very 3.4 → 1.2 per 100 words"; the block is absent while Rust sends none. Last, "Rule to practise" shows the rule Rust picked
+(`focus_rule`: title, one-line summary, "3 times today · 5 open", a "Came back" chip) with Practise this
+rule, which calls `onPractiseRule(rule_key)` from the wrap-up screen; the block is absent when Rust sends none. A pending, paused or failed answer shows the same status line and retry as
 `AnswerReview`.
 
 ```mermaid
@@ -75,7 +77,8 @@ sequenceDiagram
 The stream is the same `coaching-updated` signal the wrap-up already listens to; Rust also emits it
 when the usage review of the finished session lands (one background call after Finish, covering
 answers 1 and 2 and every answer that followed a steered question), so a win fills in without a
-reload. It is read here
+reload. The conversation also re-reads on the `MISTAKES` reactivity key, so the rule to practise
+appears once the lesson of a mistake from this session is ready. It is read here
 too because a retried answer that gave up earlier is not counted as pending, so the wrap-up
 summary would not refresh for it.
 

@@ -14,12 +14,11 @@ import {
 import { Button } from '@/shared/ui/button';
 import type { WrapUpScreenProps } from './types';
 
-type ContentProps = {
+type ContentProps = WrapUpScreenProps & {
   readonly initial: FinishedSession;
-  readonly onLeave: () => void;
 };
 
-function Content({ initial, onLeave }: ContentProps) {
+function Content({ initial, isStartingRun, onLeave, onPractiseRule }: ContentProps) {
   const registry = useContext(RegistryContext);
   const summary = useLiveWrapup(initial);
   const isTaken = useIsTaken(summary.session_id);
@@ -56,7 +55,9 @@ function Content({ initial, onLeave }: ContentProps) {
             <span className="text-caption text-faint">{summary.turn_count}</span>
           </div>
           <Debrief
+            isStartingRun={isStartingRun}
             isTaken={isTaken}
+            onPractiseRule={onPractiseRule}
             renderTake={(word) => <TakeWord sessionId={summary.session_id} word={word} />}
             sessionId={summary.session_id}
           />
@@ -66,8 +67,8 @@ function Content({ initial, onLeave }: ContentProps) {
   );
 }
 
-export function WrapUpScreen({ onLeave }: WrapUpScreenProps) {
+export function WrapUpScreen(props: WrapUpScreenProps) {
   const state = useAtomValue(practiceStateAtom);
   if (state.tag !== 'completed') return null;
-  return <Content initial={state.summary} onLeave={onLeave} />;
+  return <Content {...props} initial={state.summary} />;
 }

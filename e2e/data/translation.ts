@@ -29,6 +29,7 @@ export const wordDialogue: PracticeDialogue = {
   debrief_words: [],
   debrief_wins: [],
   habits: [],
+  focus_rule: null,
   coaching: [
     {
       state: 'ready',

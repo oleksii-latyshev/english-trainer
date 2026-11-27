@@ -3,7 +3,9 @@
 `screens/wrap-up` is the focused full page after Finish (the shell hides the sidebar). It composes
 `features/wrap-up` (numbers, Take) with `features/coaching-note` (the Debrief) and passes the first
 into the second as a slot, because features never import each other.
-`app/routes/wrap-up` only mounts it and navigates; the screen reads `practiceStateAtom` and renders nothing
+`app/routes/wrap-up` mounts it, navigates, and starts the Mistakes run behind "Practise this rule"
+(`startMistakeRunAtom` with kind `rule`, then dismisses the summary and opens `/mistakes/practice/$runId`),
+passing `onPractiseRule` and `isStartingRun` down to the Debrief because features never import each other; the screen reads `practiceStateAtom` and renders nothing
 unless the session is completed.
 
 ```mermaid

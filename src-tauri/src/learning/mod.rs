@@ -13,6 +13,7 @@ mod usage_rules;
 mod usage_service;
 mod validation;
 
+pub mod focus_rule;
 pub mod habits;
 pub mod memory_recall;
 pub(crate) mod mistake_practice;

@@ -2,6 +2,7 @@ import { Effect, Stream } from 'effect';
 import { Atom } from 'effect/reactivity';
 import { captureStateAtom, resetCapture } from '@/core/answer-capture';
 import { ipcFailureMessage } from '@/core/ipc';
+import { MISTAKES } from '@/core/mistakes';
 import { answerKey } from '../helpers/answer-key';
 import { type CapturePhase, capturePhaseOf } from '../helpers/capture-phase';
 import { CoachingNoteService } from '../services/coaching-note-service';
@@ -11,9 +12,9 @@ import { runtime } from './runtime';
 const COMPARE_FAILED = 'Could not compare this attempt. Please retry.';
 
 export const conversationAtom = Atom.family((sessionId: number) =>
-  runtime.atom(
-    Effect.flatMap(CoachingNoteService, (service) => service.readConversation(sessionId)),
-  ),
+  runtime
+    .atom(Effect.flatMap(CoachingNoteService, (service) => service.readConversation(sessionId)))
+    .pipe(Atom.runtime.withReactivity(MISTAKES)),
 );
 
 export const conversationUpdatesAtom = Atom.family((sessionId: number) =>

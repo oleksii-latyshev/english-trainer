@@ -5,6 +5,7 @@ mod infra;
 mod ports;
 mod service;
 
+pub use domain::rules::RuleKey;
 pub use infra::{
     AgyAnswerChecker, AgyLessonProvider, SessionMistakeStore, SystemClock, TauriMistakesNotifier,
 };

@@ -20,6 +20,7 @@ function aDialogue(input: DialogueInput): PracticeDialogue {
     debrief_words: [],
     debrief_wins: [],
     habits: [],
+    focus_rule: null,
     ...input,
     turns: input.turns.map((turn) => ({ answered_by: null, ...turn })),
   };

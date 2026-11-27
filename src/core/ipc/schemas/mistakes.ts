@@ -25,7 +25,7 @@ const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 
 export const MISTAKES_UPDATED_EVENT = 'mistakes-updated';
 
-const RuleKeySchema = bindingSchema<RuleKey>()(
+export const RuleKeySchema = bindingSchema<RuleKey>()(
   Schema.Literals([
     'past_simple_vs_present_perfect',
     'past_perfect',
