@@ -163,7 +163,7 @@ test('Say it again checks the words to take and the corrected fragments of the w
   tauri.coaching.available().speaking('I have worked there for two years.');
   tauri.speech.grantMicrophone();
   tauri.session.withOpenSession(session, dialogue);
-  tauri.wrapup.finishingWith(wrapupSummary({ state: 'ready' }, [], 0));
+  tauri.wrapup.finishingWith(wrapupSummary());
   await app.open();
   await start.continueSession();
   await talk.finish();
