@@ -63,13 +63,6 @@ pub enum LearningItemType {
 }
 
 impl LearningItemType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Mistake => "mistake",
-            Self::Phrase => "phrase",
-        }
-    }
-
     pub fn parse(value: &str) -> Option<Self> {
         match value {
             "mistake" => Some(Self::Mistake),

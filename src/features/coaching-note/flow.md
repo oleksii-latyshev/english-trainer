@@ -95,7 +95,7 @@ sequenceDiagram
     Learner->>Rust: Finish
     Rust-->>Learner: wrap-up at once (nothing waits for the review)
     Rust->>Queue: enqueue(session)
-    Queue->>Queue: answers 1, 2 and each answer after a steered question, not yet assessed
+    Queue->>Queue: answers 1, 2 and each answer after a phrase or mistake steering question, not yet assessed
     Queue->>Claude: one call with all of them
     alt findings validate
         Claude-->>Queue: findings per answer
@@ -108,6 +108,10 @@ sequenceDiagram
 
 Which answer followed which steered target is saved when Eva's steering reply commits
 (`turn_steering`), because the steering state of an open session lives in memory only.
+
+Eva also steers one question per session toward the focus rule of an earlier conversation, so the
+rule is used in real speech. That steering row has item type `rule`; the usage review treats the
+answer after it as an ordinary answer (it assesses phrases, never the rule).
 
 ## Check an answer again
 

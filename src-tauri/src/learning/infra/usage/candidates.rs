@@ -10,7 +10,8 @@ use rusqlite::{params, OptionalExtension};
 const MAX_CANDIDATES: usize = 3;
 const FIRST_ANSWERS: usize = 2;
 
-/// The saved item Eva steered toward in the question this answer replied to.
+/// The saved item Eva steered toward in the question this answer replied to. A steered rule is
+/// not a saved item the usage review can assess, so it counts as no target.
 pub(crate) fn steered_target_on(
     connection: &rusqlite::Connection,
     session_id: u64,
@@ -26,13 +27,17 @@ pub(crate) fn steered_target_on(
             |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .optional()?;
-    row.map(|(item_type, item_id)| {
-        let item_type = LearningItemType::parse(&item_type).ok_or(
-            rusqlite::Error::InvalidColumnType(0, "item_type".into(), rusqlite::types::Type::Text),
-        )?;
-        Ok((item_type, to_safe_u64_id(item_id)?))
-    })
-    .transpose()
+    row.filter(|(item_type, _)| item_type != "rule")
+        .map(|(item_type, item_id)| {
+            let item_type =
+                LearningItemType::parse(&item_type).ok_or(rusqlite::Error::InvalidColumnType(
+                    0,
+                    "item_type".into(),
+                    rusqlite::types::Type::Text,
+                ))?;
+            Ok((item_type, to_safe_u64_id(item_id)?))
+        })
+        .transpose()
 }
 
 pub(crate) fn is_reviewable_answer_on(

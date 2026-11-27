@@ -620,8 +620,29 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             "UPDATE mistake_lessons SET state = 'pending', failures = 0 WHERE state = 'failed'",
             [],
         )?;
+        transaction.pragma_update(None, "user_version", 26)?;
+        transaction.commit()?;
+        version = 26;
+    }
+    if version < 27 {
+        connection.pragma_update(None, "foreign_keys", "OFF")?;
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE turn_steering_next (
+                session_id INTEGER NOT NULL,
+                sequence INTEGER NOT NULL,
+                item_type TEXT NOT NULL CHECK(item_type IN ('mistake', 'phrase', 'rule')),
+                item_id INTEGER NOT NULL,
+                PRIMARY KEY(session_id, sequence),
+                FOREIGN KEY(session_id, sequence) REFERENCES turns(session_id, sequence) ON DELETE CASCADE
+            );
+            INSERT INTO turn_steering_next SELECT session_id, sequence, item_type, item_id FROM turn_steering;
+            DROP TABLE turn_steering;
+            ALTER TABLE turn_steering_next RENAME TO turn_steering;",
+        )?;
         transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
+        connection.pragma_update(None, "foreign_keys", "ON")?;
     }
     Ok(())
 }

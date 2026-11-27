@@ -326,6 +326,14 @@ answers instead. Typical latency is 1.5 to 3 s.
   oldest due taken phrase from an earlier session, else the oldest due mistake with two sightings
   from an earlier session, skipping the keys kept in `ActiveSession.steered_targets` (in memory; a
   key is added when the reply succeeds). It adds no provider call, only the context.
+  A third kind, `rule` (`SteeringKind::Rule`, not a `LearningItemType`), is the focus rule of the
+  most recent of the last five earlier sessions that had one (`session_rule_counts` +
+  `pick_focus_rule`, as in the Debrief) whose rule still has open mistakes. It is preferred from the
+  second steering turn on (answer 4 and later, when `turns.len() >= 3`), is used at most once per
+  session, and fills in on answer 1 only when no phrase or mistake is due. The target is
+  `{ kind: "rule", cue: rule title, target: card summary }` and its key id is the latest open
+  mistake of that rule. The prompt asks for a question whose natural answer needs the rule and
+  forbids naming it or mentioning grammar. It is one more local SQL read on the same path.
 - **Wins** (`persistence/usage_wins.rs`): `PracticeDialogue.debrief_wins` lists
   `{ sequence, phrase }` for `learning_usage_events` of type phrase with outcome `correct` in the
   session, joined to `phrase_cards`. With help, incorrect and uncertain events are never listed.
@@ -596,13 +604,15 @@ The owner approved widening eligibility and moving the trigger to the end of the
 2026-11-27; every other rule below is unchanged.
 
 1. **Eligibility:** saved first-pass answers 1 and 2, and every saved first-pass answer that directly
-   follows a steered question (Eva's question that carried a learning target, §6.1). Retries, drills,
+   follows a steered question (Eva's question that carried a phrase or mistake target, §6.1; a
+   `rule` steering row makes no answer eligible, the rule is not graded). Retries, drills,
    typed and edited answers, mistake practice and write-then-speak sessions are excluded. At most 3
    non-archived candidates created before the session start (mistakes with earlier occurrences,
    phrases with provenance outside the session), 2+ words, ≤ 300 characters. For a steered answer the
    steered target is the first candidate when it passes these rules, so it is never cut by the limit.
    Which answer followed which steered target is saved when the steering reply commits, in
-   `turn_steering(session_id, sequence, item_type, item_id)` (schema 25, keyed by the turn whose
+   `turn_steering(session_id, sequence, item_type, item_id)` (schema 25, `item_type` also `rule` from
+   schema 27, keyed by the turn whose
    question steered; the answer is `sequence + 1`; removed with the turn).
    **Trigger:** `finish_practice_session` queues one background job per session
    (`UsageReviewQueue`, own worker thread, never on the turn path and never delaying the wrap-up).
