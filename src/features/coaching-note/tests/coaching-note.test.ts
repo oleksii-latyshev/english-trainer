@@ -90,9 +90,8 @@ function layerOf(backend: Backend) {
               original_transcript: 'I work in there',
               retry_transcript: String(Reflect.get(args ?? {}, 'transcript')),
               target: 'I work there',
-              target_evidence: 'newly_observed_in_retry',
-              word_count_change: 0,
-              hesitation: 'Not measured from transcript text.',
+              words_to_take: [{ phrase: 'get my point across', said: true }],
+              corrections: [{ phrase: 'I work there', said: false }],
             });
           case 'retry_answer_coaching':
             backend.coaching = [{ state: 'pending' }];

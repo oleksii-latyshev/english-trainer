@@ -269,6 +269,16 @@ pub struct WordToTake {
     pub example: String,
 }
 
+/// One phrase of the better version and whether the second try said it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export)]
+pub struct PhraseCheck {
+    pub phrase: String,
+    pub said: bool,
+}
+
+/// A second try measured against the whole better version of the answer. Practice only: it never
+/// changes Memory.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
 #[ts(export)]
 pub struct AttemptComparison {
@@ -276,71 +286,10 @@ pub struct AttemptComparison {
     pub original_transcript: String,
     pub retry_transcript: String,
     pub target: String,
-    pub target_evidence: TargetEvidence,
-    pub word_count_change: i32,
-    pub hesitation: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
-#[serde(rename_all = "snake_case")]
-#[ts(export)]
-pub enum TargetEvidence {
-    AlreadyPresentInBoth,
-    NewlyObservedInRetry,
-    PartiallyObserved,
-    NotObserved,
-    Uncertain,
-}
-
-pub fn compare_attempts(
-    turn_sequence: usize,
-    original: &str,
-    retry: &str,
-    target: &str,
-) -> AttemptComparison {
-    let target_words = words(target);
-    let original_words = words(original);
-    let retry_words = words(retry);
-    let target_occurs_in_retry = contains_word_sequence(&retry_words, &target_words);
-    let target_occurs_in_original = contains_word_sequence(&original_words, &target_words);
-    let matched = target_words
-        .iter()
-        .filter(|word| retry_words.contains(word))
-        .count();
-    let target_evidence = if target_words.len() < 2 {
-        TargetEvidence::Uncertain
-    } else if target_occurs_in_retry && target_occurs_in_original {
-        TargetEvidence::AlreadyPresentInBoth
-    } else if target_occurs_in_retry {
-        TargetEvidence::NewlyObservedInRetry
-    } else if matched > 0 {
-        TargetEvidence::PartiallyObserved
-    } else {
-        TargetEvidence::NotObserved
-    };
-    let original_count = original_words.len();
-    let retry_count = retry_words.len();
-    AttemptComparison {
-        turn_sequence,
-        original_transcript: original.to_string(),
-        retry_transcript: retry.to_string(),
-        target: target.to_string(),
-        target_evidence,
-        word_count_change: i32::try_from(retry_count).unwrap_or(i32::MAX)
-            - i32::try_from(original_count).unwrap_or(i32::MAX),
-        hesitation: "Not measured from transcript text.".into(),
-    }
-}
-
-fn words(text: &str) -> Vec<String> {
-    text.split(|character: char| !character.is_alphanumeric())
-        .filter(|word| !word.is_empty())
-        .map(str::to_lowercase)
-        .collect()
-}
-
-fn contains_word_sequence(words: &[String], target: &[String]) -> bool {
-    !target.is_empty() && words.windows(target.len()).any(|window| window == target)
+    #[serde(default)]
+    pub words_to_take: Vec<PhraseCheck>,
+    #[serde(default)]
+    pub corrections: Vec<PhraseCheck>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
@@ -475,6 +424,13 @@ impl ProviderError {
     }
 }
 
+pub(crate) fn cancelled_reply() -> ProviderError {
+    ProviderError::new(
+        ProviderErrorCode::Cancelled,
+        "The reply was interrupted. Continue speaking when ready.",
+    )
+}
+
 #[cfg(test)]
 mod timing_tests {
     use super::*;
@@ -509,40 +465,4 @@ mod timing_tests {
             .get("provider_latency_ms")
             .is_some());
     }
-}
-
-#[cfg(test)]
-mod retry_comparison_tests {
-    use super::*;
-
-    #[test]
-    fn retry_evidence_reports_ordered_target_words_and_uncertainty_without_pauses() {
-        let observed = compare_attempts(1, "I work in there", "I work there now", "I work there");
-        assert_eq!(
-            observed.target_evidence,
-            TargetEvidence::NewlyObservedInRetry
-        );
-        assert_eq!(observed.hesitation, "Not measured from transcript text.");
-
-        let reversed =
-            compare_attempts(1, "I work in there", "There is work for me", "I work there");
-        assert_eq!(reversed.target_evidence, TargetEvidence::PartiallyObserved);
-
-        let short_target = compare_attempts(1, "Original", "Retry", "Good");
-        assert_eq!(short_target.target_evidence, TargetEvidence::Uncertain);
-
-        let already_present =
-            compare_attempts(1, "I work there", "I work there again", "I work there");
-        assert_eq!(
-            already_present.target_evidence,
-            TargetEvidence::AlreadyPresentInBoth
-        );
-    }
-}
-
-pub(crate) fn cancelled_reply() -> ProviderError {
-    ProviderError::new(
-        ProviderErrorCode::Cancelled,
-        "The reply was interrupted. Continue speaking when ready.",
-    )
 }

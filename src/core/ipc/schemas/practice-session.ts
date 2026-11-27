@@ -3,12 +3,12 @@ import type { AttemptComparison } from '../bindings/AttemptComparison';
 import type { DebriefWord } from '../bindings/DebriefWord';
 import type { FocusFeedback } from '../bindings/FocusFeedback';
 import type { Gap } from '../bindings/Gap';
+import type { PhraseCheck } from '../bindings/PhraseCheck';
 import type { PracticeDialogue } from '../bindings/PracticeDialogue';
 import type { PracticeMode } from '../bindings/PracticeMode';
 import type { PracticePhase } from '../bindings/PracticePhase';
 import type { PracticeSession } from '../bindings/PracticeSession';
 import type { StoredTurn } from '../bindings/StoredTurn';
-import type { TargetEvidence } from '../bindings/TargetEvidence';
 import type { TurnCoaching } from '../bindings/TurnCoaching';
 import type { TurnFeedback } from '../bindings/TurnFeedback';
 import type { Upgrade } from '../bindings/Upgrade';
@@ -28,14 +28,8 @@ export const PracticePhaseSchema = bindingSchema<PracticePhase>()(
   Schema.Literals(['writing', 'writing_review', 'speaking', 'speaking_review']),
 );
 
-const TargetEvidenceSchema = bindingSchema<TargetEvidence>()(
-  Schema.Literals([
-    'already_present_in_both',
-    'newly_observed_in_retry',
-    'partially_observed',
-    'not_observed',
-    'uncertain',
-  ]),
+const PhraseCheckSchema = bindingSchema<PhraseCheck>()(
+  Schema.Struct({ phrase: Schema.String, said: Schema.Boolean }),
 );
 
 export const AttemptComparisonSchema = bindingSchema<AttemptComparison>()(
@@ -44,9 +38,8 @@ export const AttemptComparisonSchema = bindingSchema<AttemptComparison>()(
     original_transcript: Schema.String,
     retry_transcript: Schema.String,
     target: Schema.String,
-    target_evidence: TargetEvidenceSchema,
-    word_count_change: Schema.Int,
-    hesitation: Schema.String,
+    words_to_take: Schema.Array(PhraseCheckSchema),
+    corrections: Schema.Array(PhraseCheckSchema),
   }),
 );
 

@@ -2,6 +2,7 @@ mod coaching;
 pub(crate) mod context_builder;
 mod debrief;
 pub(crate) mod rehearsal;
+mod retry_check;
 pub(crate) mod rules;
 mod scaffold;
 mod session;
@@ -10,6 +11,7 @@ mod wrapup;
 
 pub use coaching::TurnCoaching;
 pub use debrief::{pick_debrief_words, DebriefWord};
+pub use retry_check::compare_attempts;
 pub use scaffold::question_scaffold;
 pub use session::{
     ActiveSession, FinishedPracticeSession, InputSource, PracticeDialogue, PracticeSession,

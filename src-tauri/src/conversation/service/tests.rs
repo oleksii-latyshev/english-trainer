@@ -344,10 +344,9 @@ fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
         .retry_turn(session.session_id, 1, "I work there now".into())
         .unwrap();
     assert_eq!(result.original_transcript, "I work in there");
-    assert_eq!(
-        result.target_evidence,
-        crate::providers::TargetEvidence::NewlyObservedInRetry
-    );
+    assert_eq!(result.target, "I work there as an engineer.");
+    assert_eq!(result.corrections.len(), 1);
+    assert!(result.corrections[0].said);
     assert_eq!(store.get_active().unwrap().unwrap().turn_count, 1);
     drop(store);
 
@@ -377,10 +376,9 @@ fn retry_works_after_the_session_is_finished_and_rejects_unknown_sessions() {
     let result = store
         .retry_turn(session.session_id, 1, "I work there now".into())
         .unwrap();
-    assert_eq!(
-        result.target_evidence,
-        crate::providers::TargetEvidence::NewlyObservedInRetry
-    );
+    assert_eq!(result.target, "I work there as an engineer.");
+    assert_eq!(result.corrections.len(), 1);
+    assert!(result.corrections[0].said);
     let error = store
         .retry_turn(session.session_id + 1, 1, "I work there now".into())
         .unwrap_err();
@@ -996,8 +994,12 @@ fn migration_from_version_fourteen_keeps_sessions_turns_glossary_and_retry_evide
     .unwrap();
     db.replace_glossary_terms(&["Manual glossary term".into()])
         .unwrap();
-    let evidence =
-        crate::providers::compare_attempts(1, "I work in there", "I work there", "I work there");
+    let evidence = crate::conversation::domain::compare_attempts(
+        1,
+        "I work in there",
+        "I work there",
+        &sample_feedback(),
+    );
     db.save_comparison(sid, &evidence).unwrap();
     drop(db);
 
@@ -1030,50 +1032,6 @@ fn migration_from_version_fourteen_keeps_sessions_turns_glossary_and_retry_evide
     assert_eq!(store.glossary_terms().unwrap(), ["Manual glossary term"]);
     assert_eq!(resumed.retry_evidence, [evidence]);
     std::fs::remove_file(path).unwrap();
-}
-
-#[test]
-fn uncertain_partial_and_already_present_retries_report_their_evidence() {
-    let store = SessionStore::default();
-    let cases = [
-        (
-            "the target",
-            "the",
-            crate::providers::TargetEvidence::Uncertain,
-        ),
-        (
-            "I went home",
-            "I would be home",
-            crate::providers::TargetEvidence::PartiallyObserved,
-        ),
-        (
-            "I would go home",
-            "I would go home",
-            crate::providers::TargetEvidence::AlreadyPresentInBoth,
-        ),
-    ];
-
-    for (original, retry, expected_evidence) in cases {
-        let session = store.start().unwrap();
-        store
-            .send_turn(session.session_id, original.into(), |_| {
-                Ok(turn("Thanks.", "Next?"))
-            })
-            .unwrap();
-        let mut feedback = sample_feedback();
-        feedback.focus_feedback[0].improved = match expected_evidence {
-            crate::providers::TargetEvidence::Uncertain => "the".into(),
-            _ => "I would go home".into(),
-        };
-        store
-            .save_feedback(session.session_id, 1, original, &feedback)
-            .unwrap();
-        let comparison = store
-            .retry_turn(session.session_id, 1, retry.into())
-            .unwrap();
-        assert_eq!(comparison.target_evidence, expected_evidence);
-        store.finish(session.session_id).unwrap();
-    }
 }
 
 #[test]
@@ -1619,11 +1577,11 @@ fn an_open_coach_session_with_a_saved_unanswered_answer_continues_as_a_talk_sess
     db.save_turn_feedback(sid, 1, &sample_feedback()).unwrap();
     db.save_comparison(
         sid,
-        &crate::providers::compare_attempts(
+        &crate::conversation::domain::compare_attempts(
             1,
             "I work in there",
             "I work there now",
-            "I work there",
+            &sample_feedback(),
         ),
     )
     .unwrap();
