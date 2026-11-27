@@ -101,6 +101,9 @@ const gapAndWord: Coaching = {
   },
 };
 
-export function debriefConversation(words: DebriefWord[] = fiveWords) {
-  return coachedConversation([fixAndWords, betterAndWords, gapAndWord], words);
+export function debriefConversation(
+  words: DebriefWord[] = fiveWords,
+  wins: PracticeDialogue['debrief_wins'] = [],
+) {
+  return coachedConversation([fixAndWords, betterAndWords, gapAndWord], words, wins);
 }

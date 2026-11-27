@@ -75,6 +75,7 @@ impl SessionStore {
                 written_turn_count: stored.written_turn_count,
                 is_mistake_practice: stored.is_mistake_practice,
                 mistake_questions,
+                steered_targets: Vec::new(),
             })
         } else {
             None

@@ -5,6 +5,10 @@ pub fn coaching_notifier(handle: AppHandle) -> impl Fn(CoachingEvent) + Send + S
     move |event| ignore_closed_window(handle.emit("coaching-updated", event))
 }
 
+pub fn announce_coaching_update(handle: &AppHandle, session_id: u64) {
+    ignore_closed_window(handle.emit("coaching-updated", CoachingEvent { session_id }))
+}
+
 fn ignore_closed_window(result: tauri::Result<()>) {
     drop(result);
 }

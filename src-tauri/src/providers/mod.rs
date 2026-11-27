@@ -338,6 +338,9 @@ pub struct ConversationContext {
     pub eva_style: EvaStyle,
 }
 
+/// Eva steers toward one saved word per question.
+pub const MAX_LEARNING_TARGETS: usize = 1;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LearningPromptTarget {
     pub kind: String,

@@ -6,7 +6,7 @@ pub mod ports;
 pub(crate) mod service;
 
 pub use domain::{
-    question_scaffold, FinishedPracticeSession, InputSource, PracticeDialogue, PracticeMode,
-    PracticePhase, PracticeSession, StartPracticeOptions, StoredTurn,
+    question_scaffold, DebriefWin, FinishedPracticeSession, InputSource, PracticeDialogue,
+    PracticeMode, PracticePhase, PracticeSession, StartPracticeOptions, StoredTurn,
 };
 pub use service::{CoachingQueue, SessionStore, IDLE_FLUSH, QUOTA_PAUSE};

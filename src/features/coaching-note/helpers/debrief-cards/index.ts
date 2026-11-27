@@ -6,6 +6,7 @@ export type DebriefCard = {
   readonly said: string;
   readonly coaching: TurnCoaching | undefined;
   readonly offered: readonly DebriefWord[];
+  readonly wins: readonly string[];
 };
 
 function questionBefore(conversation: ReviewedConversation, index: number): string {
@@ -28,6 +29,9 @@ export function debriefCards(conversation: ReviewedConversation): readonly Debri
         said,
         coaching: conversation.coaching[index],
         offered: conversation.debrief_words.filter((word) => word.sequence === sequence),
+        wins: conversation.debrief_wins
+          .filter((win) => win.sequence === sequence)
+          .map((win) => win.phrase),
       },
     ];
   });

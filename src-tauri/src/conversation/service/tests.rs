@@ -1413,43 +1413,52 @@ fn due_memory_returns_as_a_bounded_later_session_conversation_cue() {
             Some(1),
         )
         .unwrap();
+    store
+        .save_phrase(
+            "Look into".into(),
+            "Investigate".into(),
+            Some(first.session_id),
+            Some(1),
+        )
+        .unwrap();
     store.finish(first.session_id).unwrap();
     drop(store);
 
     let db = rusqlite::Connection::open(&path).unwrap();
     db.execute("UPDATE mistakes SET next_review_at = 0", [])
         .unwrap();
-    db.execute("UPDATE phrase_cards SET next_review_at = 0", [])
-        .unwrap();
+    db.execute(
+        "UPDATE phrase_cards SET next_review_at = CASE phrase WHEN 'Look into' THEN 1 ELSE 0 END",
+        [],
+    )
+    .unwrap();
     drop(db);
 
     let later = SessionStore::open(&path).unwrap();
     let second = later.start().unwrap();
-    later
-        .send_turn(second.session_id, "First answer".into(), |context| {
-            assert!(context.learning_targets.is_empty());
-            Ok(turn("Thanks.", "What else?"))
-        })
-        .unwrap();
+    let mut steered: Vec<Vec<(String, String)>> = Vec::new();
+    for answer in 1..=10 {
+        later
+            .send_turn(second.session_id, format!("Answer {answer}"), |context| {
+                steered.push(
+                    context
+                        .learning_targets
+                        .iter()
+                        .map(|target| (target.kind.clone(), target.target.clone()))
+                        .collect(),
+                );
+                Ok(turn("Thanks.", "What else?"))
+            })
+            .unwrap();
+    }
+    let pair = |kind: &str, target: &str| vec![(kind.to_string(), target.to_string())];
+    assert_eq!(steered[0], pair("phrase", "The main trade-off was"));
+    assert_eq!(steered[3], pair("phrase", "Look into"));
+    assert_eq!(steered[6], pair("mistake", "I work there"));
+    for quiet in [1, 2, 4, 5, 7, 8, 9] {
+        assert!(steered[quiet].is_empty(), "answer {}", quiet + 1);
+    }
     drop(later);
-    let resumed = SessionStore::open(&path).unwrap();
-    resumed
-        .send_turn(second.session_id, "Second answer".into(), |context| {
-            assert_eq!(context.learning_targets.len(), 2);
-            assert_eq!(context.learning_targets[0].kind, "mistake");
-            assert_eq!(context.learning_targets[0].target, "I work there");
-            assert_eq!(context.learning_targets[1].kind, "phrase");
-            assert_eq!(context.learning_targets[1].target, "The main trade-off was");
-            Ok(turn("Thanks.", "What else?"))
-        })
-        .unwrap();
-    resumed
-        .send_turn(second.session_id, "Third answer".into(), |context| {
-            assert!(context.learning_targets.is_empty());
-            Ok(turn("Thanks.", "What else?"))
-        })
-        .unwrap();
-    drop(resumed);
     std::fs::remove_file(path).unwrap();
 }
 
@@ -1458,11 +1467,6 @@ fn memory_query_failure_does_not_leave_conversation_busy() {
     let path = temporary_database_path();
     let store = SessionStore::open(&path).unwrap();
     let session = store.start().unwrap();
-    store
-        .send_turn(session.session_id, "First answer".into(), |_| {
-            Ok(turn("Thanks.", "What else?"))
-        })
-        .unwrap();
     rusqlite::Connection::open(&path)
         .unwrap()
         .execute("DROP TABLE phrase_cards", [])
@@ -1470,7 +1474,7 @@ fn memory_query_failure_does_not_leave_conversation_busy() {
 
     for _ in 0..2 {
         let error = store
-            .send_turn(session.session_id, "Second answer".into(), |_| {
+            .send_turn(session.session_id, "First answer".into(), |_| {
                 panic!("provider should not run when memory lookup fails")
             })
             .unwrap_err();

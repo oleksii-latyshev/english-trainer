@@ -1,5 +1,6 @@
 import { Schema } from 'effect';
 import type { AttemptComparison } from '../bindings/AttemptComparison';
+import type { DebriefWin } from '../bindings/DebriefWin';
 import type { DebriefWord } from '../bindings/DebriefWord';
 import type { FocusFeedback } from '../bindings/FocusFeedback';
 import type { Gap } from '../bindings/Gap';
@@ -116,6 +117,13 @@ const DebriefWordSchema = bindingSchema<DebriefWord>()(
   }),
 );
 
+const DebriefWinSchema = bindingSchema<DebriefWin>()(
+  Schema.Struct({
+    sequence: Identifier,
+    phrase: Schema.String,
+  }),
+);
+
 export const TurnFeedbackSchema = bindingSchema<TurnFeedback>()(
   Schema.Struct({
     focus_feedback: Schema.Array(FocusFeedbackSchema),
@@ -146,6 +154,7 @@ export const PracticeDialogueSchema = bindingSchema<PracticeDialogue>()(
     help_used: Schema.Array(Schema.Boolean),
     coaching: Schema.Array(TurnCoachingSchema),
     debrief_words: Schema.Array(DebriefWordSchema),
+    debrief_wins: Schema.Array(DebriefWinSchema),
   }),
 );
 

@@ -1,7 +1,7 @@
 //! Size accounting and trimming for [`ConversationContext`], so each provider takes what fits
 //! its own window.
 
-use super::{ConversationContext, ProviderError, ProviderErrorCode};
+use super::{ConversationContext, ProviderError, ProviderErrorCode, MAX_LEARNING_TARGETS};
 
 impl ConversationContext {
     /// Characters of everything that is sent to a provider except fixed instruction text.
@@ -72,7 +72,7 @@ pub(super) fn validate_plain_context(
 ) -> Result<(), ProviderError> {
     if context.latest_transcript.trim().is_empty()
         || context.char_count() > max_chars
-        || context.learning_targets.len() > 2
+        || context.learning_targets.len() > MAX_LEARNING_TARGETS
     {
         return Err(ProviderError::new(
             ProviderErrorCode::InvalidRequest,

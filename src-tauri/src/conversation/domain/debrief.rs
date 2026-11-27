@@ -18,6 +18,14 @@ pub struct DebriefWord {
     pub example: String,
 }
 
+/// A taken word the learner used on their own in this session, as the usage review saw it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
+#[ts(export)]
+pub struct DebriefWin {
+    pub sequence: usize,
+    pub phrase: String,
+}
+
 /// Where a word came from, best first: the learner was looking for it, it makes a plain fragment
 /// better, it fixes a word choice, or it only appears in the better version.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

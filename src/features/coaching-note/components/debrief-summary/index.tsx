@@ -1,13 +1,16 @@
 import { takenLine } from '../../helpers/taken-line';
-import type { DebriefWord } from '../../types';
+import { wonPhrases } from '../../helpers/win-line';
+import type { DebriefWin, DebriefWord } from '../../types';
 
 type Props = {
   words: readonly DebriefWord[];
+  wins: readonly DebriefWin[];
   isTaken: (word: DebriefWord) => boolean;
 };
 
-export function DebriefSummary({ words, isTaken }: Props) {
+export function DebriefSummary({ words, wins, isTaken }: Props) {
   const taken = words.filter(isTaken);
+  const won = wonPhrases(wins);
   return (
     <section
       aria-label="Debrief summary"
@@ -38,6 +41,18 @@ export function DebriefSummary({ words, isTaken }: Props) {
             </li>
           ))}
         </ul>
+      )}
+      {won.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <h4 className="text-caption text-faint m-0 font-normal">Used on your own</h4>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+            {won.map((phrase) => (
+              <li className="text-caption text-ok font-semibold wrap-anywhere" key={phrase}>
+                ✓ {phrase}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

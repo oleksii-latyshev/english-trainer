@@ -92,6 +92,7 @@ impl SessionStore {
             written_turn_count: 0,
             is_mistake_practice: false,
             mistake_questions: Vec::new(),
+            steered_targets: Vec::new(),
         };
         let practice_session = self.build_practice_session(&state, &active)?;
         state.active = Some(active);
@@ -188,6 +189,7 @@ impl SessionStore {
                 written_turn_count: 0,
                 is_mistake_practice: true,
                 mistake_questions: snapshots,
+                steered_targets: Vec::new(),
             };
             state.active = Some(active);
             let active = state

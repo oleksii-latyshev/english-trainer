@@ -167,7 +167,14 @@ At the end of a session:
   (phrases now; rules worth knowing, such as the English tenses, later). Mistakes have their own
   section (§9).
 - Due items return as short spoken tasks ("Here is a situation — answer using …") and are woven
-  into later conversation questions.
+  into later conversation questions: Eva steers toward one saved word in her reply to the 1st
+  answer and then every 3rd one, never in mistake practice. She asks a natural question on the
+  current topic whose best answer would use the word, and never names it or changes topic abruptly.
+  Words taken in a Debrief come first (oldest due, from an earlier session), then a due mistake.
+  A word is steered toward at most once per session, and the conversation never waits for it.
+- The Debrief shows **✓ Used on your own: <phrase>** on the card of the answer where a taken word
+  was used without help, and lists those words in its summary. They come from the usage review, so
+  they appear once it has finished. With help, slipped and unjudged uses never show there.
 - Optional shadowing: listen to an AI sentence and repeat it.
 - A review has up to six due items. Before a new spoken session, the learner can choose a
   two-minute warm-up of up to three due phrases, or Skip today. An unfinished review resumes

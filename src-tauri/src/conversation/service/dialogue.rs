@@ -40,6 +40,7 @@ impl SessionStore {
             help_used: details.iter().map(|turn| turn.help_used).collect(),
             coaching,
             debrief_words,
+            debrief_wins: state.database.session_wins(session_id)?,
             turns,
         })
     }

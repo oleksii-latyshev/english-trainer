@@ -491,14 +491,11 @@ fn coached_conversation_mistakes_become_memory_become_due_and_come_back_in_later
     let later = SessionStore::open(&path).unwrap();
     let second = later.start().unwrap();
     later
-        .send_turn(second.session_id, "Hello again".into(), |_| Ok(eva("Hi.")))
-        .unwrap();
-    later
-        .send_turn(second.session_id, "Second answer".into(), |context| {
+        .send_turn(second.session_id, "Hello again".into(), |context| {
             assert_eq!(context.learning_targets.len(), 1);
             assert_eq!(context.learning_targets[0].kind, "mistake");
             assert_eq!(context.learning_targets[0].target, "I work there");
-            Ok(eva("Thanks."))
+            Ok(eva("Hi."))
         })
         .unwrap();
     assert!(later.start_memory_review().unwrap().is_none());

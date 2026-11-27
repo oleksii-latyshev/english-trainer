@@ -43,6 +43,7 @@ const answers = [
 export function coachedConversation(
   coaching: Coaching[],
   debriefWords: PracticeDialogue['debrief_words'] = [],
+  debriefWins: PracticeDialogue['debrief_wins'] = [],
 ): {
   session: PracticeSession;
   dialogue: PracticeDialogue;
@@ -72,6 +73,7 @@ export function coachedConversation(
     help_used: coaching.map(() => false),
     coaching,
     debrief_words: debriefWords,
+    debrief_wins: debriefWins,
   };
   return { session, dialogue };
 }

@@ -1,5 +1,5 @@
 use super::rehearsal::replay_questions;
-use super::{DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching};
+use super::{DebriefWin, DebriefWord, PracticeMode, PracticePhase, RecurringMistake, TurnCoaching};
 use crate::learning::mistake_practice::MistakePracticeQuestion;
 use crate::providers::{AnsweredBy, AttemptComparison};
 use serde::{Deserialize, Serialize};
@@ -61,6 +61,8 @@ pub struct PracticeDialogue {
     pub coaching: Vec<TurnCoaching>,
     /// The words the learner may take from the Debrief, at most five across the session.
     pub debrief_words: Vec<DebriefWord>,
+    /// Taken words used on their own in this session, once the usage review has landed.
+    pub debrief_wins: Vec<DebriefWin>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ts_rs::TS)]
@@ -121,6 +123,8 @@ pub struct ActiveSession {
     pub(crate) written_turn_count: usize,
     pub(crate) is_mistake_practice: bool,
     pub(crate) mistake_questions: Vec<MistakePracticeQuestion>,
+    /// Learning targets Eva already steered toward this session; each is used at most once.
+    pub(crate) steered_targets: Vec<crate::persistence::TargetKey>,
 }
 
 impl ActiveSession {

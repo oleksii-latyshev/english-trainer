@@ -13,6 +13,8 @@ export type TurnFeedback = typeof TurnFeedbackSchema.Type;
 
 export type DebriefWord = ReviewedConversation['debrief_words'][number];
 
+export type DebriefWin = ReviewedConversation['debrief_wins'][number];
+
 export type AttemptComparison = typeof AttemptComparisonSchema.Type;
 
 export type PhraseCheck = AttemptComparison['words_to_take'][number];

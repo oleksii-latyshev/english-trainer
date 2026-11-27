@@ -12,6 +12,7 @@ mod coaching;
 pub(crate) use coaching::{CoachingProgress, UncoachedAnswer};
 mod learning_library;
 mod learning_targets;
+pub(crate) use learning_targets::TargetKey;
 mod mistake_practice;
 mod schema;
 pub(crate) mod session_metadata;
@@ -19,6 +20,7 @@ pub(crate) mod session_wrapup;
 mod speaking_activity;
 mod speech_settings;
 mod translation_settings;
+mod usage_wins;
 use std::path::Path;
 
 pub(crate) const SCHEMA_VERSION: i64 = 24;
