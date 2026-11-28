@@ -1,3 +1,4 @@
+use super::cloud::CloudTranslation;
 use super::domain::{
     validate_explanation, validate_translation, TextExplanation, TextTranslation, TranslationError,
     TranslationErrorCode, TranslationRequest, TranslationStatus, TranslationStatusKind,
@@ -25,6 +26,7 @@ pub struct TranslationService {
     in_flight: Arc<AtomicBool>,
     translator: WarmWorker,
     explainer: WarmWorker,
+    cloud: Option<CloudTranslation>,
 }
 
 impl TranslationService {
@@ -34,10 +36,21 @@ impl TranslationService {
             explainer: WarmWorker::new(binary.clone(), "explain"),
             binary,
             in_flight: Arc::new(AtomicBool::new(false)),
+            cloud: None,
+        }
+    }
+
+    pub fn with_cloud(self, cloud: CloudTranslation) -> Self {
+        Self {
+            cloud: Some(cloud),
+            ..self
         }
     }
 
     pub fn warm_up(&self, native_language: &str) {
+        if self.cloud.is_some() {
+            return;
+        }
         let request = HelperRequest {
             operation: "translate",
             native_language,
@@ -49,11 +62,17 @@ impl TranslationService {
     }
 
     pub fn status(&self, native_language: &str) -> Result<TranslationStatus, TranslationError> {
+        if self.cloud.is_some() {
+            return Ok(cloud_status(native_language));
+        }
         let response = self.invoke("status", native_language, Duration::from_secs(15))?;
         parse_status(response, native_language)
     }
 
     pub fn prepare(&self, native_language: &str) -> Result<TranslationStatus, TranslationError> {
+        if self.cloud.is_some() {
+            return Ok(cloud_status(native_language));
+        }
         let response = self.invoke("prepare", native_language, Duration::from_secs(300))?;
         parse_status(response, native_language)
     }
@@ -63,6 +82,9 @@ impl TranslationService {
         request: &TranslationRequest,
         native_language: &str,
     ) -> Result<TextTranslation, TranslationError> {
+        if let Some(cloud) = &self.cloud {
+            return cloud.translate(request, native_language);
+        }
         self.ensure_available()?;
         let response = self.translator.call(
             &HelperRequest {
@@ -173,6 +195,14 @@ fn parse_answer<T: serde::de::DeserializeOwned>(
     match serde_json::from_value(value).map_err(|_| invalid_output())? {
         Answer::Failure { error } => Err(error.into_translation_error()),
         Answer::Success(answer) => Ok(answer),
+    }
+}
+
+fn cloud_status(native_language: &str) -> TranslationStatus {
+    TranslationStatus {
+        native_language: native_language.to_string(),
+        status: TranslationStatusKind::Installed,
+        message: "Translation runs online and needs no download.".to_string(),
     }
 }
 

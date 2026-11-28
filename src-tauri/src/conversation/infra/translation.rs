@@ -22,6 +22,28 @@ impl SessionStore {
         self.lock().database.save_translation_settings(settings)
     }
 
+    pub fn cached_translation(
+        &self,
+        text: &str,
+        native_language: &str,
+    ) -> Result<Option<String>, TranslationError> {
+        self.lock()
+            .database
+            .cached_translation(text, native_language)
+    }
+
+    pub fn store_translation(
+        &self,
+        text: &str,
+        native_language: &str,
+        translation: &str,
+        created_at_ms: i64,
+    ) -> Result<(), TranslationError> {
+        self.lock()
+            .database
+            .store_translation(text, native_language, translation, created_at_ms)
+    }
+
     pub fn prepare_explanation_lookup(
         &self,
         mut request: TranslationRequest,

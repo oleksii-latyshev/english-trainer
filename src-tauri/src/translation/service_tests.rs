@@ -286,3 +286,52 @@ fn real_bundled_helper_translates_and_explains_a_phrase_on_device() {
     let explanation = service.explain(&request(), "ru").unwrap();
     assert!(!explanation.english_explanation.trim().is_empty());
 }
+
+struct FixedTranslator(&'static str);
+
+impl super::super::cloud::PhraseTranslator for FixedTranslator {
+    fn translate(
+        &self,
+        _: &TranslationRequest,
+        _: &str,
+    ) -> Result<String, super::super::cloud::CloudFailure> {
+        Ok(self.0.to_string())
+    }
+}
+
+struct NoCache;
+
+impl super::super::cloud::TranslationCache for NoCache {
+    fn find(&self, _: &str, _: &str) -> Option<String> {
+        None
+    }
+
+    fn save(&self, _: &str, _: &str, _: &str) {}
+}
+
+#[test]
+fn off_macos_the_cloud_answers_and_the_helper_is_never_started() {
+    let helper = helper("exit 1", 40);
+    let cloud = super::super::cloud::CloudTranslation::new(
+        NoCache,
+        FixedTranslator("принимать как должное"),
+        FixedTranslator("claude"),
+    );
+    let service = TranslationService::new(Some(helper.clone())).with_cloud(cloud);
+    let translation = service.translate(&request(), "ru").unwrap();
+    assert_eq!(translation.translation, "принимать как должное");
+    assert_eq!(
+        service.status("ru").unwrap().status,
+        TranslationStatusKind::Installed
+    );
+    std::fs::remove_file(helper).unwrap();
+}
+
+#[test]
+fn without_a_cloud_the_apple_helper_translates_as_before() {
+    let path = helper(&answering(TRANSLATION), 41);
+    let service = TranslationService::new(Some(path.clone()));
+    let translation = service.translate(&request(), "ru").unwrap();
+    assert_eq!(translation.translation, "принимать как должное");
+    std::fs::remove_file(path).unwrap();
+}
