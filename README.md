@@ -64,7 +64,8 @@ on every `v*` tag and on demand.
 3. Install Claude Code with its **native installer** and log in. The npm package starts through
    `claude.cmd`, which passes long prompts badly.
 4. Speech recognition uses CUDA when an NVIDIA driver is present and falls back to the CPU otherwise.
-   The speech model is downloaded inside the app.
+   The speech model (465 MB) is downloaded in the app: Settings › Speech recognition and the first-run
+   microphone step both offer **Download**.
 
 Data lives in `%APPDATA%\com.user.english-trainer` and is separate from the Mac.
 
