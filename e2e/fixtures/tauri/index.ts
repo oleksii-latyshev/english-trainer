@@ -4,6 +4,7 @@ import { installBase } from './base';
 import { CoachingBackend } from './coaching';
 import { EvaGrowthBackend } from './eva-growth';
 import type { IpcCall } from './harness';
+import { HistoryBackend } from './history';
 import { LiveReviewBackend } from './live-review';
 import { MemoryBackend } from './memory';
 import { MistakeRunBackend } from './mistake-run';
@@ -36,6 +37,7 @@ export class FakeBackend {
   readonly review: ReviewBackend;
   readonly liveReview: LiveReviewBackend;
   readonly wrapup: WrapupBackend;
+  readonly history: HistoryBackend;
   readonly coaching: CoachingBackend;
   readonly spokenRecall: SpokenRecallBackend;
   readonly streaming: StreamingBackend;
@@ -60,6 +62,7 @@ export class FakeBackend {
     this.review = new ReviewBackend(page);
     this.liveReview = new LiveReviewBackend(page);
     this.wrapup = new WrapupBackend(page);
+    this.history = new HistoryBackend(page);
     this.coaching = new CoachingBackend(page);
     this.spokenRecall = new SpokenRecallBackend(page);
     this.streaming = new StreamingBackend(page);
@@ -95,6 +98,7 @@ export class FakeBackend {
     await this.profile.install();
     await this.review.install();
     await this.liveReview.install();
+    await this.history.install();
     await this.wrapup.install();
     await this.coaching.install();
     await this.spokenRecall.install();

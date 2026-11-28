@@ -18,4 +18,4 @@ pub use session::{
     StoredTurn,
 };
 pub use topics::{PracticeMode, PracticePhase, StartPracticeOptions};
-pub use wrapup::RecurringMistake;
+pub use wrapup::{FinishedSessionItem, FinishedSessionPage, RecurringMistake};

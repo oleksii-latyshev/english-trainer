@@ -166,6 +166,11 @@ At the end of a session:
 - an answer still being checked says so and its card fills in when coaching lands; one that could
   not be checked offers a retry. The conversation never waits for the Debrief;
 - mistakes go to the Mistakes section (§9) as before;
+- **Earlier conversations:** the Talk start screen lists the last five finished conversations
+  (day, topic or first question, number of answers, the rule to practise); **See all** lists every
+  one, newest first. Opening one shows the same wrap-up and Debrief, with Take, Say it again and
+  Practise this rule working as after the conversation; a word already saved from that answer shows
+  as taken. Conversations without answers are not listed;
 - no fluency or level claims.
 
 ## 8. Learning Memory

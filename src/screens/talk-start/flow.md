@@ -11,6 +11,7 @@ TalkStartScreen
                 ResumeCard            when a conversation is open
                 ModeChoice, TopicChoice   otherwise
                 ActivityCard          26-week grid, from local data
+                RecentConversations   last 5 finished conversations, See all; opens their Debrief
                 LengthChoice + StartBar   otherwise
                 StartError            when starting failed
   right column  WarmupCard            when review data is ready

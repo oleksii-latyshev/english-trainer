@@ -73,6 +73,7 @@ export { ConversationTurnSchema } from './schemas/conversation-turn';
 export { DiagnosticEventSchema } from './schemas/diagnostic-event';
 export { EvaGrowthSchema } from './schemas/eva-growth';
 export {
+  FinishedSessionPageSchema,
   FinishedSessionSchema,
   SessionNumbersSchema,
   TrendSchema,

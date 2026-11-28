@@ -18,4 +18,6 @@ export type TalkStartScreenProps = {
   readonly onContinue: () => void;
   readonly onOpenMemory: () => void;
   readonly onOpenMistakes: () => void;
+  readonly onOpenConversation: (sessionId: number) => void;
+  readonly onSeeAllConversations: () => void;
 };

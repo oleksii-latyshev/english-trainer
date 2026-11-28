@@ -8,6 +8,11 @@ into the second as a slot, because features never import each other.
 passing `onPractiseRule` and `isStartingRun` down to the Debrief because features never import each other; the screen reads `practiceStateAtom` and renders nothing
 unless the session is completed.
 
+With a `sessionId` the same screen opens an earlier conversation (`/conversations/$sessionId`): it reads
+the summary with `wrapupAtom` (`get_session_wrapup`), titles the page "Your conversation" and shows
+one Back button instead of Talk more and Done. Back returns to where the learner came from and the
+live summary in `practiceStateAtom` is left alone.
+
 ```mermaid
 sequenceDiagram
     actor Learner

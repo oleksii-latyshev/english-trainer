@@ -78,7 +78,10 @@ export function AppShell() {
   const currentHash = useRouterState({ select: (state) => state.location.hash });
   const { handleNavigate, handleOpenGrowth, handleSettingsSection } =
     useShellNavigation(navigationLocked);
-  const isFocusedPage = currentPath === '/summary' || currentPath === FIRST_RUN_PATH;
+  const isFocusedPage =
+    currentPath === '/summary' ||
+    currentPath.startsWith('/conversations/') ||
+    currentPath === FIRST_RUN_PATH;
 
   return (
     <div className="text-foreground flex h-dvh gap-3 overflow-hidden p-3">

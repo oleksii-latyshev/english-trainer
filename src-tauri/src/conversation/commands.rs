@@ -3,8 +3,8 @@ use super::infra::providers::{
 };
 use super::ports::ReplyEngine;
 use super::{
-    CoachingQueue, FinishedPracticeSession, InputSource, PracticeDialogue, PracticePhase,
-    PracticeSession, SessionStore, StartPracticeOptions,
+    CoachingQueue, FinishedPracticeSession, FinishedSessionPage, InputSource, PracticeDialogue,
+    PracticePhase, PracticeSession, SessionStore, StartPracticeOptions,
 };
 use crate::ai_settings::{AiSettings, AiSettingsService};
 use crate::core::IpcError;
@@ -221,6 +221,20 @@ pub async fn get_session_wrapup(
         sessions,
         "Could not load the wrap-up. Please retry.",
         move |store| store.session_wrapup(session_id),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn list_finished_sessions(
+    sessions: tauri::State<'_, SessionStore>,
+    limit: usize,
+    offset: usize,
+) -> Result<FinishedSessionPage, IpcError> {
+    blocking(
+        sessions,
+        "Could not load your conversations. Please retry.",
+        move |store| store.finished_sessions(limit, offset),
     )
     .await
 }

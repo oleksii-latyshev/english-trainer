@@ -332,6 +332,7 @@ pub fn run() {
             conversation::commands::get_practice_dialogue,
             conversation::commands::finish_practice_session,
             conversation::commands::get_session_wrapup,
+            conversation::commands::list_finished_sessions,
             conversation::commands::retry_answer_coaching,
             conversation::commands::get_daily_recall_plan,
             conversation::commands::submit_daily_recall,

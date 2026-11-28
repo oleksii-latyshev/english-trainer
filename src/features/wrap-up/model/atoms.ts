@@ -1,7 +1,8 @@
-import { Clock, Effect, Stream } from 'effect';
-import { Atom, type AtomRegistry } from 'effect/reactivity';
-import { LEARNING_MEMORY, LearningMemoryService } from '@/core/learning-memory';
+import { Clock, Effect, Option, Stream } from 'effect';
+import { AsyncResult, Atom, type AtomRegistry } from 'effect/reactivity';
+import { LEARNING_MEMORY, LearningMemoryService, learningMemoryAtom } from '@/core/learning-memory';
 import { newlySavedCards } from '../helpers/newly-saved-cards';
+import { savedWordKeys } from '../helpers/saved-word-keys';
 import { WrapUpService } from '../services/wrap-up-service';
 import type { TakenWord } from '../types';
 import { runtime } from './runtime';
@@ -32,8 +33,21 @@ function removeCards(cardIds: readonly number[]) {
 
 export const takenWordsAtom = Atom.keepAlive(Atom.make<Readonly<Record<string, boolean>>>({}));
 
+export const savedKeysAtom = Atom.make((get): ReadonlySet<string> => {
+  const memory = Option.getOrNull(AsyncResult.value(get(learningMemoryAtom)));
+  return memory ? savedWordKeys(memory.phrase_cards) : new Set();
+});
+
+export function isWordTaken(
+  known: Readonly<Record<string, boolean>>,
+  saved: ReadonlySet<string>,
+  key: string,
+): boolean {
+  return known[key] ?? saved.has(key);
+}
+
 export const wordTakenAtom = Atom.family((key: string) =>
-  Atom.make((get) => get(takenWordsAtom)[key] === true),
+  Atom.make((get) => isWordTaken(get(takenWordsAtom), get(savedKeysAtom), key)),
 );
 
 function setWordTaken(registry: AtomRegistry.AtomRegistry, key: string, isTaken: boolean) {
