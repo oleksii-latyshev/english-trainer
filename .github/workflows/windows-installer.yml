@@ -19,8 +19,6 @@ jobs:
     defaults:
       run:
         shell: bash
-    env:
-      WHISPER_DOWNLOAD_CACHE: ${{ runner.temp }}/whisper-downloads
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -50,6 +48,8 @@ jobs:
           key: whisper-downloads-${{ hashFiles('scripts/fetch-whisper-windows.sh') }}
 
       - name: Fetch whisper.cpp (CUDA and CPU)
+        env:
+          WHISPER_DOWNLOAD_CACHE: ${{ runner.temp }}/whisper-downloads
         run: sh ./scripts/fetch-whisper-windows.sh
 
       - name: Build the speech helper
