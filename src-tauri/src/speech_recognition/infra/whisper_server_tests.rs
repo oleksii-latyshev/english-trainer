@@ -1,11 +1,14 @@
 use super::{
-    binaries::resolve_server_binary,
+    binaries::{resolve_server_builds, ServerBuild},
     whisper_engine::{Binaries, WhisperEngine},
-    whisper_server::{multipart_body, parse_server_output, ServerError, WhisperServer},
+    whisper_server::{
+        multipart_body, parse_server_output, reports_missing_cuda_device, ServerError,
+        WhisperServer,
+    },
 };
 use crate::providers::agy::runner::ScratchDirectory;
 use crate::speech_recognition::{
-    domain::{valid_wav, ServerState},
+    domain::{valid_wav, ServerState, WhisperBackend},
     error::SpeechRecognitionError,
     ports::TranscriptionEngine,
 };
@@ -43,6 +46,13 @@ socketserver.TCPServer(("127.0.0.1", port), Handler).serve_forever()
 "#;
 
 const CRASHING_SERVER: &str = "#!/bin/sh\nexit 3\n";
+
+fn builds(path: &Path) -> Vec<ServerBuild> {
+    vec![ServerBuild {
+        path: path.to_path_buf(),
+        backend: None,
+    }]
+}
 
 fn model(directory: &Path, name: &str) -> PathBuf {
     let path = directory.join(name);
@@ -140,7 +150,13 @@ fn the_model_is_loaded_once_and_serves_every_request() {
     assert_eq!(server.status().state, ServerState::NotRunning);
     let wav = valid_wav();
     let first = server
-        .transcribe(&f.server, &f.small, &wav, Some("Vocabulary: Tauri."), 1)
+        .transcribe(
+            &builds(&f.server),
+            &f.small,
+            &wav,
+            Some("Vocabulary: Tauri."),
+            1,
+        )
         .unwrap();
     assert_eq!(
         first.text,
@@ -149,7 +165,7 @@ fn the_model_is_loaded_once_and_serves_every_request() {
     let pid = server.pid().unwrap();
     assert_eq!(server.status().state, ServerState::Ready);
     let second = server
-        .transcribe(&f.server, &f.small, &wav, None, 1)
+        .transcribe(&builds(&f.server), &f.small, &wav, None, 1)
         .unwrap();
     assert_eq!(second.text, format!("ggml-small.en.bin|-|{}", wav.len()));
     assert_eq!(server.pid(), Some(pid));
@@ -161,31 +177,33 @@ fn a_dead_server_is_restarted_once_and_then_given_up_on() {
     let server = WhisperServer::new(None);
     let wav = valid_wav();
     server
-        .transcribe(&f.server, &f.small, &wav, None, 1)
+        .transcribe(&builds(&f.server), &f.small, &wav, None, 1)
         .unwrap();
     let first_pid = server.pid().unwrap();
 
     server.kill_child();
     assert_eq!(server.status().state, ServerState::NotRunning);
     server
-        .transcribe(&f.server, &f.small, &wav, None, 1)
+        .transcribe(&builds(&f.server), &f.small, &wav, None, 1)
         .unwrap();
     let second_pid = server.pid().unwrap();
     assert_ne!(second_pid, first_pid);
 
     server.kill_child();
     server
-        .transcribe(&f.server, &f.small, &wav, None, 1)
+        .transcribe(&builds(&f.server), &f.small, &wav, None, 1)
         .unwrap();
     assert_ne!(server.pid().unwrap(), second_pid);
 
     server.kill_child();
-    server.ensure(&f.server, &f.small, false).unwrap();
+    server.ensure(&builds(&f.server), &f.small, false).unwrap();
     server.kill_child();
-    let error = server.ensure(&f.server, &f.small, false).unwrap_err();
+    let error = server
+        .ensure(&builds(&f.server), &f.small, false)
+        .unwrap_err();
     assert!(error.contains("keeps stopping"), "{error}");
     assert_eq!(server.status().failure.as_deref(), Some(error.as_str()));
-    server.ensure(&f.server, &f.small, true).unwrap();
+    server.ensure(&builds(&f.server), &f.small, true).unwrap();
     assert_eq!(server.status().state, ServerState::Ready);
 }
 
@@ -195,11 +213,11 @@ fn choosing_another_model_replaces_the_server() {
     let server = WhisperServer::new(None);
     let wav = valid_wav();
     server
-        .transcribe(&f.server, &f.small, &wav, None, 1)
+        .transcribe(&builds(&f.server), &f.small, &wav, None, 1)
         .unwrap();
     let small_pid = server.pid().unwrap();
     let base = server
-        .transcribe(&f.server, &f.base, &wav, None, 1)
+        .transcribe(&builds(&f.server), &f.base, &wav, None, 1)
         .unwrap();
     assert!(base.text.starts_with("ggml-base.en.bin|"));
     assert!(!is_running(small_pid));
@@ -210,14 +228,14 @@ fn choosing_another_model_replaces_the_server() {
 fn shutting_down_leaves_no_process() {
     let f = fixture();
     let server = WhisperServer::new(None);
-    server.ensure(&f.server, &f.small, false).unwrap();
+    server.ensure(&builds(&f.server), &f.small, false).unwrap();
     let pid = server.pid().unwrap();
     server.shutdown();
     assert!(!is_running(pid));
     assert_eq!(server.status().state, ServerState::NotRunning);
 
     let dropped = WhisperServer::new(None);
-    dropped.ensure(&f.server, &f.small, false).unwrap();
+    dropped.ensure(&builds(&f.server), &f.small, false).unwrap();
     let pid = dropped.pid().unwrap();
     drop(dropped);
     assert!(!is_running(pid));
@@ -230,19 +248,19 @@ fn a_server_that_cannot_start_is_unavailable_and_not_retried_for_the_same_model(
     let server = WhisperServer::new(None);
     let wav = valid_wav();
     let error = server
-        .transcribe(&crashing, &f.small, &wav, None, 1)
+        .transcribe(&builds(&crashing), &f.small, &wav, None, 1)
         .unwrap_err();
     assert!(matches!(error, ServerError::Unavailable(_)), "{error:?}");
     let status = server.status();
     assert_eq!(status.state, ServerState::NotRunning);
     assert!(status.failure.is_some());
-    assert!(server.ensure(&f.server, &f.small, false).is_err());
-    assert!(server.ensure(&f.server, &f.base, false).is_ok());
-    assert!(server.ensure(&f.server, &f.small, true).is_ok());
+    assert!(server.ensure(&builds(&f.server), &f.small, false).is_err());
+    assert!(server.ensure(&builds(&f.server), &f.base, false).is_ok());
+    assert!(server.ensure(&builds(&f.server), &f.small, true).is_ok());
 
     let missing = f.directory.path().join("no-such-server");
     assert!(matches!(
-        WhisperServer::new(None).transcribe(&missing, &f.small, &wav, None, 1),
+        WhisperServer::new(None).transcribe(&builds(&missing), &f.small, &wav, None, 1),
         Err(ServerError::Unavailable(_))
     ));
 }
@@ -260,7 +278,7 @@ fn silence_is_reported_by_the_server_path_without_falling_back() {
     );
     let engine = WhisperEngine::new(None);
     let binaries = Binaries {
-        server: Some(silent),
+        server: builds(&silent),
         cli: None,
     };
     let error = engine
@@ -284,7 +302,7 @@ fn without_a_usable_server_the_one_off_run_transcribes() {
     let crashing = script(f.directory.path(), "crashing-server", CRASHING_SERVER);
     let engine = WhisperEngine::new(None);
 
-    for server in [Some(crashing), None] {
+    for server in [builds(&crashing), Vec::new()] {
         let binaries = Binaries {
             server,
             cli: Some(cli.clone()),
@@ -296,7 +314,7 @@ fn without_a_usable_server_the_one_off_run_transcribes() {
     }
 
     let nothing = Binaries {
-        server: None,
+        server: Vec::new(),
         cli: None,
     };
     assert!(matches!(
@@ -321,7 +339,7 @@ fn live_updates_use_a_loaded_model_only_and_never_start_one() {
     assert_eq!(engine.status().state, ServerState::NotRunning);
 
     let binaries = Binaries {
-        server: Some(f.server.clone()),
+        server: builds(&f.server),
         cli: None,
     };
     engine
@@ -351,12 +369,16 @@ fn a_server_left_by_a_crashed_run_is_stopped_before_the_next_start() {
     let f = fixture();
     let pid_file = f.directory.path().join("whisper-server.pid");
     let crashed_run = WhisperServer::new(Some(pid_file.clone()));
-    crashed_run.ensure(&f.server, &f.small, false).unwrap();
+    crashed_run
+        .ensure(&builds(&f.server), &f.small, false)
+        .unwrap();
     let leftover = crashed_run.pid().unwrap();
     assert_eq!(fs::read_to_string(&pid_file).unwrap(), leftover.to_string());
 
     let next_run = WhisperServer::new(Some(pid_file.clone()));
-    next_run.ensure(&f.server, &f.small, false).unwrap();
+    next_run
+        .ensure(&builds(&f.server), &f.small, false)
+        .unwrap();
     assert_eq!(crashed_run.status().state, ServerState::NotRunning);
     let current = next_run.pid().unwrap();
     assert_ne!(current, leftover);
@@ -374,10 +396,13 @@ fn the_real_server_transcribes_a_speech_check_recording_quickly() {
         .map(|n| data.join(format!("speech-check/{n:02}.wav")))
         .collect();
     let binaries = Binaries {
-        server: resolve_server_binary(),
+        server: resolve_server_builds(),
         cli: None,
     };
-    assert!(binaries.server.is_some(), "whisper-server is not installed");
+    assert!(
+        !binaries.server.is_empty(),
+        "whisper-server is not installed"
+    );
     let engine = WhisperEngine::new(None);
     let prompt =
         "Vocabulary: Gemini, Claude Code, Tauri, Rust, TypeScript, Kubernetes, idempotent.";
@@ -399,4 +424,84 @@ fn the_real_server_transcribes_a_speech_check_recording_quickly() {
         );
     }
     engine.shutdown();
+}
+
+fn tagged(path: &Path, backend: WhisperBackend) -> ServerBuild {
+    ServerBuild {
+        path: path.to_path_buf(),
+        backend: Some(backend),
+    }
+}
+
+#[test]
+fn a_cuda_server_that_cannot_start_falls_back_to_the_cpu_one() {
+    let f = fixture();
+    let crashing = script(f.directory.path(), "cuda-server", CRASHING_SERVER);
+    let server = WhisperServer::new(None);
+    let candidates = [
+        tagged(&crashing, WhisperBackend::Cuda),
+        tagged(&f.server, WhisperBackend::Cpu),
+    ];
+    server.ensure(&candidates, &f.small, false).unwrap();
+    let status = server.status();
+    assert_eq!(status.state, ServerState::Ready);
+    assert_eq!(status.backend, Some(WhisperBackend::Cpu));
+}
+
+#[test]
+fn a_cuda_server_reporting_no_device_falls_back_to_the_cpu_one() {
+    let f = fixture();
+    let no_device = script(
+        f.directory.path(),
+        "cuda-server",
+        &format!(
+            "#!/bin/sh\necho 'whisper_backend_init_gpu: no GPU found' >&2\nexec {} \"$@\"\n",
+            f.server.display()
+        ),
+    );
+    let server = WhisperServer::new(None);
+    let candidates = [
+        tagged(&no_device, WhisperBackend::Cuda),
+        tagged(&f.server, WhisperBackend::Cpu),
+    ];
+    server.ensure(&candidates, &f.small, false).unwrap();
+    assert_eq!(server.status().backend, Some(WhisperBackend::Cpu));
+}
+
+#[test]
+fn a_working_cuda_server_is_kept_and_reported() {
+    let f = fixture();
+    let server = WhisperServer::new(None);
+    let candidates = [
+        tagged(&f.server, WhisperBackend::Cuda),
+        tagged(&f.server, WhisperBackend::Cpu),
+    ];
+    server.ensure(&candidates, &f.small, false).unwrap();
+    assert_eq!(server.status().backend, Some(WhisperBackend::Cuda));
+}
+
+#[test]
+fn every_candidate_failing_reports_the_reason() {
+    let f = fixture();
+    let crashing = script(f.directory.path(), "cuda-server", CRASHING_SERVER);
+    let server = WhisperServer::new(None);
+    let candidates = [
+        tagged(&crashing, WhisperBackend::Cuda),
+        tagged(&crashing, WhisperBackend::Cpu),
+    ];
+    let error = server.ensure(&candidates, &f.small, false).unwrap_err();
+    assert!(error.contains("stopped while loading"), "{error}");
+}
+
+#[test]
+fn log_lines_about_a_missing_cuda_device_are_recognised() {
+    assert!(reports_missing_cuda_device(
+        "whisper_backend_init_gpu: no GPU found"
+    ));
+    assert!(reports_missing_cuda_device(
+        "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected"
+    ));
+    assert!(!reports_missing_cuda_device(
+        "ggml_cuda_init: found 1 CUDA devices"
+    ));
 }

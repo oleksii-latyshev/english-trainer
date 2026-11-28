@@ -123,6 +123,7 @@ export async function installTranslation(
           whisper_cli: missing,
           whisper_model: missing,
           whisper_server: missing,
+          whisper_backend: null,
           claude_cli: missing,
           database_path: 'browser-fixture',
         };
