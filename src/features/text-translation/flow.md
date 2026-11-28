@@ -2,8 +2,10 @@
 
 On-demand translation of a selected word or short phrase (up to 8 words and 120 characters) into
 the learner's native language, plus a short English explanation. It is the approved exception to
-English-only practice (PRODUCT_SPEC §4.2). Everything runs on this Mac through the bundled Swift
-helper (macOS Translation and Apple Intelligence); nothing goes to Gemini or the conversation queue.
+English-only practice (PRODUCT_SPEC §4.2). On macOS everything runs on this Mac through the bundled
+Swift helper (macOS Translation and Apple Intelligence); nothing goes to Gemini or the conversation
+queue. Off macOS the Rust side answers from the local cache, then Gemini, then the Claude CLI when
+Gemini is out of quota (TECHNICAL_REQUIREMENTS §7.3); the panel stays in its pending state until it arrives.
 
 `TranslationLayer` is mounted by the app shell on Talk, Memory, review and the summary
 (`isTranslatablePath`) and keyed by the path, so leaving a screen resets everything. Selectable text
