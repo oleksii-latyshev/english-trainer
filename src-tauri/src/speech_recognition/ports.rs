@@ -1,11 +1,14 @@
 use super::{
     domain::{
-        AnswerContext, CheckRecording, KeptRecordings, ServerStatus, SettingsChange,
-        SpeechCheckResults, SpeechModel, SpeechSettings, Transcript,
+        AnswerContext, CheckRecording, KeptRecordings, ModelDownloadProgress, ServerStatus,
+        SettingsChange, SpeechCheckResults, SpeechModel, SpeechSettings, Transcript,
     },
     error::SpeechRecognitionError,
 };
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::atomic::AtomicBool,
+};
 
 pub type PortResult<T> = Result<T, SpeechRecognitionError>;
 
@@ -61,6 +64,14 @@ pub trait ModelCatalog: Send + Sync {
     fn path(&self, model_file: &str) -> PathBuf;
     fn is_installed(&self, model_file: &str) -> bool;
     fn ready_installed(&self, model_file: &str) -> PortResult<PathBuf>;
+}
+
+pub trait ModelDownloader: Send + Sync {
+    fn download(
+        &self,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(ModelDownloadProgress),
+    ) -> PortResult<()>;
 }
 
 pub trait RecordingVault: Send + Sync {

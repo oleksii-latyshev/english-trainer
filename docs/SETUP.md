@@ -37,12 +37,14 @@ crates only (`unmaintained = "workspace"`); those deep in the Tauri tree are Tau
 
 ## Speech recognition model
 
-Models live in the app data folder; `small.en` is used when installed, `base.en` otherwise.
+Models live in the app data folder; `small.en` is used when installed, `base.en` otherwise. A fresh
+install offers to download `small.en` (465 MB) in Settings › Speech recognition and in first-run setup, after
+you agree. To place it by hand instead:
 
 ```bash
 MODELS="$HOME/Library/Application Support/com.user.english-trainer/models"
 mkdir -p "$MODELS"
-curl -fL https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin -o "$MODELS/ggml-small.en.bin"
+curl -fL https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en.bin -o "$MODELS/ggml-small.en.bin"
 ```
 
 Settings › Speech recognition measures every installed model on your own recordings.

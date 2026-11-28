@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MicrophoneCheck } from '@/features/microphone-settings';
+import { SpeechModelDownload } from '@/features/speech-recognition-settings';
 import { StepLayout } from '../step-layout';
 
 type Props = {
@@ -25,6 +26,7 @@ export function MicrophoneStep({
         onBeforeStart={onBeforeStart}
         onListeningChange={setIsListening}
       />
+      <SpeechModelDownload />
     </StepLayout>
   );
 }

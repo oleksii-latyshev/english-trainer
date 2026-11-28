@@ -8,6 +8,7 @@ import { SETTINGS_UNREADABLE } from '../../helpers/failure-copy';
 import { speechCheckAtom, speechModelsAtom, speechSettingsAtom } from '../../model/atoms';
 import { EngineRows } from '../engine-rows';
 import { MeasureModels } from '../measure-models';
+import { ModelDownload } from '../model-download';
 import { ModelRow } from '../model-row';
 import { SpeechCheck } from '../speech-check';
 
@@ -60,12 +61,13 @@ function ReadyBody({ settings, models, check, isPracticeCapturing }: ReadyProps)
           choose here.
         </Notice>
       )}
+      <ModelDownload />
       <ModelRow check={check} models={models} settings={settings} />
       <EngineRows settings={settings} />
       {models.models.length === 0 && (
         <Notice role="status" tone="warn">
-          No models were found in the app's models folder. Put ggml-*.bin files there (see the
-          README, Local transcription setup).
+          No models were found in the app's models folder. Download the speech model above, or put a
+          ggml-*.bin file there.
         </Notice>
       )}
       <SpeechCheck check={check} isPracticeCapturing={isPracticeCapturing} />

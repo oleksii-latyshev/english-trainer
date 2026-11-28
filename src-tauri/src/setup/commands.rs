@@ -15,7 +15,10 @@ pub async fn get_setup_diagnostics(
     let model_file = speech.settings().map_err(IpcError::from)?.model_file;
     let model = speech.model_path(&model_file);
     let server = speech.server_status();
-    tauri::async_runtime::spawn_blocking(move || service::collect(&app_data, &model, &server))
-        .await
-        .map_err(IpcError::task_failed("Setup diagnostics task failed."))
+    let is_downloading = speech.is_model_downloading();
+    tauri::async_runtime::spawn_blocking(move || {
+        service::collect(&app_data, &model, &server, is_downloading)
+    })
+    .await
+    .map_err(IpcError::task_failed("Setup diagnostics task failed."))
 }

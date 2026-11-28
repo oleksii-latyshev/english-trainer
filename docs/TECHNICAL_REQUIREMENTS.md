@@ -79,8 +79,21 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   `platform::find_tool`; macOS keeps `PATH` and Homebrew. The server tries the builds in that order: a CUDA build
   that exits, does not load the model in time, or logs that it found no GPU or CUDA device is stopped and
   the next one starts. The running backend (`cuda`/`cpu`, empty for an override or a `PATH` build) is
-  `whisper_backend` in setup diagnostics. The model is not downloaded by the app yet on any platform: it is
-  placed in `<app data>/models/` by hand.
+  `whisper_backend` in setup diagnostics. The model is not bundled: the app downloads it (next bullet).
+- **Model download (`speech_recognition/infra/model_download.rs`):** `ggml-small.en.bin` (487,614,201 bytes,
+  about 465 MB) is fetched from the whisper.cpp Hugging Face repository at a pinned commit; the URL
+  and SHA-256 are constants in `domain/model_download.rs`. Nothing is requested before the learner
+  accepts the consent dialog (size and host), shown by Settings › Speech recognition and the first-run
+  microphone step whenever `get_speech_model_offer` reports the model as not installed. `download_speech_model`
+  (progress channel of `{downloaded_bytes, total_bytes}`, about 200 steps) streams into
+  `models/ggml-small.en.bin.partial` on a reader thread, hashes while streaming, and only after the size
+  and SHA-256 match renames it over the final name; a mismatch, a stall of 60 s or a write error deletes
+  the partial file and fails with a plain message. A `.partial` file is never listed or used as a model.
+  `cancel_speech_model_download` stops it within 250 ms and deletes the partial file (error code
+  `cancelled`, which the UI treats as a quiet return to the Download button). One download runs at a
+  time (`busy` otherwise). After success the engine is warmed, so the server loads the model without an
+  app restart. `whisper_model` in setup diagnostics is `missing`, `downloading` or `available`.
+  `ENG_TRAINER_WHISPER_MODEL` still overrides the path.
 - **Fallback:** `whisper-cli` (`ENG_TRAINER_WHISPER_BIN`, `PATH`, Homebrew paths) in a private temp
   dir, 120 s timeout. Typed `TranscriptionError` codes: `model_missing`, `engine_missing`,
   `engine_failed`, `timeout`, `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`, `busy`.
@@ -775,7 +788,8 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
     characters), `get_kept_recordings`, `delete_kept_recordings`, `get_speech_check`,
     `save_speech_check_recording` (raw WAV, header `x-sentence-index`),
     `delete_speech_check_recordings`, `run_speech_check` (model files, `include_prompt`, progress
-    channel). Failures are `TranscriptionError` or `ProviderError` values.
+    channel), `get_speech_model_offer`, `download_speech_model` (progress channel),
+    `cancel_speech_model_download`. Failures are `TranscriptionError` or `ProviderError` values.
   - Settings and setup: `get_setup_diagnostics`, `get_ai_settings`, `save_ai_settings`,
     `set_dock_icon`, `get_api_usage`, `get_speaking_activity` (minutes spoken per local day over the last
     190 days, from `sessions.active_duration_ms`, text chat excluded), `get_eva_growth` (§9.3), `prewarm_conversation_provider`, Gemini key commands (§5.1),
@@ -827,7 +841,7 @@ mistake of that rule returns to step 1, due now; fixed ones stay fixed. Idempote
 ## 11. Setup diagnostics
 
 `get_setup_diagnostics` reports paths and readability of `whisper-cli`, `whisper-server` (with whether
-the model is kept loaded and why not), the Whisper model and `claude`, the database path, and the
+the model is kept loaded and why not), the Whisper model (available, downloading, missing or unreadable) and `claude`, the database path, and the
 bounded, plain-text default model name from the local `agy` settings file (nothing else from it). It
 never proves authentication, transcription quality or microphone permission, and never starts capture
 or a provider request. Apple model availability and Gemini key presence (never the key) are reported

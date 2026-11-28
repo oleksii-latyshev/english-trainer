@@ -6,11 +6,21 @@ export type SpeechSettingsOptions = {
   models?: SpeechModels;
   check?: SpeechCheckStatus;
   failNextModelSave?: boolean;
+  missingModel?: boolean;
+  failNextDownload?: boolean;
 };
+
+declare global {
+  interface Window {
+    __ET_MODEL_DOWNLOAD__?: { finish(): void };
+  }
+}
 
 const MEBIBYTE = 1024 * 1024;
 
-const SPEECH_FIXTURE: Required<Omit<SpeechSettingsOptions, 'failNextModelSave'>> = {
+const SPEECH_FIXTURE: Required<
+  Omit<SpeechSettingsOptions, 'failNextModelSave' | 'missingModel' | 'failNextDownload'>
+> = {
   settings: { model_file: 'ggml-small.en.bin', keep_raw_audio: false, live_transcript: true },
   models: {
     models: [
@@ -72,6 +82,50 @@ export async function installSpeechSettings(page: Page, options: SpeechSettingsO
       const original = internals.invoke;
       let settings = seed.settings;
       let failNextModelSave = seed.failNextModelSave ?? false;
+      const MODEL_BYTES = 487_614_201;
+      let failNextDownload = seed.failNextDownload ?? false;
+      let isInstalled = !seed.missingModel;
+      let release: ((outcome: 'finish' | 'cancel') => void) | undefined;
+      const callbacks = new Map<number, (event: unknown) => void>();
+      const register = internals.transformCallback;
+      internals.transformCallback = (callback, once) => {
+        const id = register(callback, once);
+        callbacks.set(id, callback);
+        return id;
+      };
+      function offer() {
+        return { file: 'ggml-small.en.bin', size_bytes: MODEL_BYTES, is_installed: isInstalled };
+      }
+      function channelOf(value: unknown): ((event: unknown) => void) | undefined {
+        if (typeof value !== 'object' || value === null) return undefined;
+        const id: unknown = Reflect.get(value, 'id');
+        return typeof id === 'number' ? callbacks.get(id) : undefined;
+      }
+      async function download(args: Record<string, unknown>) {
+        const report = channelOf(args.on_progress);
+        report?.({ index: 0, message: { downloaded_bytes: 0, total_bytes: MODEL_BYTES } });
+        if (failNextDownload) {
+          failNextDownload = false;
+          throw {
+            code: 'process_failed',
+            message:
+              'The downloaded model did not match its checksum and was discarded. Please try again.',
+          };
+        }
+        report?.({
+          index: 1,
+          message: { downloaded_bytes: MODEL_BYTES / 2, total_bytes: MODEL_BYTES },
+        });
+        const outcome = await new Promise<'finish' | 'cancel'>((resolve) => {
+          release = resolve;
+        });
+        if (outcome === 'cancel') {
+          throw { code: 'cancelled', message: 'The model download was cancelled.' };
+        }
+        isInstalled = true;
+        return offer();
+      }
+      window.__ET_MODEL_DOWNLOAD__ = { finish: () => release?.('finish') };
       function record(command: string, args: Record<string, unknown>) {
         window.__ET_HARNESS__.calls.push({ command, args });
       }
@@ -89,7 +143,10 @@ export async function installSpeechSettings(page: Page, options: SpeechSettingsO
       }
       const handlers: Record<string, (args: Record<string, unknown>) => unknown> = {
         get_speech_settings: () => settings,
-        list_speech_models: () => seed.models,
+        list_speech_models: () => (isInstalled ? seed.models : { ...seed.models, models: [] }),
+        get_speech_model_offer: offer,
+        download_speech_model: download,
+        cancel_speech_model_download: () => release?.('cancel'),
         get_speech_check: () => seed.check,
         get_speech_engine_status: () => ({
           server: 'ready',

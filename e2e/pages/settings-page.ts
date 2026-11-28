@@ -9,6 +9,9 @@ export class SettingsPage {
   readonly usageHeading: Locator;
   readonly microphone: Locator;
   readonly speech: Locator;
+  readonly modelDownloadButton: Locator;
+  readonly modelDownloadDialog: Locator;
+  readonly modelDownloadProgress: Locator;
   readonly showGrowth: Locator;
   readonly nameField: Locator;
 
@@ -19,6 +22,13 @@ export class SettingsPage {
     this.runTestButton = page.getByRole('button', { name: 'Run test' });
     this.microphone = page.getByRole('region', { name: 'Microphone', exact: true });
     this.speech = page.getByRole('region', { name: 'Speech recognition', exact: true });
+    this.modelDownloadButton = this.speech.getByRole('button', { name: 'Download', exact: true });
+    this.modelDownloadDialog = page.getByRole('alertdialog', {
+      name: 'Download the speech model?',
+    });
+    this.modelDownloadProgress = this.speech.getByRole('progressbar', {
+      name: 'Speech model download',
+    });
     this.showGrowth = page.getByRole('switch', { name: 'Show growth' });
     this.nameField = page.getByRole('textbox', { name: /^Name/ });
     this.usageHeading = page.getByRole('heading', { name: 'Usage', exact: true });
@@ -82,6 +92,10 @@ export class SettingsPage {
 
   async recordMicrophoneCheck(): Promise<void> {
     await this.microphone.getByRole('button', { name: 'Record' }).click();
+  }
+
+  async finishModelDownload(): Promise<void> {
+    await this.page.evaluate(() => window.__ET_MODEL_DOWNLOAD__?.finish());
   }
 
   async toggleSwitch(label: string): Promise<void> {

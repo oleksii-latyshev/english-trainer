@@ -261,6 +261,11 @@ export async function installTauriCommands(page: Page): Promise<void> {
       prewarm_conversation_provider: () => undefined,
       set_dock_icon: () => null,
       warm_speech_engine: () => undefined,
+      get_speech_model_offer: () => ({
+        file: 'ggml-small.en.bin',
+        size_bytes: 487_614_201,
+        is_installed: true,
+      }),
       'plugin:event|listen': () => 1,
       'plugin:event|unlisten': () => undefined,
     };

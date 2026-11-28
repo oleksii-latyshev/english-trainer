@@ -237,6 +237,9 @@ pub fn run() {
                     models: std::sync::Arc::new(speech_recognition::ModelFiles::new(
                         app_data.clone(),
                     )),
+                    downloader: std::sync::Arc::new(speech_recognition::ModelDownloadFiles::new(
+                        app_data.clone(),
+                    )),
                     recordings: std::sync::Arc::new(speech_recognition::KeptRecordingFiles::new(
                         app_data.clone(),
                     )),
@@ -280,6 +283,9 @@ pub fn run() {
             speech_recognition::commands::save_speech_check_recording,
             speech_recognition::commands::delete_speech_check_recordings,
             speech_recognition::commands::run_speech_check,
+            speech_recognition::commands::get_speech_model_offer,
+            speech_recognition::commands::download_speech_model,
+            speech_recognition::commands::cancel_speech_model_download,
             translation_settings::commands::get_translation_settings,
             translation_settings::commands::save_translation_settings,
             translation_settings::commands::get_translation_status,

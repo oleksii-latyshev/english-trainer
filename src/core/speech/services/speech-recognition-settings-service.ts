@@ -4,6 +4,11 @@ import {
   IpcBinary,
   invokeBinaryCommand,
   invokeCommand,
+  invokeUnitCommand,
+  type ModelDownloadOffer,
+  ModelDownloadOfferSchema,
+  type ModelDownloadProgress,
+  ModelDownloadProgressSchema,
   openChannel,
   type SpeechCheckProgress,
   SpeechCheckProgressSchema,
@@ -29,6 +34,11 @@ export type SpeechRecognitionSettingsShape = {
   readonly speechCheck: Call<SpeechCheckStatus>;
   readonly saveSpeechCheckRecording: (index: number, wav: Blob) => Call<SpeechCheckStatus>;
   readonly deleteSpeechCheckRecordings: Call<SpeechCheckStatus>;
+  readonly modelOffer: Call<ModelDownloadOffer>;
+  readonly downloadModel: (
+    onProgress: (progress: ModelDownloadProgress) => void,
+  ) => Call<ModelDownloadOffer>;
+  readonly cancelModelDownload: Call<void>;
   readonly runSpeechCheck: (
     modelFiles: ReadonlyArray<string>,
     includePrompt: boolean,
@@ -71,6 +81,18 @@ export class SpeechRecognitionSettings extends Context.Service<
           ),
         deleteSpeechCheckRecordings: Effect.suspend(() =>
           invokeCommand(ipc, 'delete_speech_check_recordings', SpeechCheckStatusSchema),
+        ),
+        modelOffer: Effect.suspend(() =>
+          invokeCommand(ipc, 'get_speech_model_offer', ModelDownloadOfferSchema),
+        ),
+        downloadModel: (onProgress) =>
+          Effect.suspend(() =>
+            invokeCommand(ipc, 'download_speech_model', ModelDownloadOfferSchema, {
+              on_progress: openChannel(ModelDownloadProgressSchema, onProgress),
+            }),
+          ),
+        cancelModelDownload: Effect.suspend(() =>
+          invokeUnitCommand(ipc, 'cancel_speech_model_download'),
         ),
         runSpeechCheck: (modelFiles, includePrompt, onProgress) =>
           Effect.suspend(() =>
