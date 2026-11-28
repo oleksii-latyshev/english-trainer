@@ -22,7 +22,7 @@ pub use background::{
     coach_answers, generate_mistake_questions, generate_review_material, review_usage_batch,
     run_background_json,
 };
-pub use gemini::generate_answer_plan;
+pub use gemini::{generate_answer_plan, generate_structured, StructuredRequest};
 pub use rescue::{RescueKind, RescueRequest, RescueResponse};
 #[cfg(test)]
 pub use spoken_review::GeneratedReviewMaterial;

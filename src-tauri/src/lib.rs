@@ -46,6 +46,21 @@ fn apple_translation_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
     apple_helper_binary(app, "apple-translation")
 }
 
+fn translation_service(
+    app: &tauri::App,
+    sessions: conversation::SessionStore,
+) -> translation::TranslationService {
+    let apple = translation::TranslationService::new(apple_translation_binary(app));
+    if cfg!(target_os = "macos") {
+        return apple;
+    }
+    apple.with_cloud(translation::CloudTranslation::new(
+        translation::SessionTranslationCache::new(sessions),
+        translation::GeminiTranslator,
+        translation::ClaudeTranslator,
+    ))
+}
+
 fn warm_up_translation(
     translation: translation::TranslationService,
     sessions: conversation::SessionStore,
@@ -200,7 +215,7 @@ pub fn run() {
             app.manage(personal_profile::PersonalProfileService::new(
                 personal_profile::SessionProfileStore::new(sessions.clone()),
             ));
-            let translation = translation::TranslationService::new(apple_translation_binary(app));
+            let translation = translation_service(app, sessions.clone());
             app.manage(translation_settings::TranslationSettingsService::new(
                 translation_settings::SessionLanguageStore::new(sessions.clone()),
                 translation_settings::AppleLanguageAvailability::new(translation.clone()),

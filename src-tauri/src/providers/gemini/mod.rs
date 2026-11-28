@@ -2,6 +2,7 @@
 
 mod planner;
 mod stream;
+mod structured;
 #[cfg(test)]
 mod tests;
 mod wire;
@@ -23,6 +24,7 @@ fn resolve_key() -> Result<String, ProviderError> {
 }
 
 pub use planner::generate_answer_plan;
+pub use structured::{generate_structured, StructuredRequest};
 
 const BASE_URL: &str = "https://generativelanguage.googleapis.com";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);

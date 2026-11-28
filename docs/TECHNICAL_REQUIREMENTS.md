@@ -512,7 +512,16 @@ answers instead. Typical latency is 1.5 to 3 s.
   conversation history.
 - `apple-translation` is compiled and signed with the app, separate from `apple-conversation`;
   TranslationSession needs macOS 26+ (earlier: actionable unavailable result); English explanations
-  need Apple Intelligence. No Gemini or `agy` call, no API-usage count.
+  need Apple Intelligence. On macOS no Gemini or `agy` call is made and nothing is counted in API usage.
+- **Off macOS** (`translation_service` in `lib.rs` is the only place that chooses) the translation
+  goes: local cache (`translation_cache`, keyed by lower-cased text and native language, written only
+  after a valid answer, never expires) → Gemini `gemini-3.1-flash-lite` (a Flash-Lite model other than
+  the conversation model, so its free-tier allowance is separate; structured output `{translation}`,
+  thinking `minimal`, shared client and key, recorded in API usage) → on a Gemini quota or rate-limit
+  error (429) only, the Claude CLI with the same schema (about 2 to 3 s, recorded as Claude usage).
+  Other Gemini failures are returned and not retried on Claude. Status and language preparation report
+  installed (nothing to download). `explain_text` stays unavailable. The frontend sets no timeout; the
+  panel shows its pending state until the answer arrives.
 - Lookups use two warm helper processes (`apple-translation serve translate` and `serve explain`)
   that exchange one JSON line per request, start lazily, are warmed at app start, and are killed and
   replaced after a crash, a timeout or an oversized answer; the explainer never delays a translation.
@@ -539,7 +548,7 @@ SQLite at `<app data>/english-trainer.sqlite3`. Tables:
 | Mistakes | `mistake_lessons`, `rule_cards`, `mistake_attempts`, `mistake_runs`, `rule_relapses` (§9.4) |
 | Memory | `mistakes`, `mistake_occurrences`, `phrase_cards`, `review_events`, `memory_review_runs`, `memory_review_items` (with `is_cued`), `review_material_preparations` |
 | Usage evidence | `turn_usage_assessments`, `learning_usage_events`, `learning_usage_counter_baselines` |
-| Settings | `ai_settings`; `speech_settings` (`model_file`, empty until chosen; `keep_raw_audio`, default off; `live_transcript`, default on); `glossary_terms` (ordered, seeded once with 27 words); `personal_profile`; `translation_settings` |
+| Settings | `ai_settings`; `speech_settings` (`model_file`, empty until chosen; `keep_raw_audio`, default off; `live_transcript`, default on); `glossary_terms` (ordered, seeded once with 27 words); `personal_profile`; `translation_settings`; `translation_cache` (`text`, `native_language`, `translation`, `created_at_ms`) |
 | API usage | `api_usage_days` (requests per Pacific day, source and model), `api_usage_last_limit` (last limit error per source) |
 
 Session rows also carry the practice mode/phase columns and `is_mistake_practice` (default false).

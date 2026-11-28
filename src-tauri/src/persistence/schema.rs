@@ -640,9 +640,24 @@ pub(super) fn migrate(connection: &Connection) -> rusqlite::Result<()> {
             DROP TABLE turn_steering;
             ALTER TABLE turn_steering_next RENAME TO turn_steering;",
         )?;
-        transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        transaction.pragma_update(None, "user_version", 27)?;
         transaction.commit()?;
         connection.pragma_update(None, "foreign_keys", "ON")?;
+        version = 27;
+    }
+    if version < 28 {
+        let transaction = connection.unchecked_transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS translation_cache (
+                text TEXT NOT NULL,
+                native_language TEXT NOT NULL,
+                translation TEXT NOT NULL,
+                created_at_ms INTEGER NOT NULL,
+                PRIMARY KEY(text, native_language)
+            );",
+        )?;
+        transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        transaction.commit()?;
     }
     Ok(())
 }
