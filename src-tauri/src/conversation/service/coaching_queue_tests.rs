@@ -425,7 +425,7 @@ fn a_restart_resumes_the_queue_from_the_database() {
     fixture.next_event();
     assert!(fixture.coaching(session.session_id).iter().all(is_ready));
     drop(fixture);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -499,7 +499,7 @@ fn coached_conversation_mistakes_become_memory_become_due_and_come_back_in_later
         })
         .unwrap();
     assert!(later.start_memory_review().unwrap().is_none());
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]

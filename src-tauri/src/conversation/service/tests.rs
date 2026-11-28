@@ -214,7 +214,7 @@ fn mistake_practice_saves_and_restores_five_cued_voice_questions() {
     let summary = resumed.finish(active.session_id).unwrap();
     assert!(summary.is_mistake_practice);
     assert_eq!(summary.target_turns, 5);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -356,7 +356,7 @@ fn retry_is_paired_with_saved_answer_and_survives_reopen_without_new_turn() {
     assert_eq!(resumed.retry_evidence, vec![result]);
     let finished = reopened.finish(session.session_id).unwrap();
     assert_eq!(finished.turn_count, 1);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -519,7 +519,7 @@ fn practice_start_options_persist_and_active_reopen_starts_paused() {
     assert_eq!(finished.duration_ms, 2_000);
     assert_eq!(finished.topic_label, "Plans & stories");
     assert_eq!(finished.duration_goal_seconds, Some(300));
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1031,7 +1031,7 @@ fn migration_from_version_fourteen_keeps_sessions_turns_glossary_and_retry_evide
     );
     assert_eq!(store.glossary_terms().unwrap(), ["Manual glossary term"]);
     assert_eq!(resumed.retry_evidence, [evidence]);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1056,7 +1056,7 @@ fn summary_evidence_database_failure_keeps_the_session_active() {
         session.session_id
     );
     drop(store);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1376,7 +1376,7 @@ fn phrase_saved_in_one_session_persists_and_can_be_reviewed_in_later_session() {
     assert_eq!(memory.phrase_cards.len(), 1);
     assert_eq!(memory.phrase_cards[0].phrase, "I work there");
 
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1459,7 +1459,7 @@ fn due_memory_returns_as_a_bounded_later_session_conversation_cue() {
         assert!(steered[quiet].is_empty(), "answer {}", quiet + 1);
     }
     drop(later);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1481,7 +1481,7 @@ fn memory_query_failure_does_not_leave_conversation_busy() {
         assert_eq!(code_of(error), IpcErrorCode::DatabaseError);
     }
     drop(store);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1561,7 +1561,7 @@ fn a_session_saved_before_modes_were_merged_resumes_as_the_one_mode() {
     let resumed = store.get_active().unwrap().unwrap();
     assert_eq!(resumed.session_id, sid);
     assert_eq!(resumed.target_turns, DAILY_TARGET_TURNS);
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1617,7 +1617,7 @@ fn an_open_coach_session_with_a_saved_unanswered_answer_continues_as_a_talk_sess
             .collect::<Vec<_>>(),
         [2]
     );
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1720,7 +1720,7 @@ fn dialogue_restores_all_saved_turns_of_open_and_finished_sessions_and_rejects_o
     assert_eq!(finished.turns, dialogue.turns);
     assert_eq!(finished.coaching.len(), 2);
     assert!(reopened.dialogue(session.session_id + 1).is_err());
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -1767,7 +1767,7 @@ fn dialogue_returns_the_recorded_origin_of_each_reply_after_reopen() {
     );
     assert_eq!(json["turns"][1]["answered_by"]["is_backup"], true);
     assert!(json["turns"][2]["answered_by"].is_null());
-    std::fs::remove_file(path).unwrap();
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
