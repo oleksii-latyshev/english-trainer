@@ -8,7 +8,7 @@ mod speech_check;
 mod transcript;
 mod wav;
 
-pub use engine_status::{ServerState, ServerStatus, SpeechEngineStatus};
+pub use engine_status::{ServerState, ServerStatus, SpeechEngineStatus, WhisperBackend};
 pub use glossary::{normalize_terms, prompt_from_terms, SEED_GLOSSARY};
 pub use kept::KeptRecordings;
 pub use prompt::{answer_prompt, AnswerContext};

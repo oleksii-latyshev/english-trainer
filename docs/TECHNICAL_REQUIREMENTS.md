@@ -11,7 +11,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 | Desktop | Tauri v2, Rust stable, SQLite via `rusqlite` (bundled). |
 | Frontend | React 19, TypeScript (strict), Vite, Bun, Tailwind CSS v4, Base UI (own kit in `src/shared/ui`), TanStack Router, Lucide. |
 | Quality | Biome, `tsc --noEmit`, `bun test`, rustfmt, Clippy with warnings as errors, `cargo test`; run by Lefthook pre-commit and GitHub Actions CI. |
-| Portability | The Rust core compiles and its unit tests pass on Windows (CI job `rust-windows`). Process control, `claude`/`agy` lookup (`.exe`/`.cmd`, `%USERPROFILE%\.local\bin`, `%APPDATA%\npm`) and the home directory go through `src/platform`. Off macOS the Apple conversation and translation helpers report "not available on this computer" and Gemini is the conversation provider. Whisper and the natural voice are not bundled on Windows yet. |
+| Portability | The Rust core compiles and its unit tests pass on Windows (CI job `rust-windows`). Process control, `claude`/`agy` lookup (`.exe`/`.cmd`, `%USERPROFILE%\.local\bin`, `%APPDATA%\npm`) and the home directory go through `src/platform`. Off macOS the Apple conversation and translation helpers report "not available on this computer" and Gemini is the conversation provider. The natural voice is not bundled on Windows yet; Whisper is (see §3, Windows backend). |
 | Packaging | `bun run build:desktop` → ad-hoc signed `.app` and DMG; the Apple helpers are compiled at build time and bundled. |
 
 ## 2. Audio capture
@@ -70,6 +70,17 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   `<app data>/whisper-server.pid` so a server from a crashed run is stopped first.
   `get_speech_engine_status` feeds Settings ("Kept loaded · ready", "Loading…", "Not running (using
   one-off runs)") and a Whisper server line in setup details.
+- **Windows backend:** the Windows bundle carries two official whisper.cpp builds under
+  `<app folder>\whisper\`: `cuda\` (release `b5907`, `whisper-bin-win-cuda-12.4.0-x64.zip`, cuBLAS with its
+  CUDA runtime DLLs) and `cpu\` (`whisper-bin-x64.zip`). `scripts/fetch-whisper-windows.sh` downloads them into
+  `src-tauri/resources/whisper-windows`, checks pinned SHA-256 sums and is run at build time and by the
+  `rust-windows` CI job; the binaries are not committed. Lookup order (`speech_recognition/infra/binaries.rs`):
+  the `ENG_TRAINER_WHISPER_*_BIN` override, then `whisper\cuda`, then `whisper\cpu`, then `PATH` through
+  `platform::find_tool`; macOS keeps `PATH` and Homebrew. The server tries the builds in that order: a CUDA build
+  that exits, does not load the model in time, or logs that it found no GPU or CUDA device is stopped and
+  the next one starts. The running backend (`cuda`/`cpu`, empty for an override or a `PATH` build) is
+  `whisper_backend` in setup diagnostics. The model is not downloaded by the app yet on any platform: it is
+  placed in `<app data>/models/` by hand.
 - **Fallback:** `whisper-cli` (`ENG_TRAINER_WHISPER_BIN`, `PATH`, Homebrew paths) in a private temp
   dir, 120 s timeout. Typed `TranscriptionError` codes: `model_missing`, `engine_missing`,
   `engine_failed`, `timeout`, `invalid_audio`, `invalid_output`, `no_speech`, `io_failure`, `busy`.

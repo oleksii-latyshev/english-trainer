@@ -10,10 +10,19 @@ pub enum ServerState {
     NotRunning,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum WhisperBackend {
+    Cuda,
+    Cpu,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServerStatus {
     pub state: ServerState,
     pub failure: Option<String>,
+    pub backend: Option<WhisperBackend>,
 }
 
 #[derive(Debug, Serialize, TS)]

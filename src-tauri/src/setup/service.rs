@@ -14,6 +14,7 @@ pub fn collect(app_data: &Path, model: &Path, server: &ServerStatus) -> SetupDia
         whisper_cli,
         whisper_model,
         whisper_server,
+        whisper_backend: server.backend,
         claude_cli,
         agy_default_model: crate::platform::home_dir().and_then(|home| {
             read_agy_default_model(&home.join(".gemini/antigravity-cli/settings.json"))

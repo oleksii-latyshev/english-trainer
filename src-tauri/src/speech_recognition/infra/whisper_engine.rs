@@ -1,6 +1,6 @@
 use super::{
     best_effort::ignore_start_outcome_reported_by_status,
-    binaries::{resolve_server_binary, resolve_whisper_binary},
+    binaries::{resolve_server_builds, resolve_whisper_binary, ServerBuild},
     model_files::ready_model,
     whisper_cli::{missing_binary_error, transcribe_once},
     whisper_server::{ServerError, WhisperServer},
@@ -25,14 +25,14 @@ pub struct WhisperEngine {
 }
 
 pub(super) struct Binaries {
-    pub server: Option<PathBuf>,
+    pub server: Vec<ServerBuild>,
     pub cli: Option<PathBuf>,
 }
 
 impl Binaries {
     fn resolve() -> Self {
         Self {
-            server: resolve_server_binary(),
+            server: resolve_server_builds(),
             cli: resolve_whisper_binary(),
         }
     }
@@ -55,10 +55,10 @@ impl WhisperEngine {
     ) -> PortResult<Transcript> {
         let duration_ms = validate_wav(&wav)?;
         let model = ready_model(model)?;
-        if let Some(server_binary) = &binaries.server {
+        if !binaries.server.is_empty() {
             match self
                 .server
-                .transcribe(server_binary, &model, &wav, prompt, duration_ms)
+                .transcribe(&binaries.server, &model, &wav, prompt, duration_ms)
             {
                 Ok(transcript) => return Ok(transcript),
                 Err(ServerError::Failed(error)) => return Err(error),
@@ -107,13 +107,14 @@ impl WhisperEngine {
 
 impl TranscriptionEngine for WhisperEngine {
     fn warm(&self, model: &Path) {
-        let Some(binary) = resolve_server_binary() else {
+        let builds = resolve_server_builds();
+        if builds.is_empty() {
             return;
-        };
+        }
         let Ok(model) = ready_model(model) else {
             return;
         };
-        ignore_start_outcome_reported_by_status(self.server.ensure(&binary, &model, true));
+        ignore_start_outcome_reported_by_status(self.server.ensure(&builds, &model, true));
     }
 
     fn transcribe(

@@ -1,19 +1,21 @@
 use super::best_effort::{
     ignore_already_removed, ignore_process_already_gone, ignore_unwritable_note,
 };
+use super::binaries::ServerBuild;
 use crate::speech_recognition::{
-    domain::{without_annotations, ServerState, ServerStatus, Transcript},
+    domain::{without_annotations, ServerState, ServerStatus, Transcript, WhisperBackend},
     error::SpeechRecognitionError,
 };
 use serde::Deserialize;
 use std::{
     fs,
+    io::{BufRead, BufReader},
     net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{
         atomic::{AtomicBool, AtomicU32, Ordering},
-        Mutex, MutexGuard, OnceLock,
+        Arc, Mutex, MutexGuard, OnceLock,
     },
     thread,
     time::{Duration, Instant},
@@ -23,12 +25,13 @@ const START_TIMEOUT: Duration = Duration::from_secs(20);
 const FINAL_TIMEOUT: Duration = Duration::from_secs(120);
 const PARTIAL_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_DEATHS_WITHOUT_ANSWER: u32 = 2;
+const CUDA_REPORT_GRACE: Duration = Duration::from_millis(200);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Phase {
     Idle,
     Loading,
-    Ready,
+    Ready(Option<WhisperBackend>),
     Failed(String),
 }
 
@@ -42,6 +45,7 @@ struct Running {
     child: Child,
     port: u16,
     model: PathBuf,
+    backend: Option<WhisperBackend>,
 }
 
 #[derive(Default)]
@@ -86,21 +90,25 @@ impl WhisperServer {
             }
         }
         match &*lock(&self.phase) {
-            Phase::Ready => ServerStatus {
+            Phase::Ready(backend) => ServerStatus {
                 state: ServerState::Ready,
                 failure: None,
+                backend: *backend,
             },
             Phase::Loading => ServerStatus {
                 state: ServerState::Loading,
                 failure: None,
+                backend: None,
             },
             Phase::Idle => ServerStatus {
                 state: ServerState::NotRunning,
                 failure: None,
+                backend: None,
             },
             Phase::Failed(reason) => ServerStatus {
                 state: ServerState::NotRunning,
                 failure: Some(reason.clone()),
+                backend: None,
             },
         }
     }
@@ -111,7 +119,7 @@ impl WhisperServer {
         (run.model == model && matches!(run.child.try_wait(), Ok(None))).then_some(run.port)
     }
 
-    pub fn ensure(&self, binary: &Path, model: &Path, retry: bool) -> Result<u16, String> {
+    pub fn ensure(&self, builds: &[ServerBuild], model: &Path, retry: bool) -> Result<u16, String> {
         let mut inner = lock(&self.inner);
         if retry {
             inner.given_up = None;
@@ -139,11 +147,11 @@ impl WhisperServer {
         }
         *lock(&self.phase) = Phase::Loading;
         self.reap_leftover_once();
-        match self.start(binary, model) {
+        match self.start_first_working(builds, model) {
             Ok(run) => {
                 let port = run.port;
+                *lock(&self.phase) = Phase::Ready(run.backend);
                 inner.running = Some(run);
-                *lock(&self.phase) = Phase::Ready;
                 Ok(port)
             }
             Err(reason) => Err(self.give_up(&mut inner, model, reason)),
@@ -156,18 +164,47 @@ impl WhisperServer {
         reason
     }
 
-    fn start(&self, binary: &Path, model: &Path) -> Result<Running, String> {
+    fn start_first_working(&self, builds: &[ServerBuild], model: &Path) -> Result<Running, String> {
+        let mut last_reason = "whisper-server was not found".to_string();
+        for build in builds {
+            match self.start(build, model) {
+                Ok(run) => return Ok(run),
+                Err(reason) => {
+                    crate::diagnostics::log(
+                        "speech",
+                        format_args!("{} is not used: {reason}", build.path.display()),
+                    );
+                    last_reason = reason;
+                }
+            }
+        }
+        Err(last_reason)
+    }
+
+    fn start(&self, build: &ServerBuild, model: &Path) -> Result<Running, String> {
+        let binary = &build.path;
         let port = free_port().map_err(|error| format!("no free local port: {error}"))?;
-        let mut child = Command::new(binary)
+        let watches_cuda = build.backend == Some(WhisperBackend::Cuda);
+        let mut command = Command::new(binary);
+        command
             .arg("-m")
             .arg(model)
             .args(["--host", "127.0.0.1", "--port"])
             .arg(port.to_string())
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stderr(if watches_cuda {
+                Stdio::piped()
+            } else {
+                Stdio::null()
+            });
+        let mut child = command
             .spawn()
             .map_err(|error| format!("could not start {}: {error}", binary.display()))?;
+        let no_cuda_device = Arc::new(AtomicBool::new(false));
+        if let Some(stderr) = child.stderr.take() {
+            watch_for_missing_cuda_device(stderr, Arc::clone(&no_cuda_device));
+        }
         if let Some(path) = &self.pid_file {
             ignore_unwritable_note(fs::write(path, child.id().to_string()));
         }
@@ -189,10 +226,19 @@ impl WhisperServer {
                 }
             }
             if TcpStream::connect_timeout(&address, Duration::from_millis(100)).is_ok() {
+                if watches_cuda {
+                    thread::sleep(CUDA_REPORT_GRACE);
+                    if no_cuda_device.load(Ordering::Acquire) {
+                        stop_child(&mut child);
+                        self.forget_pid();
+                        return Err("whisper-server found no usable CUDA device".into());
+                    }
+                }
                 return Ok(Running {
                     child,
                     port,
                     model: model.to_path_buf(),
+                    backend: build.backend,
                 });
             }
             if Instant::now() >= deadline {
@@ -247,14 +293,14 @@ impl WhisperServer {
 
     pub fn transcribe(
         &self,
-        binary: &Path,
+        builds: &[ServerBuild],
         model: &Path,
         wav: &[u8],
         prompt: Option<&str>,
         duration_ms: u64,
     ) -> Result<Transcript, ServerError> {
         let mut port = self
-            .ensure(binary, model, false)
+            .ensure(builds, model, false)
             .map_err(ServerError::Unavailable)?;
         let body = request(wav, prompt);
         let json = match post(port, &body, FINAL_TIMEOUT) {
@@ -262,7 +308,7 @@ impl WhisperServer {
             Err(_) => {
                 self.discard(port);
                 port = self
-                    .ensure(binary, model, false)
+                    .ensure(builds, model, false)
                     .map_err(ServerError::Unavailable)?;
                 post(port, &body, FINAL_TIMEOUT).map_err(|reason| {
                     self.discard(port);
@@ -327,6 +373,24 @@ impl Drop for WhisperServer {
     fn drop(&mut self) {
         self.shutdown();
     }
+}
+
+fn watch_for_missing_cuda_device(stderr: std::process::ChildStderr, flag: Arc<AtomicBool>) {
+    thread::spawn(move || {
+        for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+            if reports_missing_cuda_device(&line) {
+                flag.store(true, Ordering::Release);
+            }
+        }
+    });
+}
+
+pub(super) fn reports_missing_cuda_device(line: &str) -> bool {
+    let line = line.to_ascii_lowercase();
+    line.contains("no gpu found")
+        || line.contains("failed to initialize cuda")
+        || line.contains("no cuda-capable device")
+        || line.contains("no cuda devices")
 }
 
 fn free_port() -> std::io::Result<u16> {

@@ -113,6 +113,7 @@ fn idle_server() -> crate::speech_recognition::ServerStatus {
     crate::speech_recognition::ServerStatus {
         state: crate::speech_recognition::ServerState::NotRunning,
         failure: None,
+        backend: None,
     }
 }
 
@@ -129,6 +130,7 @@ fn the_server_line_says_when_one_off_runs_are_used() {
     let failed = crate::speech_recognition::ServerStatus {
         state: crate::speech_recognition::ServerState::NotRunning,
         failure: Some("the model did not load".into()),
+        backend: None,
     };
     let message = check_server(Some(server.clone()), &failed).message;
     assert!(message.contains("the model did not load"));
@@ -137,6 +139,7 @@ fn the_server_line_says_when_one_off_runs_are_used() {
     let ready = crate::speech_recognition::ServerStatus {
         state: crate::speech_recognition::ServerState::Ready,
         failure: None,
+        backend: None,
     };
     let check = check_server(Some(server), &ready);
     assert!(matches!(check.status, ComponentStatus::Available));
@@ -152,6 +155,7 @@ fn serializes_diagnostics_with_snake_case_statuses() {
         whisper_cli: check_cli(None),
         whisper_model: check_model(&data.join("model.bin")),
         whisper_server: check_server(None, &idle_server()),
+        whisper_backend: None,
         claude_cli: check_cli(None),
         database_path: data
             .join("english-trainer.sqlite3")

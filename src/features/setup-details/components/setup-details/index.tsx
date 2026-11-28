@@ -19,6 +19,12 @@ function Findings({ data }: { data: SetupDiagnostics }) {
     <>
       <DiagnosticLine check={data.whisper_cli} label="Whisper command" />
       <DiagnosticLine check={data.whisper_server} label="Whisper server" />
+      {data.whisper_backend && (
+        <p>
+          <strong className="text-foreground">Whisper backend</strong>{' '}
+          {data.whisper_backend === 'cuda' ? 'CUDA (GPU)' : 'CPU'}
+        </p>
+      )}
       <DiagnosticLine check={data.whisper_model} label="Whisper model" />
       <DiagnosticLine check={data.claude_cli} label="claude command" />
       <div>
