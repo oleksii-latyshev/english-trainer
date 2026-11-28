@@ -15,10 +15,10 @@ function rule(inSession: number, open: number): FocusRule {
 
 describe('focusRuleLine', () => {
   it('counts the mistakes of today and the open ones', () => {
-    expect(focusRuleLine(rule(3, 5))).toBe('3 times today · 5 open');
+    expect(focusRuleLine(rule(3, 5))).toBe('3 times in this conversation · 5 open');
   });
 
   it('says one time in the singular', () => {
-    expect(focusRuleLine(rule(1, 1))).toBe('1 time today · 1 open');
+    expect(focusRuleLine(rule(1, 1))).toBe('1 time in this conversation · 1 open');
   });
 });

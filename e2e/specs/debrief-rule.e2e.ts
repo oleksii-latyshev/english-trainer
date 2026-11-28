@@ -36,7 +36,7 @@ test('the summary offers the rule broken most and Practise this rule starts its 
   await expect(wrapup.summary).toContainText(
     'Questions put the auxiliary verb before the subject.',
   );
-  await expect(wrapup.summary).toContainText('3 times today · 5 open');
+  await expect(wrapup.summary).toContainText('3 times in this conversation · 5 open');
   await expect(wrapup.summary).toContainText('Came back');
 
   await wrapup.practiseRule.click();

@@ -272,7 +272,7 @@ Each mistake climbs a ladder; one exercise per mistake per session:
   Mistakes.
 - The wrap-up review stays as it is; each reviewed answer links to its mistake card.
 - The Debrief summary shows a **Rule to practise** block when the conversation broke a grammar rule
-  that has a lesson: the rule broken most, its one-line summary, "N times today · M open", a "Came
+  that has a lesson: the rule broken most, its one-line summary, "N times in this conversation · M open", a "Came
   back" chip when an earlier conversation broke it too, and **Practise this rule**, which starts a
   Mistakes run for that rule and opens it.
 - The sidebar shows how many mistakes are due, like Memory.
