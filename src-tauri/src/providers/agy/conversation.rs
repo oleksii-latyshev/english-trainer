@@ -281,6 +281,7 @@ fn validate_plain_text(
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "conversation_tests.rs"]
 mod tests;
 

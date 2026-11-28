@@ -3,7 +3,9 @@ use super::super::agy::test_support::TestDirectory;
 use super::super::agy::test_support::{recorded_calls, recording_cli};
 use super::super::{CoachingAnswer, ProviderErrorCode};
 use super::coaching::coach_answers_with;
-use super::runner::{find_binary, parse_envelope, run_json, CLAUDE_MODEL};
+#[cfg(unix)]
+use super::runner::CLAUDE_MODEL;
+use super::runner::{find_binary, parse_envelope, run_json};
 use serde_json::json;
 use std::{fs, time::Duration};
 
@@ -149,6 +151,7 @@ fn coaching_validates_the_structured_answers_like_the_legacy_provider() {
     );
 }
 
+#[cfg(unix)]
 #[test]
 fn an_unreadable_coaching_payload_is_invalid_output() {
     let dir = TestDirectory::new();

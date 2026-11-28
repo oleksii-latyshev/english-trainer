@@ -154,6 +154,7 @@ fn has_read_permission(path: &Path, metadata: &fs::Metadata) -> bool {
     }
     #[cfg(not(unix))]
     {
+        let _ = metadata;
         fs::File::open(path).is_ok()
     }
 }

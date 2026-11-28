@@ -124,5 +124,6 @@ fn review_error(code: ProviderErrorCode, message: &str) -> ProviderError {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "spoken_review_tests.rs"]
 mod tests;

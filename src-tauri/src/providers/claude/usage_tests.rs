@@ -1,6 +1,4 @@
-use super::super::super::agy::test_support::TestDirectory;
-#[cfg(unix)]
-use super::super::super::agy::test_support::{recorded_calls, recording_cli};
+use super::super::super::agy::test_support::{recorded_calls, recording_cli, TestDirectory};
 use super::super::super::{UsageBatchAnswer, UsageCandidate, UsageReviewRequest};
 use super::review_usage_batch_with;
 use crate::learning::LearningItemType;
