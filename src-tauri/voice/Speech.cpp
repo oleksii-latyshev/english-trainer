@@ -8,6 +8,10 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 static bool read(void* data, size_t size) { return std::fread(data, 1, size, stdin) == size; }
 static void put(std::vector<uint8_t>& out, uint32_t value, int bytes) {
@@ -44,6 +48,9 @@ static std::vector<uint8_t> wave(const SherpaOnnxGeneratedAudio& audio) {
 }
 int main(int argc, char** argv) {
   if (argc != 2) return 1;
+#ifdef _WIN32
+  _setmode(_fileno(stdin), _O_BINARY); _setmode(_fileno(stdout), _O_BINARY);
+#endif
   std::string p = argv[1];
   std::string dp=p+"/duration_predictor.int8.onnx", te=p+"/text_encoder.int8.onnx",
     ve=p+"/vector_estimator.int8.onnx", vc=p+"/vocoder.int8.onnx",
@@ -56,7 +63,7 @@ int main(int argc, char** argv) {
   model.tts_json=tj.c_str(); model.unicode_indexer=ui.c_str(); model.voice_style=vs.c_str();
   const auto* engine=SherpaOnnxCreateOfflineTts(&config);
   if (!engine) return 2;
-  uint32_t ready=0x31535454; // TTS1; framing is little-endian on supported Apple Silicon.
+  uint32_t ready=0x31535454; // TTS1; framing is little-endian on every supported CPU (Apple Silicon, x64).
   std::fwrite(&ready, 4, 1, stdout); std::fflush(stdout);
   const int steps = denoising_steps();
   uint32_t size, speaker; float speed;

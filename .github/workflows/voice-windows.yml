@@ -1,0 +1,37 @@
+name: Natural voice on Windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - src-tauri/voice/**
+      - scripts/build-voice-windows.sh
+      - scripts/smoke-voice.py
+      - .github/workflows/voice-windows.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  voice:
+    name: Build and smoke-run the speech helper (Windows x64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up the Visual Studio developer environment
+        uses: ilammy/msvc-dev-cmd@a102174a2b586eec2ea151a69e6fd14404a8ce7c # v1.13.0
+
+      - name: Build the helper with the pinned sherpa-onnx runtime and model
+        run: sh ./scripts/build-voice-windows.sh
+
+      - name: Synthesise a sentence to a WAV file
+        run: python scripts/smoke-voice.py --directory src-tauri/resources/natural-voice-windows --executable speech.exe --output "$RUNNER_TEMP/smoke.wav"

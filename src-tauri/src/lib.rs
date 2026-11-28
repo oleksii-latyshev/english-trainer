@@ -28,6 +28,11 @@ pub use providers::{ConversationContext, ConversationTurn, ProviderError};
 
 use tauri::Manager;
 
+#[cfg(target_os = "macos")]
+const NATURAL_VOICE_RESOURCE: &str = "binaries/natural-voice";
+#[cfg(not(target_os = "macos"))]
+const NATURAL_VOICE_RESOURCE: &str = "natural-voice";
+
 fn apple_helper_binary(app: &tauri::App, name: &str) -> Option<std::path::PathBuf> {
     if cfg!(not(target_os = "macos")) {
         return None;
@@ -251,7 +256,7 @@ pub fn run() {
                 .path()
                 .resource_dir()
                 .ok()
-                .map(|p| p.join("binaries/natural-voice"));
+                .map(|p| p.join(NATURAL_VOICE_RESOURCE));
             app.manage(voice::VoiceService::new(voice::SupertonicEngine::new(
                 voice_directory,
             )));

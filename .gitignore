@@ -38,3 +38,7 @@ src-tauri/binaries/natural-voice/*
 .claude/settings.local.json
 .claude/worktrees/
 /.build/
+
+# Built by scripts/build-voice-windows.sh; bundled on Windows.
+src-tauri/resources/natural-voice-windows/*
+!src-tauri/resources/natural-voice-windows/.gitkeep

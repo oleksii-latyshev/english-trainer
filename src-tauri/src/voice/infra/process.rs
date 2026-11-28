@@ -1,3 +1,4 @@
+use crate::platform::executable_file_name;
 use crate::voice::{domain::SynthesisRequest, error::VoiceError};
 use std::{
     io::{Read, Write},
@@ -11,6 +12,19 @@ use std::{
 const MAX_WAVE_BYTES: usize = 44 + 44100 * 60 * 2;
 const READY_TAG: [u8; 4] = *b"TTS1";
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(5);
+
+#[cfg(windows)]
+fn hidden(mut command: Command) -> Command {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    command.creation_flags(CREATE_NO_WINDOW);
+    command
+}
+
+#[cfg(not(windows))]
+fn hidden(command: Command) -> Command {
+    command
+}
 
 pub struct Running {
     child: Child,
@@ -33,7 +47,7 @@ impl Drop for Running {
 
 impl Running {
     pub fn spawn(directory: &Path) -> Result<Self, VoiceError> {
-        let mut child = Command::new(directory.join("speech"))
+        let mut child = hidden(Command::new(directory.join(executable_file_name("speech"))))
             .arg(directory.join("model"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

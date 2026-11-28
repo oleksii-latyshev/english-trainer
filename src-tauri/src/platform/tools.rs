@@ -53,6 +53,10 @@ pub fn system_install_dirs() -> Vec<PathBuf> {
     Vec::new()
 }
 
+pub fn executable_file_name(stem: &str) -> String {
+    executable_names(stem).swap_remove(0)
+}
+
 pub fn find_tool(
     stem: &str,
     path: Option<OsString>,

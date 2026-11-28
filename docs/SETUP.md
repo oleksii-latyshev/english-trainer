@@ -50,7 +50,7 @@ Settings › Speech recognition measures every installed model on your own recor
 ## Natural voice
 
 The Supertonic 3 helper, model and runtime are pinned build assets (`scripts/prepare-voice.sh`) and
-ship with their licences. Measure real latency before changing phrase length or the helper:
+ship with their licences. On Windows, run `scripts/build-voice-windows.sh` from Git Bash in a Visual Studio developer prompt. Measure real latency before changing phrase length or the helper:
 
 ```bash
 python3 scripts/check-voice.py

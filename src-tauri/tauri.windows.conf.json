@@ -1,5 +1,7 @@
 {
   "bundle": {
-    "resources": []
+    "resources": {
+      "resources/natural-voice-windows/": "natural-voice/"
+    }
   }
 }
