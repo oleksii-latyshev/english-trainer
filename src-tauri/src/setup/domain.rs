@@ -1,3 +1,4 @@
+use crate::speech_recognition::WhisperBackend;
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -7,6 +8,7 @@ pub struct SetupDiagnostics {
     pub whisper_cli: ComponentCheck,
     pub whisper_model: ComponentCheck,
     pub whisper_server: ComponentCheck,
+    pub whisper_backend: Option<WhisperBackend>,
     pub claude_cli: ComponentCheck,
     pub database_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]

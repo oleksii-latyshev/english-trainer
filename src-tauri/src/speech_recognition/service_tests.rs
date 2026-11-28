@@ -68,6 +68,7 @@ impl TranscriptionEngine for FakeEngine {
         ServerStatus {
             state: ServerState::Ready,
             failure: None,
+            backend: None,
         }
     }
 

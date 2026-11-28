@@ -7,7 +7,9 @@ mod service;
 #[cfg(test)]
 mod service_tests;
 
-pub use domain::{AnswerContext, ServerState, ServerStatus, SpeechSettings, SEED_GLOSSARY};
+pub use domain::{
+    AnswerContext, ServerState, ServerStatus, SpeechSettings, WhisperBackend, SEED_GLOSSARY,
+};
 pub use infra::{
     resolve_server_binary, resolve_whisper_binary, CliTranscriber, KeptRecordingFiles, ModelFiles,
     SessionSpeechStore, SpeechCheckFiles, WhisperEngine,
