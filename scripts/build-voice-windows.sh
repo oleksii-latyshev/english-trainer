@@ -18,9 +18,9 @@ fetch() {
 }
 fetch runtime.tar.bz2 3e971a04b2e0ba4dfa53d381a006367ce8c9f5f09b4ae00043e9845c2baded22 "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/$RUNTIME_NAME.tar.bz2"
 fetch model.tar.bz2 82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427 "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/$MODEL_NAME.tar.bz2"
-[ -d "$CACHE/$RUNTIME_NAME" ] || tar -xjf "$CACHE/runtime.tar.bz2" -C "$CACHE"
+[ -d "$CACHE/$RUNTIME_NAME" ] || (cd "$CACHE" && tar -xjf runtime.tar.bz2)
 if [ ! -d "$DEST/model" ]; then
-  [ -d "$CACHE/$MODEL_NAME" ] || tar -xjf "$CACHE/model.tar.bz2" -C "$CACHE"
+  [ -d "$CACHE/$MODEL_NAME" ] || (cd "$CACHE" && tar -xjf model.tar.bz2)
   cp -R "$CACHE/$MODEL_NAME" "$DEST/model"
 fi
 for dll in sherpa-onnx-c-api.dll onnxruntime.dll onnxruntime_providers_shared.dll; do
