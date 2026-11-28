@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import type { ModelRun, SentenceStatus } from '@/core/ipc';
 import {
   currentSentenceIndex,
+  downloadProgressText,
   formatPercent,
   formatSize,
   modelName,
@@ -78,5 +79,20 @@ describe('runTitle', () => {
     ];
     expect(currentSentenceIndex(1, sentences)).toBe(1);
     expect(currentSentenceIndex(undefined, sentences)).toBe(2);
+  });
+});
+
+describe('downloadProgressText', () => {
+  it('says it is starting until the first bytes arrive', () => {
+    expect(downloadProgressText(undefined)).toBe('Starting the download…');
+    expect(downloadProgressText({ downloaded_bytes: 0, total_bytes: 487_614_201 })).toBe(
+      'Starting the download…',
+    );
+  });
+
+  it('shows what arrived of the total', () => {
+    expect(
+      downloadProgressText({ downloaded_bytes: 100 * 1024 * 1024, total_bytes: 487_614_201 }),
+    ).toBe('100 MB of 465 MB');
   });
 });

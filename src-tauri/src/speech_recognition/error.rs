@@ -27,6 +27,10 @@ pub enum SpeechRecognitionError {
     Unavailable(String),
     #[error("the speech settings could not be read or saved")]
     SettingsStorage,
+    #[error("the model download failed: {0}")]
+    DownloadFailed(String),
+    #[error("the model download was cancelled")]
+    DownloadCancelled,
     #[error("the practice session refused the request")]
     Conversation(IpcError),
 }
@@ -76,6 +80,10 @@ impl From<SpeechRecognitionError> for IpcError {
                 IpcErrorCode::DatabaseError,
                 "Could not read or save speech settings locally. Please retry.",
             ),
+            E::DownloadFailed(message) => Self::new(IpcErrorCode::ProcessFailed, message),
+            E::DownloadCancelled => {
+                Self::new(IpcErrorCode::Cancelled, "The model download was cancelled.")
+            }
             E::Conversation(error) => error,
         }
     }

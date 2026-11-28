@@ -1,4 +1,6 @@
 import { Schema } from 'effect';
+import type { ModelDownloadOffer } from '../bindings/ModelDownloadOffer';
+import type { ModelDownloadProgress } from '../bindings/ModelDownloadProgress';
 import type { ModelRun } from '../bindings/ModelRun';
 import type { RecordingResult } from '../bindings/RecordingResult';
 import type { SentenceStatus } from '../bindings/SentenceStatus';
@@ -104,3 +106,15 @@ export const SpeechCheckProgressSchema = bindingSchema<SpeechCheckProgress>()(
 );
 
 export const PartialTranscriptSchema = Schema.NullOr(Schema.String);
+
+export const ModelDownloadOfferSchema = bindingSchema<ModelDownloadOffer>()(
+  Schema.Struct({
+    file: Schema.String,
+    size_bytes: Schema.Number,
+    is_installed: Schema.Boolean,
+  }),
+);
+
+export const ModelDownloadProgressSchema = bindingSchema<ModelDownloadProgress>()(
+  Schema.Struct({ downloaded_bytes: Schema.Number, total_bytes: Schema.Number }),
+);

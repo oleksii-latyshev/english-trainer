@@ -1,18 +1,22 @@
 use super::{
     domain::{
-        valid_wav, AnswerContext, CheckRecording, KeptRecordings, ServerState, ServerStatus,
-        SettingsChange, SpeechCheckResults, SpeechModel, SpeechSettings, Transcript,
+        valid_wav, AnswerContext, CheckRecording, KeptRecordings, ModelDownloadProgress,
+        ServerState, ServerStatus, SettingsChange, SpeechCheckResults, SpeechModel, SpeechSettings,
+        Transcript,
     },
     error::SpeechRecognitionError,
     ports::{
-        GlossaryStore, ModelCatalog, OneOffTranscriber, PortResult, PracticeConversation,
-        RecordingVault, SettingsStore, SpeechCheckStore, TranscriptionEngine,
+        GlossaryStore, ModelCatalog, ModelDownloader, OneOffTranscriber, PortResult,
+        PracticeConversation, RecordingVault, SettingsStore, SpeechCheckStore, TranscriptionEngine,
     },
     service::{SpeechRecognitionPorts, SpeechRecognitionService},
 };
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
 };
 
 #[derive(Default)]
@@ -243,6 +247,28 @@ impl SpeechCheckStore for FakeCheckStore {
     }
 }
 
+struct FakeDownloader {
+    started: Mutex<u32>,
+}
+
+impl ModelDownloader for FakeDownloader {
+    fn download(
+        &self,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(ModelDownloadProgress),
+    ) -> PortResult<()> {
+        *self.started.lock().unwrap() += 1;
+        on_progress(ModelDownloadProgress {
+            downloaded_bytes: 1,
+            total_bytes: 2,
+        });
+        if cancel.load(Ordering::Acquire) {
+            return Err(SpeechRecognitionError::DownloadCancelled);
+        }
+        Ok(())
+    }
+}
+
 struct FakeOneOff {
     transcript: Mutex<Result<Transcript, SpeechRecognitionError>>,
 }
@@ -286,6 +312,9 @@ fn fixture_with(conversation: FakeConversation, installed: &[&str]) -> Fixture {
         conversation: Arc::new(conversation),
         models: Arc::new(FakeModels {
             installed: installed.iter().map(|file| file.to_string()).collect(),
+        }),
+        downloader: Arc::new(FakeDownloader {
+            started: Mutex::new(0),
         }),
         recordings: vault.clone(),
         speech_check: check.clone(),
@@ -556,4 +585,27 @@ fn only_one_measurement_runs_at_a_time() {
         .unwrap();
     assert!(matches!(nested, Some(Err(SpeechRecognitionError::Busy(_)))));
     assert!(f.service.run_speech_check(&base, false, |_| {}).is_ok());
+}
+
+#[test]
+fn the_offer_names_the_pinned_model_and_whether_it_is_installed() {
+    let missing = fixture();
+    let offer = missing.service.model_download_offer();
+    assert_eq!(offer.file, "ggml-small.en.bin");
+    assert!(!offer.is_installed);
+
+    let present = fixture_with(FakeConversation::default(), &["ggml-small.en.bin"]);
+    assert!(present.service.model_download_offer().is_installed);
+}
+
+#[test]
+fn a_download_reports_progress_and_a_cancel_before_it_starts_does_not_stick() {
+    let f = fixture();
+    f.service.cancel_model_download();
+    let mut steps = Vec::new();
+    f.service
+        .download_model(|progress| steps.push(progress.downloaded_bytes))
+        .unwrap();
+    assert_eq!(steps, [1]);
+    assert!(!f.service.is_model_downloading());
 }

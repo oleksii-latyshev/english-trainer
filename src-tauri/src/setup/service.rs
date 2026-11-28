@@ -1,14 +1,30 @@
 use super::{
-    domain::SetupDiagnostics,
+    domain::{ComponentCheck, ComponentStatus, SetupDiagnostics},
     infra::{check_cli, check_model, check_server, read_agy_default_model},
 };
 use crate::speech_recognition::ServerStatus;
 use std::path::Path;
 
-pub fn collect(app_data: &Path, model: &Path, server: &ServerStatus) -> SetupDiagnostics {
+fn while_downloading(check: ComponentCheck, is_downloading: bool) -> ComponentCheck {
+    if is_downloading && check.status != ComponentStatus::Available {
+        return ComponentCheck {
+            status: ComponentStatus::Downloading,
+            message: "The speech model is downloading.".into(),
+            ..check
+        };
+    }
+    check
+}
+
+pub fn collect(
+    app_data: &Path,
+    model: &Path,
+    server: &ServerStatus,
+    is_model_downloading: bool,
+) -> SetupDiagnostics {
     let whisper_cli = check_cli(crate::speech_recognition::resolve_whisper_binary());
     let whisper_server = check_server(crate::speech_recognition::resolve_server_binary(), server);
-    let whisper_model = check_model(model);
+    let whisper_model = while_downloading(check_model(model), is_model_downloading);
     let claude_cli = check_cli(crate::providers::resolve_claude_binary());
     SetupDiagnostics {
         whisper_cli,

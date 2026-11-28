@@ -24,11 +24,12 @@ pub struct ComponentCheck {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "snake_case")]
 #[ts(export)]
 pub enum ComponentStatus {
     Available,
+    Downloading,
     Missing,
     Unreadable,
 }

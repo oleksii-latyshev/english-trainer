@@ -1,7 +1,8 @@
 use super::{
     domain::{
-        KeptRecordings, SpeechCheckProgress, SpeechCheckResults, SpeechCheckStatus,
-        SpeechEngineStatus, SpeechModels, SpeechSettings, Transcript,
+        KeptRecordings, ModelDownloadOffer, ModelDownloadProgress, SpeechCheckProgress,
+        SpeechCheckResults, SpeechCheckStatus, SpeechEngineStatus, SpeechModels, SpeechSettings,
+        Transcript,
     },
     error::SpeechRecognitionError,
     ports::PortResult,
@@ -222,4 +223,37 @@ fn report_progress(channel: &tauri::ipc::Channel<SpeechCheckProgress>, step: Spe
             format_args!("The speech check window closed; the measurement still finishes."),
         );
     }
+}
+
+#[tauri::command]
+pub async fn get_speech_model_offer(
+    service: tauri::State<'_, SpeechRecognitionService>,
+) -> Result<ModelDownloadOffer, IpcError> {
+    let service = service.inner().clone();
+    blocking(move || Ok(service.model_download_offer())).await
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn download_speech_model(
+    service: tauri::State<'_, SpeechRecognitionService>,
+    on_progress: tauri::ipc::Channel<ModelDownloadProgress>,
+) -> Result<ModelDownloadOffer, IpcError> {
+    let service = service.inner().clone();
+    let downloading = service.clone();
+    blocking(move || {
+        downloading.download_model(|progress| {
+            let _ = on_progress.send(progress);
+        })
+    })
+    .await?;
+    warm_in_background(service.clone());
+    Ok(service.model_download_offer())
+}
+
+#[tauri::command]
+pub async fn cancel_speech_model_download(
+    service: tauri::State<'_, SpeechRecognitionService>,
+) -> Result<(), IpcError> {
+    service.cancel_model_download();
+    Ok(())
 }

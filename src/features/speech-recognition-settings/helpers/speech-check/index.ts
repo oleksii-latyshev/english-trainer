@@ -1,4 +1,10 @@
-import type { ModelRun, SentenceStatus, SpeechCheckProgress, SpeechModel } from '@/core/ipc';
+import type {
+  ModelDownloadProgress,
+  ModelRun,
+  SentenceStatus,
+  SpeechCheckProgress,
+  SpeechModel,
+} from '@/core/ipc';
 
 export function formatPercent(ratio: number | null): string {
   return ratio === null ? 'no terms' : `${Math.round(ratio * 100)}%`;
@@ -55,4 +61,9 @@ export function currentSentenceIndex(
 
 export function runTitle(run: ModelRun): string {
   return `${modelName(run.model_file)}${run.uses_prompt ? ' with glossary prompt' : ''}`;
+}
+
+export function downloadProgressText(progress: ModelDownloadProgress | undefined): string {
+  if (!progress || progress.downloaded_bytes === 0) return 'Starting the download…';
+  return `${formatSize(progress.downloaded_bytes)} of ${formatSize(progress.total_bytes)}`;
 }

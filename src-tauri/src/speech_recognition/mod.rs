@@ -11,7 +11,7 @@ pub use domain::{
     AnswerContext, ServerState, ServerStatus, SpeechSettings, WhisperBackend, SEED_GLOSSARY,
 };
 pub use infra::{
-    resolve_server_binary, resolve_whisper_binary, CliTranscriber, KeptRecordingFiles, ModelFiles,
-    SessionSpeechStore, SpeechCheckFiles, WhisperEngine,
+    resolve_server_binary, resolve_whisper_binary, CliTranscriber, KeptRecordingFiles,
+    ModelDownloadFiles, ModelFiles, SessionSpeechStore, SpeechCheckFiles, WhisperEngine,
 };
 pub use service::{SpeechRecognitionPorts, SpeechRecognitionService};

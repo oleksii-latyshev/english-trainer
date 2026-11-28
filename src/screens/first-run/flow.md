@@ -9,7 +9,8 @@ microphone check and records the marker (`core/first-run`).
 ```text
 FirstRunScreen
   header   English Trainer, StepBars (done / current / upcoming), Skip setup
-  step 1   MicrophoneStep  -> features/microphone-settings MicrophoneCheck
+  step 1   MicrophoneStep  -> features/microphone-settings MicrophoneCheck, then SpeechModelDownload
+                           (only while the speech model is missing; consent first)
   step 2   AiStep          -> features/ai-provider ProviderList, features/gemini-key GeminiKeyList
   step 3   VoiceStep       -> features/voice-settings VoiceList (natural voices, instant preview, speed)
   footer   Back, Continue (hidden on step 1 until the microphone is allowed), Start Talking on step 3

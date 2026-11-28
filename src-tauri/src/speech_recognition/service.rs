@@ -2,13 +2,14 @@ use super::{
     domain::{
         answer_prompt, is_model_file_name, merge_runs, normalize_terms, prompt_from_terms,
         score_recording, sentence_for, status_of, summarize, validate_wav, KeptRecordings,
-        SettingsChange, SpeechCheckProgress, SpeechCheckResults, SpeechCheckStatus,
-        SpeechEngineStatus, SpeechModels, SpeechSettings, Transcript, PREFERRED_MODEL_FILE,
+        ModelDownloadOffer, ModelDownloadProgress, SettingsChange, SpeechCheckProgress,
+        SpeechCheckResults, SpeechCheckStatus, SpeechEngineStatus, SpeechModels, SpeechSettings,
+        Transcript, PREFERRED_MODEL_FILE, PREFERRED_MODEL_SOURCE,
     },
     error::SpeechRecognitionError,
     ports::{
-        GlossaryStore, ModelCatalog, OneOffTranscriber, PortResult, PracticeConversation,
-        RecordingVault, SettingsStore, SpeechCheckStore, TranscriptionEngine,
+        GlossaryStore, ModelCatalog, ModelDownloader, OneOffTranscriber, PortResult,
+        PracticeConversation, RecordingVault, SettingsStore, SpeechCheckStore, TranscriptionEngine,
     },
 };
 use std::{
@@ -29,6 +30,7 @@ pub struct SpeechRecognitionPorts {
     pub glossary: Arc<dyn GlossaryStore>,
     pub conversation: Arc<dyn PracticeConversation>,
     pub models: Arc<dyn ModelCatalog>,
+    pub downloader: Arc<dyn ModelDownloader>,
     pub recordings: Arc<dyn RecordingVault>,
     pub speech_check: Arc<dyn SpeechCheckStore>,
 }
@@ -37,17 +39,19 @@ pub struct SpeechRecognitionPorts {
 pub struct SpeechRecognitionService {
     ports: Arc<SpeechRecognitionPorts>,
     measuring: Arc<AtomicBool>,
+    downloading: Arc<AtomicBool>,
+    cancel_download: Arc<AtomicBool>,
 }
 
-struct MeasuringGuard(Arc<AtomicBool>);
+struct FlagGuard(Arc<AtomicBool>);
 
-impl MeasuringGuard {
+impl FlagGuard {
     fn acquire(flag: &Arc<AtomicBool>) -> Option<Self> {
         (!flag.swap(true, Ordering::AcqRel)).then(|| Self(Arc::clone(flag)))
     }
 }
 
-impl Drop for MeasuringGuard {
+impl Drop for FlagGuard {
     fn drop(&mut self) {
         self.0.store(false, Ordering::Release);
     }
@@ -72,6 +76,8 @@ impl SpeechRecognitionService {
         Self {
             ports: Arc::new(ports),
             measuring: Arc::new(AtomicBool::new(false)),
+            downloading: Arc::new(AtomicBool::new(false)),
+            cancel_download: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -128,6 +134,35 @@ impl SpeechRecognitionService {
             models: self.ports.models.list(),
             override_path: self.ports.models.override_path(),
         }
+    }
+
+    pub fn model_download_offer(&self) -> ModelDownloadOffer {
+        ModelDownloadOffer {
+            file: PREFERRED_MODEL_SOURCE.file.to_string(),
+            size_bytes: PREFERRED_MODEL_SOURCE.size_bytes,
+            is_installed: self.ports.models.is_installed(PREFERRED_MODEL_SOURCE.file),
+        }
+    }
+
+    pub fn is_model_downloading(&self) -> bool {
+        self.downloading.load(Ordering::Acquire)
+    }
+
+    pub fn download_model(
+        &self,
+        mut on_progress: impl FnMut(ModelDownloadProgress),
+    ) -> PortResult<()> {
+        let _guard = FlagGuard::acquire(&self.downloading).ok_or_else(|| {
+            SpeechRecognitionError::Busy("The speech model is already downloading.".into())
+        })?;
+        self.cancel_download.store(false, Ordering::Release);
+        self.ports
+            .downloader
+            .download(&self.cancel_download, &mut on_progress)
+    }
+
+    pub fn cancel_model_download(&self) {
+        self.cancel_download.store(true, Ordering::Release);
     }
 
     pub fn model_path(&self, model_file: &str) -> PathBuf {
@@ -280,7 +315,7 @@ impl SpeechRecognitionService {
             )
         })?;
         self.ports.one_off.ensure_available()?;
-        let _guard = MeasuringGuard::acquire(&self.measuring).ok_or_else(|| {
+        let _guard = FlagGuard::acquire(&self.measuring).ok_or_else(|| {
             SpeechRecognitionError::Busy(
                 "A measurement is already running. Wait for it to finish.".into(),
             )

@@ -2,6 +2,7 @@ import type { ComponentStatus } from '@/core/ipc';
 
 const STATUS_LABELS: Record<ComponentStatus, string> = {
   available: 'Found',
+  downloading: 'Downloading',
   missing: 'Missing',
   unreadable: 'Cannot read',
 };

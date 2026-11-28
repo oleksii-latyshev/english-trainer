@@ -39,11 +39,14 @@ function Findings({ data }: { data: SetupDiagnostics }) {
           recheck.
         </p>
       )}
-      {data.whisper_model.status !== 'available' && (
+      {data.whisper_model.status === 'missing' && (
         <p>
-          Follow the README’s Local transcription setup to install the English model at the path
-          shown above, then recheck.
+          Download the speech model in Settings › Speech recognition, then recheck. You can also
+          place the English model at the path shown above.
         </p>
+      )}
+      {data.whisper_model.status === 'unreadable' && (
+        <p>Check the permissions of the model at the path shown above, then recheck.</p>
       )}
       {data.claude_cli.status !== 'available' && (
         <p>
