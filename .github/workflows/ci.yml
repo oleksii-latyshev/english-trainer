@@ -65,6 +65,33 @@ jobs:
       - name: Check Rust formatting, Clippy, and tests
         run: sh ./scripts/check-rust.sh
 
+  rust-windows:
+    name: Rust on Windows (Check, Clippy, Test)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Rust (version and components from rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: src-tauri
+
+      - name: Check
+        run: cargo check --locked --all-targets
+
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --locked --lib
+
   e2e:
     name: Browser flows (Playwright)
     runs-on: macos-26

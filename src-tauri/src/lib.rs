@@ -10,6 +10,7 @@ mod learning;
 mod mistakes;
 mod persistence;
 mod personal_profile;
+mod platform;
 mod providers;
 mod setup;
 mod speaking_activity;
@@ -27,18 +28,22 @@ pub use providers::{ConversationContext, ConversationTurn, ProviderError};
 
 use tauri::Manager;
 
-fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
+fn apple_helper_binary(app: &tauri::App, name: &str) -> Option<std::path::PathBuf> {
+    if cfg!(not(target_os = "macos")) {
+        return None;
+    }
     app.path()
         .resource_dir()
         .ok()
-        .map(|path| path.join("binaries/apple-conversation"))
+        .map(|path| path.join("binaries").join(name))
+}
+
+fn apple_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
+    apple_helper_binary(app, "apple-conversation")
 }
 
 fn apple_translation_binary(app: &tauri::App) -> Option<std::path::PathBuf> {
-    app.path()
-        .resource_dir()
-        .ok()
-        .map(|path| path.join("binaries/apple-translation"))
+    apple_helper_binary(app, "apple-translation")
 }
 
 fn warm_up_translation(

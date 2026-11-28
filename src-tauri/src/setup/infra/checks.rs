@@ -81,7 +81,7 @@ pub fn check_server(path: Option<PathBuf>, server: &ServerStatus) -> ComponentCh
     use crate::speech_recognition::ServerState;
     let mut check = check_cli(path);
     check.message = match (&check.status, &server.failure, server.state) {
-        (ComponentStatus::Missing, _, _) => "whisper-server was not found, so answers are transcribed by one-off whisper-cli runs, which reload the model every time. Install whisper.cpp with Homebrew to keep it loaded.".into(),
+        (ComponentStatus::Missing, _, _) => format!("whisper-server was not found, so answers are transcribed by one-off whisper-cli runs, which reload the model every time. {}", crate::platform::WHISPER_SERVER_INSTALL_HINT),
         (ComponentStatus::Unreadable, _, _) => "whisper-server cannot be run, so answers are transcribed by one-off whisper-cli runs. Check its permissions.".into(),
         (_, Some(reason), _) => format!("whisper-server could not be used ({reason}); answers are transcribed by one-off whisper-cli runs."),
         (_, None, ServerState::Ready) => "Running with the model kept loaded.".into(),

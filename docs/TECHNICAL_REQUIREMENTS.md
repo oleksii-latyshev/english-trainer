@@ -11,6 +11,7 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 | Desktop | Tauri v2, Rust stable, SQLite via `rusqlite` (bundled). |
 | Frontend | React 19, TypeScript (strict), Vite, Bun, Tailwind CSS v4, Base UI (own kit in `src/shared/ui`), TanStack Router, Lucide. |
 | Quality | Biome, `tsc --noEmit`, `bun test`, rustfmt, Clippy with warnings as errors, `cargo test`; run by Lefthook pre-commit and GitHub Actions CI. |
+| Portability | The Rust core compiles and its unit tests pass on Windows (CI job `rust-windows`). Process control, `claude`/`agy` lookup (`.exe`/`.cmd`, `%USERPROFILE%\.local\bin`, `%APPDATA%\npm`) and the home directory go through `src/platform`. Off macOS the Apple conversation and translation helpers report "not available on this computer" and Gemini is the conversation provider. Whisper and the natural voice are not bundled on Windows yet. |
 | Packaging | `bun run build:desktop` → ad-hoc signed `.app` and DMG; the Apple helpers are compiled at build time and bundled. |
 
 ## 2. Audio capture

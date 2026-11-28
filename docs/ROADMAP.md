@@ -95,5 +95,5 @@ Ordered by expected value; start only with real usage data.
 | Speech | Local Whisper (`small.en` when installed). Local natural voice (Supertonic 3) with macOS system voices as fallback; it came before the avatar at the learner's request. |
 | Gemini key | Pasted in Settings, encrypted file bound to this Mac (no Keychain prompt); `ENG_TRAINER_GEMINI_API_KEY` for development. Free-tier data use is stated next to the field. |
 | Usage-review / mastery streak | Frozen: kept working, not extended. Exception (owner, 2026-11-27): it runs after the session on answers 1, 2 and those after a steered question (TR §9.2). |
-| Portability | macOS only for now; core code must not block Windows (providers behind traits, no macOS APIs outside adapters). |
+| Portability | macOS is the shipped target. The Rust core builds and tests on Windows (CI); Apple helpers report unavailable there. Core code keeps providers behind traits and no macOS APIs outside adapters. |
 | Not planned | Streaks, guilt mechanics, badges, five-dimension benchmark, separate Interview/Drills/Progress modes before the MVP. |

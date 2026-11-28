@@ -44,7 +44,7 @@ pub(crate) fn resolve_binary() -> Option<PathBuf> {
     find_binary(
         std::env::var_os("ENG_TRAINER_CLAUDE_BIN"),
         std::env::var_os("PATH"),
-        std::env::var_os("HOME").map(PathBuf::from),
+        crate::platform::home_dir(),
     )
 }
 
@@ -58,20 +58,12 @@ pub(crate) fn find_binary(
         let configured = PathBuf::from(configured);
         return configured.is_file().then_some(configured);
     }
-    let on_path = path.and_then(|paths| {
-        std::env::split_paths(&paths)
-            .map(|directory| directory.join("claude"))
-            .find(|candidate| candidate.is_file())
-    });
-    on_path.or_else(|| {
-        [
-            home.unwrap_or_default().join(".local/bin/claude"),
-            PathBuf::from("/opt/homebrew/bin/claude"),
-            PathBuf::from("/usr/local/bin/claude"),
-        ]
+    let fallback_dirs = home
+        .map(|home| crate::platform::user_install_dirs(&home))
+        .unwrap_or_default()
         .into_iter()
-        .find(|candidate| candidate.is_file())
-    })
+        .chain(crate::platform::system_install_dirs());
+    crate::platform::find_tool("claude", path, fallback_dirs)
 }
 
 pub(crate) fn unavailable() -> ProviderError {
