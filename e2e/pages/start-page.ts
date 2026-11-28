@@ -14,6 +14,7 @@ export class StartPage {
   readonly thisWeek: Locator;
   readonly warmupCard: Locator;
   readonly usualMistakes: Locator;
+  readonly recentConversations: Locator;
   private readonly continueButton: Locator;
 
   constructor(private readonly page: Page) {
@@ -29,6 +30,7 @@ export class StartPage {
     this.thisWeek = page.getByRole('region', { name: 'This week' });
     this.warmupCard = page.getByRole('region', { name: 'Phrases to review' });
     this.usualMistakes = page.getByRole('region', { name: 'Your usual mistakes' });
+    this.recentConversations = page.getByRole('region', { name: 'Recent conversations' });
     this.topicField = page.getByLabel('What would you like to talk about?');
     this.continueButton = page.getByRole('button', { name: 'Continue', exact: true });
   }
@@ -75,6 +77,14 @@ export class StartPage {
 
   async startTextChat(): Promise<void> {
     await this.page.getByRole('button', { name: 'Start text chat', exact: true }).click();
+  }
+
+  async openRecent(title: string): Promise<void> {
+    await this.recentConversations.getByRole('button', { name: new RegExp(`^${title}`) }).click();
+  }
+
+  async seeAllConversations(): Promise<void> {
+    await this.recentConversations.getByRole('button', { name: 'See all' }).click();
   }
 
   async continueSession(): Promise<void> {

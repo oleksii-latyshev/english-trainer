@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RecentConversations } from '@/features/conversation-history';
 import {
   canStart,
   DEFAULT_SELECTION,
@@ -28,6 +29,8 @@ export function TalkStartScreen({
   onContinue,
   onOpenMemory,
   onOpenMistakes,
+  onOpenConversation,
+  onSeeAllConversations,
 }: TalkStartScreenProps) {
   const [selection, setSelection] = useState<PracticeSelection>(DEFAULT_SELECTION);
   const [warmupFirst, setWarmupFirst] = useState(false);
@@ -66,6 +69,7 @@ export function TalkStartScreen({
           </>
         )}
         <ActivityCard />
+        <RecentConversations onOpen={onOpenConversation} onSeeAll={onSeeAllConversations} />
         {!openSession && (
           <div className="mt-auto flex flex-wrap items-end gap-4">
             <LengthChoice

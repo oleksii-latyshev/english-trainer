@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { App } from '../pages/app';
+import { ConversationsPage } from '../pages/conversations-page';
 import { FirstRunPage } from '../pages/first-run-page';
 import { GrowthPage } from '../pages/growth-page';
 import { MemoryPage } from '../pages/memory-page';
@@ -16,6 +17,7 @@ type Fixtures = {
   tauri: FakeBackend;
   app: App;
   start: StartPage;
+  conversations: ConversationsPage;
   growth: GrowthPage;
   talk: TalkPage;
   wrapup: WrapupPage;
@@ -39,6 +41,9 @@ export const test = base.extend<Fixtures>({
   },
   start: async ({ page }, use) => {
     await use(new StartPage(page));
+  },
+  conversations: async ({ page }, use) => {
+    await use(new ConversationsPage(page));
   },
   growth: async ({ page }, use) => {
     await use(new GrowthPage(page));

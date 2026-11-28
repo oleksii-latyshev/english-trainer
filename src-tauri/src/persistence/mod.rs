@@ -9,6 +9,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 mod ai_settings;
 mod api_usage;
 mod coaching;
+pub(crate) mod finished_sessions;
 mod focus_rule;
 mod habits;
 pub(crate) use coaching::{CoachingProgress, UncoachedAnswer};

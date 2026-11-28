@@ -19,7 +19,7 @@ export const NAVIGATION: NavEntry[] = [
     path: '/',
     label: 'Talk',
     icon: MessageCircle,
-    matches: ['/', '/conversation', '/summary'],
+    matches: ['/', '/conversation', '/summary', '/conversations'],
   },
   { path: '/mistakes', label: 'Mistakes', icon: Sparkles, matches: ['/mistakes'], due: 'mistakes' },
   {

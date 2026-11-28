@@ -4,6 +4,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
+import { ConversationRoute, ConversationsRoute } from '@/app/routes/conversations';
 import { FirstRunRoute } from '@/app/routes/first-run';
 import { GrowthRoute } from '@/app/routes/growth';
 import { MemoryRoute } from '@/app/routes/memory';
@@ -93,6 +94,18 @@ const summaryRoute = createRoute({
   component: WrapUpRoute,
 });
 
+const conversationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/conversations',
+  component: ConversationsRoute,
+});
+
+const reopenedConversationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/conversations/$sessionId',
+  component: ConversationRoute,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   conversationRoute,
@@ -106,6 +119,8 @@ const routeTree = rootRoute.addChildren([
   growthRoute,
   firstRunRoute,
   summaryRoute,
+  conversationsRoute,
+  reopenedConversationRoute,
 ]);
 
 const memoryHistory = createMemoryHistory({

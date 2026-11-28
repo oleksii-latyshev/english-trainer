@@ -11,6 +11,7 @@ pub(crate) mod coaching_queue;
 mod dialogue;
 mod feedback;
 mod help_use;
+mod history;
 mod interruption;
 mod lifecycle;
 mod planner;

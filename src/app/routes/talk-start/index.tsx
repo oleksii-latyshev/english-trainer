@@ -88,7 +88,11 @@ export function TalkStartRoute() {
         startOrResumePractice(registry, () => void navigate({ to: '/conversation' }))
       }
       onOpenMemory={() => void navigate({ to: '/memory' })}
+      onOpenConversation={(sessionId) =>
+        void navigate({ to: '/conversations/$sessionId', params: { sessionId: String(sessionId) } })
+      }
       onOpenMistakes={() => void navigate({ to: '/mistakes' })}
+      onSeeAllConversations={() => void navigate({ to: '/conversations' })}
       onStart={startPractice}
       onStartWarmup={(options) => {
         review.begin('warmup');

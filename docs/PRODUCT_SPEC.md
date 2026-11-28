@@ -166,6 +166,11 @@ At the end of a session:
 - an answer still being checked says so and its card fills in when coaching lands; one that could
   not be checked offers a retry. The conversation never waits for the Debrief;
 - mistakes go to the Mistakes section (§9) as before;
+- **Earlier conversations:** the Talk start screen lists the last five finished conversations
+  (day, topic or first question, number of answers, the rule to practise); **See all** lists every
+  one, newest first. Opening one shows the same wrap-up and Debrief, with Take, Say it again and
+  Practise this rule working as after the conversation; a word already saved from that answer shows
+  as taken. Conversations without answers are not listed;
 - no fluency or level claims.
 
 ## 8. Learning Memory
@@ -267,7 +272,7 @@ Each mistake climbs a ladder; one exercise per mistake per session:
   Mistakes.
 - The wrap-up review stays as it is; each reviewed answer links to its mistake card.
 - The Debrief summary shows a **Rule to practise** block when the conversation broke a grammar rule
-  that has a lesson: the rule broken most, its one-line summary, "N times today · M open", a "Came
+  that has a lesson: the rule broken most, its one-line summary, "N times in this conversation · M open", a "Came
   back" chip when an earlier conversation broke it too, and **Practise this rule**, which starts a
   Mistakes run for that rule and opens it.
 - The sidebar shows how many mistakes are due, like Memory.

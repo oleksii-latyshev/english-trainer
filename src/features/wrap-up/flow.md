@@ -41,6 +41,13 @@ sequenceDiagram
 event. The feature reads the summary when the marker arrives and again on each matching event, so a
 result that lands between registration and the first read is not lost. There is no timer.
 
+## Taken words on reopen
+
+An earlier conversation is read by id with the same `get_session_wrapup` and shows the same cards.
+A word counts as taken when Memory already holds a phrase card from that session and answer with the
+same phrase (`savedKeysAtom`, from `learningMemoryAtom`), so the button reads Taken and no second card
+is created. A take or an undo in this screen overrides what Memory says until the next read.
+
 ## Take a word
 
 `TakeWord` is rendered by the screen beside each word of a Debrief card that Rust offered (at most
