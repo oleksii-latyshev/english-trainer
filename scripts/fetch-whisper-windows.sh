@@ -16,7 +16,7 @@ cache="${WHISPER_DOWNLOAD_CACHE:-$root/src-tauri/resources/.whisper-downloads}"
 
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | cut -d' ' -f1
+    sha256sum "$1" | cut -d' ' -f1 | tr -d '\\'
   else
     shasum -a 256 "$1" | cut -d' ' -f1
   fi
