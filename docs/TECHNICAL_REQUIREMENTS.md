@@ -11,7 +11,8 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 | Desktop | Tauri v2, Rust stable, SQLite via `rusqlite` (bundled). |
 | Frontend | React 19, TypeScript (strict), Vite, Bun, Tailwind CSS v4, Base UI (own kit in `src/shared/ui`), TanStack Router, Lucide. |
 | Quality | Biome, `tsc --noEmit`, `bun test`, rustfmt, Clippy with warnings as errors, `cargo test`; run by Lefthook pre-commit and GitHub Actions CI. |
-| Portability | The Rust core compiles and its unit tests pass on Windows (CI job `rust-windows`). Process control, `claude`/`agy` lookup (`.exe`/`.cmd`, `%USERPROFILE%\.local\bin`, `%APPDATA%\npm`) and the home directory go through `src/platform`. Off macOS the Apple conversation and translation helpers report "not available on this computer" and Gemini is the conversation provider. The natural voice is not bundled on Windows yet; Whisper is (see §3, Windows backend). |
+| Portability | The Rust core compiles and its unit tests pass on Windows (CI job `rust-windows`). Process control, `claude`/`agy` lookup (`.exe`/`.cmd`, `%USERPROFILE%\.localin`, `%APPDATA%
+pm`) and the home directory go through `src/platform`. Off macOS the Apple conversation and translation helpers report "not available on this computer" and Gemini is the conversation provider. Whisper is bundled on Windows (see §3, Windows backend); the natural voice is built there by `scripts/build-voice-windows.sh` (see §4). |
 | Packaging | `bun run build:desktop` → ad-hoc signed `.app` and DMG; the Apple helpers are compiled at build time and bundled. |
 
 ## 2. Audio capture
@@ -114,6 +115,14 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
   process_failed`. WAV frames ≤ 60 s. The inference deadline is 750 ms plus 25 ms per character
   (cap 6 s), after which the helper is killed and recovered. A busy engine never queues. Generated
   audio is never retained or sent anywhere.
+- **Natural voice on Windows (x64):** the same helper (`src-tauri/voice/Speech.cpp`, binary stdin/stdout)
+  is compiled with MSVC against the pinned sherpa-onnx v1.13.8 `win-x64-shared-MD-Release` runtime
+  (SHA-256 checked, bundles onnxruntime) and the same pinned Supertonic model as the Mac. The script
+  `scripts/build-voice-windows.sh` writes `speech.exe`, the DLLs beside it, `model/` and `licenses/` to the
+  git-ignored `src-tauri/resources/natural-voice-windows/`, bundled as `natural-voice/`. CI job
+  `voice-windows.yml` (manual, and on changes to the helper or its scripts) builds it and synthesises a
+  sentence to a WAV with `scripts/smoke-voice.py`. If `speech.exe` is absent or fails, the engine reports
+  `unavailable` and the frontend uses the WebView2 system voice.
 - Each stream freezes voice and rate and plays phrases back to back. Sentences are the unit; a
   sentence is cut only when it is longer than the budget, at a clause boundary (`, ; :` or before
   `and but because so which when`), never leaving a trailing fragment under 16 characters. The first

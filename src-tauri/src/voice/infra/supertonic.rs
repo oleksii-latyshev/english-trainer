@@ -1,4 +1,5 @@
 use super::process::Running;
+use crate::platform::executable_file_name;
 use crate::voice::{domain::SynthesisRequest, error::VoiceError, ports::SpeechEngine};
 use std::{
     path::PathBuf,
@@ -43,7 +44,7 @@ impl SpeechEngine for SupertonicEngine {
         let directory = self
             .directory
             .as_ref()
-            .filter(|path| path.join("speech").is_file());
+            .filter(|path| path.join(executable_file_name("speech")).is_file());
         let Some(directory) = directory else {
             return Ok(false);
         };
