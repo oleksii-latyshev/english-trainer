@@ -14,6 +14,8 @@ mod habits;
 pub(crate) use coaching::{CoachingProgress, UncoachedAnswer};
 mod learning_library;
 mod learning_targets;
+#[cfg(test)]
+pub(crate) use learning_targets::SteeringKind;
 pub(crate) use learning_targets::TargetKey;
 mod mistake_practice;
 mod schema;
@@ -25,7 +27,7 @@ mod translation_settings;
 mod usage_wins;
 use std::path::Path;
 
-pub(crate) const SCHEMA_VERSION: i64 = 26;
+pub(crate) const SCHEMA_VERSION: i64 = 27;
 
 fn stored_turn(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTurn> {
     let provider: Option<String> = row.get(3)?;

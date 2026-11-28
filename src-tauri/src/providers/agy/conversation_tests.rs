@@ -37,6 +37,22 @@ fn prompt_treats_due_memory_as_data_and_invites_natural_reuse() {
     assert!(validate_context(&request).is_ok());
 }
 
+#[test]
+fn prompt_asks_for_a_question_that_needs_a_rule_target_without_naming_it() {
+    let mut request = context("I went there.");
+    request
+        .learning_targets
+        .push(crate::providers::LearningPromptTarget {
+            kind: "rule".into(),
+            cue: "Past Simple vs Present Perfect".into(),
+            target: "Finished past time or experience so far.".into(),
+        });
+    let prompt = make_prompt(&request, false);
+    assert!(prompt.contains("If the target kind is \"rule\""));
+    assert!(prompt.contains("never name the rule and never mention grammar"));
+    assert!(prompt.contains("Past Simple vs Present Perfect"));
+}
+
 struct TestDirectory(PathBuf);
 
 impl TestDirectory {

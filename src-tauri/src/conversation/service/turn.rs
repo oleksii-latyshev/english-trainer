@@ -78,9 +78,11 @@ impl SessionStore {
             .ok_or(ConversationError::InvalidSession)?;
         let scripted = scripted_reply(session)?;
         let steering = if !session.is_mistake_practice && is_steering_turn(session.turns.len()) {
-            state
-                .database
-                .next_learning_target(session_id, &session.steered_targets)?
+            state.database.next_learning_target(
+                session_id,
+                &session.steered_targets,
+                session.turns.len() >= STEERING_INTERVAL,
+            )?
         } else {
             None
         };

@@ -90,7 +90,10 @@ fn mistake_needs_two_observations_for_learning_surfaces_and_replacement_removes_
 
     let second = db.create_session("Second question?").unwrap();
     db.save_turn(second, 1, &turn).unwrap();
-    assert!(db.next_learning_target(second, &[]).unwrap().is_none());
+    assert!(db
+        .next_learning_target(second, &[], false)
+        .unwrap()
+        .is_none());
     db.save_turn_feedback(second, 1, &original).unwrap();
     let repeated = db.mistake_by_key("grammar:i work there").unwrap().unwrap();
     assert_eq!(repeated.times_seen, 2);
@@ -100,7 +103,10 @@ fn mistake_needs_two_observations_for_learning_surfaces_and_replacement_removes_
     let memory = db.get_learning_memory().unwrap();
     assert_eq!(memory.mistakes.len(), 1);
     assert!(memory.mistakes[0].is_due);
-    let target = db.next_learning_target(second, &[]).unwrap().unwrap();
+    let target = db
+        .next_learning_target(second, &[], false)
+        .unwrap()
+        .unwrap();
     assert_eq!(target.prompt.kind, "mistake");
     assert!(review_runs::start_run(db.connection_mut(), false)
         .unwrap()
@@ -114,7 +120,10 @@ fn mistake_needs_two_observations_for_learning_surfaces_and_replacement_removes_
         .execute("UPDATE mistakes SET next_review_at = 0", [])
         .unwrap();
     assert!(db.get_learning_memory().unwrap().mistakes.is_empty());
-    assert!(db.next_learning_target(second, &[]).unwrap().is_none());
+    assert!(db
+        .next_learning_target(second, &[], false)
+        .unwrap()
+        .is_none());
     assert!(review_runs::start_run(db.connection_mut(), false)
         .unwrap()
         .is_none());

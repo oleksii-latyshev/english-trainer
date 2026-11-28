@@ -322,18 +322,21 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
         )
         .unwrap();
 
-    let phrase = db.next_learning_target(second, &[]).unwrap().unwrap();
+    let phrase = db
+        .next_learning_target(second, &[], false)
+        .unwrap()
+        .unwrap();
     assert_eq!(phrase.prompt.kind, "phrase");
     assert_eq!(phrase.prompt.target, "The main trade-off was");
 
     let mistake = db
-        .next_learning_target(second, &[phrase.key])
+        .next_learning_target(second, &[phrase.key], false)
         .unwrap()
         .unwrap();
     assert_eq!(mistake.prompt.kind, "mistake");
     assert_eq!(mistake.prompt.target, "I work there");
     assert!(db
-        .next_learning_target(second, &[phrase.key, mistake.key])
+        .next_learning_target(second, &[phrase.key, mistake.key], false)
         .unwrap()
         .is_none());
 
@@ -343,7 +346,10 @@ fn due_target_selection_excludes_future_archived_and_current_session_items() {
             ["word ".repeat(50)],
         )
         .unwrap();
-    let bounded = db.next_learning_target(second, &[]).unwrap().unwrap();
+    let bounded = db
+        .next_learning_target(second, &[], false)
+        .unwrap()
+        .unwrap();
     assert_eq!(bounded.prompt.cue.chars().count(), 160);
 }
 

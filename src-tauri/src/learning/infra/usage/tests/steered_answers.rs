@@ -34,7 +34,7 @@ fn save_steering(db: &mut SessionDatabase, sid: u64, sequence: usize, phrase_id:
         &turn(&format!("Answer {sequence}."), "Question?"),
         "voice",
         (None, None),
-        Some((LearningItemType::Phrase, phrase_id)),
+        Some((crate::persistence::SteeringKind::Phrase, phrase_id)),
     )
     .unwrap();
 }
@@ -232,4 +232,35 @@ fn the_steering_link_is_saved_with_the_turn_and_goes_with_it() {
     session.db.delete_turn(session.sid, 1).unwrap();
 
     assert_eq!(linked(&session, 1), None);
+}
+
+#[test]
+fn a_steered_rule_is_saved_but_the_usage_review_never_assesses_it() {
+    let mut session = session_with_four_taken_phrases();
+    let sid = session.sid;
+    let db = &mut session.db;
+    save(db, sid, 1, "Original.", "voice");
+    save(db, sid, 2, "Second answer, long enough.", "voice");
+    save(db, sid, 3, "Third answer.", "voice");
+    db.save_turn_with_steering(
+        sid,
+        4,
+        &turn("Fourth answer.", "Question?"),
+        "voice",
+        (None, None),
+        Some((crate::persistence::SteeringKind::Rule, 7)),
+    )
+    .unwrap();
+    save(db, sid, 5, "I save time and take care.", "voice");
+
+    let connection = session.db.connection();
+    assert_eq!(
+        candidates::steered_target_on(connection, sid, 5).unwrap(),
+        None
+    );
+    assert!(!candidates::is_reviewable_answer_on(connection, sid, 5).unwrap());
+    assert!(!candidates::reviewable_sequences_on(connection, sid)
+        .unwrap()
+        .contains(&5));
+    assert!(candidates_of(&session, 5).is_empty());
 }
