@@ -21,6 +21,7 @@ struct RawTurn {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 impl super::super::ConversationEngine for AgyEngine {
     fn generate_turn(
         &self,
