@@ -8,9 +8,12 @@ pub enum DockIcon {
     Light,
 }
 
+#[cfg(any(target_os = "macos", test))]
 const DARK_ICON_PNG: &[u8] = include_bytes!("../icons/dock-dark.png");
+#[cfg(any(target_os = "macos", test))]
 const LIGHT_ICON_PNG: &[u8] = include_bytes!("../icons/dock-light.png");
 
+#[cfg(any(target_os = "macos", test))]
 const EVA_STAGE_PNGS: [&[u8]; 6] = [
     include_bytes!("../icons/dock-eva-0.png"),
     include_bytes!("../icons/dock-eva-1.png"),
@@ -20,6 +23,7 @@ const EVA_STAGE_PNGS: [&[u8]; 6] = [
     include_bytes!("../icons/dock-eva-5.png"),
 ];
 
+#[cfg(any(target_os = "macos", test))]
 impl DockIcon {
     fn png(self, stage: Option<u8>) -> Option<&'static [u8]> {
         match self {
