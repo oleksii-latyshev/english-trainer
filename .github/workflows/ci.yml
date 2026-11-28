@@ -83,9 +83,6 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - name: Fetch whisper.cpp Windows builds
-        run: bash ../scripts/fetch-whisper-windows.sh
-
       - name: Check
         run: cargo check --locked --all-targets
 

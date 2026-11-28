@@ -34,7 +34,8 @@ src-tauri/binaries/apple-translation
 src-tauri/binaries/natural-voice/*
 
 # Fetched by scripts/fetch-whisper-windows.sh; bundled on Windows.
-src-tauri/resources/whisper-windows/
+src-tauri/resources/whisper-windows/*
+!src-tauri/resources/whisper-windows/.gitkeep
 src-tauri/resources/.whisper-downloads/
 !src-tauri/binaries/natural-voice/.keep
 

@@ -73,8 +73,8 @@ Contracts the code must keep. Product behaviour: [PRODUCT_SPEC.md](PRODUCT_SPEC.
 - **Windows backend:** the Windows bundle carries two official whisper.cpp builds under
   `<app folder>\whisper\`: `cuda\` (release `b5907`, `whisper-bin-win-cuda-12.4.0-x64.zip`, cuBLAS with its
   CUDA runtime DLLs) and `cpu\` (`whisper-bin-x64.zip`). `scripts/fetch-whisper-windows.sh` downloads them into
-  `src-tauri/resources/whisper-windows`, checks pinned SHA-256 sums and is run at build time and by the
-  `rust-windows` CI job; the binaries are not committed. Lookup order (`speech_recognition/infra/binaries.rs`):
+  `src-tauri/resources/whisper-windows`, checks pinned SHA-256 sums and is run by the
+  Windows installer build; the binaries are not committed, and a `.gitkeep` keeps the folder for `cargo check`. Lookup order (`speech_recognition/infra/binaries.rs`):
   the `ENG_TRAINER_WHISPER_*_BIN` override, then `whisper\cuda`, then `whisper\cpu`, then `PATH` through
   `platform::find_tool`; macOS keeps `PATH` and Homebrew. The server tries the builds in that order: a CUDA build
   that exits, does not load the model in time, or logs that it found no GPU or CUDA device is stopped and
