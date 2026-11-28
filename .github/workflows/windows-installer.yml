@@ -56,7 +56,9 @@ jobs:
         run: sh ./scripts/build-voice-windows.sh
 
       - name: Build the installer
-        run: bunx tauri build --bundles nsis --ci -- --locked
+        run: |
+          rm -f /usr/bin/link.exe
+          bunx tauri build --bundles nsis --ci -- --locked
 
       - name: Upload the installer
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
