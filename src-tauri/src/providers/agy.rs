@@ -11,6 +11,7 @@ pub(crate) mod test_support;
 pub(crate) mod usage;
 
 #[cfg(test)]
+#[cfg(unix)]
 mod model_pinning_tests;
 
 use super::{ProviderError, UsageBatchAnswer, UsageBatchResult};

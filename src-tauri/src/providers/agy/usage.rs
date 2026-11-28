@@ -253,5 +253,6 @@ pub(crate) fn validate_usage_response(
 mod tests;
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "usage_cli_tests.rs"]
 mod cli_tests;

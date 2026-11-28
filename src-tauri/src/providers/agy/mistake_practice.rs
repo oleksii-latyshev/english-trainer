@@ -151,5 +151,6 @@ fn invalid_output() -> ProviderError {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "mistake_practice_tests.rs"]
 mod tests;

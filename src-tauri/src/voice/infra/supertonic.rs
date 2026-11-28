@@ -75,11 +75,11 @@ impl SpeechEngine for SupertonicEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::AtomicUsize;
 
     #[cfg(unix)]
     fn fake_helper(stalls: bool) -> (SupertonicEngine, PathBuf) {
         use std::os::unix::fs::PermissionsExt;
+        use std::sync::atomic::AtomicUsize;
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let path = std::env::temp_dir().join(format!(
             "english-trainer-voice-test-{}-{}",

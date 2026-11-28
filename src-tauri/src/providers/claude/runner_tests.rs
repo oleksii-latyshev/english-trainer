@@ -1,11 +1,26 @@
-use super::super::agy::test_support::{recorded_calls, recording_cli, TestDirectory};
-use super::super::{CoachingAnswer, ProviderErrorCode};
+use super::super::agy::test_support::TestDirectory;
+#[cfg(unix)]
+use super::super::agy::test_support::{recorded_calls, recording_cli};
+#[cfg(unix)]
+use super::super::CoachingAnswer;
+use super::super::ProviderErrorCode;
+#[cfg(unix)]
 use super::coaching::coach_answers_with;
-use super::runner::{find_binary, parse_envelope, run_json, CLAUDE_MODEL};
+#[cfg(unix)]
+use super::runner::CLAUDE_MODEL;
+use super::runner::{find_binary, parse_envelope, run_json};
 use serde_json::json;
 use std::{fs, time::Duration};
 
 const SUCCESS: &str = r#"{"type":"result","subtype":"success","is_error":false,"duration_ms":1800,"result":"","structured_output":{"answers":[]},"total_cost_usd":0.01}"#;
+
+fn claude_file() -> &'static str {
+    if cfg!(windows) {
+        "claude.exe"
+    } else {
+        "claude"
+    }
+}
 
 fn code(output: &str) -> ProviderErrorCode {
     parse_envelope(output).unwrap_err().code
@@ -139,6 +154,7 @@ fn coaching_validates_the_structured_answers_like_the_legacy_provider() {
     );
 }
 
+#[cfg(unix)]
 #[test]
 fn an_unreadable_coaching_payload_is_invalid_output() {
     let dir = TestDirectory::new();
@@ -163,7 +179,7 @@ fn the_configured_binary_wins_and_must_exist() {
     fs::write(&configured, "").unwrap();
     let elsewhere = dir.path().join("bin");
     fs::create_dir(&elsewhere).unwrap();
-    fs::write(elsewhere.join("claude"), "").unwrap();
+    fs::write(elsewhere.join(claude_file()), "").unwrap();
 
     let found = find_binary(
         Some(configured.clone().into_os_string()),
@@ -185,22 +201,24 @@ fn the_path_is_searched_before_the_fixed_install_folders() {
     let dir = TestDirectory::new();
     let on_path = dir.path().join("bin");
     fs::create_dir(&on_path).unwrap();
-    fs::write(on_path.join("claude"), "").unwrap();
+    fs::write(on_path.join(claude_file()), "").unwrap();
     let home = dir.path().join("home");
-    fs::create_dir_all(home.join(".local/bin")).unwrap();
-    fs::write(home.join(".local/bin/claude"), "").unwrap();
+    let install = home.join(".local").join("bin");
+    fs::create_dir_all(&install).unwrap();
+    fs::write(install.join(claude_file()), "").unwrap();
 
     let found = find_binary(None, Some(on_path.clone().into_os_string()), Some(home));
-    assert_eq!(found, Some(on_path.join("claude")));
+    assert_eq!(found, Some(on_path.join(claude_file())));
 }
 
 #[test]
 fn the_home_install_folder_is_used_when_the_path_is_minimal() {
     let dir = TestDirectory::new();
     let home = dir.path().join("home");
-    fs::create_dir_all(home.join(".local/bin")).unwrap();
-    fs::write(home.join(".local/bin/claude"), "").unwrap();
+    let install = home.join(".local").join("bin");
+    fs::create_dir_all(&install).unwrap();
+    fs::write(install.join(claude_file()), "").unwrap();
 
-    let found = find_binary(None, Some("/usr/bin:/bin".into()), Some(home.clone()));
-    assert_eq!(found, Some(home.join(".local/bin/claude")));
+    let found = find_binary(None, Some(std::ffi::OsString::new()), Some(home.clone()));
+    assert_eq!(found, Some(install.join(claude_file())));
 }

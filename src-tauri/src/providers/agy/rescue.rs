@@ -144,5 +144,6 @@ fn rescue_error(code: ProviderErrorCode, message: &str) -> ProviderError {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "rescue_tests.rs"]
 mod tests;

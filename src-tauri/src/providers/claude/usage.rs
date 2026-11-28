@@ -152,5 +152,6 @@ fn batch_schema() -> String {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "usage_tests.rs"]
 mod tests;

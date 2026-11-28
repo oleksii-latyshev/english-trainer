@@ -237,15 +237,10 @@ impl WhisperServer {
         else {
             return;
         };
-        let command = Command::new("ps")
-            .args(["-p", &pid.to_string(), "-o", "command="])
-            .output();
-        let is_whisper_server = command
-            .ok()
-            .map(|output| String::from_utf8_lossy(&output.stdout).contains("whisper-server"))
-            .unwrap_or(false);
+        let is_whisper_server = crate::platform::command_line_of(pid)
+            .is_some_and(|command_line| command_line.contains("whisper-server"));
         if is_whisper_server {
-            ignore_process_already_gone(Command::new("kill").arg(pid.to_string()).status());
+            ignore_process_already_gone(crate::platform::terminate(pid));
         }
         ignore_already_removed(fs::remove_file(path));
     }
@@ -313,11 +308,13 @@ impl WhisperServer {
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub fn pid(&self) -> Option<u32> {
         lock(&self.inner).running.as_ref().map(|run| run.child.id())
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub fn kill_child(&self) {
         let mut inner = lock(&self.inner);
         if let Some(run) = inner.running.as_mut() {

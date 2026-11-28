@@ -11,6 +11,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "service_tests.rs"]
 mod tests;
 
@@ -95,16 +96,17 @@ impl TranslationService {
         validate_explanation(explanation, request)
     }
 
+    #[cfg(any(target_os = "macos", test))]
     fn ensure_available(&self) -> Result<(), TranslationError> {
-        #[cfg(not(any(target_os = "macos", test)))]
-        {
-            return Err(TranslationError::new(
-                TranslationErrorCode::Unavailable,
-                "Phrase translation is available in the macOS app. Open this feature on a supported Mac.",
-            ));
-        }
-        #[cfg(any(target_os = "macos", test))]
         Ok(())
+    }
+
+    #[cfg(not(any(target_os = "macos", test)))]
+    fn ensure_available(&self) -> Result<(), TranslationError> {
+        Err(TranslationError::new(
+            TranslationErrorCode::Unavailable,
+            "Phrase translation is not available on this computer yet.",
+        ))
     }
 
     fn invoke(

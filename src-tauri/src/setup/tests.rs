@@ -70,6 +70,7 @@ fn reports_missing_and_non_file_components() {
     ));
 }
 
+#[cfg(unix)]
 #[test]
 fn reports_empty_and_unreadable_models() {
     let temp = TempDir::new();
@@ -89,6 +90,7 @@ fn reports_empty_and_unreadable_models() {
     ));
 }
 
+#[cfg(unix)]
 #[test]
 fn reports_non_executable_and_available_cli_files() {
     let temp = TempDir::new();

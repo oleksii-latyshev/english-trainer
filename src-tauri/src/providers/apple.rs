@@ -70,6 +70,13 @@ impl Drop for Running {
     }
 }
 
+#[cfg(target_os = "macos")]
+const HELPER_MISSING_MESSAGE: &str =
+    "The bundled Apple conversation helper was not found. Reinstall the app or choose Gemini.";
+#[cfg(not(target_os = "macos"))]
+const HELPER_MISSING_MESSAGE: &str =
+    "Apple Foundation Models are not available on this computer. Choose Gemini.";
+
 /// Handle to the lazily started helper; cheap to clone, one request at a time.
 #[derive(Clone)]
 pub struct AppleHelper {
@@ -94,6 +101,7 @@ impl AppleHelper {
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub(super) fn generate_turn(
         &self,
         context: &ConversationContext,
@@ -203,10 +211,7 @@ impl AppleHelper {
             .as_ref()
             .filter(|binary| binary.is_file())
             .ok_or_else(|| {
-                ProviderError::new(
-                    ProviderErrorCode::Unavailable,
-                    "The bundled Apple conversation helper was not found. Reinstall the app or choose Gemini.",
-                )
+                ProviderError::new(ProviderErrorCode::Unavailable, HELPER_MISSING_MESSAGE)
             })?;
         let mut child = Command::new(binary)
             .stdin(Stdio::piped())

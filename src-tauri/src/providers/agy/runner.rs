@@ -31,21 +31,12 @@ pub(super) fn resolve_binary() -> Option<PathBuf> {
         let path = PathBuf::from(configured);
         return path.is_file().then_some(path);
     }
-    let candidates = [
-        PathBuf::from("/opt/homebrew/bin/agy"),
-        PathBuf::from("/usr/local/bin/agy"),
-        std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .unwrap_or_default()
-            .join(".local/bin/agy"),
-    ];
-    std::env::var_os("PATH")
-        .and_then(|paths| {
-            std::env::split_paths(&paths)
-                .map(|directory| directory.join("agy"))
-                .find(|path| path.is_file())
-        })
-        .or_else(|| candidates.into_iter().find(|path| path.is_file()))
+    let fallback_dirs = crate::platform::system_install_dirs().into_iter().chain(
+        crate::platform::home_dir()
+            .map(|home| crate::platform::user_install_dirs(&home))
+            .unwrap_or_default(),
+    );
+    crate::platform::find_tool("agy", std::env::var_os("PATH"), fallback_dirs)
 }
 
 /// How one Antigravity call runs. The model is required, never optional: a call without one would

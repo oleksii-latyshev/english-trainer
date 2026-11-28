@@ -418,5 +418,6 @@ fn validate_mistake(mistake: RawMistake, transcript: &str) -> Option<FocusFeedba
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "coaching_tests.rs"]
 mod tests;

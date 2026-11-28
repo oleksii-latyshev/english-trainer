@@ -10,6 +10,7 @@ mod whisper_cli;
 mod whisper_engine;
 mod whisper_server;
 #[cfg(test)]
+#[cfg(unix)]
 mod whisper_server_tests;
 
 pub use binaries::{resolve_server_binary, resolve_whisper_binary};

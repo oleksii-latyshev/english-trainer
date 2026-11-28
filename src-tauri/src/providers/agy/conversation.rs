@@ -21,6 +21,7 @@ struct RawTurn {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 impl super::super::ConversationEngine for AgyEngine {
     fn generate_turn(
         &self,
@@ -215,6 +216,7 @@ fn parse_envelope(output: &str) -> Result<RawTurn, ReplyStage> {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 pub(crate) fn parse_structured_turn(output: &str) -> Result<ConversationTurn, ProviderError> {
     serde_json::from_str(output)
         .map_err(|_| ReplyStage::Schema)
@@ -281,6 +283,7 @@ fn validate_plain_text(
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "conversation_tests.rs"]
 mod tests;
 

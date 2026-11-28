@@ -51,6 +51,7 @@ pub(crate) fn recording_cli(dir: &TestDirectory, body: &str) -> PathBuf {
 }
 
 /// The recorded calls, each as its list of arguments.
+#[cfg(unix)]
 pub(crate) fn recorded_calls(dir: &TestDirectory) -> Vec<Vec<String>> {
     fs::read_to_string(dir.path().join("calls.log"))
         .unwrap_or_default()
