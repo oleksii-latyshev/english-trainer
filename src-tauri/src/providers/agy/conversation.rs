@@ -215,6 +215,7 @@ fn parse_envelope(output: &str) -> Result<RawTurn, ReplyStage> {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 pub(crate) fn parse_structured_turn(output: &str) -> Result<ConversationTurn, ProviderError> {
     serde_json::from_str(output)
         .map_err(|_| ReplyStage::Schema)

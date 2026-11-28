@@ -308,11 +308,13 @@ impl WhisperServer {
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub fn pid(&self) -> Option<u32> {
         lock(&self.inner).running.as_ref().map(|run| run.child.id())
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub fn kill_child(&self) {
         let mut inner = lock(&self.inner);
         if let Some(run) = inner.running.as_mut() {

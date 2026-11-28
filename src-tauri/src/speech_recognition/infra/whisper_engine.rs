@@ -99,6 +99,7 @@ impl WhisperEngine {
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub(super) fn server(&self) -> &WhisperServer {
         &self.server
     }

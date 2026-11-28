@@ -167,6 +167,7 @@ fn has_execute_permission(metadata: &fs::Metadata) -> bool {
     }
     #[cfg(not(unix))]
     {
+        let _ = metadata;
         true
     }
 }

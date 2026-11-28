@@ -1,7 +1,10 @@
 use super::super::agy::test_support::TestDirectory;
 #[cfg(unix)]
 use super::super::agy::test_support::{recorded_calls, recording_cli};
-use super::super::{CoachingAnswer, ProviderErrorCode};
+#[cfg(unix)]
+use super::super::CoachingAnswer;
+use super::super::ProviderErrorCode;
+#[cfg(unix)]
 use super::coaching::coach_answers_with;
 #[cfg(unix)]
 use super::runner::CLAUDE_MODEL;

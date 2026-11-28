@@ -101,6 +101,7 @@ impl AppleHelper {
     }
 
     #[cfg(test)]
+    #[cfg(unix)]
     pub(super) fn generate_turn(
         &self,
         context: &ConversationContext,

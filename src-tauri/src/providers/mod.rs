@@ -67,6 +67,7 @@ pub enum ReplyStreamEvent {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 pub fn generate_configured_turn(
     context: &ConversationContext,
     settings: &AiSettings,
@@ -161,6 +162,7 @@ fn elapsed_ms(started_at: Instant) -> u64 {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 pub trait ConversationEngine: Send + Sync {
     fn generate_turn(
         &self,
