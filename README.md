@@ -53,6 +53,22 @@ bun run dev
 
 Speech model, AI keys, checks and building the app: [`docs/SETUP.md`](docs/SETUP.md).
 
+## Windows
+
+An unsigned installer is built by the [Windows installer workflow](.github/workflows/windows-installer.yml)
+on every `v*` tag and on demand.
+
+1. Open the workflow run in GitHub Actions, download the `english-trainer-windows-installer` artifact
+   and run the `.exe`. SmartScreen warns about an unknown publisher: choose **More info → Run anyway**.
+2. Create a Gemini API key and paste it in Settings.
+3. Install Claude Code with its **native installer** and log in. The npm package starts through
+   `claude.cmd`, which passes long prompts badly.
+4. Speech recognition uses CUDA when an NVIDIA driver is present and falls back to the CPU otherwise.
+   The speech model (465 MB) is downloaded in the app: Settings › Speech recognition and the first-run
+   microphone step both offer **Download**.
+
+Data lives in `%APPDATA%\com.user.english-trainer` and is separate from the Mac.
+
 ## Documentation
 
 | | |

@@ -1,0 +1,68 @@
+name: Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installer:
+    name: Build the unsigned NSIS installer (Windows x64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup Rust (version and components from rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: src-tauri
+
+      - name: Set up the Visual Studio developer environment
+        uses: ilammy/msvc-dev-cmd@a102174a2b586eec2ea151a69e6fd14404a8ce7c # v1.13.0
+
+      - name: Cache the whisper downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/whisper-downloads
+          key: whisper-downloads-${{ hashFiles('scripts/fetch-whisper-windows.sh') }}
+
+      - name: Fetch whisper.cpp (CUDA and CPU)
+        env:
+          WHISPER_DOWNLOAD_CACHE: ${{ runner.temp }}/whisper-downloads
+        run: sh ./scripts/fetch-whisper-windows.sh
+
+      - name: Build the speech helper
+        run: sh ./scripts/build-voice-windows.sh
+
+      - name: Build the installer
+        run: |
+          rm -f /usr/bin/link.exe
+          bunx tauri build --bundles nsis --ci -- --locked
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: english-trainer-windows-installer
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error

@@ -79,7 +79,8 @@ Ordered by expected value; start only with real usage data.
 5. **Eva grows further** — a **garden** where a plant in full bloom moves and Eva starts a new
    seed, **unlockable** leaf and bloom colours, leaves that **light up** at the moment of sunshine,
    and drops from quick questions asked in the menu bar.
-6. **Windows build** — Gemini as the provider; needs a Windows CI job and installer.
+6. **Windows build** — built: an unsigned NSIS installer from the `windows-installer` workflow (Gemini,
+   Claude Code native install, whisper with CUDA and CPU fallback, natural voice). Open: code signing.
 7. **4/3/2 retelling drill.**
 8. **Pronunciation** — shadowing feedback, later phoneme-level scoring as a separate pipeline.
 9. **"Rephrased" evidence** — a Memory tag for when the learner avoided the target wording on
