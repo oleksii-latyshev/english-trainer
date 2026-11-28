@@ -1,5 +1,7 @@
 use super::*;
-use crate::providers::agy::test_support::{recorded_calls, recording_cli, TestDirectory};
+use crate::providers::agy::test_support::TestDirectory;
+#[cfg(unix)]
+use crate::providers::agy::test_support::{recorded_calls, recording_cli};
 use serde_json::json;
 
 fn request() -> ReviewMaterialRequest {

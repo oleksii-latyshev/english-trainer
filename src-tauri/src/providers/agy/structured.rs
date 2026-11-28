@@ -102,5 +102,6 @@ fn json_in_text(text: Option<&str>) -> Result<Value, ProviderError> {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 #[path = "structured_tests.rs"]
 mod tests;
