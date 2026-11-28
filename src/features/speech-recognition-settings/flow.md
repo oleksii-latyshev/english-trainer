@@ -52,6 +52,40 @@ sequenceDiagram
     end
 ```
 
+## Download the speech model
+
+The row appears while `ggml-small.en.bin` is not installed, in Settings and in the first-run
+microphone step. Nothing is requested before the learner agrees.
+
+```mermaid
+sequenceDiagram
+    actor Learner
+    participant Row as ModelDownload
+    participant Atoms as downloadModelAtom, modelDownloadProgressAtom
+    participant Rust as get_speech_model_offer, download_speech_model, cancel_speech_model_download
+
+    Row->>Rust: get_speech_model_offer (file, size, installed)
+    Learner->>Row: Download
+    Row-->>Learner: consent dialog with the size and huggingface.co
+    alt Not now
+        Row-->>Learner: nothing is requested
+    else Download
+        Row->>Atoms: set
+        Atoms->>Rust: download_speech_model with a progress channel
+        Rust-->>Row: downloaded of total bytes
+        alt Cancel
+            Learner->>Row: Cancel
+            Row->>Rust: cancel_speech_model_download
+            Rust-->>Atoms: cancelled, partial file deleted, Download button again
+        else checksum or network failure
+            Rust-->>Row: reason shown, Try again
+        else file matches the pinned SHA-256
+            Rust-->>Atoms: renamed to the model name, engine warmed
+            Atoms-->>Row: "Speech model ready.", model list and settings refresh
+        end
+    end
+```
+
 ## Record the speech check
 
 ```mermaid

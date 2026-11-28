@@ -6,7 +6,7 @@ import type { WhisperBackend } from '../bindings/WhisperBackend';
 import { bindingSchema } from './binding-schema';
 
 const ComponentStatusSchema = bindingSchema<ComponentStatus>()(
-  Schema.Literals(['available', 'missing', 'unreadable']),
+  Schema.Literals(['available', 'downloading', 'missing', 'unreadable']),
 );
 
 const WhisperBackendSchema = bindingSchema<WhisperBackend>()(Schema.Literals(['cuda', 'cpu']));

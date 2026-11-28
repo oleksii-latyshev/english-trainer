@@ -6,6 +6,7 @@ export const MODEL_SAVE_FAILED = 'The model choice could not be saved.';
 export const LIVE_SAVE_FAILED = 'The live transcript setting could not be saved.';
 export const DELETE_FAILED = 'The recordings could not be deleted.';
 export const MEASURE_FAILED = 'The measurement could not be completed. Try again.';
+export const DOWNLOAD_FAILED = 'The speech model could not be downloaded. Try again.';
 export const SETTINGS_UNREADABLE = 'Speech recognition settings could not be read.';
 
 export function settledFailureMessage<A>(

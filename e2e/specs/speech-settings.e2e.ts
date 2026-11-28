@@ -82,3 +82,64 @@ test('the microphone check explains a microphone that cannot be opened', async (
   await expect(settings.microphone).toContainText('Microphone access was denied');
   await expect(settings.microphone.getByRole('button', { name: 'Record again' })).toBeVisible();
 });
+
+test('a missing speech model is downloaded after consent, with progress, and is ready afterwards', async ({
+  app,
+  settings,
+  tauri,
+}) => {
+  tauri.speechSettingsSeed = { missingModel: true };
+  await app.open();
+  await app.sidebar.openSettings();
+
+  await expect(settings.speech).toContainText('Speech model');
+  await expect(settings.speech).toContainText('465 MB');
+  await settings.modelDownloadButton.click();
+  await expect(settings.modelDownloadDialog).toContainText('465 MB model from huggingface.co');
+  expect(await tauri.calls('download_speech_model')).toHaveLength(0);
+
+  await settings.modelDownloadDialog.getByRole('button', { name: /^Download/ }).click();
+  await expect(settings.modelDownloadProgress).toBeVisible();
+  await expect(settings.speech).toContainText('233 MB of 465 MB');
+
+  await settings.finishModelDownload();
+  await expect(app.text('Speech model ready.')).toBeVisible();
+  await expect(settings.modelDownloadButton).toHaveCount(0);
+  await expect(settings.modelChoice()).toContainText('small.en');
+});
+
+test('cancelling the speech model download goes back to the Download button', async ({
+  app,
+  settings,
+  tauri,
+}) => {
+  tauri.speechSettingsSeed = { missingModel: true };
+  await app.open();
+  await app.sidebar.openSettings();
+
+  await settings.modelDownloadButton.click();
+  await settings.modelDownloadDialog.getByRole('button', { name: /^Download/ }).click();
+  await expect(settings.modelDownloadProgress).toBeVisible();
+  await settings.speech.getByRole('button', { name: 'Cancel' }).click();
+
+  await expect(settings.modelDownloadProgress).toHaveCount(0);
+  await expect(settings.modelDownloadButton).toBeVisible();
+  await expect(app.alert).toHaveCount(0);
+  expect(await tauri.calls('cancel_speech_model_download')).toHaveLength(1);
+});
+
+test('a failed speech model download says why and offers another try', async ({
+  app,
+  settings,
+  tauri,
+}) => {
+  tauri.speechSettingsSeed = { missingModel: true, failNextDownload: true };
+  await app.open();
+  await app.sidebar.openSettings();
+
+  await settings.modelDownloadButton.click();
+  await settings.modelDownloadDialog.getByRole('button', { name: /^Download/ }).click();
+
+  await expect(app.alert).toContainText('did not match its checksum');
+  await expect(settings.speech.getByRole('button', { name: 'Try again' })).toBeVisible();
+});

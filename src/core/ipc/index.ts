@@ -25,6 +25,8 @@ export type { LimitNote } from './bindings/LimitNote';
 export type { MemoryReviewRun } from './bindings/MemoryReviewRun';
 export type { MemoryUsageEvidence } from './bindings/MemoryUsageEvidence';
 export type { MistakeRecord } from './bindings/MistakeRecord';
+export type { ModelDownloadOffer } from './bindings/ModelDownloadOffer';
+export type { ModelDownloadProgress } from './bindings/ModelDownloadProgress';
 export type { ModelRequests } from './bindings/ModelRequests';
 export type { ModelRun } from './bindings/ModelRun';
 export type { NativeLanguageSettings } from './bindings/NativeLanguageSettings';
@@ -35,11 +37,8 @@ export type { RescueKind } from './bindings/RescueKind';
 export type { RescueRequest } from './bindings/RescueRequest';
 export type { RescueResponse } from './bindings/RescueResponse';
 export type { ReviewMaterials } from './bindings/ReviewMaterials';
-
 export type { SentenceStatus } from './bindings/SentenceStatus';
-
 export type { SetupDiagnostics } from './bindings/SetupDiagnostics';
-
 export type { SpeechCheckProgress } from './bindings/SpeechCheckProgress';
 export type { SpeechCheckResults } from './bindings/SpeechCheckResults';
 export type { SpeechCheckStatus } from './bindings/SpeechCheckStatus';
@@ -116,6 +115,8 @@ export {
 export { SetupDiagnosticsSchema } from './schemas/setup-diagnostics';
 export { SpeakingActivitySchema } from './schemas/speaking-activity';
 export {
+  ModelDownloadOfferSchema,
+  ModelDownloadProgressSchema,
   PartialTranscriptSchema,
   SpeechCheckProgressSchema,
   SpeechCheckResultsSchema,

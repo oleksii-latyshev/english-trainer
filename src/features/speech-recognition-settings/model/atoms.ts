@@ -1,7 +1,7 @@
 import { Duration, Effect, Option, Schedule, Stream } from 'effect';
 import { AsyncResult, Atom } from 'effect/reactivity';
 import { audioAtomContext, clipPhaseAtom, IDLE_CLIP } from '@/core/audio';
-import type { SpeechCheckProgress } from '@/core/ipc';
+import type { ModelDownloadProgress, SpeechCheckProgress } from '@/core/ipc';
 import { SpeechRecognition, SpeechRecognitionSettings } from '@/core/speech';
 import { sentenceRecorderState } from '../helpers/sentence-recorder';
 import { nextSentenceIndex } from '../helpers/speech-check';
@@ -10,6 +10,7 @@ import { runtime } from './runtime';
 
 const SETTINGS = ['speech-recognition-settings'];
 const CHECK = ['speech-check'];
+const MODELS = ['speech-models'];
 const ENGINE_REFRESH = Duration.millis(1500);
 
 export type SentenceRequest = { readonly index: number; readonly deviceId: string };
@@ -27,10 +28,52 @@ export const speechSettingsAtom = runtime
   )
   .pipe(audioAtomContext.withReactivity(SETTINGS));
 
-export const speechModelsAtom = runtime.atom(
-  Effect.gen(function* () {
+export const speechModelsAtom = runtime
+  .atom(
+    Effect.gen(function* () {
+      const settings = yield* SpeechRecognitionSettings;
+      return yield* settings.models;
+    }),
+  )
+  .pipe(audioAtomContext.withReactivity(MODELS));
+
+export const speechModelOfferAtom = runtime
+  .atom(
+    Effect.gen(function* () {
+      const settings = yield* SpeechRecognitionSettings;
+      return yield* settings.modelOffer;
+    }),
+  )
+  .pipe(audioAtomContext.withReactivity(MODELS));
+
+export const modelDownloadProgressAtom = Atom.make<Option.Option<ModelDownloadProgress>>(
+  Option.none(),
+);
+
+export const downloadModelAtom = runtime.fn(
+  Effect.fn('downloadSpeechModel')(function* (_: undefined, get: Atom.FnContext) {
     const settings = yield* SpeechRecognitionSettings;
-    return yield* settings.models;
+    get.set(modelDownloadProgressAtom, Option.none());
+    const download = settings.downloadModel((progress) =>
+      get.set(modelDownloadProgressAtom, Option.some(progress)),
+    );
+    yield* download.pipe(
+      Effect.asVoid,
+      Effect.catch((failure) =>
+        failure._tag === 'IpcError' && failure.code === 'cancelled'
+          ? Effect.void
+          : Effect.fail(failure),
+      ),
+      Effect.ensuring(Effect.sync(() => get.set(modelDownloadProgressAtom, Option.none()))),
+    );
+  }),
+  { reactivityKeys: [...MODELS, ...SETTINGS] },
+);
+
+export const cancelModelDownloadAtom = runtime.fn(
+  Effect.fn('cancelSpeechModelDownload')(function* (_: undefined) {
+    const settings = yield* SpeechRecognitionSettings;
+    yield* settings.cancelModelDownload;
   }),
 );
 
